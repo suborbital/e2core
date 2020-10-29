@@ -1,9 +1,11 @@
 package coordinator
 
 import (
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/suborbital/grav/grav"
@@ -48,7 +50,7 @@ func (c *Coordinator) UseBundle(bundle *wasm.Bundle) *vk.RouteGroup {
 
 	wasm.HandleBundle(c.hive, bundle)
 
-	group := vk.Group("")
+	group := vk.Group("").Before(scopeMiddleware)
 
 	for _, h := range bundle.Directive.Handlers {
 		if h.Input.Type != directive.DirectiveInputTypeRequest {
@@ -77,7 +79,7 @@ func (c *Coordinator) vkHandlerForDirectiveHandler(handler directive.Handler) vk
 		for _, step := range handler.Steps {
 			// if the group is nil, call the single func
 			if step.Group == nil || len(step.Group) > 0 {
-				result, err := c.runSingleFn(step.Fn, reqBody)
+				result, err := c.runSingleFn(step.Fn, reqBody, ctx)
 				if err != nil {
 					return nil, err
 				}
@@ -96,7 +98,13 @@ func (c *Coordinator) vkHandlerForDirectiveHandler(handler directive.Handler) vk
 	}
 }
 
-func (c *Coordinator) runSingleFn(name string, body []byte) (interface{}, error) {
+func (c *Coordinator) runSingleFn(name string, body []byte, ctx *vk.Ctx) (interface{}, error) {
+	start := time.Now()
+	defer func() {
+		duration := time.Since(start)
+		ctx.Log.Debug("fn", name, fmt.Sprintf("executed in %d ms", duration.Milliseconds()))
+	}()
+
 	job := hive.NewJob(name, body)
 
 	result, err := c.hive.Do(job).Then()
@@ -109,4 +117,18 @@ func (c *Coordinator) runSingleFn(name string, body []byte) (interface{}, error)
 	}
 
 	return string(result.([]byte)), nil
+}
+
+type scope struct {
+	RequestID string `json:"request_id"`
+}
+
+func scopeMiddleware(r *http.Request, ctx *vk.Ctx) error {
+	scope := scope{
+		RequestID: ctx.RequestID(),
+	}
+
+	ctx.UseScope(scope)
+
+	return nil
 }
