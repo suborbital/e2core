@@ -33,6 +33,8 @@ github.com/suborbital/hive-wasm v0.1.1-0.20201029192230-13698e038f8e h1:yd8gOtdC
 github.com/suborbital/hive-wasm v0.1.1-0.20201029192230-13698e038f8e/go.mod h1:f1NruFpCeghuZ82dTG4lhB/t7dRGmzDT/Gd8/M4GCyk=
 github.com/suborbital/hive-wasm v0.1.1-0.20201029194832-3f63282353d4 h1:5x24OVxfLP2ojmLXnZAUx/K/ckBTzFbdUkyX/PBW4mU=
 github.com/suborbital/hive-wasm v0.1.1-0.20201029194832-3f63282353d4/go.mod h1:f1NruFpCeghuZ82dTG4lhB/t7dRGmzDT/Gd8/M4GCyk=
+github.com/suborbital/hive-wasm v0.1.1 h1:I1oJhFl4NrWuTuXhaprBaewisnLpHvYZbSLCJLLGwG0=
+github.com/suborbital/hive-wasm v0.1.1/go.mod h1:f1NruFpCeghuZ82dTG4lhB/t7dRGmzDT/Gd8/M4GCyk=
 github.com/suborbital/vektor v0.1.1/go.mod h1:tJ4gA2P8NWC4Pdu0TgpSBWZHuZ1Qhp+r5RlsqyIqdyw=
 github.com/suborbital/vektor v0.1.3/go.mod h1:tJ4gA2P8NWC4Pdu0TgpSBWZHuZ1Qhp+r5RlsqyIqdyw=
 github.com/suborbital/vektor v0.2.2 h1:x3yit9RMXcP8LirkKb1f/psNev/G/iTIHo6eL/f1OBI=

@@ -53,7 +53,7 @@ func (c *Coordinator) UseBundle(bundle *wasm.Bundle) *vk.RouteGroup {
 	group := vk.Group("").Before(scopeMiddleware)
 
 	for _, h := range bundle.Directive.Handlers {
-		if h.Input.Type != directive.DirectiveInputTypeRequest {
+		if h.Input.Type != directive.InputTypeRequest {
 			continue
 		}
 

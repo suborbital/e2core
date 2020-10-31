@@ -10,7 +10,7 @@ test/go:
 	go test -v --count=1 -p=1 ./...
 
 test/bundle:
-	cp ../hive-wasm/runnables.wasm.zip ./
+	cp ../subo/examples/runnables.wasm.zip ./
 
 deps:
 	go get -u -d ./...

@@ -8,9 +8,9 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-// DirectiveInputTypeRequest and others represent consts for Directives
+// InputTypeRequest and others represent consts for Directives
 const (
-	DirectiveInputTypeRequest = "request"
+	InputTypeRequest = "request"
 )
 
 // Directive describes a set of functions and a set of handlers
