@@ -78,7 +78,7 @@ func (c *Coordinator) vkHandlerForDirectiveHandler(handler directive.Handler) vk
 
 		for _, step := range handler.Steps {
 			// if the group is nil, call the single func
-			if step.Group == nil || len(step.Group) > 0 {
+			if step.Group == nil || len(step.Group) == 0 {
 				result, err := c.runSingleFn(step.Fn, reqBody, ctx)
 				if err != nil {
 					return nil, err
@@ -90,7 +90,13 @@ func (c *Coordinator) vkHandlerForDirectiveHandler(handler directive.Handler) vk
 
 				resp = append(resp, entry)
 			} else {
-				return nil, vk.E(http.StatusInternalServerError, "cannot handle function groups yet")
+				// if the step is a group, run them all concurrently and collect the results
+				entry, err := c.runGroup(step.Group, reqBody, ctx)
+				if err != nil {
+					return nil, err
+				}
+
+				resp = append(resp, entry)
 			}
 		}
 
@@ -117,6 +123,57 @@ func (c *Coordinator) runSingleFn(name string, body []byte, ctx *vk.Ctx) (interf
 	}
 
 	return string(result.([]byte)), nil
+}
+
+type fnResult struct {
+	name   string
+	result interface{}
+	err    error
+}
+
+func (c *Coordinator) runGroup(fns []string, body []byte, ctx *vk.Ctx) (interface{}, error) {
+	start := time.Now()
+	defer func() {
+		duration := time.Since(start)
+		ctx.Log.Debug("group", fmt.Sprintf("executed in %d ms", duration.Milliseconds()))
+	}()
+
+	resultChan := make(chan fnResult, len(fns))
+
+	for i := range fns {
+		fn := fns[i]
+		ctx.Log.Debug("running fn", fn, "from group")
+
+		res, err := c.runSingleFn(fn, body, ctx)
+
+		result := fnResult{
+			name:   fn,
+			result: res,
+			err:    err,
+		}
+
+		resultChan <- result
+	}
+
+	entry := map[string]interface{}{}
+	respCount := 0
+
+	for respCount < len(fns) {
+		select {
+		case resp := <-resultChan:
+			if resp.err != nil {
+				return nil, errors.Wrapf(resp.err, "%s produced error", resp.name)
+			}
+
+			entry[resp.name] = resp.result
+		case <-time.After(5 * time.Second):
+			return nil, errors.New("function group timed out")
+		}
+
+		respCount++
+	}
+
+	return entry, nil
 }
 
 type scope struct {
