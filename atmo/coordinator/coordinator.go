@@ -1,6 +1,7 @@
 package coordinator
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -25,6 +26,17 @@ type Coordinator struct {
 	bus  *grav.Grav
 
 	lock sync.RWMutex
+}
+
+// CoordinatedRequest represents a request being coordinated
+type CoordinatedRequest struct {
+	URL   string                 `json:"url"`
+	Body  string                 `json:"body"`
+	State map[string]interface{} `json:"state"`
+}
+
+type requestScope struct {
+	RequestID string `json:"request_id"`
 }
 
 // New creates a coordinator
@@ -74,33 +86,42 @@ func (c *Coordinator) vkHandlerForDirectiveHandler(handler directive.Handler) vk
 
 		defer r.Body.Close()
 
-		resp := []interface{}{}
+		req := CoordinatedRequest{
+			URL:   r.URL.String(),
+			Body:  string(reqBody),
+			State: map[string]interface{}{},
+		}
 
 		for _, step := range handler.Steps {
+			stateJSON, err := req.Marshal()
+			if err != nil {
+				return nil, vk.Wrap(http.StatusInternalServerError, errors.Wrap(err, "failed to Marshal Request State"))
+			}
+
 			// if the group is nil, call the single func
 			if step.Group == nil || len(step.Group) == 0 {
-				result, err := c.runSingleFn(step.Fn, reqBody, ctx)
+				result, err := c.runSingleFn(step.Fn, stateJSON, ctx)
 				if err != nil {
 					return nil, err
 				}
 
-				entry := map[string]interface{}{
-					step.Fn: result,
+				if result != nil {
+					req.State[step.Fn] = result
 				}
-
-				resp = append(resp, entry)
 			} else {
 				// if the step is a group, run them all concurrently and collect the results
-				entry, err := c.runGroup(step.Group, reqBody, ctx)
+				entries, err := c.runGroup(step.Group, stateJSON, ctx)
 				if err != nil {
 					return nil, err
 				}
 
-				resp = append(resp, entry)
+				for k, v := range entries {
+					req.State[k] = v
+				}
 			}
 		}
 
-		return resp, nil
+		return req, nil
 	}
 }
 
@@ -122,6 +143,11 @@ func (c *Coordinator) runSingleFn(name string, body []byte, ctx *vk.Ctx) (interf
 		return nil, vk.Wrap(http.StatusInternalServerError, errors.Wrapf(err, "fn %s failed", name))
 	}
 
+	if result == nil {
+		ctx.Log.Debug("fn", name, "returned a nil result")
+		return nil, nil
+	}
+
 	return string(result.([]byte)), nil
 }
 
@@ -131,7 +157,7 @@ type fnResult struct {
 	err    error
 }
 
-func (c *Coordinator) runGroup(fns []string, body []byte, ctx *vk.Ctx) (interface{}, error) {
+func (c *Coordinator) runGroup(fns []string, body []byte, ctx *vk.Ctx) (map[string]interface{}, error) {
 	start := time.Now()
 	defer func() {
 		duration := time.Since(start)
@@ -165,7 +191,9 @@ func (c *Coordinator) runGroup(fns []string, body []byte, ctx *vk.Ctx) (interfac
 				return nil, errors.Wrapf(resp.err, "%s produced error", resp.name)
 			}
 
-			entry[resp.name] = resp.result
+			if resp.result != nil {
+				entry[resp.name] = resp.result
+			}
 		case <-time.After(5 * time.Second):
 			return nil, errors.New("function group timed out")
 		}
@@ -176,12 +204,13 @@ func (c *Coordinator) runGroup(fns []string, body []byte, ctx *vk.Ctx) (interfac
 	return entry, nil
 }
 
-type scope struct {
-	RequestID string `json:"request_id"`
+// Marshal marshals a CoordinatedRequest
+func (c *CoordinatedRequest) Marshal() ([]byte, error) {
+	return json.Marshal(c)
 }
 
 func scopeMiddleware(r *http.Request, ctx *vk.Ctx) error {
-	scope := scope{
+	scope := requestScope{
 		RequestID: ctx.RequestID(),
 	}
 
