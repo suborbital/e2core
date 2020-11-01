@@ -121,7 +121,7 @@ func (c *Coordinator) vkHandlerForDirectiveHandler(handler directive.Handler) vk
 			}
 		}
 
-		return req, nil
+		return lastStepResult(handler.Steps, req.State), nil
 	}
 }
 
@@ -148,7 +148,7 @@ func (c *Coordinator) runSingleFn(name string, body []byte, ctx *vk.Ctx) (interf
 		return nil, nil
 	}
 
-	return string(result.([]byte)), nil
+	return stringOrMap(result.([]byte)), nil
 }
 
 type fnResult struct {
@@ -217,4 +217,31 @@ func scopeMiddleware(r *http.Request, ctx *vk.Ctx) error {
 	ctx.UseScope(scope)
 
 	return nil
+}
+
+// lastStepResult returns the state value for the last single function that ran in a handler
+func lastStepResult(steps []directive.Executable, state map[string]interface{}) interface{} {
+	for i := len(steps) - 1; i >= 0; i-- {
+		step := steps[i]
+		if step.Fn == "" {
+			continue
+		}
+
+		val, exists := state[step.Fn]
+		if exists {
+			return val
+		}
+	}
+
+	return nil
+}
+
+// stringOrMap converts bytes to a map if they are JSON, or a string if not
+func stringOrMap(result []byte) interface{} {
+	resMap := map[string]interface{}{}
+	if err := json.Unmarshal(result, &resMap); err != nil {
+		return string(result)
+	}
+
+	return resMap
 }
