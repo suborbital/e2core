@@ -1,0 +1,14 @@
+identifier: com.suborbital.test
+version: v0.0.1
+
+handlers:
+  - type: request
+    resource: /hello
+    method: GET
+    steps:
+      - fn: modify-url
+      - fn: fetch-test
+      # - group:
+      #   - goodbye
+      #   - helloworld-rs
+      #   - fetch-test
