@@ -7,7 +7,7 @@ Atmo can be used in one of two ways: as an all-in-one application using a Runnab
 ## Building a bundle
 Atmo uses a _Runnable bundle_ to run your described application. The bundle includes two things: a Directive, and a set of Runnable Wasm modules (functions compiled from various languages such as Rust and Swift).
 
-Bundles are built using `subo`, which is the Suborbital CLI tool. You'll need to install `subo` to build a bundle. To install the tool, [visit the subo repository](github.com/suborbital/subo).
+Bundles are built using `subo`, which is the Suborbital CLI tool. You'll need to install `subo` to build a bundle. To install the tool, [visit the subo repository](https://github.com/suborbital/subo).
 
 Once you've installed `subo`, you can use it to build the example project included with this repository. Clone this project, and then run:
 ```
@@ -42,7 +42,7 @@ handlers:
         - helloworld-rs
       - fn: fetch-test
 ```
-This describes the application being constructed. This declares a route (`POST /hello`) and how to handle that request. The `steps` provided contain a set of instructions on how to handle requests to the `/hello` endpoint. The first step is a `group`, meaning that all of the functions in that group will be executed **concurrently**. The second step is a single function that uses the [Hive FFI API](github.com/suborbital/hive-wasm) to make an HTTP request.
+This describes the application being constructed. This declares a route (`POST /hello`) and how to handle that request. The `steps` provided contain a set of instructions on how to handle requests to the `/hello` endpoint. The first step is a `group`, meaning that all of the functions in that group will be executed **concurrently**. The second step is a single function that uses the [Hive FFI API](https://github.com/suborbital/hive-wasm) to make an HTTP request.
 
 For each function executed, its result gets stored in the request handler's `state`. The `state` is used to pass values between functions, since they are completely isolated and independent from one another. The `modify-url` function takes the request body (in this case, a URL), and modifies it (in this case, adding `/suborbital` to it). The second step (`fetch-test`) takes that modified URL and makes an HTTP request to fetch it. The final function's output is used as the response data for the request.
 

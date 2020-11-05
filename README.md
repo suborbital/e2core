@@ -24,6 +24,6 @@ To learn how Atmo works, visit the [get started guide](./docs/getstarted.md).
 ## Status
 Atmo is currently in **alpha**, and is intended to be the flagship project in the Suborbital Development Platform. 
 
-Atmo is built atop [Vektor](github.com/suborbital/vektor), [Hive](github.com/suborbital/hive) and [Grav](github.com/suborbital/grav).
+Atmo is built atop [Vektor](https://github.com/suborbital/vektor), [Hive](https://github.com/suborbital/hive) and [Grav](https://github.com/suborbital/grav).
 
 Copyright Suborbital contributors 2020.
