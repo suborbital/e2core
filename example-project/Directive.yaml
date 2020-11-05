@@ -4,11 +4,9 @@ version: v0.0.1
 handlers:
   - type: request
     resource: /hello
-    method: GET
+    method: POST
     steps:
-      - fn: modify-url
+      - group:
+        - modify-url
+        - helloworld-rs
       - fn: fetch-test
-      # - group:
-      #   - goodbye
-      #   - helloworld-rs
-      #   - fetch-test

@@ -17,6 +17,10 @@ With Atmo, you only need to do three things:
 
 Depending on your needs, Atmo can be used as a pre-built binary (using a `runnables.wasm.zip`), or as a Go library in rare cases when the configurable options are not sufficient.
 
+## Get started
+
+To learn how Atmo works, visit the [get started guide](./docs/getstarted.md).
+
 ## Status
 Atmo is currently in pre-alpha stages, and will be the flagship project in the Suborbital Development Platform. 
 

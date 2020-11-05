@@ -15,7 +15,7 @@ pub fn run(input: Vec<u8>) -> Option<Vec<u8>> {
         None => return Some(String::from("failed").as_bytes().to_vec())
     };
 
-	let modified = format!("{}/teams", req.body.as_str());
+	let modified = format!("{}/suborbital", req.body.as_str());
     Some(modified.as_bytes().to_vec())
 }
 

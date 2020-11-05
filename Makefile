@@ -1,7 +1,9 @@
 
-atmo:
+build/atmo:
 	go build -o .bin/atmo ./main.go
-	.bin/atmo
+
+atmo: build/atmo
+	.bin/atmo $(bundle)
 
 test/run:
 	go run ./main.go
