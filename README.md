@@ -22,7 +22,7 @@ Depending on your needs, Atmo can be used as a pre-built binary (using a `runnab
 To learn how Atmo works, visit the [get started guide](./docs/getstarted.md).
 
 ## Status
-Atmo is currently in pre-alpha stages, and will be the flagship project in the Suborbital Development Platform. 
+Atmo is currently in **alpha**, and is intended to be the flagship project in the Suborbital Development Platform. 
 
 Atmo is built atop [Vektor](github.com/suborbital/vektor), [Hive](github.com/suborbital/hive) and [Grav](github.com/suborbital/grav).
 
