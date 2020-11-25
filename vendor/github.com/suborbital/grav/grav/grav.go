@@ -1,6 +1,11 @@
 package grav
 
-import "errors"
+import (
+	"github.com/pkg/errors"
+
+	"github.com/google/uuid"
+	"github.com/suborbital/vektor/vlog"
+)
 
 // ErrTransportNotConfigured represent package-level vars
 var (
@@ -9,26 +14,50 @@ var (
 
 // Grav represents a Grav message bus instance
 type Grav struct {
+	NodeUUID  string
 	bus       *messageBus
+	logger    *vlog.Logger
 	transport Transport
+	discovery Discovery
 }
 
-// New creates a new Grav instance
-func New() *Grav {
-	return NewWithTransport(nil, nil)
-}
+// New creates a new Grav with the provided options
+func New(opts ...OptionsModifier) *Grav {
+	nodeUUID := uuid.New().String()
 
-// NewWithTransport creates a new Grav with a transport plugin configured
-func NewWithTransport(tspt Transport, opts *TransportOpts) *Grav {
+	options := newOptionsWithModifiers(opts...)
+
 	g := &Grav{
+		NodeUUID:  nodeUUID,
 		bus:       newMessageBus(),
-		transport: tspt,
+		logger:    options.Logger,
+		transport: options.Transport,
+		discovery: options.Discovery,
 	}
 
-	if tspt != nil {
+	// start transport, then discovery if each have been configured (can have transport but no discovery)
+	if g.transport != nil {
+		transportOpts := &TransportOpts{
+			NodeUUID: nodeUUID,
+			Port:     options.Port,
+			Logger:   options.Logger,
+		}
+
 		go func() {
-			if err := tspt.Serve(opts, g.Connect()); err != nil {
-				// not sure what to do here, yet
+			if err := g.transport.Serve(transportOpts, g.Connect); err != nil {
+				options.Logger.Error(errors.Wrap(err, "failed to Serve transport"))
+			}
+
+			if g.discovery != nil {
+				discoveryOpts := &DiscoveryOpts{
+					NodeUUID:      nodeUUID,
+					TransportPort: transportOpts.Port,
+					Logger:        options.Logger,
+				}
+
+				if err := g.discovery.Start(discoveryOpts, g.transport, g.Connect); err != nil {
+					options.Logger.Error(errors.Wrap(err, "failed to Start discovery"))
+				}
 			}
 		}()
 	}

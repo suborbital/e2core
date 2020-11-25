@@ -1,6 +1,8 @@
 package hive
 
 import (
+	"encoding/json"
+
 	"github.com/pkg/errors"
 	"github.com/suborbital/grav/grav"
 	"github.com/suborbital/vektor/vk"
@@ -8,8 +10,8 @@ import (
 )
 
 const (
-	msgTypeHiveJobErr  = "hive.joberr"
-	msgTypeHiveTypeErr = "hive.typeerr"
+	msgTypeHiveJobErr = "hive.joberr"
+	msgTypeHiveResult = "hive.result"
 )
 
 // JobFunc is a function that runs a job of a predetermined type
@@ -51,12 +53,18 @@ func (h *Hive) Handle(jobType string, runner Runnable, options ...Option) JobFun
 }
 
 // HandleMsg registers a Runnable with the Hive and triggers that job whenever the provided Grav pod
-// receives a message of a particular type. The message is passed to the runnable as the job data.
-// The job's result is then emitted as a message. If the result cannot be cast to type grav.Message,
-// or if an error occurs, it is logged and an error is sent. If the result is nil, nothing is sent.
+// receives a message of a particular type.
 func (h *Hive) HandleMsg(pod *grav.Pod, msgType string, runner Runnable, options ...Option) {
 	h.handle(msgType, runner, options...)
 
+	h.Listen(pod, msgType)
+}
+
+// Listen causes Hive to listen for messages of the given type and trigger the job of the same type.
+// The message's data is passed to the runnable as the job data.
+// The job's result is then emitted as a message. If an error occurs, it is logged and an error is sent.
+// If the result is nil, nothing is sent.
+func (h *Hive) Listen(pod *grav.Pod, msgType string) {
 	helper := func(data interface{}) *Result {
 		job := NewJob(msgType, data)
 
@@ -64,26 +72,35 @@ func (h *Hive) HandleMsg(pod *grav.Pod, msgType string, runner Runnable, options
 	}
 
 	pod.OnType(func(msg grav.Message) error {
-		var resultMsg grav.Message
+		var replyMsg grav.Message
 
-		result, err := helper(msg).Then()
+		result, err := helper(msg.Data()).Then()
 		if err != nil {
 			h.log.Error(errors.Wrap(err, "job returned error result"))
-			resultMsg = grav.NewMsg(msgTypeHiveJobErr, []byte(err.Error()))
+			replyMsg = grav.NewMsgReplyTo(msg.Ticket(), msgTypeHiveJobErr, []byte(err.Error()))
 		} else {
 			if result == nil {
 				return nil
 			}
 
-			var ok bool
-			resultMsg, ok = result.(grav.Message)
-			if !ok {
-				h.log.Error(errors.Wrap(err, "job result is not a grav.Message, discarding"))
-				resultMsg = grav.NewMsg(msgTypeHiveTypeErr, []byte("failed to convert job result to grav.Message type"))
+			if resultMsg, isMsg := result.(grav.Message); isMsg {
+				resultMsg.SetReplyTo(msg.UUID())
+				replyMsg = resultMsg
+			} else if bytes, isBytes := result.([]byte); isBytes {
+				replyMsg = grav.NewMsgReplyTo(msg.Ticket(), msgTypeHiveResult, bytes)
+			} else if resultString, isString := result.(string); isString {
+				replyMsg = grav.NewMsgReplyTo(msg.Ticket(), msgTypeHiveResult, []byte(resultString))
+			} else {
+				resultJSON, err := json.Marshal(result)
+				if err != nil {
+					replyMsg = grav.NewMsgReplyTo(msg.Ticket(), msgTypeHiveJobErr, []byte(errors.Wrap(err, "failed to Marshal job result").Error()))
+				}
+
+				replyMsg = grav.NewMsgReplyTo(msg.Ticket(), msgTypeHiveResult, resultJSON)
 			}
 		}
 
-		pod.Send(resultMsg)
+		pod.Send(replyMsg)
 
 		return nil
 	}, msgType)

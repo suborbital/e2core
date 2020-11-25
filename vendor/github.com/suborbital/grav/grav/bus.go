@@ -62,6 +62,8 @@ func (b *messageBus) traverse(msg Message, start *podConnection) {
 		// send the message to the pod
 		conn.send(msg)
 
+		// run checks on the next podConnection to see if
+		// anything needs to be done (including potentially deleting it)
 		next := b.pool.peek()
 		if err := b.pool.prepareNext(b.buffer); err != nil {
 			if startID == next.ID {

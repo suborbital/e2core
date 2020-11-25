@@ -27,8 +27,12 @@ type Message interface {
 	UUID() string
 	// ID of the parent event or request, such as HTTP request
 	ParentID() string
-	// The UUID of the message being responded to, if any
-	ResponseTo() string
+	// The UUID of the message being replied to, if any
+	ReplyTo() string
+	// Allow setting a message UUID that this message is a response to
+	SetReplyTo(string)
+	// Get a MessageTicket that references this message
+	Ticket() MessageTicket
 	// Type of message (application-specific)
 	Type() string
 	// Time the message was sent
@@ -43,19 +47,27 @@ type Message interface {
 	Unmarshal([]byte) error
 }
 
+// MessageTicket represents a "ticket" that references a message that was sent with the hopes of getting a response
+type MessageTicket struct {
+	UUID string
+}
+
 // NewMsg creates a new Message with the built-in `_message` type
 func NewMsg(msgType string, data []byte) Message {
-	return new(msgType, "", "", data)
+	return new(msgType, "", data)
 }
 
 // NewMsgWithParentID returns a new message with the provided parent ID
 func NewMsgWithParentID(msgType, parentID string, data []byte) Message {
-	return new(msgType, parentID, "", data)
+	return new(msgType, parentID, data)
 }
 
-// NewMsgResponseTo creates a new message in response to a previous message
-func NewMsgResponseTo(msgType, responseTo string, data []byte) Message {
-	return new(msgType, "", responseTo, data)
+// NewMsgReplyTo creates a new message in response to a previous message
+func NewMsgReplyTo(ticket MessageTicket, msgType string, data []byte) Message {
+	m := new(msgType, "", data)
+	m.SetReplyTo(ticket.UUID)
+
+	return m
 }
 
 // MsgFromBytes returns a default _message that has been unmarshalled from bytes.
@@ -80,16 +92,16 @@ func MsgFromRequest(r *http.Request) (Message, error) {
 	return MsgFromBytes(bytes)
 }
 
-func new(msgType, parentID, responseTo string, data []byte) Message {
+func new(msgType, parentID string, data []byte) Message {
 	uuid := uuid.New()
 
 	m := &_message{
 		Meta: _meta{
-			UUID:       uuid.String(),
-			ParentID:   parentID,
-			ResponseTo: responseTo,
-			MsgType:    msgType,
-			Timestamp:  time.Now(),
+			UUID:      uuid.String(),
+			ParentID:  parentID,
+			ReplyTo:   "",
+			MsgType:   msgType,
+			Timestamp: time.Now(),
 		},
 		Payload: _payload{
 			Data: data,
@@ -108,11 +120,11 @@ type _message struct {
 }
 
 type _meta struct {
-	UUID       string    `json:"uuid"`
-	ParentID   string    `json:"parent_id"`
-	ResponseTo string    `json:"response_to"`
-	MsgType    string    `json:"msg_type"`
-	Timestamp  time.Time `json:"timestamp"`
+	UUID      string    `json:"uuid"`
+	ParentID  string    `json:"parent_id"`
+	ReplyTo   string    `json:"response_to"`
+	MsgType   string    `json:"msg_type"`
+	Timestamp time.Time `json:"timestamp"`
 }
 
 type _payload struct {
@@ -127,8 +139,20 @@ func (m *_message) ParentID() string {
 	return m.Meta.ParentID
 }
 
-func (m *_message) ResponseTo() string {
-	return m.Meta.ResponseTo
+func (m *_message) ReplyTo() string {
+	return m.Meta.ReplyTo
+}
+
+func (m *_message) SetReplyTo(uuid string) {
+	m.Meta.ReplyTo = uuid
+}
+
+func (m *_message) Ticket() MessageTicket {
+	t := MessageTicket{
+		UUID: m.Meta.UUID,
+	}
+
+	return t
 }
 
 func (m *_message) Type() string {
