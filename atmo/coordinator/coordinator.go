@@ -184,7 +184,7 @@ func (c *Coordinator) runSingleFn(name string, body []byte, ctx *vk.Ctx) (interf
 	// check for errors and results, convert to something useful, and return
 
 	if podErr != nil {
-		// Hive needs to be updated to reply with a message when a job
+		// Hive needs to be updated to reply with a message when a job returns no result
 		if podErr == grav.ErrWaitTimeout {
 			// do nothing
 		} else {
