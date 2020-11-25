@@ -168,6 +168,8 @@ func (c *Coordinator) runSingleFn(name string, body []byte, ctx *vk.Ctx) (interf
 	var jobErr error
 
 	pod := c.bus.Connect()
+	defer pod.Disconnect()
+
 	podErr := pod.SendAndWaitOnReply(jobMsg, func(msg grav.Message) error {
 		switch msg.Type() {
 		case msgTypeHiveResult:
