@@ -73,7 +73,7 @@ func (c *connectionPool) next() *podConnection {
 }
 
 // prepareNext ensures that the next pod connection in the ring is ready to recieve
-// new messages by checking its status, deleting it if unhealthy, replaying the message
+// new messages by checking its status, deleting it if unhealthy or disconnected, replaying the message
 // buffer if needed, or flushing failed messages back onto its channel if needeed.
 func (c *connectionPool) prepareNext(buffer *msgBuffer) error {
 	// peek gives us the next conn without advancing the ring
@@ -87,8 +87,12 @@ func (c *connectionPool) prepareNext(buffer *msgBuffer) error {
 		// if the connection has an issue, handle it
 		if status.Error == errFailedMessageMax {
 			c.deleteNext()
-			return errors.New("deleting next podConnection")
+			return errors.New("removing next podConnection")
 		}
+	} else if status.WantsDisconnect {
+		// if the pod has requested disconnection, grant its wish
+		c.deleteNext()
+		return errors.New("next pod requested disconnection, removing podConnection")
 	} else if status.WantsReplay {
 		// if the pod has indicated that it wants a replay of recent messages, do so
 		c.replayNext(buffer)
@@ -158,9 +162,10 @@ type podConnection struct {
 
 // connStatus is used to communicate the status of a podConnection back to the bus
 type connStatus struct {
-	HadSuccess  bool
-	WantsReplay bool
-	Error       error
+	HadSuccess      bool
+	WantsReplay     bool
+	WantsDisconnect bool
+	Error           error
 }
 
 func newPodConnection(id int64, pod *Pod) *podConnection {
@@ -197,9 +202,10 @@ func (p *podConnection) send(msg Message) {
 // checkStatus checks the pod's feedback for any information or failed messages and drains the failures into the failed Message buffer
 func (p *podConnection) checkStatus() *connStatus {
 	status := &connStatus{
-		HadSuccess:  false,
-		WantsReplay: false,
-		Error:       nil,
+		HadSuccess:      false,
+		WantsReplay:     false,
+		WantsDisconnect: false,
+		Error:           nil,
 	}
 
 	done := false
@@ -210,6 +216,8 @@ func (p *podConnection) checkStatus() *connStatus {
 				status.HadSuccess = true
 			} else if feedbackMsg == podFeedbackMsgReplay {
 				status.WantsReplay = true
+			} else if feedbackMsg == podFeedbackMsgDisconnect {
+				status.WantsDisconnect = true
 			} else {
 				p.failed = append(p.failed, feedbackMsg)
 				status.Error = errFailedMessage

@@ -29,7 +29,7 @@ func New(mods ...OptionModifier) *Atmo {
 	)
 
 	a := &Atmo{
-		coordinator: coordinator.New(),
+		coordinator: coordinator.New(logger),
 		server:      server,
 	}
 

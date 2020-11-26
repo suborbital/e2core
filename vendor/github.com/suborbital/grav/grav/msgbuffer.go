@@ -60,6 +60,10 @@ func (m *msgBuffer) Iter(msgFunc MsgFunc) {
 	m.lock.RLock()
 	defer m.lock.RUnlock()
 
+	if len(m.order) == 0 {
+		return
+	}
+
 	index := m.startIndex
 	lastIndex := len(m.order) - 1
 
