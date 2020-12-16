@@ -1,3 +1,4 @@
 name: helloworld-rs
 namespace: default
 lang: rust
+apiVersion: 0.2.5

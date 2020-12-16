@@ -10,6 +10,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/suborbital/grav/grav"
+	"github.com/suborbital/hive-wasm/bundle"
 	"github.com/suborbital/hive-wasm/directive"
 	"github.com/suborbital/hive-wasm/wasm"
 	"github.com/suborbital/hive/hive"
@@ -26,7 +27,7 @@ const (
 // usable Vektor handles by coordinating Hive jobs and meshing when needed.
 type Coordinator struct {
 	directive *directive.Directive
-	bundle    *wasm.Bundle
+	bundle    *bundle.Bundle
 
 	log *vlog.Logger
 
@@ -65,7 +66,7 @@ func New(logger *vlog.Logger) *Coordinator {
 }
 
 // UseBundle sets a bundle to be used
-func (c *Coordinator) UseBundle(bundle *wasm.Bundle) *vk.RouteGroup {
+func (c *Coordinator) UseBundle(bundle *bundle.Bundle) *vk.RouteGroup {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
