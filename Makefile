@@ -17,4 +17,4 @@ test/bundle:
 deps:
 	go get -u -d ./...
 
-.PHONY: atmo test/run test/go test/bundle deps
+.PHONY: build/atmo atmo test/run test/go test/bundle deps

@@ -1,62 +1,32 @@
-package wasm
+package bundle
 
 import (
 	"archive/zip"
 	"bytes"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/suborbital/hive-wasm/directive"
-	"github.com/suborbital/hive/hive"
 )
 
-// HandleBundleAtPath loads a .wasm.zip file into the hive instance
-func HandleBundleAtPath(h *hive.Hive, path string) error {
-	if !strings.HasSuffix(path, ".wasm.zip") {
-		return fmt.Errorf("cannot load bundle %s, does not have .wasm.zip extension", filepath.Base(path))
-	}
-
-	bundle, err := ReadBundle(path)
-	if err != nil {
-		return errors.Wrap(err, "failed to ReadBundle")
-	}
-
-	return HandleBundle(h, bundle)
+// Bundle represents a Runnable bundle
+type Bundle struct {
+	Directive *directive.Directive
+	Runnables []WasmModuleRef
 }
 
-// HandleBundle loads a .wasm.zip file into the hive instance
-func HandleBundle(h *hive.Hive, bundle *Bundle) error {
-	if err := bundle.Directive.Validate(); err != nil {
-		return errors.Wrap(err, "failed to Validate bundle directive")
-	}
-
-	for i, r := range bundle.Runnables {
-		runner := newRunnerWithEnvironment(bundle.Runnables[i])
-
-		jobName := strings.Replace(r.Name, ".wasm", "", -1)
-		fqfn, err := bundle.Directive.FQFN(jobName)
-		if err != nil {
-			return errors.Wrapf(err, "failed to FQFN for %s", jobName)
-		}
-
-		// mount both the "raw" name and the fqfn in case
-		// multiple bundles with conflicting names get mounted
-		h.Handle(jobName, runner)
-		h.Handle(fqfn, runner)
-
-	}
-
-	return nil
+// WasmModuleRef is a reference to a Wasm module (either its filepath or its bytes)
+type WasmModuleRef struct {
+	Filepath string
+	Name     string
+	data     []byte
 }
 
+// Write writes a runnable bundle
 // based loosely on https://golang.org/src/archive/zip/example_test.go
-
-// WriteBundle writes a runnable bundle
-func WriteBundle(directive *directive.Directive, files []os.File, targetPath string) error {
+func Write(directive *directive.Directive, files []os.File, targetPath string) error {
 	if directive == nil {
 		return errors.New("directive must be provided")
 	}
@@ -127,15 +97,9 @@ func writeFile(w *zip.Writer, name string, contents []byte) error {
 	return nil
 }
 
-// Bundle represents a Runnable bundle
-type Bundle struct {
-	Directive *directive.Directive
-	Runnables []*wasmEnvironment
-}
-
-// ReadBundle reads a .wasm.zip file and returns the bundle of wasm files within as raw bytes
+// Read reads a .wasm.zip file and returns the bundle of wasm modules
 // (suitable to be loaded into a wasmer instance)
-func ReadBundle(path string) (*Bundle, error) {
+func Read(path string) (*Bundle, error) {
 	// Open a zip archive for reading.
 	r, err := zip.OpenReader(path)
 	if err != nil {
@@ -145,7 +109,7 @@ func ReadBundle(path string) (*Bundle, error) {
 	defer r.Close()
 
 	bundle := &Bundle{
-		Runnables: []*wasmEnvironment{},
+		Runnables: []WasmModuleRef{},
 	}
 
 	// Iterate through the files in the archive,
@@ -161,8 +125,6 @@ func ReadBundle(path string) (*Bundle, error) {
 			continue
 		}
 
-		env := newEnvironment(f.Name, "")
-
 		rc, err := f.Open()
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to open %s from bundle", f.Name)
@@ -175,9 +137,9 @@ func ReadBundle(path string) (*Bundle, error) {
 			return nil, errors.Wrapf(err, "failed to read %s from bundle", f.Name)
 		}
 
-		env.setRaw(wasmBytes)
+		ref := refWithData(f.Name, wasmBytes)
 
-		bundle.Runnables = append(bundle.Runnables, env)
+		bundle.Runnables = append(bundle.Runnables, *ref)
 	}
 
 	if bundle.Directive == nil {
@@ -204,4 +166,31 @@ func readDirective(f *zip.File) (*directive.Directive, error) {
 	}
 
 	return d, nil
+}
+
+func refWithData(name string, data []byte) *WasmModuleRef {
+	ref := &WasmModuleRef{
+		Name: name,
+		data: data,
+	}
+
+	return ref
+}
+
+// ModuleBytes returns the bytes for the module
+func (w *WasmModuleRef) ModuleBytes() ([]byte, error) {
+	if w.data == nil {
+		if w.Filepath == "" {
+			return nil, errors.New("missing Wasm module filepath in ref")
+		}
+
+		bytes, err := ioutil.ReadFile(w.Filepath)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to ReadFile for Wasm module")
+		}
+
+		w.data = bytes
+	}
+
+	return w.data, nil
 }

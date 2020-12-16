@@ -17,3 +17,5 @@
 .DS_Store
 .bin
 runnables.wasm.zip
+target/
+*.wasm

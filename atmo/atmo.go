@@ -3,7 +3,7 @@ package atmo
 import (
 	"github.com/pkg/errors"
 	"github.com/suborbital/atmo/atmo/coordinator"
-	"github.com/suborbital/hive-wasm/wasm"
+	"github.com/suborbital/hive-wasm/bundle"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
 )
@@ -38,7 +38,7 @@ func New(mods ...OptionModifier) *Atmo {
 
 // Start starts the Atmo server
 func (a *Atmo) Start(bundlePath string) error {
-	bundle, err := wasm.ReadBundle(bundlePath)
+	bundle, err := bundle.Read(bundlePath)
 	if err != nil {
 		return errors.Wrap(err, "failed to ReadBundle")
 	}
