@@ -6,16 +6,16 @@ Atmo enables you to write small self-contained functions in a variety of laguage
 
 The Atmo Directive is a YAML file wherein you declare your application's behaviour. Because the Directive can describe everything you need to make your application work (including routes, logic, and more), there is no need to write boilerplate ever again.
 
+Atmo is not a library, but rather a standalone binary that uses a `runnables.wasm.zip` containing your Runnables and Directive to automatically run your application.
+
 ## Background
 
-Atmo is designed to embody the SUFA design pattern (Simple, Unified, Funcion-based Applications). This means you can build your project into a single deployable unit, and Atmo will take care of the server, scaling out its job scheduler, and meshing together auto-scaled instances.
+Atmo is designed to embody the [SUFA design pattern](https://blog.suborbital.dev/building-a-better-monolith) (Simple, Unified, Funcion-based Applications). This means you can build your project into a single deployable unit, and Atmo will take care of the server, scaling out its job scheduler, and meshing together auto-scaled instances.
 
 With Atmo, you only need to do three things:
 1. Write self-contained, composable functions
 2. Declare how you want Atmo to handle requests by creating a "Directive"
 3. Build and deploy your Runnable bundle
-
-Depending on your needs, Atmo can be used as a pre-built binary (using a `runnables.wasm.zip`), or as a Go library in rare cases when the configurable options are not sufficient.
 
 ## Get started
 
