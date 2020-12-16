@@ -11,10 +11,7 @@ test/run:
 test/go:
 	go test -v --count=1 -p=1 ./...
 
-test/bundle:
-	cp ../subo/examples/runnables.wasm.zip ./
-
 deps:
 	go get -u -d ./...
 
-.PHONY: build/atmo atmo test/run test/go test/bundle deps
+.PHONY: build/atmo atmo test/run test/go deps
