@@ -2,7 +2,7 @@
 
 **NOTE:** These docs are far from complete, but are being actively worked on.
 
-Atmo is an all-in-one binary that uses a _Runnable bundle_ to run your described application. The bundle includes two things: a Directive, and a set of Runnable Wasm modules (functions compiled from various languages such as Rust and Swift).
+Atmo is a self-hosted that uses a _Runnable bundle_ to run your described application. The bundle includes two things: a Directive, and a set of Runnable WebAssembly modules (functions compiled from various languages such as Rust and Swift).
 
 ## Building a bundle
 Bundles are built using `subo`, which is the Suborbital CLI tool. You'll need to install `subo` to build a bundle. To install the tool, [visit the subo repository](https://github.com/suborbital/subo).
