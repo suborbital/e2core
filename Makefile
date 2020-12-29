@@ -1,8 +1,11 @@
 
-build/atmo:
+build:
 	go build -o .bin/atmo ./main.go
 
-atmo: build/atmo
+build/docker:
+	docker build . -t atmo:dev
+
+atmo: build
 	.bin/atmo $(bundle)
 
 test/run:
