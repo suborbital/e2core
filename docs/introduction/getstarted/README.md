@@ -20,6 +20,12 @@ Once you have your runnable bundle, you can run Atmo:
 ```
 Atmo will start up and you will begin to see its structured logs in yor terminal. Make a request to `POST localhost:8080/hello` with a request body of `https://github.com`. You will recieve the HTML fetched from `https://github.com/suborbital`.
 
+## Using Docker
+If you prefer using Docker, you can locally build and run Atmo in Docker using:
+```
+> make atmo/docker dir=example-project
+```
+
 ## How it works
 If you explore the `example-project` directory, you will see several Runnables (`fetch-test`, `modify-url`, etc.) and a `Directive.yaml` file. Each folder represents an Atmo function, and the Directive is responsible for describing how those functions should be used. The Directive looks like this:
 ```yaml
