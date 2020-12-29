@@ -5,4 +5,5 @@
 
 ## Introduction
 
-* [Get Started](introduction/getstarted/README.md)
+* [Get Started](introduction/getstarted.md)
+
