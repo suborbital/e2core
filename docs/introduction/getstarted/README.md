@@ -2,7 +2,7 @@
 
 **NOTE:** These docs are far from complete, but are being actively worked on.
 
-Atmo is an all-in-one binary that uses a _Runnable bundle_ to run your described application. The bundle includes two things: a Directive, and a set of Runnable Wasm modules (functions compiled from various languages such as Rust and Swift).
+Atmo is a self-hosted that uses a _Runnable bundle_ to run your described application. The bundle includes two things: a Directive, and a set of Runnable WebAssembly modules (functions compiled from various languages such as Rust and Swift).
 
 ## Building a bundle
 Bundles are built using `subo`, which is the Suborbital CLI tool. You'll need to install `subo` to build a bundle. To install the tool, [visit the subo repository](https://github.com/suborbital/subo).
@@ -19,6 +19,12 @@ Once you have your runnable bundle, you can run Atmo:
 > ATMO_HTTP_PORT=8080 make atmo bundle=./example-project/runnables.wasm.zip
 ```
 Atmo will start up and you will begin to see its structured logs in yor terminal. Make a request to `POST localhost:8080/hello` with a request body of `https://github.com`. You will recieve the HTML fetched from `https://github.com/suborbital`.
+
+## Using Docker
+If you prefer using Docker, you can locally build and run Atmo in Docker using:
+```
+> make atmo/docker dir=example-project
+```
 
 ## How it works
 If you explore the `example-project` directory, you will see several Runnables (`fetch-test`, `modify-url`, etc.) and a `Directive.yaml` file. Each folder represents an Atmo function, and the Directive is responsible for describing how those functions should be used. The Directive looks like this:

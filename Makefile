@@ -1,9 +1,15 @@
 
-build/atmo:
+build:
 	go build -o .bin/atmo ./main.go
 
-atmo: build/atmo
+build/docker:
+	docker build . -t atmo:dev
+
+atmo: build
 	.bin/atmo $(bundle)
+
+atmo/docker: build/docker
+	docker run -v ${PWD}/$(dir):/home/atmo -e ATMO_HTTP_PORT=8080 -p 8080:8080 atmo:dev atmo
 
 test/run:
 	go run ./main.go
@@ -14,4 +20,4 @@ test/go:
 deps:
 	go get -u -d ./...
 
-.PHONY: build/atmo atmo test/run test/go deps
+.PHONY: build build/docker atmo atmo/docker test/run test/go deps

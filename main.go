@@ -17,7 +17,7 @@ func rootCommand() *cobra.Command {
 		Short: "Atmo function-based web service runner",
 		Long: `
 Atmo is an all-in-one function-based web service platform that enables 
-building backend systems using composable Wasm modules in a declarative manner.
+building backend systems using composable WebAssembly modules in a declarative manner.
 
 Atmo automatically scales using a meshed message bus, job scheduler, and 
 flexible API gateway to handle any workload. 
