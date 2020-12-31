@@ -11,9 +11,6 @@ atmo: build
 atmo/docker: build/docker
 	docker run -v ${PWD}/$(dir):/home/atmo -e ATMO_HTTP_PORT=8080 -p 8080:8080 atmo:dev atmo
 
-test/run:
-	go run ./main.go
-
 test/go:
 	go test -v --count=1 -p=1 ./...
 
