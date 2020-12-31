@@ -34,9 +34,12 @@ type Coordinator struct {
 
 // CoordinatedRequest represents a request being coordinated
 type CoordinatedRequest struct {
-	URL   string                 `json:"url"`
-	Body  string                 `json:"body"`
-	State map[string]interface{} `json:"state"`
+	Method  string                 `json:"method"`
+	URL     string                 `json:"url"`
+	Body    string                 `json:"body"`
+	Headers map[string]string      `json:"headers"`
+	Params  map[string]string      `json:"params"`
+	State   map[string]interface{} `json:"state"`
 }
 
 type requestScope struct {
@@ -106,16 +109,31 @@ func (c *Coordinator) vkHandlerForDirectiveHandler(handler directive.Handler) vk
 
 		defer r.Body.Close()
 
-		req := CoordinatedRequest{
-			URL:   r.URL.String(),
-			Body:  string(reqBody),
-			State: map[string]interface{}{},
+		flatHeaders := map[string]string{}
+		for k, v := range r.Header {
+			flatHeaders[k] = v[0]
 		}
 
+		flatParams := map[string]string{}
+		for _, p := range ctx.Params {
+			flatParams[p.Key] = p.Value
+		}
+
+		req := CoordinatedRequest{
+			Method:  r.Method,
+			URL:     r.URL.String(),
+			Body:    string(reqBody),
+			Headers: flatHeaders,
+			Params:  flatParams,
+			State:   map[string]interface{}{},
+		}
+
+		// run through the handler's steps, updating the coordinated state after each
 		for _, step := range handler.Steps {
-			stateJSON, err := req.Marshal()
+			stateJSON, err := stateJSONForStep(req, step)
 			if err != nil {
-				return nil, vk.Wrap(http.StatusInternalServerError, errors.Wrap(err, "failed to Marshal Request State"))
+				ctx.Log.Error(errors.Wrap(err, "failed to stateJSONForStep"))
+				return nil, err
 			}
 
 			if step.IsFn() {
@@ -125,10 +143,8 @@ func (c *Coordinator) vkHandlerForDirectiveHandler(handler directive.Handler) vk
 				}
 
 				if entry != nil {
-					key := step.Fn
-					if step.As != "" {
-						key = step.As
-					}
+					// hive-wasm issue #45
+					key := key(step.CallableFn)
 
 					req.State[key] = entry
 				}
@@ -231,10 +247,7 @@ func (c *Coordinator) runGroup(fns []directive.CallableFn, body []byte, ctx *vk.
 		fn := fns[i]
 		ctx.Log.Debug("running fn", fn.Fn, "from group")
 
-		key := fn.Fn
-		if fn.As != "" {
-			key = fn.As
-		}
+		key := key(fn)
 
 		go func() {
 			res, err := c.runSingleFn(fn, body, ctx)
@@ -288,6 +301,36 @@ func scopeMiddleware(r *http.Request, ctx *vk.Ctx) error {
 	return nil
 }
 
+func stateJSONForStep(req CoordinatedRequest, step directive.Executable) ([]byte, error) {
+	// the desired state is cached, so after the first call this is very efficient
+	desired, err := step.ParseWith()
+	if err != nil {
+		return nil, vk.Wrap(http.StatusInternalServerError, errors.Wrap(err, "failed to ParseWith"))
+	}
+
+	// based on the step's `with` clause, build the state to pass into the function
+	stepState, err := desiredState(desired, req.State)
+	if err != nil {
+		return nil, vk.Wrap(http.StatusInternalServerError, errors.Wrap(err, "failed to build desiredState"))
+	}
+
+	stepReq := CoordinatedRequest{
+		Method:  req.Method,
+		URL:     req.URL,
+		Body:    req.Body,
+		Headers: req.Headers,
+		Params:  req.Params,
+		State:   stepState,
+	}
+
+	stateJSON, err := stepReq.Marshal()
+	if err != nil {
+		return nil, vk.Wrap(http.StatusInternalServerError, errors.Wrap(err, "failed to Marshal Request State"))
+	}
+
+	return stateJSON, nil
+}
+
 // resultFromState returns the state value for the last single function that ran in a handler
 func resultFromState(handler directive.Handler, state map[string]interface{}) interface{} {
 	// if the handler defines a response explicitly, use it (return nil if there is nothing in state)
@@ -314,6 +357,25 @@ func resultFromState(handler directive.Handler, state map[string]interface{}) in
 	return nil
 }
 
+func desiredState(desired []directive.Alias, state map[string]interface{}) (map[string]interface{}, error) {
+	if desired == nil || len(desired) == 0 {
+		return state, nil
+	}
+
+	desiredState := map[string]interface{}{}
+
+	for _, a := range desired {
+		val, exists := state[a.Key]
+		if !exists {
+			return nil, fmt.Errorf("failed to build desired state, %s does not exists in handler state", a.Key)
+		}
+
+		desiredState[a.Alias] = val
+	}
+
+	return desiredState, nil
+}
+
 // stringOrMap converts bytes to a map if they are JSON, or a string if not
 func stringOrMap(result []byte) interface{} {
 	resMap := map[string]interface{}{}
@@ -322,4 +384,14 @@ func stringOrMap(result []byte) interface{} {
 	}
 
 	return resMap
+}
+
+func key(fn directive.CallableFn) string {
+	key := fn.Fn
+
+	if fn.As != "" {
+		key = fn.As
+	}
+
+	return key
 }

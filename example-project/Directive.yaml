@@ -3,11 +3,14 @@ version: v0.0.1
 
 handlers:
   - type: request
-    resource: /hello
+    resource: /hello/:name
     method: POST
     steps:
       - group:
         - fn: modify-url
-          as: url
         - fn: helloworld-rs
+          as: hello
       - fn: fetch-test
+        with:
+          - "url: modify-url"
+          - "logme: hello"
