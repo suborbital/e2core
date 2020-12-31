@@ -2,8 +2,11 @@ FROM golang:1.15 as builder
 
 RUN mkdir -p /go/src/github.com/suborbital/atmo
 COPY . /go/src/github.com/suborbital/atmo/
+WORKDIR /go/src/github.com/suborbital/atmo/
 
-RUN go install github.com/suborbital/atmo
+RUN go get -v -d ./...
+RUN go mod vendor
+RUN go install
 
 FROM debian:buster-slim
 
