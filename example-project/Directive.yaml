@@ -3,7 +3,7 @@ version: v0.0.1
 
 handlers:
   - type: request
-    resource: /hello/:name
+    resource: /hello
     method: POST
     steps:
       - group:
