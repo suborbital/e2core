@@ -24,6 +24,7 @@ jobs:
 
     - name: Get dependencies
       run: |
+        # have to do this nonsense to ensure that the correct arch gets downloaded for libwasmer
         go get -v -t -d ./...
         go mod vendor
       
