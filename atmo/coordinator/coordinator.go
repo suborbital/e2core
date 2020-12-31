@@ -18,11 +18,6 @@ import (
 	"github.com/suborbital/vektor/vlog"
 )
 
-const (
-	msgTypeHiveJobErr = "hive.joberr"
-	msgTypeHiveResult = "hive.result"
-)
-
 // Coordinator is a type that is responsible for covnerting the directive into
 // usable Vektor handles by coordinating Hive jobs and meshing when needed.
 type Coordinator struct {
@@ -78,7 +73,7 @@ func (c *Coordinator) UseBundle(bundle *bundle.Bundle) *vk.RouteGroup {
 	group := vk.Group("").Before(scopeMiddleware)
 
 	// connect a Grav pod to each function
-	for _, fn := range bundle.Directive.Functions {
+	for _, fn := range bundle.Directive.Runnables {
 		fqfn, err := bundle.Directive.FQFN(fn.Name)
 		if err != nil {
 			c.log.Error(errors.Wrapf(err, "failed to derive FQFN for Directive function %s, function will not be available", fn.Name))
@@ -124,13 +119,18 @@ func (c *Coordinator) vkHandlerForDirectiveHandler(handler directive.Handler) vk
 			}
 
 			if step.IsFn() {
-				entry, err := c.runSingleFn(step.Fn, stateJSON, ctx)
+				entry, err := c.runSingleFn(step.CallableFn, stateJSON, ctx)
 				if err != nil {
 					return nil, err
 				}
 
 				if entry != nil {
-					req.State[step.Fn] = entry
+					key := step.Fn
+					if step.As != "" {
+						key = step.As
+					}
+
+					req.State[key] = entry
 				}
 			} else {
 				// if the step is a group, run them all concurrently and collect the results
@@ -149,43 +149,46 @@ func (c *Coordinator) vkHandlerForDirectiveHandler(handler directive.Handler) vk
 	}
 }
 
-func (c *Coordinator) runSingleFn(name string, body []byte, ctx *vk.Ctx) (interface{}, error) {
+func (c *Coordinator) runSingleFn(fn directive.CallableFn, body []byte, ctx *vk.Ctx) (interface{}, error) {
 	start := time.Now()
 	defer func() {
 		duration := time.Since(start)
-		ctx.Log.Debug("fn", name, fmt.Sprintf("executed in %d ms", duration.Milliseconds()))
+		ctx.Log.Debug("fn", fn.Fn, fmt.Sprintf("executed in %d ms", duration.Milliseconds()))
 	}()
 
 	// calculate the FQFN
-	fqfn, err := c.directive.FQFN(name)
+	fqfn, err := c.directive.FQFN(fn.Fn)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to FQFN for group fn %s", name)
+		return nil, errors.Wrapf(err, "failed to FQFN for group fn %s", fn.Fn)
 	}
 
 	// compose a message containing the serialized request state, and send it via Grav
 	// for the appropriate meshed Hive to handle. It may be handled by self if appropriate.
 	jobMsg := grav.NewMsg(fqfn, body)
+
 	var jobResult []byte
 	var jobErr error
 
 	pod := c.bus.Connect()
 	defer pod.Disconnect()
 
-	podErr := pod.SendAndWaitOnReply(jobMsg, func(msg grav.Message) error {
+	podErr := pod.Send(jobMsg).WaitUntil(grav.Timeout(3), func(msg grav.Message) error {
 		switch msg.Type() {
-		case msgTypeHiveResult:
+		case hive.MsgTypeHiveResult:
 			jobResult = msg.Data()
-		case msgTypeHiveJobErr:
+		case hive.MsgTypeHiveJobErr:
 			jobErr = errors.New(string(msg.Data()))
+		case hive.MsgTypeHiveNilResult:
+			// do nothing
 		}
 
 		return nil
 	})
 
 	// check for errors and results, convert to something useful, and return
+	// this should probably be refactored as it looks pretty goofy
 
 	if podErr != nil {
-		// Hive needs to be updated to reply with a message when a job returns no result
 		if podErr == grav.ErrWaitTimeout {
 			// do nothing
 		} else {
@@ -194,11 +197,11 @@ func (c *Coordinator) runSingleFn(name string, body []byte, ctx *vk.Ctx) (interf
 	}
 
 	if jobErr != nil {
-		return nil, vk.Wrap(http.StatusInternalServerError, errors.Wrapf(jobErr, "group fn %s failed", name))
+		return nil, vk.Wrap(http.StatusInternalServerError, errors.Wrapf(jobErr, "group fn %s failed", fn.Fn))
 	}
 
 	if jobResult == nil {
-		ctx.Log.Debug("fn", name, "returned a nil result")
+		ctx.Log.Debug("fn", fn.Fn, "returned a nil result")
 		return nil, nil
 	}
 
@@ -211,11 +214,12 @@ type fnResult struct {
 	err    error
 }
 
-func (c *Coordinator) runGroup(fns []string, body []byte, ctx *vk.Ctx) (map[string]interface{}, error) {
+// runGroup runs a group of functions
+// this is all more complicated than it needs to be, Grav should be doing more of the work for us here
+func (c *Coordinator) runGroup(fns []directive.CallableFn, body []byte, ctx *vk.Ctx) (map[string]interface{}, error) {
 	start := time.Now()
 	defer func() {
-		duration := time.Since(start)
-		ctx.Log.Debug("group", fmt.Sprintf("executed in %d ms", duration.Milliseconds()))
+		ctx.Log.Debug("group", fmt.Sprintf("executed in %d ms", time.Since(start).Milliseconds()))
 	}()
 
 	resultChan := make(chan fnResult, len(fns))
@@ -225,13 +229,18 @@ func (c *Coordinator) runGroup(fns []string, body []byte, ctx *vk.Ctx) (map[stri
 	// functionality to collect all the responses, probably using the parent ID.
 	for i := range fns {
 		fn := fns[i]
-		ctx.Log.Debug("running fn", fn, "from group")
+		ctx.Log.Debug("running fn", fn.Fn, "from group")
+
+		key := fn.Fn
+		if fn.As != "" {
+			key = fn.As
+		}
 
 		go func() {
 			res, err := c.runSingleFn(fn, body, ctx)
 
 			result := fnResult{
-				name:   fn,
+				name:   key,
 				result: res,
 				err:    err,
 			}
