@@ -1,6 +1,7 @@
 use suborbital::runnable;
 use suborbital::request;
 use suborbital::net;
+use suborbital::log;
 
 struct FetchTest{}
 
@@ -11,7 +12,10 @@ impl runnable::Runnable for FetchTest {
             None => return Some(String::from("failed").as_bytes().to_vec())
         };
 
-        let url = req.state["modify-url"].as_str().unwrap();
+        let msg = req.state["logme"].as_str().unwrap();
+        log::info(msg);
+
+        let url = req.state["url"].as_str().unwrap();
 
         let data = net::fetch(url); 
 

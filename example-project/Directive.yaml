@@ -7,6 +7,10 @@ handlers:
     method: POST
     steps:
       - group:
-        - modify-url
-        - helloworld-rs
+        - fn: modify-url
+        - fn: helloworld-rs
+          as: hello
       - fn: fetch-test
+        with:
+          - "url: modify-url"
+          - "logme: hello"

@@ -14,11 +14,10 @@ var (
 
 // Grav represents a Grav message bus instance
 type Grav struct {
-	NodeUUID  string
-	bus       *messageBus
-	logger    *vlog.Logger
-	transport Transport
-	discovery Discovery
+	NodeUUID string
+	bus      *messageBus
+	logger   *vlog.Logger
+	hub      *hub
 }
 
 // New creates a new Grav with the provided options
@@ -28,39 +27,13 @@ func New(opts ...OptionsModifier) *Grav {
 	options := newOptionsWithModifiers(opts...)
 
 	g := &Grav{
-		NodeUUID:  nodeUUID,
-		bus:       newMessageBus(),
-		logger:    options.Logger,
-		transport: options.Transport,
-		discovery: options.Discovery,
+		NodeUUID: nodeUUID,
+		bus:      newMessageBus(),
+		logger:   options.Logger,
 	}
 
-	// start transport, then discovery if each have been configured (can have transport but no discovery)
-	if g.transport != nil {
-		transportOpts := &TransportOpts{
-			NodeUUID: nodeUUID,
-			Port:     options.Port,
-			Logger:   options.Logger,
-		}
-
-		go func() {
-			if err := g.transport.Serve(transportOpts, g.Connect); err != nil {
-				options.Logger.Error(errors.Wrap(err, "failed to Serve transport"))
-			}
-
-			if g.discovery != nil {
-				discoveryOpts := &DiscoveryOpts{
-					NodeUUID:      nodeUUID,
-					TransportPort: transportOpts.Port,
-					Logger:        options.Logger,
-				}
-
-				if err := g.discovery.Start(discoveryOpts, g.transport, g.Connect); err != nil {
-					options.Logger.Error(errors.Wrap(err, "failed to Start discovery"))
-				}
-			}
-		}()
-	}
+	// the hub handles coordinating the transport and discovery plugins
+	g.hub = initHub(nodeUUID, options, options.Transport, options.Discovery, g.Connect())
 
 	return g
 }
@@ -82,22 +55,14 @@ func (g *Grav) ConnectWithReplay() *Pod {
 
 // ConnectEndpoint uses the configured transport to connect the bus to an external endpoint
 func (g *Grav) ConnectEndpoint(endpoint string) error {
-	if g.transport == nil {
-		return ErrTransportNotConfigured
-	}
-
-	return g.transport.ConnectEndpoint(endpoint, g.Connect)
+	return g.hub.connectEndpoint(endpoint, "")
 }
 
 // ConnectEndpointWithReplay uses the configured transport to connect the bus to an external endpoint
 // and replays recent messages to the endpoint when the pod registers its onFunc
-func (g *Grav) ConnectEndpointWithReplay(endpoint string) error {
-	if g.transport == nil {
-		return ErrTransportNotConfigured
-	}
+// func (g *Grav) ConnectEndpointWithReplay(endpoint string) error {
 
-	return g.transport.ConnectEndpoint(endpoint, g.ConnectWithReplay)
-}
+// }
 
 func (g *Grav) connectWithOpts(opts *podOpts) *Pod {
 	pod := newPod(g.bus.busChan, opts)

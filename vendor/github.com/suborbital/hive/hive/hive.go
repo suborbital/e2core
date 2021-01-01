@@ -9,9 +9,11 @@ import (
 	"github.com/suborbital/vektor/vlog"
 )
 
+// MsgTypeHiveJobErr and others are Grav message types used for Hive job
 const (
-	msgTypeHiveJobErr = "hive.joberr"
-	msgTypeHiveResult = "hive.result"
+	MsgTypeHiveJobErr    = "hive.joberr"
+	MsgTypeHiveResult    = "hive.result"
+	MsgTypeHiveNilResult = "hive.nil"
 )
 
 // JobFunc is a function that runs a job of a predetermined type
@@ -71,39 +73,43 @@ func (h *Hive) Listen(pod *grav.Pod, msgType string) {
 		return h.Do(job)
 	}
 
-	pod.OnType(func(msg grav.Message) error {
+	pod.OnType(msgType, func(msg grav.Message) error {
 		var replyMsg grav.Message
 
 		result, err := helper(msg.Data()).Then()
 		if err != nil {
-			h.log.Error(errors.Wrap(err, "job returned error result"))
-			replyMsg = grav.NewMsgReplyTo(msg.Ticket(), msgTypeHiveJobErr, []byte(err.Error()))
+			h.log.Error(errors.Wrapf(err, "job from message %s returned error result", msg.UUID()))
+			replyMsg = grav.NewMsg(MsgTypeHiveJobErr, []byte(err.Error()))
 		} else {
 			if result == nil {
-				return nil
-			}
-
-			if resultMsg, isMsg := result.(grav.Message); isMsg {
+				// if the job returned no result
+				replyMsg = grav.NewMsg(MsgTypeHiveNilResult, []byte{})
+			} else if resultMsg, isMsg := result.(grav.Message); isMsg {
+				// if the job returned a Grav message
 				resultMsg.SetReplyTo(msg.UUID())
 				replyMsg = resultMsg
 			} else if bytes, isBytes := result.([]byte); isBytes {
-				replyMsg = grav.NewMsgReplyTo(msg.Ticket(), msgTypeHiveResult, bytes)
+				// if the job returned bytes
+				replyMsg = grav.NewMsg(MsgTypeHiveResult, bytes)
 			} else if resultString, isString := result.(string); isString {
-				replyMsg = grav.NewMsgReplyTo(msg.Ticket(), msgTypeHiveResult, []byte(resultString))
+				// if the job returned a string
+				replyMsg = grav.NewMsg(MsgTypeHiveResult, []byte(resultString))
 			} else {
+				// if the job returned something else like a struct
 				resultJSON, err := json.Marshal(result)
 				if err != nil {
-					replyMsg = grav.NewMsgReplyTo(msg.Ticket(), msgTypeHiveJobErr, []byte(errors.Wrap(err, "failed to Marshal job result").Error()))
+					h.log.Error(errors.Wrapf(err, "job from message %s returned result that could not be JSON marshalled", msg.UUID()))
+					replyMsg = grav.NewMsg(MsgTypeHiveJobErr, []byte(errors.Wrap(err, "failed to Marshal job result").Error()))
 				}
 
-				replyMsg = grav.NewMsgReplyTo(msg.Ticket(), msgTypeHiveResult, resultJSON)
+				replyMsg = grav.NewMsg(MsgTypeHiveResult, resultJSON)
 			}
 		}
 
-		pod.Send(replyMsg)
+		pod.ReplyTo(msg, replyMsg)
 
 		return nil
-	}, msgType)
+	})
 }
 
 // Job is a shorter alias for NewJob

@@ -18,11 +18,6 @@ import (
 	"github.com/suborbital/vektor/vlog"
 )
 
-const (
-	msgTypeHiveJobErr = "hive.joberr"
-	msgTypeHiveResult = "hive.result"
-)
-
 // Coordinator is a type that is responsible for covnerting the directive into
 // usable Vektor handles by coordinating Hive jobs and meshing when needed.
 type Coordinator struct {
@@ -39,9 +34,12 @@ type Coordinator struct {
 
 // CoordinatedRequest represents a request being coordinated
 type CoordinatedRequest struct {
-	URL   string                 `json:"url"`
-	Body  string                 `json:"body"`
-	State map[string]interface{} `json:"state"`
+	Method  string                 `json:"method"`
+	URL     string                 `json:"url"`
+	Body    string                 `json:"body"`
+	Headers map[string]string      `json:"headers"`
+	Params  map[string]string      `json:"params"`
+	State   map[string]interface{} `json:"state"`
 }
 
 type requestScope struct {
@@ -78,7 +76,7 @@ func (c *Coordinator) UseBundle(bundle *bundle.Bundle) *vk.RouteGroup {
 	group := vk.Group("").Before(scopeMiddleware)
 
 	// connect a Grav pod to each function
-	for _, fn := range bundle.Directive.Functions {
+	for _, fn := range bundle.Directive.Runnables {
 		fqfn, err := bundle.Directive.FQFN(fn.Name)
 		if err != nil {
 			c.log.Error(errors.Wrapf(err, "failed to derive FQFN for Directive function %s, function will not be available", fn.Name))
@@ -111,26 +109,44 @@ func (c *Coordinator) vkHandlerForDirectiveHandler(handler directive.Handler) vk
 
 		defer r.Body.Close()
 
-		req := CoordinatedRequest{
-			URL:   r.URL.String(),
-			Body:  string(reqBody),
-			State: map[string]interface{}{},
+		flatHeaders := map[string]string{}
+		for k, v := range r.Header {
+			flatHeaders[k] = v[0]
 		}
 
+		flatParams := map[string]string{}
+		for _, p := range ctx.Params {
+			flatParams[p.Key] = p.Value
+		}
+
+		req := CoordinatedRequest{
+			Method:  r.Method,
+			URL:     r.URL.String(),
+			Body:    string(reqBody),
+			Headers: flatHeaders,
+			Params:  flatParams,
+			State:   map[string]interface{}{},
+		}
+
+		// run through the handler's steps, updating the coordinated state after each
 		for _, step := range handler.Steps {
-			stateJSON, err := req.Marshal()
+			stateJSON, err := stateJSONForStep(req, step)
 			if err != nil {
-				return nil, vk.Wrap(http.StatusInternalServerError, errors.Wrap(err, "failed to Marshal Request State"))
+				ctx.Log.Error(errors.Wrap(err, "failed to stateJSONForStep"))
+				return nil, err
 			}
 
 			if step.IsFn() {
-				entry, err := c.runSingleFn(step.Fn, stateJSON, ctx)
+				entry, err := c.runSingleFn(step.CallableFn, stateJSON, ctx)
 				if err != nil {
 					return nil, err
 				}
 
 				if entry != nil {
-					req.State[step.Fn] = entry
+					// hive-wasm issue #45
+					key := key(step.CallableFn)
+
+					req.State[key] = entry
 				}
 			} else {
 				// if the step is a group, run them all concurrently and collect the results
@@ -149,43 +165,46 @@ func (c *Coordinator) vkHandlerForDirectiveHandler(handler directive.Handler) vk
 	}
 }
 
-func (c *Coordinator) runSingleFn(name string, body []byte, ctx *vk.Ctx) (interface{}, error) {
+func (c *Coordinator) runSingleFn(fn directive.CallableFn, body []byte, ctx *vk.Ctx) (interface{}, error) {
 	start := time.Now()
 	defer func() {
 		duration := time.Since(start)
-		ctx.Log.Debug("fn", name, fmt.Sprintf("executed in %d ms", duration.Milliseconds()))
+		ctx.Log.Debug("fn", fn.Fn, fmt.Sprintf("executed in %d ms", duration.Milliseconds()))
 	}()
 
 	// calculate the FQFN
-	fqfn, err := c.directive.FQFN(name)
+	fqfn, err := c.directive.FQFN(fn.Fn)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to FQFN for group fn %s", name)
+		return nil, errors.Wrapf(err, "failed to FQFN for group fn %s", fn.Fn)
 	}
 
 	// compose a message containing the serialized request state, and send it via Grav
 	// for the appropriate meshed Hive to handle. It may be handled by self if appropriate.
 	jobMsg := grav.NewMsg(fqfn, body)
+
 	var jobResult []byte
 	var jobErr error
 
 	pod := c.bus.Connect()
 	defer pod.Disconnect()
 
-	podErr := pod.SendAndWaitOnReply(jobMsg, func(msg grav.Message) error {
+	podErr := pod.Send(jobMsg).WaitUntil(grav.Timeout(3), func(msg grav.Message) error {
 		switch msg.Type() {
-		case msgTypeHiveResult:
+		case hive.MsgTypeHiveResult:
 			jobResult = msg.Data()
-		case msgTypeHiveJobErr:
+		case hive.MsgTypeHiveJobErr:
 			jobErr = errors.New(string(msg.Data()))
+		case hive.MsgTypeHiveNilResult:
+			// do nothing
 		}
 
 		return nil
 	})
 
 	// check for errors and results, convert to something useful, and return
+	// this should probably be refactored as it looks pretty goofy
 
 	if podErr != nil {
-		// Hive needs to be updated to reply with a message when a job returns no result
 		if podErr == grav.ErrWaitTimeout {
 			// do nothing
 		} else {
@@ -194,11 +213,11 @@ func (c *Coordinator) runSingleFn(name string, body []byte, ctx *vk.Ctx) (interf
 	}
 
 	if jobErr != nil {
-		return nil, vk.Wrap(http.StatusInternalServerError, errors.Wrapf(jobErr, "group fn %s failed", name))
+		return nil, vk.Wrap(http.StatusInternalServerError, errors.Wrapf(jobErr, "group fn %s failed", fn.Fn))
 	}
 
 	if jobResult == nil {
-		ctx.Log.Debug("fn", name, "returned a nil result")
+		ctx.Log.Debug("fn", fn.Fn, "returned a nil result")
 		return nil, nil
 	}
 
@@ -211,11 +230,12 @@ type fnResult struct {
 	err    error
 }
 
-func (c *Coordinator) runGroup(fns []string, body []byte, ctx *vk.Ctx) (map[string]interface{}, error) {
+// runGroup runs a group of functions
+// this is all more complicated than it needs to be, Grav should be doing more of the work for us here
+func (c *Coordinator) runGroup(fns []directive.CallableFn, body []byte, ctx *vk.Ctx) (map[string]interface{}, error) {
 	start := time.Now()
 	defer func() {
-		duration := time.Since(start)
-		ctx.Log.Debug("group", fmt.Sprintf("executed in %d ms", duration.Milliseconds()))
+		ctx.Log.Debug("group", fmt.Sprintf("executed in %d ms", time.Since(start).Milliseconds()))
 	}()
 
 	resultChan := make(chan fnResult, len(fns))
@@ -225,13 +245,15 @@ func (c *Coordinator) runGroup(fns []string, body []byte, ctx *vk.Ctx) (map[stri
 	// functionality to collect all the responses, probably using the parent ID.
 	for i := range fns {
 		fn := fns[i]
-		ctx.Log.Debug("running fn", fn, "from group")
+		ctx.Log.Debug("running fn", fn.Fn, "from group")
+
+		key := key(fn)
 
 		go func() {
 			res, err := c.runSingleFn(fn, body, ctx)
 
 			result := fnResult{
-				name:   fn,
+				name:   key,
 				result: res,
 				err:    err,
 			}
@@ -279,6 +301,36 @@ func scopeMiddleware(r *http.Request, ctx *vk.Ctx) error {
 	return nil
 }
 
+func stateJSONForStep(req CoordinatedRequest, step directive.Executable) ([]byte, error) {
+	// the desired state is cached, so after the first call this is very efficient
+	desired, err := step.ParseWith()
+	if err != nil {
+		return nil, vk.Wrap(http.StatusInternalServerError, errors.Wrap(err, "failed to ParseWith"))
+	}
+
+	// based on the step's `with` clause, build the state to pass into the function
+	stepState, err := desiredState(desired, req.State)
+	if err != nil {
+		return nil, vk.Wrap(http.StatusInternalServerError, errors.Wrap(err, "failed to build desiredState"))
+	}
+
+	stepReq := CoordinatedRequest{
+		Method:  req.Method,
+		URL:     req.URL,
+		Body:    req.Body,
+		Headers: req.Headers,
+		Params:  req.Params,
+		State:   stepState,
+	}
+
+	stateJSON, err := stepReq.Marshal()
+	if err != nil {
+		return nil, vk.Wrap(http.StatusInternalServerError, errors.Wrap(err, "failed to Marshal Request State"))
+	}
+
+	return stateJSON, nil
+}
+
 // resultFromState returns the state value for the last single function that ran in a handler
 func resultFromState(handler directive.Handler, state map[string]interface{}) interface{} {
 	// if the handler defines a response explicitly, use it (return nil if there is nothing in state)
@@ -305,6 +357,25 @@ func resultFromState(handler directive.Handler, state map[string]interface{}) in
 	return nil
 }
 
+func desiredState(desired []directive.Alias, state map[string]interface{}) (map[string]interface{}, error) {
+	if desired == nil || len(desired) == 0 {
+		return state, nil
+	}
+
+	desiredState := map[string]interface{}{}
+
+	for _, a := range desired {
+		val, exists := state[a.Key]
+		if !exists {
+			return nil, fmt.Errorf("failed to build desired state, %s does not exists in handler state", a.Key)
+		}
+
+		desiredState[a.Alias] = val
+	}
+
+	return desiredState, nil
+}
+
 // stringOrMap converts bytes to a map if they are JSON, or a string if not
 func stringOrMap(result []byte) interface{} {
 	resMap := map[string]interface{}{}
@@ -313,4 +384,14 @@ func stringOrMap(result []byte) interface{} {
 	}
 
 	return resMap
+}
+
+func key(fn directive.CallableFn) string {
+	key := fn.Fn
+
+	if fn.As != "" {
+		key = fn.As
+	}
+
+	return key
 }

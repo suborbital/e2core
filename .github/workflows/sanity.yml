@@ -1,0 +1,33 @@
+name: Testapalooza
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+
+  build:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Set up Go 1.15
+      uses: actions/setup-go@v1
+      with:
+        go-version: 1.15
+      id: go
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v2
+
+    - name: Get dependencies
+      run: |
+        # have to do this nonsense to ensure that the correct arch gets downloaded for libwasmer
+        go get -v -t -d ./...
+        go mod vendor
+      
+    - name: Run test
+      run: |
+        make build
