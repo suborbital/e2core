@@ -5,7 +5,13 @@ package wasm
 // extern void return_result(void *context, int32_t pointer, int32_t size, int32_t ident);
 // extern void return_result_swift(void *context, int32_t pointer, int32_t size, int32_t ident, int32_t swiftself, int32_t swifterr);
 //
-// extern int32_t fetch_url(void *context, int32_t urlPointer, int32_t urlSize, int32_t destPointer, int32_t destMaxSize, int32_t ident);
+// extern int32_t fetch_url(void *context, int32_t method, int32_t urlPointer, int32_t urlSize, int32_t bodyPointer, int32_t bodySize, int32_t destPointer, int32_t destMaxSize, int32_t ident);
+//
+// extern int32_t cache_set(void *context, int32_t keyPointer, int32_t keySize, int32_t valPointer, int32_t valSize, int32_t ttl, int32_t ident);
+// extern int32_t cache_set_swift(void *context, int32_t keyPointer, int32_t keySize, int32_t valPointer, int32_t valSize, int32_t ttl, int32_t ident, int32_t swiftself, int32_t swifterr);
+//
+// extern int32_t cache_get(void *context, int32_t keyPointer, int32_t keySize, int32_t destPointer, int32_t destMaxSize, int32_t ident);
+// extern int32_t cache_get_swift(void *context, int32_t keyPointer, int32_t keySize, int32_t destPointer, int32_t destMaxSize, int32_t ident, int32_t swiftself, int32_t swifterr);
 //
 // extern void log_msg(void *context, int32_t pointer, int32_t size, int32_t level, int32_t ident);
 // extern void log_msg_swift(void *context, int32_t pointer, int32_t size, int32_t level, int32_t ident, int32_t swiftself, int32_t swifterr);
@@ -26,6 +32,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/suborbital/hive-wasm/bundle"
+	"github.com/suborbital/hive/hive"
 	"github.com/suborbital/vektor/vlog"
 	"github.com/wasmerio/wasmer-go/wasmer"
 )
@@ -70,6 +77,7 @@ type wasmEnvironment struct {
 
 type wasmInstance struct {
 	wasmerInst wasmer.Instance
+	hiveCtx    *hive.Ctx
 	resultChan chan []byte
 	lock       sync.Mutex
 }
@@ -101,7 +109,7 @@ func newEnvironment(ref *bundle.WasmModuleRef) *wasmEnvironment {
 }
 
 // useInstance provides an instance from the environment's pool to be used
-func (w *wasmEnvironment) useInstance(instFunc func(*wasmInstance, int32)) error {
+func (w *wasmEnvironment) useInstance(ctx *hive.Ctx, instFunc func(*wasmInstance, int32)) error {
 	w.lock.Lock()
 
 	if w.instIndex == len(w.instances)-1 {
@@ -118,6 +126,8 @@ func (w *wasmEnvironment) useInstance(instFunc func(*wasmInstance, int32)) error
 	inst.lock.Lock()
 	defer inst.lock.Unlock()
 
+	inst.hiveCtx = ctx
+
 	// generate a random identifier as a reference to the instance in use to
 	// easily allow the Wasm module to reference itself when calling back over the FFI
 	ident, err := setupNewIdentifier(w.UUID, instIndex)
@@ -128,6 +138,7 @@ func (w *wasmEnvironment) useInstance(instFunc func(*wasmInstance, int32)) error
 	instFunc(inst, ident)
 
 	removeIdentifier(ident)
+	inst.hiveCtx = nil
 
 	return nil
 }
@@ -151,7 +162,15 @@ func (w *wasmEnvironment) addInstance() error {
 	// Mount the Runnable API
 	imports.AppendFunction("return_result", return_result, C.return_result)
 	imports.AppendFunction("return_result_swift", return_result_swift, C.return_result_swift)
+
 	imports.AppendFunction("fetch_url", fetch_url, C.fetch_url)
+
+	imports.AppendFunction("cache_set", cache_set, C.cache_set)
+	imports.AppendFunction("cache_set_swift", cache_set_swift, C.cache_set_swift)
+
+	imports.AppendFunction("cache_get", cache_get, C.cache_get)
+	imports.AppendFunction("cache_get_swift", cache_get_swift, C.cache_get_swift)
+
 	imports.AppendFunction("log_msg", log_msg, C.log_msg)
 	imports.AppendFunction("log_msg_swift", log_msg_swift, C.log_msg_swift)
 
@@ -323,14 +342,34 @@ func return_result_swift(context unsafe.Pointer, pointer int32, size int32, iden
 	return_result(context, pointer, size, identifier)
 }
 
+const (
+	methodGet    = int32(1)
+	methodPost   = int32(2)
+	methodPatch  = int32(3)
+	methodDelete = int32(4)
+)
+
+var methodValToMethod = map[int32]string{
+	methodGet:    http.MethodGet,
+	methodPost:   http.MethodPost,
+	methodPatch:  http.MethodPatch,
+	methodDelete: http.MethodDelete,
+}
+
 //export fetch_url
-func fetch_url(context unsafe.Pointer, urlPointer int32, urlSize int32, destPointer int32, destMaxSize int32, identifier int32) int32 {
+func fetch_url(context unsafe.Pointer, method int32, urlPointer int32, urlSize int32, bodyPointer int32, bodySize int32, destPointer int32, destMaxSize int32, identifier int32) int32 {
 	// fetch makes a network request on bahalf of the wasm runner.
 	// fetch writes the http response body into memory starting at returnBodyPointer, and the return value is a pointer to that memory
 	inst, err := instanceForIdentifier(identifier)
 	if err != nil {
 		fmt.Println(errors.Wrap(err, "[hive-wasm] alert: invalid identifier used, potential malicious activity"))
 		return -1
+	}
+
+	httpMethod, exists := methodValToMethod[method]
+	if !exists {
+		fmt.Println("invalid method provided")
+		return -2
 	}
 
 	urlBytes := inst.readMemory(urlPointer, urlSize)
@@ -341,7 +380,7 @@ func fetch_url(context unsafe.Pointer, urlPointer int32, urlSize int32, destPoin
 		return -2
 	}
 
-	req, err := http.NewRequest(http.MethodGet, urlObj.String(), nil)
+	req, err := http.NewRequest(httpMethod, urlObj.String(), nil)
 	if err != nil {
 		fmt.Println("failed to build request")
 		return -2
@@ -365,6 +404,64 @@ func fetch_url(context unsafe.Pointer, urlPointer int32, urlSize int32, destPoin
 	}
 
 	return int32(len(respBytes))
+}
+
+//export cache_set
+func cache_set(context unsafe.Pointer, keyPointer int32, keySize int32, valPointer int32, valSize int32, ttl int32, identifier int32) int32 {
+	inst, err := instanceForIdentifier(identifier)
+	if err != nil {
+		fmt.Println(errors.Wrap(err, "[hive-wasm] alert: invalid identifier used, potential malicious activity"))
+		return -1
+	}
+
+	key := inst.readMemory(keyPointer, keySize)
+	val := inst.readMemory(valPointer, valSize)
+
+	fmt.Println("setting cache key", string(key))
+
+	if err := inst.hiveCtx.Cache.Set(string(key), val, int(ttl)); err != nil {
+		fmt.Println("failed to set cache key", string(key), err.Error())
+		return -2
+	}
+
+	return 0
+}
+
+//export cache_set_swift
+func cache_set_swift(context unsafe.Pointer, keyPointer int32, keySize int32, valPointer int32, valSize int32, ttl int32, identifier int32, swiftself int32, swifterr int32) int32 {
+	return cache_set(context, keyPointer, keySize, valPointer, valSize, ttl, identifier)
+}
+
+//export cache_get
+func cache_get(context unsafe.Pointer, keyPointer int32, keySize int32, destPointer int32, destMaxSize int32, identifier int32) int32 {
+	inst, err := instanceForIdentifier(identifier)
+	if err != nil {
+		fmt.Println(errors.Wrap(err, "[hive-wasm] alert: invalid identifier used, potential malicious activity"))
+		return -1
+	}
+
+	key := inst.readMemory(keyPointer, keySize)
+
+	fmt.Println("getting cache key", string(key))
+
+	val, err := inst.hiveCtx.Cache.Get(string(key))
+	if err != nil {
+		fmt.Println("failed to get cache key", key, err.Error())
+		return -2
+	}
+
+	valBytes := []byte(val)
+
+	if len(valBytes) <= int(destMaxSize) {
+		inst.writeMemoryAtLocation(destPointer, valBytes)
+	}
+
+	return int32(len(valBytes))
+}
+
+//export cache_get_swift
+func cache_get_swift(context unsafe.Pointer, keyPointer int32, keySize int32, destPointer int32, destMaxSize int32, identifier int32, swiftself int32, swifterr int32) int32 {
+	return cache_get(context, keyPointer, keySize, destPointer, destMaxSize, identifier)
 }
 
 type logScope struct {

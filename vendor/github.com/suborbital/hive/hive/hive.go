@@ -28,8 +28,10 @@ type Hive struct {
 // New returns a Hive ready to accept Jobs
 func New() *Hive {
 	logger := vlog.Default()
+	cache := newMemoryCache()
+
 	h := &Hive{
-		scheduler: newScheduler(logger),
+		scheduler: newScheduler(logger, cache),
 		log:       logger,
 	}
 

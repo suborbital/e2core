@@ -48,7 +48,7 @@ func newRunnerWithEnvironment(env *wasmEnvironment) *Runner {
 }
 
 // Run runs a Runner
-func (w *Runner) Run(job hive.Job, do hive.DoFunc) (interface{}, error) {
+func (w *Runner) Run(job hive.Job, ctx *hive.Ctx) (interface{}, error) {
 	inputBytes, err := interfaceToBytes(job.Data())
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to convert job data to bytes for WASM Runnable")
@@ -57,7 +57,7 @@ func (w *Runner) Run(job hive.Job, do hive.DoFunc) (interface{}, error) {
 	var output []byte
 	var runErr error
 
-	if err := w.env.useInstance(func(instance *wasmInstance, ident int32) {
+	if err := w.env.useInstance(ctx, func(instance *wasmInstance, ident int32) {
 		inPointer, writeErr := instance.writeMemory(inputBytes)
 		if writeErr != nil {
 			runErr = errors.Wrap(writeErr, "failed to instance.writeMemory")
@@ -91,10 +91,12 @@ func (w *Runner) Run(job hive.Job, do hive.DoFunc) (interface{}, error) {
 	return output, nil
 }
 
-// OnStart runs when a worker starts using this Runnable
-func (w *Runner) OnStart() error {
-	if err := w.env.addInstance(); err != nil {
-		return errors.Wrap(err, "failed to addInstance")
+// OnChange evt ChangeEventruns when a worker starts using this Runnable
+func (w *Runner) OnChange(evt hive.ChangeEvent) error {
+	if evt == hive.ChangeTypeStart {
+		if err := w.env.addInstance(); err != nil {
+			return errors.Wrap(err, "failed to addInstance")
+		}
 	}
 
 	return nil
