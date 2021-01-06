@@ -17,7 +17,7 @@ impl runnable::Runnable for FetchTest {
 
         let url = req.state["url"].as_str().unwrap();
 
-        let data = net::fetch(url); 
+        let data = net::get(url); 
 
         Some(data)
     }

@@ -23,6 +23,7 @@ type worker struct {
 	runner   Runnable
 	workChan chan JobReference
 	store    Storage
+	cache    Cache
 	options  workerOpts
 
 	threads    []*workThread
@@ -32,11 +33,12 @@ type worker struct {
 }
 
 // newWorker creates a new goWorker
-func newWorker(runner Runnable, store Storage, opts workerOpts) *worker {
+func newWorker(runner Runnable, store Storage, cache Cache, opts workerOpts) *worker {
 	w := &worker{
 		runner:     runner,
 		workChan:   make(chan JobReference, defaultChanSize),
 		store:      store,
+		cache:      cache,
 		options:    opts,
 		threads:    make([]*workThread, opts.poolSize),
 		threadLock: sync.Mutex{},
@@ -68,10 +70,10 @@ func (w *worker) start(doFunc DoFunc) error {
 	for {
 		// fill the "pool" with workThreads
 		for i := started; i < w.options.poolSize; i++ {
-			wt := newWorkThread(w.runner, w.workChan, w.store, w.options.jobTimeoutSeconds)
+			wt := newWorkThread(w.runner, w.workChan, w.store, w.cache, w.options.jobTimeoutSeconds)
 
 			// give the runner opportunity to provision resources if needed
-			if err := w.runner.OnStart(); err != nil {
+			if err := w.runner.OnChange(ChangeTypeStart); err != nil {
 				fmt.Println(errors.Wrapf(err, "Runnable returned OnStart error, will retry in %ds", w.options.retrySecs))
 				break
 			} else {
@@ -106,20 +108,22 @@ type workThread struct {
 	runner         Runnable
 	workChan       chan JobReference
 	store          Storage
+	cache          Cache
 	timeoutSeconds int
-	ctx            context.Context
+	context        context.Context
 	cancelFunc     context.CancelFunc
 }
 
-func newWorkThread(runner Runnable, workChan chan JobReference, store Storage, timeoutSeconds int) *workThread {
+func newWorkThread(runner Runnable, workChan chan JobReference, store Storage, cache Cache, timeoutSeconds int) *workThread {
 	ctx, cancelFunc := context.WithCancel(context.Background())
 
 	wt := &workThread{
 		runner:         runner,
 		workChan:       workChan,
 		store:          store,
+		cache:          cache,
 		timeoutSeconds: timeoutSeconds,
-		ctx:            ctx,
+		context:        ctx,
 		cancelFunc:     cancelFunc,
 	}
 
@@ -130,7 +134,7 @@ func (wt *workThread) run(doFunc DoFunc) {
 	go func() {
 		for {
 			// die if the context has been cancelled
-			if wt.ctx.Err() != nil {
+			if wt.context.Err() != nil {
 				break
 			}
 
@@ -144,12 +148,14 @@ func (wt *workThread) run(doFunc DoFunc) {
 				continue
 			}
 
+			ctx := newCtx(wt.cache, doFunc)
+
 			var result interface{}
 
 			if wt.timeoutSeconds == 0 {
-				result, err = wt.runner.Run(job, doFunc)
+				result, err = wt.runner.Run(job, ctx)
 			} else {
-				result, err = wt.runWithTimeout(job, doFunc)
+				result, err = wt.runWithTimeout(job, ctx)
 			}
 
 			wt.store.AddResult(job.UUID(), result, err)
@@ -164,12 +170,12 @@ func (wt *workThread) run(doFunc DoFunc) {
 	}()
 }
 
-func (wt *workThread) runWithTimeout(job Job, doFunc DoFunc) (interface{}, error) {
+func (wt *workThread) runWithTimeout(job Job, ctx *Ctx) (interface{}, error) {
 	resultChan := make(chan interface{})
 	errChan := make(chan error)
 
 	go func() {
-		result, err := wt.runner.Run(job, doFunc)
+		result, err := wt.runner.Run(job, ctx)
 		if err != nil {
 			errChan <- err
 		} else {

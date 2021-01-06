@@ -193,8 +193,13 @@ github.com/suborbital/hive v0.1.4 h1:+ywO+vh/b/VdBDeGp6033zhcN5bQ8cPwVA8duiuWWoA
 github.com/suborbital/hive v0.1.4/go.mod h1:HqkRK2LgA10WuPCTqNtokO5hukn9Hgab3gjLECL15v0=
 github.com/suborbital/hive v0.1.5 h1:pFWcyH8W/lchs6UfZZGYCG1ajIUz9LzGilt6emiRVUM=
 github.com/suborbital/hive v0.1.5/go.mod h1:7EhT+wD3Wk31YeUwbw/3PvLTq4QF5emJYAu23sDeEo0=
+github.com/suborbital/hive v0.1.6-0.20210104143945-1008b3cf22e6/go.mod h1:7EhT+wD3Wk31YeUwbw/3PvLTq4QF5emJYAu23sDeEo0=
+github.com/suborbital/hive v0.2.0 h1:fVGyG/KSjJmHTNDqh2hF4WQkp7zgttMs4Gyet6fwno8=
+github.com/suborbital/hive v0.2.0/go.mod h1:7EhT+wD3Wk31YeUwbw/3PvLTq4QF5emJYAu23sDeEo0=
 github.com/suborbital/hive-wasm v0.2.6 h1:wBvimdaNDFu5fja35uzAi6yXKba4DHNVV0OtaQqsdkk=
 github.com/suborbital/hive-wasm v0.2.6/go.mod h1:D3xySADEKHXXaySSUCdM4eqxnIb44X78JQb7OFh+XK8=
+github.com/suborbital/hive-wasm v0.3.0 h1:JPgfB6XJbC32hrQJgvlOrKPYONXkvm/hpF2004obtKw=
+github.com/suborbital/hive-wasm v0.3.0/go.mod h1:sXvTgWgD7j12e7VeHUuPgUwWN+hnLMz76j65zHS/dFE=
 github.com/suborbital/vektor v0.1.1/go.mod h1:tJ4gA2P8NWC4Pdu0TgpSBWZHuZ1Qhp+r5RlsqyIqdyw=
 github.com/suborbital/vektor v0.1.3/go.mod h1:tJ4gA2P8NWC4Pdu0TgpSBWZHuZ1Qhp+r5RlsqyIqdyw=
 github.com/suborbital/vektor v0.2.2 h1:x3yit9RMXcP8LirkKb1f/psNev/G/iTIHo6eL/f1OBI=

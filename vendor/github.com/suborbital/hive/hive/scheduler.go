@@ -11,14 +11,16 @@ import (
 type scheduler struct {
 	workers map[string]*worker
 	store   Storage
+	cache   Cache
 	logger  *vlog.Logger
 	sync.Mutex
 }
 
-func newScheduler(logger *vlog.Logger) *scheduler {
+func newScheduler(logger *vlog.Logger, cache Cache) *scheduler {
 	s := &scheduler{
 		workers: map[string]*worker{},
 		store:   newMemoryStorage(),
+		cache:   cache,
 		logger:  logger,
 		Mutex:   sync.Mutex{},
 	}
@@ -68,7 +70,7 @@ func (s *scheduler) handle(jobType string, runnable Runnable, options ...Option)
 		opts = o(opts)
 	}
 
-	w := newWorker(runnable, s.store, opts)
+	w := newWorker(runnable, s.store, s.cache, opts)
 	if s.workers == nil {
 		s.workers = map[string]*worker{jobType: w}
 	} else {
