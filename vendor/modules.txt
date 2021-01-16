@@ -21,10 +21,11 @@ github.com/suborbital/grav/grav
 # github.com/suborbital/hive v0.2.0
 ## explicit
 github.com/suborbital/hive/hive
-# github.com/suborbital/hive-wasm v0.3.0
+# github.com/suborbital/hive-wasm v0.4.0
 ## explicit
 github.com/suborbital/hive-wasm/bundle
 github.com/suborbital/hive-wasm/directive
+github.com/suborbital/hive-wasm/request
 github.com/suborbital/hive-wasm/wasm
 # github.com/suborbital/vektor v0.2.2
 ## explicit

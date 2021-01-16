@@ -1,16 +1,14 @@
 use suborbital::runnable;
-use suborbital::request;
+use suborbital::req;
+use suborbital::util;
 
 struct HelloworldRs{}
 
 impl runnable::Runnable for HelloworldRs {
-    fn run(&self, input: Vec<u8>) -> Option<Vec<u8>> {
-        let req = match request::from_json(input) {
-            Some(r) => r,
-            None => return Some(String::from("failed").as_bytes().to_vec())
-        };
-    
-        Some(String::from(format!("hello {}", req.body)).as_bytes().to_vec())
+    fn run(&self, _: Vec<u8>) -> Option<Vec<u8>> {
+        let msg = format!("hello {}", util::to_string(req::body_raw()));
+
+        Some(util::to_vec(String::from(msg)))
     }
 }
 
