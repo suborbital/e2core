@@ -175,9 +175,9 @@ func (c *Coordinator) runSingleFn(fn directive.CallableFn, body []byte, ctx *vk.
 
 	if podErr != nil {
 		if podErr == grav.ErrWaitTimeout {
-			// do nothing
+			jobErr = errors.Wrapf(err, "fn %s timed out", fn.Fn)
 		} else {
-			jobErr = errors.Wrap(podErr, "message reply timed out")
+			jobErr = errors.Wrap(podErr, "failed to receive fn result")
 		}
 	}
 

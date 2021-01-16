@@ -76,9 +76,9 @@ checksum = "01c1c2ededd95f93b1d65e7f8b5b17670e926bf9cbb55f8b91b26b0bd40d3259"
 
 [[package]]
 name = "suborbital"
-version = "0.4.0"
+version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eef06bf46ad2f5926bbd6edd655a89066706dba840d31ea0c9caf69f3b2a3f6d"
+checksum = "2b69f1db3b3dca729db3aa64b59f4086852b934f853b6414c353e6da0f71c80e"
 dependencies = [
  "serde",
  "serde_json",

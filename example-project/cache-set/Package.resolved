@@ -1,0 +1,16 @@
+{
+  "object": {
+    "pins": [
+      {
+        "package": "Suborbital",
+        "repositoryURL": "https://github.com/suborbital/hive-wasm.git",
+        "state": {
+          "branch": null,
+          "revision": "84f709feadcb67e7461e979a20643dca37507444",
+          "version": "0.4.2"
+        }
+      }
+    ]
+  },
+  "version": 1
+}
