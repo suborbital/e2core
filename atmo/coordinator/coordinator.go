@@ -1,9 +1,7 @@
 package coordinator
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"sync"
 	"time"
@@ -12,6 +10,7 @@ import (
 	"github.com/suborbital/grav/grav"
 	"github.com/suborbital/hive-wasm/bundle"
 	"github.com/suborbital/hive-wasm/directive"
+	"github.com/suborbital/hive-wasm/request"
 	"github.com/suborbital/hive-wasm/wasm"
 	"github.com/suborbital/hive/hive"
 	"github.com/suborbital/vektor/vk"
@@ -30,16 +29,6 @@ type Coordinator struct {
 	bus  *grav.Grav
 
 	lock sync.Mutex
-}
-
-// CoordinatedRequest represents a request being coordinated
-type CoordinatedRequest struct {
-	Method  string                 `json:"method"`
-	URL     string                 `json:"url"`
-	Body    string                 `json:"body"`
-	Headers map[string]string      `json:"headers"`
-	Params  map[string]string      `json:"params"`
-	State   map[string]interface{} `json:"state"`
 }
 
 type requestScope struct {
@@ -102,30 +91,10 @@ func (c *Coordinator) UseBundle(bundle *bundle.Bundle) *vk.RouteGroup {
 
 func (c *Coordinator) vkHandlerForDirectiveHandler(handler directive.Handler) vk.HandlerFunc {
 	return func(r *http.Request, ctx *vk.Ctx) (interface{}, error) {
-		reqBody, err := ioutil.ReadAll(r.Body)
+		req, err := request.FromVKRequest(r, ctx)
 		if err != nil {
-			return nil, vk.E(http.StatusInternalServerError, "failed to read request body")
-		}
-
-		defer r.Body.Close()
-
-		flatHeaders := map[string]string{}
-		for k, v := range r.Header {
-			flatHeaders[k] = v[0]
-		}
-
-		flatParams := map[string]string{}
-		for _, p := range ctx.Params {
-			flatParams[p.Key] = p.Value
-		}
-
-		req := CoordinatedRequest{
-			Method:  r.Method,
-			URL:     r.URL.String(),
-			Body:    string(reqBody),
-			Headers: flatHeaders,
-			Params:  flatParams,
-			State:   map[string]interface{}{},
+			ctx.Log.Error(errors.Wrap(err, "failed to request.FromVKRequest"))
+			return nil, vk.E(http.StatusInternalServerError, "failed to handle request")
 		}
 
 		// run through the handler's steps, updating the coordinated state after each
@@ -165,7 +134,7 @@ func (c *Coordinator) vkHandlerForDirectiveHandler(handler directive.Handler) vk
 	}
 }
 
-func (c *Coordinator) runSingleFn(fn directive.CallableFn, body []byte, ctx *vk.Ctx) (interface{}, error) {
+func (c *Coordinator) runSingleFn(fn directive.CallableFn, body []byte, ctx *vk.Ctx) ([]byte, error) {
 	start := time.Now()
 	defer func() {
 		duration := time.Since(start)
@@ -188,7 +157,7 @@ func (c *Coordinator) runSingleFn(fn directive.CallableFn, body []byte, ctx *vk.
 	pod := c.bus.Connect()
 	defer pod.Disconnect()
 
-	podErr := pod.Send(jobMsg).WaitUntil(grav.Timeout(3), func(msg grav.Message) error {
+	podErr := pod.Send(jobMsg).WaitUntil(grav.Timeout(30), func(msg grav.Message) error {
 		switch msg.Type() {
 		case hive.MsgTypeHiveResult:
 			jobResult = msg.Data()
@@ -221,18 +190,18 @@ func (c *Coordinator) runSingleFn(fn directive.CallableFn, body []byte, ctx *vk.
 		return nil, nil
 	}
 
-	return stringOrMap(jobResult), nil
+	return jobResult, nil
 }
 
 type fnResult struct {
 	name   string
-	result interface{}
+	result []byte
 	err    error
 }
 
 // runGroup runs a group of functions
 // this is all more complicated than it needs to be, Grav should be doing more of the work for us here
-func (c *Coordinator) runGroup(fns []directive.CallableFn, body []byte, ctx *vk.Ctx) (map[string]interface{}, error) {
+func (c *Coordinator) runGroup(fns []directive.CallableFn, body []byte, ctx *vk.Ctx) (map[string][]byte, error) {
 	start := time.Now()
 	defer func() {
 		ctx.Log.Debug("group", fmt.Sprintf("executed in %d ms", time.Since(start).Milliseconds()))
@@ -262,7 +231,7 @@ func (c *Coordinator) runGroup(fns []directive.CallableFn, body []byte, ctx *vk.
 		}()
 	}
 
-	entry := map[string]interface{}{}
+	entries := map[string][]byte{}
 	respCount := 0
 	timeoutChan := time.After(5 * time.Second)
 
@@ -274,7 +243,7 @@ func (c *Coordinator) runGroup(fns []directive.CallableFn, body []byte, ctx *vk.
 			}
 
 			if resp.result != nil {
-				entry[resp.name] = resp.result
+				entries[resp.name] = resp.result
 			}
 		case <-timeoutChan:
 			return nil, errors.New("function group timed out")
@@ -283,12 +252,7 @@ func (c *Coordinator) runGroup(fns []directive.CallableFn, body []byte, ctx *vk.
 		respCount++
 	}
 
-	return entry, nil
-}
-
-// Marshal marshals a CoordinatedRequest
-func (c *CoordinatedRequest) Marshal() ([]byte, error) {
-	return json.Marshal(c)
+	return entries, nil
 }
 
 func scopeMiddleware(r *http.Request, ctx *vk.Ctx) error {
@@ -301,7 +265,7 @@ func scopeMiddleware(r *http.Request, ctx *vk.Ctx) error {
 	return nil
 }
 
-func stateJSONForStep(req CoordinatedRequest, step directive.Executable) ([]byte, error) {
+func stateJSONForStep(req *request.CoordinatedRequest, step directive.Executable) ([]byte, error) {
 	// the desired state is cached, so after the first call this is very efficient
 	desired, err := step.ParseWith()
 	if err != nil {
@@ -314,25 +278,26 @@ func stateJSONForStep(req CoordinatedRequest, step directive.Executable) ([]byte
 		return nil, vk.Wrap(http.StatusInternalServerError, errors.Wrap(err, "failed to build desiredState"))
 	}
 
-	stepReq := CoordinatedRequest{
+	stepReq := request.CoordinatedRequest{
 		Method:  req.Method,
 		URL:     req.URL,
+		ID:      req.ID,
 		Body:    req.Body,
 		Headers: req.Headers,
 		Params:  req.Params,
 		State:   stepState,
 	}
 
-	stateJSON, err := stepReq.Marshal()
+	stateJSON, err := stepReq.ToJSON()
 	if err != nil {
-		return nil, vk.Wrap(http.StatusInternalServerError, errors.Wrap(err, "failed to Marshal Request State"))
+		return nil, vk.Wrap(http.StatusInternalServerError, errors.Wrap(err, "failed to ToJSON Request State"))
 	}
 
 	return stateJSON, nil
 }
 
 // resultFromState returns the state value for the last single function that ran in a handler
-func resultFromState(handler directive.Handler, state map[string]interface{}) interface{} {
+func resultFromState(handler directive.Handler, state map[string][]byte) []byte {
 	// if the handler defines a response explicitly, use it (return nil if there is nothing in state)
 	if handler.Response != "" {
 		resp, exists := state[handler.Response]
@@ -357,12 +322,12 @@ func resultFromState(handler directive.Handler, state map[string]interface{}) in
 	return nil
 }
 
-func desiredState(desired []directive.Alias, state map[string]interface{}) (map[string]interface{}, error) {
+func desiredState(desired []directive.Alias, state map[string][]byte) (map[string][]byte, error) {
 	if desired == nil || len(desired) == 0 {
 		return state, nil
 	}
 
-	desiredState := map[string]interface{}{}
+	desiredState := map[string][]byte{}
 
 	for _, a := range desired {
 		val, exists := state[a.Key]
@@ -374,16 +339,6 @@ func desiredState(desired []directive.Alias, state map[string]interface{}) (map[
 	}
 
 	return desiredState, nil
-}
-
-// stringOrMap converts bytes to a map if they are JSON, or a string if not
-func stringOrMap(result []byte) interface{} {
-	resMap := map[string]interface{}{}
-	if err := json.Unmarshal(result, &resMap); err != nil {
-		return string(result)
-	}
-
-	return resMap
 }
 
 func key(fn directive.CallableFn) string {

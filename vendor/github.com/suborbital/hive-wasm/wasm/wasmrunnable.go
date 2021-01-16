@@ -2,8 +2,10 @@ package wasm
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/suborbital/hive-wasm/bundle"
+	"github.com/suborbital/hive-wasm/request"
 	"github.com/suborbital/hive/hive"
 	"github.com/suborbital/vektor/vlog"
 
@@ -49,16 +51,31 @@ func newRunnerWithEnvironment(env *wasmEnvironment) *Runner {
 
 // Run runs a Runner
 func (w *Runner) Run(job hive.Job, ctx *hive.Ctx) (interface{}, error) {
-	inputBytes, err := interfaceToBytes(job.Data())
+	var jobBytes []byte
+
+	// check if the job is a CoordinatedRequest, and set up the WasmInstance if so
+	req, err := request.FromJSON(job.Bytes())
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to convert job data to bytes for WASM Runnable")
+		logger.Debug("job is not a coordinated request:", err.Error())
+
+		// if it's not a request, treat it as normal data
+		bytes, bytesErr := interfaceToBytes(job.Data())
+		if bytesErr != nil {
+			return nil, errors.Wrap(bytesErr, "failed to parse job for Wasm Runnable")
+		}
+
+		jobBytes = bytes
+	} else {
+		// if the job is a request, the input to the Runnable is the URL
+		input := fmt.Sprintf("%s %s %s", req.Method, req.URL, req.ID)
+		jobBytes = []byte(input)
 	}
 
 	var output []byte
 	var runErr error
 
-	if err := w.env.useInstance(ctx, func(instance *wasmInstance, ident int32) {
-		inPointer, writeErr := instance.writeMemory(inputBytes)
+	if err := w.env.useInstance(req, ctx, func(instance *wasmInstance, ident int32) {
+		inPointer, writeErr := instance.writeMemory(jobBytes)
 		if writeErr != nil {
 			runErr = errors.Wrap(writeErr, "failed to instance.writeMemory")
 			return
@@ -71,7 +88,7 @@ func (w *Runner) Run(job hive.Job, ctx *hive.Ctx) (interface{}, error) {
 		}
 
 		// ident is a random identifier for this job run that allows for "easy" FFI function calls in both directions
-		if _, wasmErr := wasmRun(inPointer, len(inputBytes), ident); wasmErr != nil {
+		if _, wasmErr := wasmRun(inPointer, len(jobBytes), ident); wasmErr != nil {
 			runErr = errors.Wrap(wasmErr, "failed to wasmRun")
 			return
 		}
@@ -79,7 +96,7 @@ func (w *Runner) Run(job hive.Job, ctx *hive.Ctx) (interface{}, error) {
 		output = <-instance.resultChan
 
 		// deallocate the memory used for the input
-		instance.deallocate(inPointer, len(inputBytes))
+		instance.deallocate(inPointer, len(jobBytes))
 	}); err != nil {
 		return nil, errors.Wrap(err, "failed to useInstance")
 	}

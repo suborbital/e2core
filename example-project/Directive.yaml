@@ -15,12 +15,12 @@ handlers:
           - "url: modify-url"
           - "logme: hello"
   - type: request
-    resource: /set/*key
+    resource: /set/:key
     method: POST
     steps:
       - fn: cache-set
   - type: request
-    resource: /get/*key
+    resource: /get/:key
     method: GET
     steps:
       - fn: cache-get

@@ -6,6 +6,7 @@ package wasm
 // extern void return_result_swift(void *context, int32_t pointer, int32_t size, int32_t ident, int32_t swiftself, int32_t swifterr);
 //
 // extern int32_t fetch_url(void *context, int32_t method, int32_t urlPointer, int32_t urlSize, int32_t bodyPointer, int32_t bodySize, int32_t destPointer, int32_t destMaxSize, int32_t ident);
+// extern int32_t fetch_url_swift(void *context, int32_t method, int32_t urlPointer, int32_t urlSize, int32_t bodyPointer, int32_t bodySize, int32_t destPointer, int32_t destMaxSize, int32_t ident, int32_t swiftself, int32_t swifterr);
 //
 // extern int32_t cache_set(void *context, int32_t keyPointer, int32_t keySize, int32_t valPointer, int32_t valSize, int32_t ttl, int32_t ident);
 // extern int32_t cache_set_swift(void *context, int32_t keyPointer, int32_t keySize, int32_t valPointer, int32_t valSize, int32_t ttl, int32_t ident, int32_t swiftself, int32_t swifterr);
@@ -15,6 +16,9 @@ package wasm
 //
 // extern void log_msg(void *context, int32_t pointer, int32_t size, int32_t level, int32_t ident);
 // extern void log_msg_swift(void *context, int32_t pointer, int32_t size, int32_t level, int32_t ident, int32_t swiftself, int32_t swifterr);
+//
+// extern int32_t request_get_field(void *context, int32_t fieldType, int32_t keyPointer, int32_t keySize, int32_t destPointer, int32_t destMaxSize, int32_t ident);
+// extern int32_t request_get_field_swift(void *context, int32_t fieldType, int32_t keyPointer, int32_t keySize, int32_t destPointer, int32_t destMaxSize, int32_t ident, int32_t swiftself, int32_t swifterr);
 import "C"
 
 import (
@@ -32,6 +36,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/suborbital/hive-wasm/bundle"
+	"github.com/suborbital/hive-wasm/request"
 	"github.com/suborbital/hive/hive"
 	"github.com/suborbital/vektor/vlog"
 	"github.com/wasmerio/wasmer-go/wasmer"
@@ -78,6 +83,7 @@ type wasmEnvironment struct {
 type wasmInstance struct {
 	wasmerInst wasmer.Instance
 	hiveCtx    *hive.Ctx
+	request    *request.CoordinatedRequest
 	resultChan chan []byte
 	lock       sync.Mutex
 }
@@ -109,7 +115,7 @@ func newEnvironment(ref *bundle.WasmModuleRef) *wasmEnvironment {
 }
 
 // useInstance provides an instance from the environment's pool to be used
-func (w *wasmEnvironment) useInstance(ctx *hive.Ctx, instFunc func(*wasmInstance, int32)) error {
+func (w *wasmEnvironment) useInstance(req *request.CoordinatedRequest, ctx *hive.Ctx, instFunc func(*wasmInstance, int32)) error {
 	w.lock.Lock()
 
 	if w.instIndex == len(w.instances)-1 {
@@ -127,6 +133,7 @@ func (w *wasmEnvironment) useInstance(ctx *hive.Ctx, instFunc func(*wasmInstance
 	defer inst.lock.Unlock()
 
 	inst.hiveCtx = ctx
+	inst.request = req
 
 	// generate a random identifier as a reference to the instance in use to
 	// easily allow the Wasm module to reference itself when calling back over the FFI
@@ -139,6 +146,7 @@ func (w *wasmEnvironment) useInstance(ctx *hive.Ctx, instFunc func(*wasmInstance
 
 	removeIdentifier(ident)
 	inst.hiveCtx = nil
+	inst.request = nil
 
 	return nil
 }
@@ -164,6 +172,7 @@ func (w *wasmEnvironment) addInstance() error {
 	imports.AppendFunction("return_result_swift", return_result_swift, C.return_result_swift)
 
 	imports.AppendFunction("fetch_url", fetch_url, C.fetch_url)
+	imports.AppendFunction("fetch_url_swift", fetch_url_swift, C.fetch_url_swift)
 
 	imports.AppendFunction("cache_set", cache_set, C.cache_set)
 	imports.AppendFunction("cache_set_swift", cache_set_swift, C.cache_set_swift)
@@ -173,6 +182,9 @@ func (w *wasmEnvironment) addInstance() error {
 
 	imports.AppendFunction("log_msg", log_msg, C.log_msg)
 	imports.AppendFunction("log_msg_swift", log_msg_swift, C.log_msg_swift)
+
+	imports.AppendFunction("request_get_field", request_get_field, C.request_get_field)
+	imports.AppendFunction("request_get_field_swift", request_get_field_swift, C.request_get_field_swift)
 
 	inst, err := wasmer.NewInstanceWithImports(module, imports)
 	if err != nil {
@@ -301,14 +313,9 @@ func (w *wasmInstance) writeMemory(data []byte) (int32, error) {
 }
 
 func (w *wasmInstance) writeMemoryAtLocation(pointer int32, data []byte) {
-	lengthOfInput := len(data)
-
-	// Write the input into the memory.
 	memory := w.wasmerInst.Memory.Data()[pointer:]
 
-	for index := 0; index < lengthOfInput; index++ {
-		memory[index] = data[index]
-	}
+	copy(memory, data)
 }
 
 func (w *wasmInstance) deallocate(pointer int32, length int) {
@@ -406,6 +413,11 @@ func fetch_url(context unsafe.Pointer, method int32, urlPointer int32, urlSize i
 	return int32(len(respBytes))
 }
 
+//export fetch_url_swift
+func fetch_url_swift(context unsafe.Pointer, method int32, urlPointer int32, urlSize int32, bodyPointer int32, bodySize int32, destPointer int32, destMaxSize int32, identifier int32, swiftself int32, swifterr int32) int32 {
+	return fetch_url(context, method, urlPointer, urlSize, bodyPointer, bodySize, destPointer, destMaxSize, identifier)
+}
+
 //export cache_set
 func cache_set(context unsafe.Pointer, keyPointer int32, keySize int32, valPointer int32, valSize int32, ttl int32, identifier int32) int32 {
 	inst, err := instanceForIdentifier(identifier)
@@ -417,10 +429,8 @@ func cache_set(context unsafe.Pointer, keyPointer int32, keySize int32, valPoint
 	key := inst.readMemory(keyPointer, keySize)
 	val := inst.readMemory(valPointer, valSize)
 
-	fmt.Println("setting cache key", string(key))
-
 	if err := inst.hiveCtx.Cache.Set(string(key), val, int(ttl)); err != nil {
-		fmt.Println("failed to set cache key", string(key), err.Error())
+		logger.ErrorString("[hive-wasm] failed to set cache key", string(key), err.Error())
 		return -2
 	}
 
@@ -442,11 +452,9 @@ func cache_get(context unsafe.Pointer, keyPointer int32, keySize int32, destPoin
 
 	key := inst.readMemory(keyPointer, keySize)
 
-	fmt.Println("getting cache key", string(key))
-
 	val, err := inst.hiveCtx.Cache.Get(string(key))
 	if err != nil {
-		fmt.Println("failed to get cache key", key, err.Error())
+		logger.ErrorString("[hive-wasm] failed to get cache key", key, err.Error())
 		return -2
 	}
 
@@ -493,4 +501,89 @@ func log_msg(context unsafe.Pointer, pointer int32, size int32, level int32, ide
 //export log_msg_swift
 func log_msg_swift(context unsafe.Pointer, pointer int32, size int32, level int32, identifier int32, swiftself int32, swifterr int32) {
 	log_msg(context, pointer, size, level, identifier)
+}
+
+const (
+	fieldTypeMeta   = int32(0)
+	fieldTypeBody   = int32(1)
+	fieldTypeHeader = int32(2)
+	fieldTypeParams = int32(3)
+	fieldTypeState  = int32(4)
+)
+
+//export request_get_field
+func request_get_field(context unsafe.Pointer, fieldType int32, keyPointer int32, keySize int32, destPointer int32, destMaxSize int32, identifier int32) int32 {
+	inst, err := instanceForIdentifier(identifier)
+	if err != nil {
+		logger.Error(errors.Wrap(err, "[hive-wasm] alert: invalid identifier used, potential malicious activity"))
+		return -1
+	}
+
+	if inst.request == nil {
+		logger.ErrorString("[hive-wasm] Runnable attempted to access request when none is set")
+		return -2
+	}
+
+	req := inst.request
+
+	keyBytes := inst.readMemory(keyPointer, keySize)
+	key := string(keyBytes)
+
+	var val string
+
+	switch fieldType {
+	case fieldTypeMeta:
+		switch key {
+		case "method":
+			val = req.Method
+		case "url":
+			val = req.URL
+		case "id":
+			val = req.ID
+		case "body":
+			val = string(req.Body)
+		}
+	case fieldTypeBody:
+		bodyVal, err := req.BodyField(key)
+		if err == nil {
+			val = bodyVal
+		} else {
+			logger.Error(errors.Wrap(err, "failed to get BodyField"))
+			return -4
+		}
+	case fieldTypeHeader:
+		header, ok := req.Headers[key]
+		if ok {
+			val = header
+		} else {
+			return -3
+		}
+	case fieldTypeParams:
+		param, ok := req.Params[key]
+		if ok {
+			val = param
+		} else {
+			return -3
+		}
+	case fieldTypeState:
+		stateVal, ok := req.State[key]
+		if ok {
+			val = string(stateVal)
+		} else {
+			return -3
+		}
+	}
+
+	valBytes := []byte(val)
+
+	if len(valBytes) <= int(destMaxSize) {
+		inst.writeMemoryAtLocation(destPointer, valBytes)
+	}
+
+	return int32(len(valBytes))
+}
+
+//export request_get_field_swift
+func request_get_field_swift(context unsafe.Pointer, fieldType int32, keyPointer int32, keySize int32, destPointer int32, destMaxSize int32, identifier int32, swiftSelf int32, swiftErr int32) int32 {
+	return request_get_field(context, fieldType, keyPointer, keySize, destPointer, destMaxSize, identifier)
 }

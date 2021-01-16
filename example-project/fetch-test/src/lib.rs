@@ -1,23 +1,19 @@
 use suborbital::runnable;
-use suborbital::request;
-use suborbital::net;
+use suborbital::req;
+use suborbital::http;
 use suborbital::log;
 
 struct FetchTest{}
 
 impl runnable::Runnable for FetchTest {
-    fn run(&self, input: Vec<u8>) -> Option<Vec<u8>> {
-        let req = match request::from_json(input) {
-            Some(r) => r,
-            None => return Some(String::from("failed").as_bytes().to_vec())
-        };
+    fn run(&self, _: Vec<u8>) -> Option<Vec<u8>> {
 
-        let msg = req.state["logme"].as_str().unwrap();
-        log::info(msg);
+        let msg = req::state("logme");
+        log::info(msg.as_str());
 
-        let url = req.state["url"].as_str().unwrap();
+        let url = req::state("url");
 
-        let data = net::get(url); 
+        let data = http::get(url.as_str()); 
 
         Some(data)
     }

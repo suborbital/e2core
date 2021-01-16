@@ -1,18 +1,17 @@
 use suborbital::runnable;
-use suborbital::request;
+use suborbital::req;
 use suborbital::cache;
 use suborbital::log;
 
 struct CacheSet{}
 
 impl runnable::Runnable for CacheSet {
-    fn run(&self, input: Vec<u8>) -> Option<Vec<u8>> {
-        let req = request::from_json(input).unwrap();
+    fn run(&self, _: Vec<u8>) -> Option<Vec<u8>> {
 
-        let key: &str = req.url.split('/').last().unwrap();
+        let key = req::url_param("key");
         log::info(format!("setting cache value {}", key).as_str());
 
-        cache::set(key, Vec::from(req.body), 0);
+        cache::set(key.as_str(), Vec::from(req::body_raw()), 0);
 
         Some(String::from("ok").as_bytes().to_vec())
     }
