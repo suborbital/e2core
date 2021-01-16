@@ -429,6 +429,8 @@ func cache_set(context unsafe.Pointer, keyPointer int32, keySize int32, valPoint
 	key := inst.readMemory(keyPointer, keySize)
 	val := inst.readMemory(valPointer, valSize)
 
+	logger.Debug("[hive-wasm] setting cache key", string(key))
+
 	if err := inst.hiveCtx.Cache.Set(string(key), val, int(ttl)); err != nil {
 		logger.ErrorString("[hive-wasm] failed to set cache key", string(key), err.Error())
 		return -2
@@ -452,9 +454,11 @@ func cache_get(context unsafe.Pointer, keyPointer int32, keySize int32, destPoin
 
 	key := inst.readMemory(keyPointer, keySize)
 
+	logger.Debug("[hive-wasm] getting cache key", string(key))
+
 	val, err := inst.hiveCtx.Cache.Get(string(key))
 	if err != nil {
-		logger.ErrorString("[hive-wasm] failed to get cache key", key, err.Error())
+		logger.ErrorString("[hive-wasm] failed to get cache key", string(key), err.Error())
 		return -2
 	}
 
@@ -542,6 +546,8 @@ func request_get_field(context unsafe.Pointer, fieldType int32, keyPointer int32
 			val = req.ID
 		case "body":
 			val = string(req.Body)
+		default:
+			return -3
 		}
 	case fieldTypeBody:
 		bodyVal, err := req.BodyField(key)

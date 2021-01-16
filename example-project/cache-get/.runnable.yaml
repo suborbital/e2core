@@ -1,4 +1,4 @@
 name: cache-get
 namespace: default
 lang: rust
-apiVersion: 0.4.0
+apiVersion: 0.4.2

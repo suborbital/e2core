@@ -75,7 +75,7 @@ func (c *CoordinatedRequest) BodyField(key string) (string, error) {
 
 	interfaceVal, ok := c.bodyValues[key]
 	if !ok {
-		return "", nil
+		return "", fmt.Errorf("body does not contain field %s", key)
 	}
 
 	stringVal, ok := interfaceVal.(string)
