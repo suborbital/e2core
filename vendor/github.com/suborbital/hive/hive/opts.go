@@ -34,3 +34,12 @@ func MaxRetries(count int) Option {
 		return opts
 	}
 }
+
+// PreWarm sets the worker to pre-warm itself to minimize cold start time.
+// if not enabled, worker will "warm up" when it receives its first job.
+func PreWarm() Option {
+	return func(opts workerOpts) workerOpts {
+		opts.preWarm = true
+		return opts
+	}
+}

@@ -71,10 +71,15 @@ func (s *scheduler) handle(jobType string, runnable Runnable, options ...Option)
 	}
 
 	w := newWorker(runnable, s.store, s.cache, opts)
-	if s.workers == nil {
-		s.workers = map[string]*worker{jobType: w}
-	} else {
-		s.workers[jobType] = w
+
+	s.workers[jobType] = w
+
+	if opts.preWarm {
+		go func() {
+			if err := w.start(s.schedule); err != nil {
+				// should log something here
+			}
+		}()
 	}
 }
 

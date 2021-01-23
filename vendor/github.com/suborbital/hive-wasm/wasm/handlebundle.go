@@ -40,9 +40,12 @@ func HandleBundle(h *hive.Hive, bundle *bundle.Bundle) error {
 		}
 
 		// mount both the "raw" name and the fqfn in case
-		// multiple bundles with conflicting names get mounted
-		h.Handle(jobName, runner)
-		h.Handle(fqfn, runner)
+		// multiple bundles with conflicting names get mounted.
+
+		// pre-warm so that Runnables have at least one instance active
+		// when the first request is received.
+		h.Handle(jobName, runner, hive.PreWarm())
+		h.Handle(fqfn, runner, hive.PreWarm())
 
 	}
 
