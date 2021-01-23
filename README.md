@@ -19,7 +19,7 @@ With Atmo, you only need to do three things:
 
 ## Get started
 
-To start building with Atmo, visit the [Atmo guide](./docs/introduction/getstarted.md).
+To start building with Atmo, visit the [Atmo guide](https://atmo.suborbital.dev).
 
 ## Status
 Atmo is currently in **alpha**, and is intended to be the flagship project in the Suborbital Development Platform. 
