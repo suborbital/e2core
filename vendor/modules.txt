@@ -18,10 +18,10 @@ github.com/spf13/pflag
 # github.com/suborbital/grav v0.3.0
 ## explicit
 github.com/suborbital/grav/grav
-# github.com/suborbital/hive v0.2.0
+# github.com/suborbital/hive v0.2.1
 ## explicit
 github.com/suborbital/hive/hive
-# github.com/suborbital/hive-wasm v0.4.2
+# github.com/suborbital/hive-wasm v0.4.3
 ## explicit
 github.com/suborbital/hive-wasm/bundle
 github.com/suborbital/hive-wasm/directive

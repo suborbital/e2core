@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/suborbital/hive-wasm/directive"
@@ -122,6 +123,8 @@ func Read(path string) (*Bundle, error) {
 			}
 
 			bundle.Directive = directive
+			continue
+		} else if !strings.HasSuffix(f.Name, ".wasm") {
 			continue
 		}
 

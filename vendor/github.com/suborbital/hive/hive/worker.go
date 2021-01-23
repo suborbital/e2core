@@ -57,7 +57,7 @@ func (w *worker) schedule(job JobReference) {
 }
 
 func (w *worker) start(doFunc DoFunc) error {
-	// this should only be run once per worker
+	// this should only be run once per worker, unless startup fails the first time
 	if isStarted := w.started.Load().(bool); isStarted {
 		return nil
 	}
@@ -89,6 +89,12 @@ func (w *worker) start(doFunc DoFunc) error {
 			break
 		} else {
 			if attempts >= w.options.numRetries {
+				if started == 0 {
+					// if no threads were able to start, ensure that
+					// the next job causes another attempt
+					w.started.Store(false)
+				}
+
 				return fmt.Errorf("attempted to start worker %d times, Runnable returned error each time", w.options.numRetries)
 			}
 
@@ -140,6 +146,8 @@ func (wt *workThread) run(doFunc DoFunc) {
 
 			// wait for the next job
 			jobRef := <-wt.workChan
+
+			// TODO: check to see if the workThread pool is sufficient, and attempt to fill it if not
 
 			// fetch the full job from storage
 			job, err := wt.store.Get(jobRef.uuid)
@@ -203,6 +211,7 @@ type workerOpts struct {
 	jobTimeoutSeconds int
 	numRetries        int
 	retrySecs         int
+	preWarm           bool
 }
 
 func defaultOpts(jobType string) workerOpts {
@@ -212,6 +221,7 @@ func defaultOpts(jobType string) workerOpts {
 		jobTimeoutSeconds: 0,
 		retrySecs:         3,
 		numRetries:        5,
+		preWarm:           false,
 	}
 
 	return o

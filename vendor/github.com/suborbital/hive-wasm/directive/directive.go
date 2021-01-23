@@ -22,10 +22,11 @@ const (
 // Directive describes a set of functions and a set of handlers
 // that take an input, and compose a set of functions to handle it
 type Directive struct {
-	Identifier string     `yaml:"identifier"`
-	Version    string     `yaml:"version"`
-	Runnables  []Runnable `yaml:"runnables"`
-	Handlers   []Handler  `yaml:"handlers,omitempty"`
+	Identifier  string     `yaml:"identifier"`
+	AppVersion  string     `yaml:"appVersion"`
+	AtmoVersion string     `yaml:"atmoVersion"`
+	Runnables   []Runnable `yaml:"runnables"`
+	Handlers    []Handler  `yaml:"handlers,omitempty"`
 
 	// "fully qualified function names"
 	fqfns map[string]string `yaml:"-"`
@@ -100,8 +101,12 @@ func (d *Directive) Validate() error {
 		problems.add(errors.New("identifier is missing"))
 	}
 
-	if !semver.IsValid(d.Version) {
-		problems.add(errors.New("version is not a valid semver"))
+	if !semver.IsValid(d.AppVersion) {
+		problems.add(errors.New("app version is not a valid semantic version"))
+	}
+
+	if !semver.IsValid(d.AtmoVersion) {
+		problems.add(errors.New("atmo version is not a valid semantic version"))
 	}
 
 	if len(d.Runnables) < 1 {
@@ -234,7 +239,7 @@ func (d *Directive) calculateFQFNs() {
 }
 
 func (d *Directive) fqfnForFunc(namespace, fn string) string {
-	return fmt.Sprintf("%s#%s@%s", namespace, fn, d.Version)
+	return fmt.Sprintf("%s#%s@%s", namespace, fn, d.AppVersion)
 }
 
 // IsGroup returns true if the executable is a group
