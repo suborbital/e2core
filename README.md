@@ -10,7 +10,7 @@ Atmo is not a library, but rather a self-hosted platform that uses a bundle cont
 
 ## Background
 
-Atmo is designed to embody the [SUFA design pattern](https://blog.suborbital.dev/building-a-better-monolith) (Simple, Unified, Funcion-based Applications). This means you can build your project into a single deployable unit, and Atmo will take care of the server, scaling out its job scheduler, and meshing together auto-scaled instances.
+Atmo is designed to embody the [SUFA design pattern](https://blog.suborbital.dev/building-a-better-monolith) (Simple, Unified, Function-based Applications). This means you can build your project into a single deployable unit, and Atmo will take care of the server, scaling out its job scheduler, and meshing together auto-scaled instances.
 
 With Atmo, you only need to do three things:
 1. Write self-contained, composable functions
