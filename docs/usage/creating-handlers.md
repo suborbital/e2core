@@ -1,7 +1,7 @@
 # Creating handlers
 
 {% hint style="info" %}
-If you haven't created a project yet, see [Get started](getstarted.md) first.
+If you haven't created a project yet, see [Get started](../getstarted.md) first.
 {% endhint %}
 
 Your project contains a `Directive.yaml` file that controls your entire application. The Directive is included in the Runnable Bundle used by Atmo to run your application.

@@ -1,6 +1,6 @@
 # Get started
 
-Atmo is a self-hosted platform that uses a _Runnable bundle_ to run your described application. The bundle includes two things: a [Directive](../concepts/the-directive.md), and a set of [Runnables](../concepts/runnables.md) \(WebAssembly modules compiled from various languages such as Rust and Swift\). A bundle contains everything needed to run your application.
+Atmo is a self-hosted platform that uses a _Runnable bundle_ to run your described application. The bundle includes two things: a [Directive](concepts/the-directive.md), and a set of [Runnables](concepts/runnables.md) \(WebAssembly modules compiled from various languages such as Rust and Swift\). A bundle contains everything needed to run your application.
 
 {% hint style="info" %}
 **You'll need to install the subo CLI tool and Docker to use Atmo**. 
@@ -32,7 +32,9 @@ To run an Atmo application, we need to create a Runnable Bundle. A Bundle is a `
 subo build . --bundle
 ```
 
-The end of this command should read `✅ DONE: bundle was created -> example-project/runnables.wasm.zip`
+The end of this command should read:
+
+ `✅ DONE: bundle was created -> ./runnables.wasm.zip`
 
 ## Running the Atmo development server
 
@@ -45,4 +47,6 @@ Once you have your Runnable bundle, you can run Atmo:
 Atmo will start up serving on port 8080, and you will begin to see its structured logs in your terminal. 
 
 If you used the example project from the Atmo repository, make a request to `POST localhost:8080/hello` with a request body of `https://github.com`. You will receive HTML fetched from `https://github.com/suborbital`.
+
+Continue on to learn how Atmo works, and how you can build powerful server apps using WebAssembly.
 
