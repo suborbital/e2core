@@ -2,7 +2,7 @@
 
 Building web services should be simple. Atmo makes it easy to create a powerful server application wihout needing to worry about scalability, infrastructure, or complex networking.
 
-Atmo enables you to write small self-contained functions called Runnables using a variety of laguages, and define your business logic by declaritvely composing them. Atmo then automatically scales out a flat network of instances to handle traffic using its meshed message bus and embedded job scheduler. Atmo can handle request-based traffic, and soon will be able to handle events sourced from various systems like Kafka or EventBridge.
+Atmo enables you to write small self-contained functions called Runnables using a variety of languages, and define your business logic by declaratively composing them. Atmo then automatically scales out a flat network of instances to handle traffic using its meshed message bus and embedded job scheduler. Atmo can handle request-based traffic, and soon will be able to handle events sourced from various systems like Kafka or EventBridge.
 
 The Atmo Directive is a YAML file wherein you declare your application's behaviour. Because the Directive can describe everything you need to make your application work (including routes, logic, and more), there is no need to write boilerplate ever again.
 
