@@ -185,8 +185,12 @@ github.com/suborbital/hive v0.2.1 h1:/Rf2NSUNZITFF19x2LBhId9s4aboEV58wFseikDPEUw
 github.com/suborbital/hive v0.2.1/go.mod h1:7EhT+wD3Wk31YeUwbw/3PvLTq4QF5emJYAu23sDeEo0=
 github.com/suborbital/hive-wasm v0.4.3 h1:qp9nJU9IsO4/uYrM0C3k9m57Z9MzX+gzC0OUF8pFiA4=
 github.com/suborbital/hive-wasm v0.4.3/go.mod h1:TpngEXCHZQTNeOwZGFpNZMCil4yZdm49gT2G5hkyz20=
+github.com/suborbital/hive-wasm v0.5.0 h1:PCJTSIueVjtAea1O+34TdldjrAE9mEmEF6K1Xy5J8Zw=
+github.com/suborbital/hive-wasm v0.5.0/go.mod h1:j00Aok75e0Qm9hVGE7xmw0OSFsS02BGGKb97oOLCl84=
 github.com/suborbital/vektor v0.2.2 h1:x3yit9RMXcP8LirkKb1f/psNev/G/iTIHo6eL/f1OBI=
 github.com/suborbital/vektor v0.2.2/go.mod h1:6YQE7r6t1JcVs3twpqjXDftsLUaTNUk5YorRKHcDamI=
+github.com/suborbital/vektor v0.2.3 h1:PtEL4n2tRfGSUrE2Fx0hm2YkUwyXM4fVePJeRJgyJJs=
+github.com/suborbital/vektor v0.2.3/go.mod h1:6YQE7r6t1JcVs3twpqjXDftsLUaTNUk5YorRKHcDamI=
 github.com/subosito/gotenv v1.2.0/go.mod h1:N0PQaV/YGNqwC0u51sEeR/aUtSLEXKX9iv69rRypqCw=
 github.com/tmc/grpc-websocket-proxy v0.0.0-20190109142713-0ad062ec5ee5/go.mod h1:ncp9v5uamzpCO7NfCPTXjqaC+bZgJeR0sMTm6dMHP7U=
 github.com/urfave/cli/v2 v2.1.1/go.mod h1:SE9GqnLQmjVa0iPEY0f1w3ygNIYcIJ0OKPMoW2caLfQ=

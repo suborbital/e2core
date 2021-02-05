@@ -13,7 +13,7 @@ impl runnable::Runnable for FetchTest {
 
         let url = req::state("url");
 
-        let data = http::get(url.as_str()); 
+        let data = http::get(url.as_str(), None); 
 
         Some(data)
     }

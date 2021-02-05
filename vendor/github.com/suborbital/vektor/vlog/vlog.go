@@ -28,6 +28,12 @@ type Logger struct {
 	lock     *sync.Mutex
 }
 
+// SafeStringer allows a struct to produse a "safe" string representation for logging
+// the intention is avoiding accidentally including sensitive information in struct fields.
+type SafeStringer interface {
+	SafeString() string
+}
+
 // Default returns a Logger using the default producer
 func Default(opts ...OptionsModifier) *Logger {
 	prod := &defaultProducer{}
