@@ -1,6 +1,7 @@
 package vlog
 
 import (
+	"bytes"
 	"fmt"
 )
 
@@ -44,11 +45,17 @@ func redactAndJoinInterfaces(msgs ...interface{}) string {
 	msg := ""
 
 	for _, m := range msgs {
-		str, ok := m.(string)
-		if ok {
-			msg += fmt.Sprintf(" %s", str)
-		} else {
-			msg += fmt.Sprintf(" [redacted %T]", m)
+		switch elem := m.(type) {
+		case string:
+			msg += fmt.Sprintf(" %s", elem)
+		case uint, uint8, uint16, uint32, int, int8, int16, int32, int64, float32, float64, complex64, complex128:
+			buf := &bytes.Buffer{}
+			fmt.Fprint(buf, elem)
+			msg += " " + buf.String()
+		case SafeStringer:
+			msg += " " + elem.SafeString()
+		default:
+			msg += fmt.Sprintf(" [redacted %T]", elem)
 		}
 	}
 

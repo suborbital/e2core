@@ -7,8 +7,8 @@ require (
 	github.com/spf13/cobra v1.1.1
 	github.com/suborbital/grav v0.3.0
 	github.com/suborbital/hive v0.2.1
-	github.com/suborbital/hive-wasm v0.4.3
-	github.com/suborbital/vektor v0.2.2
+	github.com/suborbital/hive-wasm v0.5.0
+	github.com/suborbital/vektor v0.2.3
 	golang.org/x/mod v0.4.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )

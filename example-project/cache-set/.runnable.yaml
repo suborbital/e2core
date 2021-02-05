@@ -1,4 +1,4 @@
 name: cache-set
 namespace: default
 lang: swift
-apiVersion: 0.4.2
+apiVersion: 0.5.0
