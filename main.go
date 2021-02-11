@@ -3,7 +3,7 @@ package main
 import (
 	"github.com/spf13/cobra"
 	"github.com/suborbital/atmo/atmo"
-	"github.com/suborbital/atmo/release"
+	"github.com/suborbital/atmo/atmo/release"
 )
 
 func main() {
