@@ -15,7 +15,7 @@ docker/dev/multi:
 	docker buildx build . --platform linux/amd64,linux/arm64 -t atmo:dev
 
 docker/publish:
-	docker buildx build . --platform linux/amd64,linux/arm64,linux/arm/v7 -t suborbital/atmo:$(version) --push
+	docker buildx build . --platform linux/amd64,linux/arm64 -t suborbital/atmo:$(version) --push
 
 docker/builder:
 	docker buildx create --use
