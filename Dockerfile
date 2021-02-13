@@ -22,7 +22,7 @@ COPY --from=builder /go/bin/atmo /usr/local/bin
 # script for choosing the correct library based on architecture
 COPY --from=builder /go/src/github.com/suborbital/atmo/scripts/copy-libs.sh /tmp/wasmerio/copy-libs.sh
 # the wasmer shared libraries
-COPY --from=builder /go/pkg/mod/github.com/wasmerio/wasmer-go@v1.0.1/wasmer/packaged/lib/ /tmp/wasmerio/
+COPY --from=builder /go/src/github.com/suborbital/atmo/vendor/github.com/wasmerio/wasmer-go/wasmer/packaged/lib/ /tmp/wasmerio/
 
 RUN /tmp/wasmerio/copy-libs.sh
 ENV LD_LIBRARY_PATH=/usr/local/lib
