@@ -186,6 +186,8 @@ github.com/suborbital/grav v0.3.0 h1:dxe3YCKIblSlZ0Pl+uy0qW/xtXrmRD2gQNLSY4ErgvY
 github.com/suborbital/grav v0.3.0/go.mod h1:PapJ62PtT9dPmW37WaCD+UMhoZiNPp0N9E3nUfEujC4=
 github.com/suborbital/reactr v0.6.2 h1:DBz2jaNbXxscoBktj9Z/C3tf4ddPLoQq5TzopIIao9o=
 github.com/suborbital/reactr v0.6.2/go.mod h1:McE3oPiDDXte2A0hrPiebNPb5738jeWtdmbN+hLklwM=
+github.com/suborbital/reactr v0.6.3 h1:eKpdTEgtEYXMp5JmARZIqyf61cGy50iEhvHLgs0N5bE=
+github.com/suborbital/reactr v0.6.3/go.mod h1:McE3oPiDDXte2A0hrPiebNPb5738jeWtdmbN+hLklwM=
 github.com/suborbital/vektor v0.2.2 h1:x3yit9RMXcP8LirkKb1f/psNev/G/iTIHo6eL/f1OBI=
 github.com/suborbital/vektor v0.2.2/go.mod h1:6YQE7r6t1JcVs3twpqjXDftsLUaTNUk5YorRKHcDamI=
 github.com/suborbital/vektor v0.2.3 h1:PtEL4n2tRfGSUrE2Fx0hm2YkUwyXM4fVePJeRJgyJJs=

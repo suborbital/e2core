@@ -3,7 +3,7 @@ build:
 	go build -o .bin/atmo ./main.go
 
 atmo: build
-	.bin/atmo $(bundle)
+	ATMO_HTTP_PORT=8080 .bin/atmo $(bundle)
 
 atmo/docker: docker/dev
 	docker run -v ${PWD}/$(dir):/home/atmo -e ATMO_HTTP_PORT=8080 -p 8080:8080 atmo:dev atmo

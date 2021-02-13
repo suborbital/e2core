@@ -3,11 +3,11 @@
     "pins": [
       {
         "package": "Suborbital",
-        "repositoryURL": "https://github.com/suborbital/hive-wasm.git",
+        "repositoryURL": "https://github.com/suborbital/reactr.git",
         "state": {
           "branch": null,
-          "revision": "248f421bb6c7bf6591bbd1d7175779d46ba3f5dd",
-          "version": "0.5.0"
+          "revision": "ee788c9b7a354fe267311fdd9586965fec5304ba",
+          "version": "0.6.3"
         }
       }
     ]
