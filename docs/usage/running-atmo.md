@@ -1,7 +1,7 @@
 # Running Atmo
 
 {% hint style="warning" %}
-Atmo is still in Alpha, and as such should not yet be used for production workloads.
+Atmo is still in early Beta, and as such should not yet be used for production workloads.
 {% endhint %}
 
 Atmo is distributed as a Docker image: `suborbital/atmo` 

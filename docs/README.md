@@ -26,7 +26,7 @@ Further functionality is incoming along with improved docs, more examples, and a
 
 ## Status
 
-Atmo is currently in **alpha**, and is intended to be the flagship project in the Suborbital Development Platform.
+Atmo is currently in **beta**, and is intended to be the flagship project in the Suborbital Development Platform.
 
 Atmo is built atop [Vektor](https://github.com/suborbital/vektor), [Hive](https://github.com/suborbital/hive) and [Grav](https://github.com/suborbital/grav).
 
