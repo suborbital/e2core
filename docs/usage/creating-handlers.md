@@ -34,7 +34,7 @@ This describes the application being constructed. It declares a resource \(`HTTP
 
 There are two types of `step`. The first step is a `group`, meaning that all of the functions in that group will be executed **concurrently**.
 
-The second step is a single `fn` , which calls a Runnable that uses the [Runnable API](https://github.com/suborbital/hive-wasm) to make an HTTP request. The API is continually evolving to include more capabilities. In addition to making HTTP requests, it includes logging abilities and more.
+The second step is a single `fn` , which calls a Runnable that uses the [Runnable API](https://atmo.suborbital.dev/runnable-api/introduction) to make an HTTP request. The API is continually evolving to include more capabilities. In addition to making HTTP requests, it includes logging abilities and more.
 
 The output of the final function in a handler is used as the response data for the request, by default. If you wish to use the output from a different function, you can include the `response` option in your handler, listing the name of the function to use as a response.
 

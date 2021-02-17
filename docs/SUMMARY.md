@@ -20,10 +20,10 @@
 
 * [Introduction](runnable-api/introduction.md)
 * [Handling requests](runnable-api/request.md)
+* [Structured logging](runnable-api/logging.md)
 * [HTTP requests](runnable-api/http.md)
 * [Accessing cache](runnable-api/cache.md)
 * [Static files](runnable-api/file.md)
-* [Structured logging](runnable-api/logging.md)
 
 ## More info
 
