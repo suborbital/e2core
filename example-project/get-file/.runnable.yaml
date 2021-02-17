@@ -1,0 +1,4 @@
+name: get-file
+namespace: default
+lang: rust
+apiVersion: 0.6.0

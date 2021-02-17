@@ -3,7 +3,7 @@ package atmo
 import (
 	"github.com/pkg/errors"
 	"github.com/suborbital/atmo/atmo/coordinator"
-	"github.com/suborbital/hive-wasm/bundle"
+	"github.com/suborbital/reactr/bundle"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
 )

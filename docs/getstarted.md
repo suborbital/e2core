@@ -12,8 +12,6 @@ Docker is used to build Runnables and run the Atmo development server.
 
 ## Creating a project
 
-You can get started with Atmo by cloning the [repo](https://github.com/suborbital/atmo) which contains an `example-project`, or by using the `subo` CLI.
-
 Once you have subo installed, you can create a project:
 
 ```text
@@ -44,9 +42,6 @@ Once you have your Runnable bundle, you can run Atmo:
 > subo dev
 ```
 
-Atmo will start up serving on port 8080, and you will begin to see its structured logs in your terminal. 
+Atmo will start up serving on port 8080, and you will begin to see its structured logs in your terminal. Make a request to `POST localhost:8080/hello` with a request body to see it in action.
 
-If you used the example project from the Atmo repository, make a request to `POST localhost:8080/hello` with a request body of `https://github.com`. You will receive HTML fetched from `https://github.com/suborbital`.
-
-Continue on to learn how Atmo works, and how you can build powerful server apps using WebAssembly.
-
+Continue on to learn how Atmo works, and how you can build powerful server apps powered by WebAssembly.

@@ -17,9 +17,14 @@ RUN groupadd -g 999 atmo && \
 RUN apt-get update \
 	&& apt-get install -y ca-certificates
 
+# atmo binary
 COPY --from=builder /go/bin/atmo /usr/local/bin
+# script for choosing the correct library based on architecture
+COPY --from=builder /go/src/github.com/suborbital/atmo/scripts/copy-libs.sh /tmp/wasmerio/copy-libs.sh
+# the wasmer shared libraries
+COPY --from=builder /go/src/github.com/suborbital/atmo/vendor/github.com/wasmerio/wasmer-go/wasmer/packaged/lib/ /tmp/wasmerio/
 
-COPY --from=builder /go/src/github.com/suborbital/atmo/vendor/github.com/wasmerio/wasmer-go/wasmer/libwasmer.so /usr/local/lib/
+RUN /tmp/wasmerio/copy-libs.sh
 ENV LD_LIBRARY_PATH=/usr/local/lib
 
 WORKDIR /home/atmo

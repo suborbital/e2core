@@ -8,25 +8,25 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/suborbital/grav/grav"
-	"github.com/suborbital/hive-wasm/bundle"
-	"github.com/suborbital/hive-wasm/directive"
-	"github.com/suborbital/hive-wasm/request"
-	"github.com/suborbital/hive-wasm/wasm"
-	"github.com/suborbital/hive/hive"
+	"github.com/suborbital/reactr/bundle"
+	"github.com/suborbital/reactr/directive"
+	"github.com/suborbital/reactr/request"
+	"github.com/suborbital/reactr/rt"
+	"github.com/suborbital/reactr/rwasm"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
 )
 
 // Coordinator is a type that is responsible for covnerting the directive into
-// usable Vektor handles by coordinating Hive jobs and meshing when needed.
+// usable Vektor handles by coordinating Reactr jobs and meshing when needed.
 type Coordinator struct {
 	directive *directive.Directive
 	bundle    *bundle.Bundle
 
 	log *vlog.Logger
 
-	hive *hive.Hive
-	bus  *grav.Grav
+	reactr *rt.Reactr
+	grav   *grav.Grav
 
 	lock sync.Mutex
 }
@@ -37,16 +37,16 @@ type requestScope struct {
 
 // New creates a coordinator
 func New(logger *vlog.Logger) *Coordinator {
-	hive := hive.New()
-	bus := grav.New(
+	reactr := rt.New()
+	grav := grav.New(
 		grav.UseLogger(logger),
 	)
 
 	c := &Coordinator{
-		log:  logger,
-		hive: hive,
-		bus:  bus,
-		lock: sync.Mutex{},
+		log:    logger,
+		reactr: reactr,
+		grav:   grav,
+		lock:   sync.Mutex{},
 	}
 
 	return c
@@ -59,8 +59,8 @@ func (c *Coordinator) UseBundle(bundle *bundle.Bundle) *vk.RouteGroup {
 
 	c.directive = bundle.Directive
 
-	// mount all of the Wasm modules into the Hive instance
-	wasm.HandleBundle(c.hive, bundle)
+	// mount all of the Wasm modules into the Reactr instance
+	rwasm.HandleBundle(c.reactr, bundle)
 
 	group := vk.Group("").Before(scopeMiddleware)
 
@@ -72,7 +72,7 @@ func (c *Coordinator) UseBundle(bundle *bundle.Bundle) *vk.RouteGroup {
 			continue
 		}
 
-		c.hive.Listen(c.bus.Connect(), fqfn)
+		c.reactr.Listen(c.grav.Connect(), fqfn)
 	}
 
 	// mount each handler into the VK group
@@ -112,7 +112,7 @@ func (c *Coordinator) vkHandlerForDirectiveHandler(handler directive.Handler) vk
 				}
 
 				if entry != nil {
-					// hive-wasm issue #45
+					// reactr issue #45
 					key := key(step.CallableFn)
 
 					req.State[key] = entry
@@ -148,22 +148,22 @@ func (c *Coordinator) runSingleFn(fn directive.CallableFn, body []byte, ctx *vk.
 	}
 
 	// compose a message containing the serialized request state, and send it via Grav
-	// for the appropriate meshed Hive to handle. It may be handled by self if appropriate.
+	// for the appropriate meshed Reactr to handle. It may be handled by self if appropriate.
 	jobMsg := grav.NewMsg(fqfn, body)
 
 	var jobResult []byte
 	var jobErr error
 
-	pod := c.bus.Connect()
+	pod := c.grav.Connect()
 	defer pod.Disconnect()
 
 	podErr := pod.Send(jobMsg).WaitUntil(grav.Timeout(30), func(msg grav.Message) error {
 		switch msg.Type() {
-		case hive.MsgTypeHiveResult:
+		case rt.MsgTypeReactrResult:
 			jobResult = msg.Data()
-		case hive.MsgTypeHiveJobErr:
+		case rt.MsgTypeReactrJobErr:
 			jobErr = errors.New(string(msg.Data()))
-		case hive.MsgTypeHiveNilResult:
+		case rt.MsgTypeReactrNilResult:
 			// do nothing
 		}
 

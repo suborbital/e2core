@@ -1,7 +1,7 @@
 # Running Atmo
 
 {% hint style="warning" %}
-Atmo is still in Alpha, and as such should not yet be used for production workloads.
+Atmo is still in early Beta, and as such should not yet be used for production workloads.
 {% endhint %}
 
 Atmo is distributed as a Docker image: `suborbital/atmo` 
@@ -13,7 +13,7 @@ To run Atmo, you can either mount your Runnable Bundle as a volume, or build you
 To mount as a volume:
 
 ```text
-> docker run -v /path/to/bundle/directory:/home/atmo -e ATMO_HTTP_PORT=%s -p 8080:8080 suborbital/atmo:latest atmo
+> docker run -v /path/to/bundle/directory:/home/atmo -e ATMO_HTTP_PORT=8080 -p 8080:8080 suborbital/atmo:latest atmo
 ```
 
 This will launch Atmo, assign it to listen on port 8080, and run in HTTP mode.
@@ -34,5 +34,5 @@ Building this Dockerfile would result in an image that doesn't need a volume mou
 
 #### HTTPS
 
-To run with HTTPS, replace `ATMO_HTTP_PORT`with `ATMO_DOMAIN` to enable LetsEncrypt on ports 443 and 8080.
+To run with HTTPS, replace `ATMO_HTTP_PORT=8080` with `ATMO_DOMAIN=example.com` to enable LetsEncrypt on ports 443 and 8080. You will need to pass the `-p` flag for each.
 

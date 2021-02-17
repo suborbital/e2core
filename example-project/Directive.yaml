@@ -25,3 +25,8 @@ handlers:
     method: GET
     steps:
       - fn: cache-get
+  - type: request
+    resource: /file/*file
+    method: GET
+    steps:
+      - fn: get-file
