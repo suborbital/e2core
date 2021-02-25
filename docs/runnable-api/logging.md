@@ -1,4 +1,4 @@
-## Structured logging
+# Structured logging
 
 Your Runnable code can log to Atmo's structured output using the logging methods.
 
@@ -6,29 +6,39 @@ For Rust, these methods are available under the `log` module, for example `log::
 
 The following namespace methods are available:
 
-### Info
+## Info
+
 Logs the message with the 'info' level
+
 ```rust
 pub fn info(msg: &str)
 ```
+
 ```swift
 public func LogInfo(msg: String)
 ```
 
-### Warn
+## Warn
+
 Logs the message with the 'warn' level
+
 ```rust
 pub fn warn(msg: &str)
 ```
+
 ```swift
 public func LogWarn(msg: String)
 ```
 
-### Error
+## Error
+
 Logs the message with the 'err' level
+
 ```rust
 pub fn error(msg: &str)
 ```
+
 ```swift
 public func LogErr(msg: String)
 ```
+

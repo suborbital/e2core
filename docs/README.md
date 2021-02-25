@@ -12,12 +12,10 @@ The Atmo **Directive** is a YAML file wherein you declare your application's beh
 
 Atmo is not a library, but rather a self-hosted platform that uses a bundle containing your Runnables and Directive to automatically run your application.
 
-With Atmo, you only need to do three things: 
+With Atmo, you only need to do three things:
 
-1. Write self-contained, composable functions 
-
-2. Declare how you want Atmo to handle requests by creating a "Directive" 
-
+1. Write self-contained, composable functions
+2. Declare how you want Atmo to handle requests by creating a "Directive"
 3. Build and deploy your Runnable bundle.
 
 ## Coming soon

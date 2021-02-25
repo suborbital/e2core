@@ -8,17 +8,20 @@
 * [Runnables](concepts/runnables.md)
 * [The Directive](concepts/the-directive.md)
 * [State](concepts/state.md)
+* [Static Directory](concepts/static-directory.md)
 
 ## Usage
 
-* [Building Runnables](usage/building-runnables.md)
+* [Creating Runnables](usage/building-runnables.md)
 * [Creating handlers](usage/creating-handlers.md)
 * [Managing state](usage/managing-state.md)
+* [Building a Bundle](usage/building-a-bundle.md)
 * [Running Atmo](usage/running-atmo.md)
 
 ## Runnable API
 
 * [Introduction](runnable-api/introduction.md)
+* [Example Runnable](runnable-api/example-runnable.md)
 * [Handling requests](runnable-api/request.md)
 * [Structured logging](runnable-api/logging.md)
 * [HTTP requests](runnable-api/http.md)

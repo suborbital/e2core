@@ -4,11 +4,11 @@
 Atmo is still in early Beta, and as such should not yet be used for production workloads.
 {% endhint %}
 
-Atmo is distributed as a Docker image: `suborbital/atmo` 
+Atmo is distributed as a Docker image: `suborbital/atmo`
 
 To run Atmo, you can either mount your Runnable Bundle as a volume, or build your own container image that embeds it.
 
-### Volume mount
+## Volume mount
 
 To mount as a volume:
 
@@ -18,7 +18,7 @@ To mount as a volume:
 
 This will launch Atmo, assign it to listen on port 8080, and run in HTTP mode.
 
-### Embed Bundle
+## Embed Bundle
 
 To create your own Docker image with your Bundle embedded, you can use a Dockerfile similar to this:
 
@@ -32,7 +32,7 @@ ENTRYPOINT atmo
 
 Building this Dockerfile would result in an image that doesn't need a volume mount.
 
-#### HTTPS
+### HTTPS
 
 To run with HTTPS, replace `ATMO_HTTP_PORT=8080` with `ATMO_DOMAIN=example.com` to enable LetsEncrypt on ports 443 and 8080. You will need to pass the `-p` flag for each.
 

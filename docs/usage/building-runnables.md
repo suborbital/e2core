@@ -1,6 +1,12 @@
-# Building Runnables
+# Creating Runnables
 
-To create your own Runnables, use `subo` and the [Runnable API](../runnable-api/introduction.md).
+{% hint style="info" %}
+**You'll need to install the subo CLI tool and Docker to use Atmo**.
+
+To install the tool, [visit the subo repository](https://github.com/suborbital/subo).
+
+Docker is used to build Runnables and run the Atmo development server.
+{% endhint %}
 
 ### Create a Runnable
 
