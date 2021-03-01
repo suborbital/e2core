@@ -10,10 +10,11 @@ import (
 
 type scheduler struct {
 	workers map[string]*worker
+	watcher *watcher
 	store   Storage
 	cache   Cache
 	logger  *vlog.Logger
-	sync.Mutex
+	lock    sync.Mutex
 }
 
 func newScheduler(logger *vlog.Logger, cache Cache) *scheduler {
@@ -22,8 +23,10 @@ func newScheduler(logger *vlog.Logger, cache Cache) *scheduler {
 		store:   newMemoryStorage(),
 		cache:   cache,
 		logger:  logger,
-		Mutex:   sync.Mutex{},
+		lock:    sync.Mutex{},
 	}
+
+	s.watcher = newWatcher(s.schedule)
 
 	return s
 }
@@ -31,13 +34,13 @@ func newScheduler(logger *vlog.Logger, cache Cache) *scheduler {
 func (s *scheduler) schedule(job Job) *Result {
 	result := newResult(job.UUID(), func(uuid string) {
 		if err := s.store.Remove(uuid); err != nil {
-			s.logger.Error(errors.Wrap(err, "scheduler failed to Remove Job from storage"))
+			s.logger.Error(errors.Wrapf(err, "scheduler failed to Remove Job %s from storage", uuid))
 		}
 	})
 
 	worker := s.getWorker(job.jobType)
 	if worker == nil {
-		result.sendErr(fmt.Errorf("failed to getRunnable for jobType %q", job.jobType))
+		result.sendErr(fmt.Errorf("failed to getWorker for jobType %q", job.jobType))
 		return result
 	}
 
@@ -61,8 +64,8 @@ func (s *scheduler) schedule(job Job) *Result {
 
 // handle adds a handler
 func (s *scheduler) handle(jobType string, runnable Runnable, options ...Option) {
-	s.Lock()
-	defer s.Unlock()
+	s.lock.Lock()
+	defer s.lock.Unlock()
 
 	// apply the provided options
 	opts := defaultOpts(jobType)
@@ -77,15 +80,19 @@ func (s *scheduler) handle(jobType string, runnable Runnable, options ...Option)
 	if opts.preWarm {
 		go func() {
 			if err := w.start(s.schedule); err != nil {
-				// should log something here
+				s.logger.Error(errors.Wrapf(err, "failed to preWarm %s worker", jobType))
 			}
 		}()
 	}
 }
 
+func (s *scheduler) watch(sched Schedule) {
+	s.watcher.watch(sched)
+}
+
 func (s *scheduler) getWorker(jobType string) *worker {
-	s.Lock()
-	defer s.Unlock()
+	s.lock.Lock()
+	defer s.lock.Unlock()
 
 	if s.workers == nil {
 		return nil

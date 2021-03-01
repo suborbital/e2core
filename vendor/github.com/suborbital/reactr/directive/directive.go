@@ -27,6 +27,7 @@ type Directive struct {
 	AtmoVersion string     `yaml:"atmoVersion"`
 	Runnables   []Runnable `yaml:"runnables"`
 	Handlers    []Handler  `yaml:"handlers,omitempty"`
+	Schedules   []Schedule `yaml:"schedules,omitempty"`
 
 	// "fully qualified function names"
 	fqfns map[string]string `yaml:"-"`
@@ -34,9 +35,24 @@ type Directive struct {
 
 // Handler represents the mapping between an input and a composition of functions
 type Handler struct {
-	Input    Input `yaml:"input,inline"`
-	Steps    []Executable
-	Response string `yaml:"response,omitempty"`
+	Input    Input        `yaml:"input,inline"`
+	Steps    []Executable `yaml:"steps"`
+	Response string       `yaml:"response,omitempty"`
+}
+
+// Schedule represents the mapping between an input and a composition of functions
+type Schedule struct {
+	Name  string        `yaml:"name"`
+	Every ScheduleEvery `yaml:"every"`
+	Steps []Executable  `yaml:"steps"`
+}
+
+// ScheduleEvery represents the 'every' value for a schedule
+type ScheduleEvery struct {
+	Seconds int `yaml:"seconds,omitempty"`
+	Minutes int `yaml:"minutes,omitempty"`
+	Hours   int `yaml:"hours,omitempty"`
+	Days    int `yaml:"days,omitempty"`
 }
 
 // Input represents an input source
@@ -145,7 +161,7 @@ func (d *Directive) Validate() error {
 		}
 	}
 
-	for i, h := range d.Handlers {
+	for _, h := range d.Handlers {
 		if h.Input.Type == "" {
 			problems.add(fmt.Errorf("handler for resource %s missing type", h.Input.Resource))
 		}
@@ -163,63 +179,95 @@ func (d *Directive) Validate() error {
 			continue
 		}
 
-		// keep track of the functions that have run so far at each step
-		fullState := map[string]bool{}
-
-		for j, s := range h.Steps {
-			fnsToAdd := []string{}
-
-			if !s.IsFn() && !s.IsGroup() {
-				problems.add(fmt.Errorf("step at position %d for resource	 %s has neither Fn or Group", j, h.Input.Resource))
-			}
-
-			validateFn := func(fn CallableFn) {
-				if _, exists := fns[fn.Fn]; !exists {
-					problems.add(fmt.Errorf("handler for resource %s lists fn at step %d that does not exist: %s (did you forget a namespace?)", h.Input.Resource, j, fn.Fn))
-				}
-
-				if _, err := fn.ParseWith(); err != nil {
-					problems.add(fmt.Errorf("handler for resource %s has invalid 'with' value at step %d: %s", h.Input.Resource, j, err.Error()))
-				}
-
-				for _, d := range fn.DesiredState {
-					if _, exists := fullState[d.Key]; !exists {
-						problems.add(fmt.Errorf("handler for resource %s has 'with' value at step %d referencing a key that is not yet available in the handler's state: %s", h.Input.Resource, j, d.Key))
-					}
-				}
-
-				key := fn.Fn
-				if fn.As != "" {
-					key = fn.As
-				}
-
-				fnsToAdd = append(fnsToAdd, key)
-			}
-
-			if s.IsFn() {
-				validateFn(s.CallableFn)
-			} else {
-				for _, gfn := range s.Group {
-					validateFn(gfn)
-				}
-			}
-
-			for _, newFn := range fnsToAdd {
-				fullState[newFn] = true
-			}
-		}
+		name := fmt.Sprintf("%s %s", h.Input.Method, h.Input.Resource)
+		fullState := validateSteps(executableTypeHandler, name, h.Steps, fns, problems)
 
 		lastStep := h.Steps[len(h.Steps)-1]
 		if h.Response == "" && lastStep.IsGroup() {
-			problems.add(fmt.Errorf("handler for resource %s has group as last step but does not include 'response' field", h.Input.Resource))
+			problems.add(fmt.Errorf("handler for %s has group as last step but does not include 'response' field", name))
 		} else if h.Response != "" {
 			if _, exists := fullState[h.Response]; !exists {
-				problems.add(fmt.Errorf("handler at positiion %d lists response state key that does not exist: %s", i, h.Response))
+				problems.add(fmt.Errorf("handler for %s lists response state key that does not exist: %s", name, h.Response))
 			}
 		}
 	}
 
+	for i, s := range d.Schedules {
+		if s.Name == "" {
+			problems.add(fmt.Errorf("schedule at position %d has no name", i))
+			continue
+		}
+
+		if len(s.Steps) == 0 {
+			problems.add(fmt.Errorf("schedule %s missing steps", s.Name))
+			continue
+		}
+
+		if s.Every.Seconds == 0 && s.Every.Minutes == 0 && s.Every.Hours == 0 && s.Every.Days == 0 {
+			problems.add(fmt.Errorf("schedule %s has no 'every' values", s.Name))
+		}
+
+		validateSteps(executableTypeSchedule, s.Name, s.Steps, fns, problems)
+	}
+
 	return problems.render()
+}
+
+type executableType string
+
+const (
+	executableTypeHandler  = executableType("handler")
+	executableTypeSchedule = executableType("schedule")
+)
+
+func validateSteps(exType executableType, name string, steps []Executable, fns map[string]bool, problems *problems) map[string]bool {
+	// keep track of the functions that have run so far at each step
+	fullState := map[string]bool{}
+
+	for j, s := range steps {
+		fnsToAdd := []string{}
+
+		if !s.IsFn() && !s.IsGroup() {
+			problems.add(fmt.Errorf("step at position %d for %s %s is neither Fn nor Group", j, exType, name))
+		}
+
+		validateFn := func(fn CallableFn) {
+			if _, exists := fns[fn.Fn]; !exists {
+				problems.add(fmt.Errorf("%s for %s lists fn at step %d that does not exist: %s (did you forget a namespace?)", exType, name, j, fn.Fn))
+			}
+
+			if _, err := fn.ParseWith(); err != nil {
+				problems.add(fmt.Errorf("%s for %s has invalid 'with' value at step %d: %s", exType, name, j, err.Error()))
+			}
+
+			for _, d := range fn.DesiredState {
+				if _, exists := fullState[d.Key]; !exists {
+					problems.add(fmt.Errorf("%s for %s has 'with' value at step %d referencing a key that is not yet available in the handler's state: %s", exType, name, j, d.Key))
+				}
+			}
+
+			key := fn.Fn
+			if fn.As != "" {
+				key = fn.As
+			}
+
+			fnsToAdd = append(fnsToAdd, key)
+		}
+
+		if s.IsFn() {
+			validateFn(s.CallableFn)
+		} else {
+			for _, gfn := range s.Group {
+				validateFn(gfn)
+			}
+		}
+
+		for _, newFn := range fnsToAdd {
+			fullState[newFn] = true
+		}
+	}
+
+	return fullState
 }
 
 func (d *Directive) calculateFQFNs() {
@@ -240,6 +288,16 @@ func (d *Directive) calculateFQFNs() {
 
 func (d *Directive) fqfnForFunc(namespace, fn string) string {
 	return fmt.Sprintf("%s#%s@%s", namespace, fn, d.AppVersion)
+}
+
+// NumberOfSeconds calculates the total time in seconds for the schedule's 'every' value
+func (s *Schedule) NumberOfSeconds() int {
+	seconds := s.Every.Seconds
+	minutes := 60 * s.Every.Minutes
+	hours := 60 * 60 * s.Every.Hours
+	days := 60 * 60 * 24 * s.Every.Days
+
+	return seconds + minutes + hours + days
 }
 
 // IsGroup returns true if the executable is a group

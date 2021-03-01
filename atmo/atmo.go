@@ -4,6 +4,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/suborbital/atmo/atmo/coordinator"
 	"github.com/suborbital/reactr/bundle"
+	"github.com/suborbital/reactr/rwasm"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
 )
@@ -21,6 +22,8 @@ func New(mods ...OptionModifier) *Atmo {
 	logger := vlog.Default(
 		vlog.Level(vlog.LogLevelDebug),
 	)
+
+	rwasm.UseLogger(logger)
 
 	server := vk.New(
 		vk.UseEnvPrefix("ATMO"),
