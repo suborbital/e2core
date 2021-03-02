@@ -22,7 +22,7 @@ Since the directory is included in your Bundle, your Runnables can access the fi
 ```rust
 use suborbital::file;
 
-let indexHtml = file::get_static();
+let indexHtml = file::get_static("index.html");
 ```
 
 This allows Atmo to serve static sites, access template files, and more!
