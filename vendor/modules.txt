@@ -29,7 +29,7 @@ github.com/suborbital/reactr/rwasm
 ## explicit
 github.com/suborbital/vektor/vk
 github.com/suborbital/vektor/vlog
-# github.com/wasmerio/wasmer-go v1.0.3-0.20210211205329-09968ca9b0f6
+# github.com/wasmerio/wasmer-go v1.0.3
 ## explicit
 github.com/wasmerio/wasmer-go/wasmer
 github.com/wasmerio/wasmer-go/wasmer/packaged/include
