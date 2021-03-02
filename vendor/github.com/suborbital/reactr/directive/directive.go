@@ -42,9 +42,10 @@ type Handler struct {
 
 // Schedule represents the mapping between an input and a composition of functions
 type Schedule struct {
-	Name  string        `yaml:"name"`
-	Every ScheduleEvery `yaml:"every"`
-	Steps []Executable  `yaml:"steps"`
+	Name  string            `yaml:"name"`
+	Every ScheduleEvery     `yaml:"every"`
+	State map[string]string `yaml:"state"`
+	Steps []Executable      `yaml:"steps"`
 }
 
 // ScheduleEvery represents the 'every' value for a schedule
@@ -180,7 +181,7 @@ func (d *Directive) Validate() error {
 		}
 
 		name := fmt.Sprintf("%s %s", h.Input.Method, h.Input.Resource)
-		fullState := validateSteps(executableTypeHandler, name, h.Steps, fns, problems)
+		fullState := validateSteps(executableTypeHandler, name, h.Steps, map[string]bool{}, fns, problems)
 
 		lastStep := h.Steps[len(h.Steps)-1]
 		if h.Response == "" && lastStep.IsGroup() {
@@ -207,7 +208,13 @@ func (d *Directive) Validate() error {
 			problems.add(fmt.Errorf("schedule %s has no 'every' values", s.Name))
 		}
 
-		validateSteps(executableTypeSchedule, s.Name, s.Steps, fns, problems)
+		// user can provide an 'initial state' via the schedule.State field, so let's prime the state with it.
+		initialState := map[string]bool{}
+		for k := range s.State {
+			initialState[k] = true
+		}
+
+		validateSteps(executableTypeSchedule, s.Name, s.Steps, initialState, fns, problems)
 	}
 
 	return problems.render()
@@ -220,9 +227,9 @@ const (
 	executableTypeSchedule = executableType("schedule")
 )
 
-func validateSteps(exType executableType, name string, steps []Executable, fns map[string]bool, problems *problems) map[string]bool {
+func validateSteps(exType executableType, name string, steps []Executable, initialState map[string]bool, fns map[string]bool, problems *problems) map[string]bool {
 	// keep track of the functions that have run so far at each step
-	fullState := map[string]bool{}
+	fullState := initialState
 
 	for j, s := range steps {
 		fnsToAdd := []string{}

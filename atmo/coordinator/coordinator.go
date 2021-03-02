@@ -144,6 +144,14 @@ func (s *scheduledRunner) OnChange(_ rt.ChangeEvent) error { return nil }
 
 func (c *Coordinator) rtFuncForDirectiveSchedule(sched directive.Schedule) rtFunc {
 	return func(job rt.Job, ctx *rt.Ctx) (interface{}, error) {
+		c.log.Info("executing schedule", sched.Name)
+
+		// read the "initial" state from the Directive
+		state := map[string][]byte{}
+		for k, v := range sched.State {
+			state[k] = []byte(v)
+		}
+
 		req := &request.CoordinatedRequest{
 			Method:  atmoMethodSchedule,
 			URL:     sched.Name,
@@ -151,7 +159,7 @@ func (c *Coordinator) rtFuncForDirectiveSchedule(sched directive.Schedule) rtFun
 			Body:    []byte{},
 			Headers: map[string]string{},
 			Params:  map[string]string{},
-			State:   map[string][]byte{},
+			State:   state,
 		}
 
 		// a sequence executes the handler's steps and manages its state

@@ -18,7 +18,7 @@ github.com/spf13/pflag
 # github.com/suborbital/grav v0.3.0
 ## explicit
 github.com/suborbital/grav/grav
-# github.com/suborbital/reactr v0.7.1-0.20210227224730-5dda9ebf4b90
+# github.com/suborbital/reactr v0.7.1-0.20210302005752-062063525672
 ## explicit
 github.com/suborbital/reactr/bundle
 github.com/suborbital/reactr/directive
@@ -30,7 +30,6 @@ github.com/suborbital/reactr/rwasm
 github.com/suborbital/vektor/vk
 github.com/suborbital/vektor/vlog
 # github.com/wasmerio/wasmer-go v1.0.3
-## explicit
 github.com/wasmerio/wasmer-go/wasmer
 github.com/wasmerio/wasmer-go/wasmer/packaged/include
 github.com/wasmerio/wasmer-go/wasmer/packaged/lib
