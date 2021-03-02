@@ -18,7 +18,7 @@ github.com/spf13/pflag
 # github.com/suborbital/grav v0.3.0
 ## explicit
 github.com/suborbital/grav/grav
-# github.com/suborbital/reactr v0.7.1-0.20210302005752-062063525672
+# github.com/suborbital/reactr v0.7.1
 ## explicit
 github.com/suborbital/reactr/bundle
 github.com/suborbital/reactr/directive
