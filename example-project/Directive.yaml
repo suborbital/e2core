@@ -30,3 +30,10 @@ handlers:
     method: GET
     steps:
       - fn: get-file
+
+schedules:
+  - name: run-every-10
+    every:
+      seconds: 30
+    steps:
+      - fn: log-it

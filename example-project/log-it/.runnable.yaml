@@ -1,0 +1,4 @@
+name: log-it
+namespace: default
+lang: rust
+apiVersion: 0.6.3
