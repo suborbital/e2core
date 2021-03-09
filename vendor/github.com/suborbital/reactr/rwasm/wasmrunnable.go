@@ -83,7 +83,13 @@ func (w *Runner) Run(job rt.Job, ctx *rt.Ctx) (interface{}, error) {
 			return
 		}
 
-		output = <-instance.resultChan
+		// determine if the instance called return_result or return_error
+		select {
+		case res := <-instance.resultChan:
+			output = res
+		case err := <-instance.errChan:
+			runErr = err
+		}
 
 		// deallocate the memory used for the input
 		instance.deallocate(inPointer, len(jobBytes))

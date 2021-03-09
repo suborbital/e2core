@@ -122,12 +122,16 @@ func (c *Coordinator) vkHandlerForDirectiveHandler(handler directive.Handler) vk
 		// a sequence executes the handler's steps and manages its state
 		seq := newSequence(handler.Steps, c.grav.Connect, c.directive.FQFN, ctx.Log)
 
-		state, err := seq.exec(req)
+		seqState, err := seq.exec(req)
 		if err != nil {
 			return nil, vk.Wrap(http.StatusInternalServerError, err)
 		}
 
-		return resultFromState(handler, state), nil
+		if seqState.err != nil {
+			return nil, seqState.err.ToVKErr()
+		}
+
+		return resultFromState(handler, seqState.state), nil
 	}
 }
 

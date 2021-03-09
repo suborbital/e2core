@@ -44,7 +44,7 @@ type Handler struct {
 type Schedule struct {
 	Name  string            `yaml:"name"`
 	Every ScheduleEvery     `yaml:"every"`
-	State map[string]string `yaml:"state"`
+	State map[string]string `yaml:"state,omitempty"`
 	Steps []Executable      `yaml:"steps"`
 }
 
@@ -74,7 +74,15 @@ type CallableFn struct {
 	Fn           string   `yaml:"fn,omitempty"`
 	As           string   `yaml:"as,omitempty"`
 	With         []string `yaml:"with,omitempty"`
+	OnErr        *FnOnErr `yaml:"onErr,omitempty"`
 	DesiredState []Alias  `yaml:"-"`
+}
+
+// FnOnErr describes how to handle an error from a function call
+type FnOnErr struct {
+	Code  map[int]string `yaml:"code,omitempty"`
+	Any   string         `yaml:"any,omitempty"`
+	Other string         `yaml:"other,omitempty"`
 }
 
 // Alias is the parsed version of an entry in the `With` array from a CallableFn
@@ -250,6 +258,32 @@ func validateSteps(exType executableType, name string, steps []Executable, initi
 			for _, d := range fn.DesiredState {
 				if _, exists := fullState[d.Key]; !exists {
 					problems.add(fmt.Errorf("%s for %s has 'with' value at step %d referencing a key that is not yet available in the handler's state: %s", exType, name, j, d.Key))
+				}
+			}
+
+			if fn.OnErr != nil {
+				// if codes are specificed, 'other' should be used, not 'any'
+				if len(fn.OnErr.Code) > 0 && fn.OnErr.Any != "" {
+					problems.add(fmt.Errorf("%s for %s has 'onErr.any' value at step %d while specific codes are specified, use 'other' isntead", exType, name, j))
+				} else if fn.OnErr.Any != "" {
+					if fn.OnErr.Any != "continue" && fn.OnErr.Any != "return" {
+						problems.add(fmt.Errorf("%s for %s has 'onErr.any' value at step %d with an invalid error directive: %s", exType, name, j, fn.OnErr.Any))
+					}
+				}
+
+				// if codes are NOT specificed, 'any' should be used, not 'other'
+				if len(fn.OnErr.Code) == 0 && fn.OnErr.Other != "" {
+					problems.add(fmt.Errorf("%s for %s has 'onErr.other' value at step %d while specific codes are not specified, use 'any' isntead", exType, name, j))
+				} else if fn.OnErr.Other != "" {
+					if fn.OnErr.Other != "continue" && fn.OnErr.Other != "return" {
+						problems.add(fmt.Errorf("%s for %s has 'onErr.any' value at step %d with an invalid error directive: %s", exType, name, j, fn.OnErr.Other))
+					}
+				}
+
+				for code, val := range fn.OnErr.Code {
+					if val != "return" && val != "continue" {
+						problems.add(fmt.Errorf("%s for %s has 'onErr.code' value at step %d with an invalid error directive for code %d: %s", exType, name, j, code, val))
+					}
 				}
 			}
 

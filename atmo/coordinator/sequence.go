@@ -1,6 +1,7 @@
 package coordinator
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
@@ -20,32 +21,39 @@ type connectFunc func() *grav.Pod
 type sequence struct {
 	steps []directive.Executable
 
-	connect connectFunc
-	fqfn    fqfnFunc
+	connectFunc connectFunc
+	fqfn        fqfnFunc
 
 	log *vlog.Logger
 }
 
-type sequenceState map[string][]byte
+type sequenceState struct {
+	state map[string][]byte
+	err   *rt.RunErr
+}
 
 type fnResult struct {
-	name   string
+	fqfn   string
+	key    string
 	result []byte
-	err    error
+	runErr *rt.RunErr // runErr is an error returned from a Runnable
+	err    error      // err is an error arising from trying and failing to execute a Runnable
 }
 
 func newSequence(steps []directive.Executable, connect connectFunc, fqfn fqfnFunc, log *vlog.Logger) *sequence {
 	s := &sequence{
-		steps:   steps,
-		connect: connect,
-		fqfn:    fqfn,
-		log:     log,
+		steps:       steps,
+		connectFunc: connect,
+		fqfn:        fqfn,
+		log:         log,
 	}
 
 	return s
 }
 
-func (seq *sequence) exec(req *request.CoordinatedRequest) (sequenceState, error) {
+// exec will return the "final state" of a sequence. If the state's err is not nil, it means a "handled error" occurred, and it should be returned or handled.
+// if exec itself actually returns an error, it means there was a problem executing the sequence as described, and should be treated as such.
+func (seq *sequence) exec(req *request.CoordinatedRequest) (*sequenceState, error) {
 	for _, step := range seq.steps {
 		stateJSON, err := stateJSONForStep(req, step)
 		if err != nil {
@@ -53,35 +61,55 @@ func (seq *sequence) exec(req *request.CoordinatedRequest) (sequenceState, error
 			return nil, err
 		}
 
+		stepResults := []fnResult{}
+
 		if step.IsFn() {
-			entry, err := seq.runSingleFn(step.CallableFn, stateJSON)
+			singleResult, err := seq.runSingleFn(step.CallableFn, stateJSON)
 			if err != nil {
 				return nil, err
 			}
 
-			if entry != nil {
-				// reactr issue #45
-				key := key(step.CallableFn)
-
-				req.State[key] = entry
-			}
+			stepResults = append(stepResults, *singleResult)
 		} else {
 			// if the step is a group, run them all concurrently and collect the results
-			entries, err := seq.runGroup(step.Group, stateJSON)
+			groupResults, err := seq.runGroup(step.Group, stateJSON)
 			if err != nil {
 				return nil, err
 			}
 
-			for k, v := range entries {
-				req.State[k] = v
+			stepResults = append(stepResults, groupResults...)
+		}
+
+		for _, result := range stepResults {
+			if result.runErr != nil {
+				if step.OnErr != nil {
+					// if the error code is listed as return, or any/other indicates a return, then create an erroring state object and return it.
+					if val, ok := step.OnErr.Code[result.runErr.Code]; ok && val == "return" || step.OnErr.Any == "return" || step.OnErr.Other == "return" {
+						seq.log.Error(errors.Wrapf(result.runErr, "exiting with error returned by %s", result.fqfn))
+
+						state := &sequenceState{
+							err: result.runErr,
+						}
+
+						return state, nil
+					}
+				} else {
+					// if onErr is not set, the default is to continue. this should be revisited after some real-world usage.
+				}
+			} else {
+				req.State[result.key] = result.result
 			}
 		}
 	}
 
-	return req.State, nil
+	state := &sequenceState{
+		state: req.State,
+	}
+
+	return state, nil
 }
 
-func (seq sequence) runSingleFn(fn directive.CallableFn, body []byte) ([]byte, error) {
+func (seq sequence) runSingleFn(fn directive.CallableFn, body []byte) (*fnResult, error) {
 	start := time.Now()
 	defer func() {
 		duration := time.Since(start)
@@ -91,10 +119,10 @@ func (seq sequence) runSingleFn(fn directive.CallableFn, body []byte) ([]byte, e
 	// calculate the FQFN
 	fqfn, err := seq.fqfn(fn.Fn)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to FQFN for group fn %s", fn.Fn)
+		return nil, errors.Wrapf(err, "failed to FQFN for fn %s", fn.Fn)
 	}
 
-	pod := seq.connect()
+	pod := seq.connectFunc()
 	defer pod.Disconnect()
 
 	// compose a message containing the serialized request state, and send it via Grav
@@ -102,47 +130,62 @@ func (seq sequence) runSingleFn(fn directive.CallableFn, body []byte) ([]byte, e
 	jobMsg := grav.NewMsg(fqfn, body)
 
 	var jobResult []byte
-	var jobErr error
+	var runErr *rt.RunErr
 
 	podErr := pod.Send(jobMsg).WaitUntil(grav.Timeout(30), func(msg grav.Message) error {
 		switch msg.Type() {
 		case rt.MsgTypeReactrResult:
+			// if the Runnable returned a result
 			jobResult = msg.Data()
+		case rt.MsgTypeReactrRunErr:
+			// if the Runnable itself returned an error
+			runErr := rt.RunErr{}
+			if err := json.Unmarshal(msg.Data(), &runErr); err != nil {
+				return errors.Wrap(err, "failed to Unmarshal RunErr")
+			}
+
+			runErr = runErr
 		case rt.MsgTypeReactrJobErr:
-			jobErr = errors.New(string(msg.Data()))
+			// if something else caused an error while running this fn
+			return errors.New(string(msg.Data()))
 		case rt.MsgTypeReactrNilResult:
-			// do nothing
+			// if the Runnable returned nil, do nothing
 		}
 
 		return nil
 	})
 
-	// check for errors and results, convert to something useful, and return
-	// this should probably be refactored as it looks pretty goofy
-
+	// podErr would be something that happened whily trying to run a function, not an error returned from a function
 	if podErr != nil {
 		if podErr == grav.ErrWaitTimeout {
-			jobErr = errors.Wrapf(err, "fn %s timed out", fn.Fn)
-		} else {
-			jobErr = errors.Wrap(podErr, "failed to receive fn result")
+			return nil, errors.Wrapf(err, "fn %s timed out", fn.Fn)
 		}
+
+		return nil, errors.Wrapf(podErr, "failed to execute fn %s", fn.Fn)
 	}
 
-	if jobErr != nil {
-		return nil, errors.Wrapf(jobErr, "group fn %s failed", fn.Fn)
-	}
-
-	if jobResult == nil {
+	// runErr would be an actual error returned from a function
+	if runErr != nil {
+		seq.log.Debug("fn", fn.Fn, "returned an error")
+	} else if jobResult == nil {
 		seq.log.Debug("fn", fn.Fn, "returned a nil result")
-		return nil, nil
 	}
 
-	return jobResult, nil
+	key := key(fn)
+
+	result := &fnResult{
+		fqfn:   fqfn,
+		key:    key,
+		result: jobResult,
+		runErr: runErr,
+	}
+
+	return result, nil
 }
 
 // runGroup runs a group of functions
 // this is all more complicated than it needs to be, Grav should be doing more of the work for us here
-func (seq *sequence) runGroup(fns []directive.CallableFn, body []byte) (map[string][]byte, error) {
+func (seq *sequence) runGroup(fns []directive.CallableFn, body []byte) ([]fnResult, error) {
 	start := time.Now()
 	defer func() {
 		seq.log.Debug("group", fmt.Sprintf("executed in %d ms", time.Since(start).Milliseconds()))
@@ -157,35 +200,30 @@ func (seq *sequence) runGroup(fns []directive.CallableFn, body []byte) (map[stri
 		fn := fns[i]
 		seq.log.Debug("running fn", fn.Fn, "from group")
 
-		key := key(fn)
-
 		go func() {
 			res, err := seq.runSingleFn(fn, body)
-
-			result := fnResult{
-				name:   key,
-				result: res,
-				err:    err,
+			if err != nil {
+				seq.log.Error(errors.Wrap(err, "failed to runSingleFn"))
+				resultChan <- fnResult{err: err}
+			} else {
+				resultChan <- *res
 			}
-
-			resultChan <- result
 		}()
 	}
 
-	entries := map[string][]byte{}
+	results := []fnResult{}
 	respCount := 0
 	timeoutChan := time.After(30 * time.Second)
 
 	for respCount < len(fns) {
 		select {
-		case resp := <-resultChan:
-			if resp.err != nil {
-				return nil, errors.Wrapf(resp.err, "%s produced error", resp.name)
+		case result := <-resultChan:
+			if result.err != nil {
+				// if there was an error running the funciton, return that error
+				return nil, result.err
 			}
 
-			if resp.result != nil {
-				entries[resp.name] = resp.result
-			}
+			results = append(results, result)
 		case <-timeoutChan:
 			return nil, errors.New("fn group timed out")
 		}
@@ -193,7 +231,7 @@ func (seq *sequence) runGroup(fns []directive.CallableFn, body []byte) (map[stri
 		respCount++
 	}
 
-	return entries, nil
+	return results, nil
 }
 
 func stateJSONForStep(req *request.CoordinatedRequest, step directive.Executable) ([]byte, error) {
