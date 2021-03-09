@@ -139,12 +139,10 @@ func (seq sequence) runSingleFn(fn directive.CallableFn, body []byte) (*fnResult
 			jobResult = msg.Data()
 		case rt.MsgTypeReactrRunErr:
 			// if the Runnable itself returned an error
-			runErr := rt.RunErr{}
-			if err := json.Unmarshal(msg.Data(), &runErr); err != nil {
+			runErr = &rt.RunErr{}
+			if err := json.Unmarshal(msg.Data(), runErr); err != nil {
 				return errors.Wrap(err, "failed to Unmarshal RunErr")
 			}
-
-			runErr = runErr
 		case rt.MsgTypeReactrJobErr:
 			// if something else caused an error while running this fn
 			return errors.New(string(msg.Data()))
