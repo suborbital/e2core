@@ -16,7 +16,7 @@ import (
 var coord *Coordinator
 
 func init() {
-	coord = New(vlog.Default())
+	coord = New(vlog.Default(vlog.Level(vlog.LogLevelDebug)))
 
 	bundle, err := bundle.Read("../../example-project/runnables.wasm.zip")
 	if err != nil {
