@@ -16,7 +16,7 @@ In Rust:
 
 ```rust
 pub trait Runnable {
-    fn run(&self, input: Vec<u8>) -> Option<Vec<u8>>;
+    fn run(&self, input: Vec<u8>) -> Result<Vec<u8>, RunErr>;
 }
 ```
 

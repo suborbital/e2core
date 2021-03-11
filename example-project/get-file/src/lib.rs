@@ -1,14 +1,14 @@
-use suborbital::runnable;
+use suborbital::runnable::*;
 use suborbital::req;
 use suborbital::file;
 
 struct GetFile{}
 
-impl runnable::Runnable for GetFile {
-    fn run(&self, _: Vec<u8>) -> Option<Vec<u8>> {
+impl Runnable for GetFile {
+    fn run(&self, _: Vec<u8>) -> Result<Vec<u8>, RunErr> {
         let filename = req::url_param("file");
 
-        Some(file::get_static(filename.as_str()).unwrap_or("failed".as_bytes().to_vec()))
+        Ok(file::get_static(filename.as_str()).unwrap_or("failed".as_bytes().to_vec()))
     }
 }
 
@@ -18,5 +18,5 @@ static RUNNABLE: &GetFile = &GetFile{};
 
 #[no_mangle]
 pub extern fn init() {
-    runnable::set(RUNNABLE);
+    use_runnable(RUNNABLE);
 }

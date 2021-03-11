@@ -26,8 +26,7 @@ type rtFunc func(rt.Job, *rt.Ctx) (interface{}, error)
 // Coordinator is a type that is responsible for covnerting the directive into
 // usable Vektor handles by coordinating Reactr jobs and meshing when needed.
 type Coordinator struct {
-	directive *directive.Directive
-	bundle    *bundle.Bundle
+	bundle *bundle.Bundle
 
 	log *vlog.Logger
 
@@ -63,7 +62,7 @@ func (c *Coordinator) UseBundle(bundle *bundle.Bundle) *vk.RouteGroup {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-	c.directive = bundle.Directive
+	c.bundle = bundle
 
 	// mount all of the Wasm modules into the Reactr instance
 	rwasm.HandleBundle(c.reactr, bundle)
@@ -120,7 +119,7 @@ func (c *Coordinator) vkHandlerForDirectiveHandler(handler directive.Handler) vk
 		}
 
 		// a sequence executes the handler's steps and manages its state
-		seq := newSequence(handler.Steps, c.grav.Connect, c.directive.FQFN, ctx.Log)
+		seq := newSequence(handler.Steps, c.grav.Connect, c.bundle.Directive.FQFN, ctx.Log)
 
 		seqState, err := seq.exec(req)
 		if err != nil {
@@ -167,7 +166,7 @@ func (c *Coordinator) rtFuncForDirectiveSchedule(sched directive.Schedule) rtFun
 		}
 
 		// a sequence executes the handler's steps and manages its state
-		seq := newSequence(sched.Steps, c.grav.Connect, c.directive.FQFN, c.log)
+		seq := newSequence(sched.Steps, c.grav.Connect, c.bundle.Directive.FQFN, c.log)
 
 		if _, err := seq.exec(req); err != nil {
 			c.log.Error(errors.Wrapf(err, "schedule %s failed", sched.Name))
