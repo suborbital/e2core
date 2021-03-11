@@ -181,10 +181,6 @@ github.com/stretchr/testify v1.7.0 h1:nwc3DEeHmmLAfoZucVR881uASk0Mfjw8xYJ99tb5Cc
 github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/suborbital/grav v0.3.0 h1:dxe3YCKIblSlZ0Pl+uy0qW/xtXrmRD2gQNLSY4ErgvY=
 github.com/suborbital/grav v0.3.0/go.mod h1:PapJ62PtT9dPmW37WaCD+UMhoZiNPp0N9E3nUfEujC4=
-github.com/suborbital/reactr v0.7.1 h1:yLHa4Y8h+dQRBdFjD+/tQxS0fe52TvZiUfVTZBzQPPM=
-github.com/suborbital/reactr v0.7.1/go.mod h1:5arEv/OCrzC08bb1x5nbkQ2qnKyU6C9nziSZu/nmi9w=
-github.com/suborbital/reactr v0.7.2-0.20210307042934-9cb8a49ff9aa h1:aESPgc50Rpoky9pHWBTjRKZwMIQd5cusY8qeorz721k=
-github.com/suborbital/reactr v0.7.2-0.20210307042934-9cb8a49ff9aa/go.mod h1:5arEv/OCrzC08bb1x5nbkQ2qnKyU6C9nziSZu/nmi9w=
 github.com/suborbital/reactr v0.7.2-0.20210309004447-577a36aed4c4 h1:gpTZmxkQZg3iYkCeUOylPfOyPuPlCJ9D8k07yi344o0=
 github.com/suborbital/reactr v0.7.2-0.20210309004447-577a36aed4c4/go.mod h1:5arEv/OCrzC08bb1x5nbkQ2qnKyU6C9nziSZu/nmi9w=
 github.com/suborbital/vektor v0.2.2/go.mod h1:6YQE7r6t1JcVs3twpqjXDftsLUaTNUk5YorRKHcDamI=
@@ -313,7 +309,6 @@ golang.org/x/tools v0.0.0-20191112195655-aa38f8e97acc/go.mod h1:b+2E5dAYhXwXZwtn
 golang.org/x/tools v0.0.0-20191119224855-298f0cb1881e/go.mod h1:b+2E5dAYhXwXZwtnZ6UAqBI28+e2cm9otk0dWdXHAEo=
 golang.org/x/xerrors v0.0.0-20190717185122-a985d3407aa7/go.mod h1:I/5z698sn9Ka8TeJc9MKroUUfqBBauWjQqLJ2OPfmY0=
 golang.org/x/xerrors v0.0.0-20191011141410-1b5146add898/go.mod h1:I/5z698sn9Ka8TeJc9MKroUUfqBBauWjQqLJ2OPfmY0=
-golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543 h1:E7g+9GITq07hpfrRu66IVDexMakfv52eLZ2CXBWiKr4=
 golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543/go.mod h1:I/5z698sn9Ka8TeJc9MKroUUfqBBauWjQqLJ2OPfmY0=
 google.golang.org/api v0.4.0/go.mod h1:8k5glujaEP+g9n7WNsDg8QP6cUVNI86fCNMcbazEtwE=
 google.golang.org/api v0.7.0/go.mod h1:WtwebWUNSVBH/HAw79HIFXZNqEvBhG+Ra+ax0hx3E3M=
