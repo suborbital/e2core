@@ -36,11 +36,11 @@ type sequenceState struct {
 }
 
 type fnResult struct {
-	fqfn   string
-	key    string
-	result []byte
-	runErr *rt.RunErr // runErr is an error returned from a Runnable
-	err    error      // err is an error arising from trying and failing to execute a Runnable
+	fqfn     string
+	key      string
+	response *request.CoordinatedResponse
+	runErr   *rt.RunErr // runErr is an error returned from a Runnable
+	err      error      // err is an error arising from trying and failing to execute a Runnable
 }
 
 func newSequence(steps []directive.Executable, connect connectFunc, fqfn fqfnFunc, log *vlog.Logger) *sequence {
@@ -115,7 +115,13 @@ func (seq *sequence) exec(req *request.CoordinatedRequest) (*sequenceState, erro
 					// if onErr is not set, the default is to continue. this should be revisited after some real-world usage.
 				}
 			} else {
-				req.State[result.key] = result.result
+				req.State[result.key] = result.response.Output
+
+				if result.response.RespHeaders != nil {
+					for k, v := range result.response.RespHeaders {
+						req.RespHeaders[k] = v
+					}
+				}
 			}
 		}
 	}
@@ -189,11 +195,17 @@ func (seq sequence) runSingleFn(fn directive.CallableFn, body []byte) (*fnResult
 
 	key := key(fn)
 
+	cResponse := &request.CoordinatedResponse{}
+	if err := json.Unmarshal(jobResult, cResponse); err != nil {
+		// handle backwards-compat
+		cResponse.Output = jobResult
+	}
+
 	result := &fnResult{
-		fqfn:   fqfn,
-		key:    key,
-		result: jobResult,
-		runErr: runErr,
+		fqfn:     fqfn,
+		key:      key,
+		response: cResponse,
+		runErr:   runErr,
 	}
 
 	return result, nil

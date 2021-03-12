@@ -130,6 +130,13 @@ func (c *Coordinator) vkHandlerForDirectiveHandler(handler directive.Handler) vk
 			return nil, vk.Wrap(http.StatusInternalServerError, err)
 		}
 
+		// handle any response headers that were set by the Runnables
+		if req.RespHeaders != nil {
+			for head, val := range req.RespHeaders {
+				ctx.RespHeaders.Set(head, val)
+			}
+		}
+
 		return resultFromState(handler, seqState.state), nil
 	}
 }
