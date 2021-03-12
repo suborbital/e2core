@@ -25,7 +25,7 @@ public func CacheSet(key: String, value: String, ttl: Int)
 Get the provided key from the cache.
 
 ```rust
-pub fn get(key: &str) -> Option<Vec<u8>>
+pub fn get(key: &str) -> Result<Vec<u8>, RunErr>
 ```
 
 ```swift

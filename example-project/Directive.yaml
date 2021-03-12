@@ -31,9 +31,10 @@ handlers:
     steps:
       - fn: get-file
 
-schedules:
-  - name: run-every-10
-    every:
-      seconds: 30
-    steps:
-      - fn: log-it
+# uncomment to try out scheduled jobs!
+# schedules:
+#   - name: run-every-10
+#     every:
+#       seconds: 30
+#     steps:
+#       - fn: log-it

@@ -10,7 +10,8 @@ import (
 
 // MsgTypeReactrJobErr and others are Grav message types used for Reactr job
 const (
-	MsgTypeReactrJobErr    = "reactr.joberr"
+	MsgTypeReactrJobErr    = "reactr.joberr" // any kind of error from a job run
+	MsgTypeReactrRunErr    = "reactr.runerr" // specifically a RunErr returned from a Wasm Runnable
 	MsgTypeReactrResult    = "reactr.result"
 	MsgTypeReactrNilResult = "reactr.nil"
 )
@@ -86,7 +87,14 @@ func (h *Reactr) Listen(pod *grav.Pod, msgType string) {
 		result, err := helper(msg.Data()).Then()
 		if err != nil {
 			h.log.Error(errors.Wrapf(err, "job from message %s returned error result", msg.UUID()))
-			replyMsg = grav.NewMsg(MsgTypeReactrJobErr, []byte(err.Error()))
+
+			runErr := &RunErr{}
+			if errors.As(err, runErr) {
+				// if a Wasm Runnable returned a RunErr, let's be sure to handle that
+				replyMsg = grav.NewMsg(MsgTypeReactrRunErr, []byte(runErr.Error()))
+			} else {
+				replyMsg = grav.NewMsg(MsgTypeReactrJobErr, []byte(err.Error()))
+			}
 		} else {
 			if result == nil {
 				// if the job returned no result

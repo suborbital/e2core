@@ -67,6 +67,7 @@ type wasmInstance struct {
 	staticFileFunc bundle.FileFunc
 
 	resultChan chan []byte
+	errChan    chan rt.RunErr
 	lock       sync.Mutex
 }
 
@@ -124,6 +125,7 @@ func (w *wasmEnvironment) addInstance() error {
 		wasmerInst:     inst,
 		staticFileFunc: w.staticFileFunc,
 		resultChan:     make(chan []byte, 1),
+		errChan:        make(chan rt.RunErr, 1),
 		lock:           sync.Mutex{},
 	}
 
@@ -198,6 +200,7 @@ func (w *wasmEnvironment) internals() (*wasmer.Module, *wasmer.Store, *wasmer.Im
 		// mount the Runnable API host functions to the module's imports
 		addHostFns(imports, store,
 			returnResult(),
+			returnError(),
 			fetchURL(),
 			cacheSet(),
 			cacheGet(),

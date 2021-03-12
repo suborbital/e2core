@@ -11,7 +11,7 @@ The following namespace methods are available:
 Retrieves the contents of the static file with the given name
 
 ```rust
-pub fn get_static(name: &str) -> Option<Vec<u8>>
+pub fn get_static(name: &str) -> Result<Vec<u8>, RunErr>
 ```
 
 ```swift

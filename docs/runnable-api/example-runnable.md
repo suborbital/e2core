@@ -11,12 +11,12 @@ use suborbital::{req, runnable, util};
 
 struct Foobar{}
 
-impl runnable::Runnable for Foobar {
-    fn run(&self, _: Vec<u8>) -> Option<Vec<u8>> {
+impl Runnable for Foobar {
+    fn run(&self, _: Vec<u8>) -> Result<Vec<u8>, RunErr> {
         let body = req::body_raw();
         let body_string = util::to_string(body);
     
-        Some(String::from(format!("hello {}", body_string)).as_bytes().to_vec())
+        Ok(String::from(format!("hello {}", body_string)).as_bytes().to_vec())
     }
 }
 
@@ -26,7 +26,7 @@ static RUNNABLE: &Foobar = &Foobar{};
 
 #[no_mangle]
 pub extern fn init() {
-    runnable::set(RUNNABLE);
+    use_runnable(RUNNABLE);
 }
 
 ```
