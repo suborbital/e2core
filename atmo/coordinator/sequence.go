@@ -86,8 +86,21 @@ func (seq *sequence) exec(req *request.CoordinatedRequest) (*sequenceState, erro
 		for _, result := range stepResults {
 			if result.runErr != nil {
 				if step.OnErr != nil {
+					shouldErr := false
+
 					// if the error code is listed as return, or any/other indicates a return, then create an erroring state object and return it.
-					if val, ok := step.OnErr.Code[result.runErr.Code]; ok && val == "return" || step.OnErr.Any == "return" || step.OnErr.Other == "return" {
+
+					if len(step.OnErr.Code) > 0 {
+						if val, ok := step.OnErr.Code[result.runErr.Code]; ok && val == "return" {
+							shouldErr = true
+						} else if !ok && step.OnErr.Other == "return" {
+							shouldErr = true
+						}
+					} else if step.OnErr.Any == "return" {
+						shouldErr = true
+					}
+
+					if shouldErr {
 						seq.log.Error(errors.Wrapf(result.runErr, "returning with error from %s", result.fqfn))
 
 						state := &sequenceState{
@@ -95,6 +108,8 @@ func (seq *sequence) exec(req *request.CoordinatedRequest) (*sequenceState, erro
 						}
 
 						return state, ErrSequenceRunErr
+					} else {
+						seq.log.Info("continuing after error from", result.fqfn)
 					}
 				} else {
 					// if onErr is not set, the default is to continue. this should be revisited after some real-world usage.
