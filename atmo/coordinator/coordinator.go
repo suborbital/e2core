@@ -123,11 +123,11 @@ func (c *Coordinator) vkHandlerForDirectiveHandler(handler directive.Handler) vk
 
 		seqState, err := seq.exec(req)
 		if err != nil {
-			return nil, vk.Wrap(http.StatusInternalServerError, err)
-		}
+			if errors.Is(err, ErrSequenceRunErr) && seqState.err != nil {
+				return nil, seqState.err.ToVKErr()
+			}
 
-		if seqState.err != nil {
-			return nil, seqState.err.ToVKErr()
+			return nil, vk.Wrap(http.StatusInternalServerError, err)
 		}
 
 		return resultFromState(handler, seqState.state), nil
@@ -168,10 +168,12 @@ func (c *Coordinator) rtFuncForDirectiveSchedule(sched directive.Schedule) rtFun
 		// a sequence executes the handler's steps and manages its state
 		seq := newSequence(sched.Steps, c.grav.Connect, c.bundle.Directive.FQFN, c.log)
 
-		if _, err := seq.exec(req); err != nil {
-			c.log.Error(errors.Wrapf(err, "schedule %s failed", sched.Name))
-
-			// schedule results are discarded, so there's no point in returning the error
+		if seqState, err := seq.exec(req); err != nil {
+			if errors.Is(err, ErrSequenceRunErr) && seqState.err != nil {
+				c.log.Error(errors.Wrapf(seqState.err, "schedule %s returned an error", sched.Name))
+			} else {
+				c.log.Error(errors.Wrapf(err, "schedule %s failed", sched.Name))
+			}
 		}
 
 		return nil, nil

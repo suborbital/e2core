@@ -18,6 +18,9 @@ import (
 type fqfnFunc func(string) (string, error)
 type connectFunc func() *grav.Pod
 
+// ErrSequenceRunErr is returned when the sequence returned due to a Runnable's RunErr
+var ErrSequenceRunErr = errors.New("sequence resulted in a RunErr")
+
 type sequence struct {
 	steps []directive.Executable
 
@@ -85,13 +88,13 @@ func (seq *sequence) exec(req *request.CoordinatedRequest) (*sequenceState, erro
 				if step.OnErr != nil {
 					// if the error code is listed as return, or any/other indicates a return, then create an erroring state object and return it.
 					if val, ok := step.OnErr.Code[result.runErr.Code]; ok && val == "return" || step.OnErr.Any == "return" || step.OnErr.Other == "return" {
-						seq.log.Error(errors.Wrapf(result.runErr, "exiting with error returned by %s", result.fqfn))
+						seq.log.Error(errors.Wrapf(result.runErr, "returning with error from %s", result.fqfn))
 
 						state := &sequenceState{
 							err: result.runErr,
 						}
 
-						return state, nil
+						return state, ErrSequenceRunErr
 					}
 				} else {
 					// if onErr is not set, the default is to continue. this should be revisited after some real-world usage.

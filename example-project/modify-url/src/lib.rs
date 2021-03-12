@@ -6,7 +6,11 @@ struct ModifyUrl{}
 
 impl Runnable for ModifyUrl {
     fn run(&self, _: Vec<u8>) -> Result<Vec<u8>, RunErr> {
-        let body_str = util::to_string(req::body_raw());
+        let mut body_str = util::to_string(req::body_raw());
+
+        if body_str == "" {
+            body_str = req::state("url");
+        }
 
         let modified = format!("{}/suborbital", body_str.as_str());
         Ok(modified.as_bytes().to_vec())

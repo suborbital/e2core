@@ -35,9 +35,41 @@ func TestBasicSequence(t *testing.T) {
 		},
 	}
 
-	if coord.bundle == nil {
-		t.Error("directive is nil")
-		return
+	seq := newSequence(steps, coord.grav.Connect, coord.bundle.Directive.FQFN, coord.log)
+
+	req := &request.CoordinatedRequest{
+		Method: "GET",
+		URL:    "/hello/world",
+		ID:     uuid.New().String(),
+		Body:   []byte("world"),
+		State:  map[string][]byte{},
+	}
+
+	state, err := seq.exec(req)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if val, ok := state.state["helloworld-rs"]; !ok {
+		t.Error("helloworld state is missing")
+	} else if !bytes.Equal(val, []byte("hello world")) {
+		t.Error("unexpected helloworld state value:", string(val))
+	}
+}
+
+func TestGroupSequence(t *testing.T) {
+	steps := []directive.Executable{
+		{
+			Group: []directive.CallableFn{
+				{
+					Fn: "helloworld-rs",
+				},
+				{
+					Fn: "get-file",
+					As: "main.md",
+				},
+			},
+		},
 	}
 
 	seq := newSequence(steps, coord.grav.Connect, coord.bundle.Directive.FQFN, coord.log)
@@ -48,7 +80,7 @@ func TestBasicSequence(t *testing.T) {
 		ID:     uuid.New().String(),
 		Body:   []byte("world"),
 		State: map[string][]byte{
-			"hello": []byte("what is up"),
+			"file": []byte("main.md"),
 		},
 	}
 
@@ -61,5 +93,136 @@ func TestBasicSequence(t *testing.T) {
 		t.Error("helloworld state is missing")
 	} else if !bytes.Equal(val, []byte("hello world")) {
 		t.Error("unexpected helloworld state value:", string(val))
+	}
+
+	if val, ok := state.state["main.md"]; !ok {
+		t.Error("get-file state is missing")
+	} else if !bytes.Equal(val, []byte("## hello")) {
+		t.Error("unexpected get-file state value:", string(val))
+	}
+}
+
+func TestAsOnErrContinueSequence(t *testing.T) {
+	steps := []directive.Executable{
+		{
+			CallableFn: directive.CallableFn{
+				Fn: "helloworld-rs",
+				As: "hello",
+			},
+		},
+		{
+			CallableFn: directive.CallableFn{
+				Fn: "return-err",
+				OnErr: &directive.FnOnErr{
+					Any: "continue",
+				},
+			},
+		},
+	}
+
+	seq := newSequence(steps, coord.grav.Connect, coord.bundle.Directive.FQFN, coord.log)
+
+	req := &request.CoordinatedRequest{
+		Method: "GET",
+		URL:    "/hello/world",
+		ID:     uuid.New().String(),
+		Body:   []byte("world"),
+		State:  map[string][]byte{},
+	}
+
+	state, err := seq.exec(req)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if val, ok := state.state["hello"]; !ok {
+		t.Error("hello state is missing")
+	} else if !bytes.Equal(val, []byte("hello world")) {
+		t.Error("unexpected hello state value:", string(val))
+	}
+}
+
+func TestAsOnErrReturnSequence(t *testing.T) {
+	steps := []directive.Executable{
+		{
+			CallableFn: directive.CallableFn{
+				Fn: "helloworld-rs",
+				As: "hello",
+			},
+		},
+		{
+			CallableFn: directive.CallableFn{
+				Fn: "return-err",
+				OnErr: &directive.FnOnErr{
+					Any: "return",
+				},
+			},
+		},
+	}
+
+	seq := newSequence(steps, coord.grav.Connect, coord.bundle.Directive.FQFN, coord.log)
+
+	req := &request.CoordinatedRequest{
+		Method: "GET",
+		URL:    "/hello/world",
+		ID:     uuid.New().String(),
+		Body:   []byte("world"),
+		State:  map[string][]byte{},
+	}
+
+	state, err := seq.exec(req)
+	if err != ErrSequenceRunErr {
+		t.Error(errors.New("sequence should have returned ErrSequenceRunErr, did not"))
+	}
+
+	if state.err.Code != 400 {
+		t.Error("error code should be 400, is actually", state.err.Code)
+	}
+
+	if state.err.Message != "job failed" {
+		t.Error("message should be 'job failed', is actually", state.err.Message)
+	}
+}
+
+func TestWithSequence(t *testing.T) {
+	steps := []directive.Executable{
+		{
+			CallableFn: directive.CallableFn{
+				Fn: "helloworld-rs", // the body is empty, so this will return only "hello"
+			},
+		},
+		{
+			CallableFn: directive.CallableFn{
+				Fn:   "modify-url", // if there's no body, it'll look in state for '
+				With: []string{"url: helloworld-rs"},
+			},
+		},
+	}
+
+	seq := newSequence(steps, coord.grav.Connect, coord.bundle.Directive.FQFN, coord.log)
+
+	req := &request.CoordinatedRequest{
+		Method: "GET",
+		URL:    "/hello/world",
+		ID:     uuid.New().String(),
+		Body:   []byte(""),
+		State:  map[string][]byte{},
+	}
+
+	state, err := seq.exec(req)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if val, ok := state.state["helloworld-rs"]; !ok {
+		t.Error("helloworld-rs state is missing")
+	} else if !bytes.Equal(val, []byte("hello ")) {
+		t.Error("unexpected helloworld-rs state value:", string(val))
+	}
+
+	if val, ok := state.state["modify-url"]; !ok {
+		t.Error("modify-url state is missing")
+	} else if !bytes.Equal(val, []byte("hello /suborbital")) {
+		t.Error("unexpected modify-url state value:", string(val))
 	}
 }

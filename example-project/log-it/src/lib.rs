@@ -1,4 +1,5 @@
-use suborbital::{log, req, runnable};
+use suborbital::runnable::*;
+use suborbital::{log, req};
 
 struct LogIt{}
 
