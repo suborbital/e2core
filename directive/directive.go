@@ -249,8 +249,8 @@ func validateSteps(exType executableType, name string, steps []Executable, initi
 	for j, s := range steps {
 		fnsToAdd := []string{}
 
-		if !s.IsFn() && !s.IsGroup() {
-			problems.add(fmt.Errorf("step at position %d for %s %s is neither Fn nor Group", j, exType, name))
+		if !s.IsFn() && !s.IsGroup() && !s.IsForEach() {
+			problems.add(fmt.Errorf("step at position %d for %s %s isn't an Fn, Group, or ForEach", j, exType, name))
 		}
 
 		validateFn := func(fn CallableFn) {
@@ -304,10 +304,24 @@ func validateSteps(exType executableType, name string, steps []Executable, initi
 
 		if s.IsFn() {
 			validateFn(s.CallableFn)
-		} else {
+		} else if s.IsGroup() {
 			for _, gfn := range s.Group {
 				validateFn(gfn)
 			}
+		} else if s.IsForEach() {
+			if s.ForEach.As == "" {
+				problems.add(fmt.Errorf("ForEach at position %d for %s %s is missing 'as' value", j, exType, name))
+			}
+
+			if s.ForEach.Fn.As != "" || (s.ForEach.Fn.With != nil && len(s.ForEach.Fn.With) > 0) {
+				problems.add(fmt.Errorf("ForEach at position %d for %s %s should not have 'fn.as' or 'fn.with' ", j, exType, name))
+			}
+
+			validateFn(s.ForEach.Fn)
+
+			// the key for a ForEach is not the actual Fn, it's the ForEach's As value
+			// so replace the value that validateFn sets automatically
+			fnsToAdd[len(fnsToAdd)-1] = s.ForEach.As
 		}
 
 		for _, newFn := range fnsToAdd {
