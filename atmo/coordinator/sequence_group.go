@@ -1,7 +1,6 @@
 package coordinator
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/pkg/errors"
@@ -13,7 +12,7 @@ import (
 func (seq *sequence) runGroup(fns []directive.CallableFn, reqJSON []byte) ([]fnResult, error) {
 	start := time.Now()
 	defer func() {
-		seq.log.Debug("group", fmt.Sprintf("executed in %d ms", time.Since(start).Milliseconds()))
+		seq.log.Debug("group executed in", time.Since(start).Milliseconds(), "ms")
 	}()
 
 	resultChan := make(chan fnResult, len(fns))

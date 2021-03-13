@@ -15,7 +15,7 @@ import (
 func (seq *sequence) runForEach(forEach *directive.ForEach, req request.CoordinatedRequest) (*fnResult, error) {
 	start := time.Now()
 	defer func() {
-		seq.log.Debug("group", fmt.Sprintf("executed in %d ms", time.Since(start).Milliseconds()))
+		seq.log.Debug("forEach executed in", time.Since(start).Milliseconds(), "ms")
 	}()
 
 	val, ok := req.State[forEach.In]

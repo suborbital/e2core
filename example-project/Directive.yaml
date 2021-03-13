@@ -42,9 +42,10 @@ handlers:
       - fn: set-array
 
       - forEach:
-        in: set-array
-        fn: run-each
-        as: output
+          in: set-array
+          fn: 
+            fn: run-each
+          as: output
 
 # uncomment to try out scheduled jobs!
 # schedules:

@@ -2,7 +2,6 @@ package coordinator
 
 import (
 	"encoding/json"
-	"fmt"
 	"time"
 
 	"github.com/pkg/errors"
@@ -15,8 +14,7 @@ import (
 func (seq sequence) runSingleFn(fn directive.CallableFn, reqJSON []byte) (*fnResult, error) {
 	start := time.Now()
 	defer func() {
-		duration := time.Since(start)
-		seq.log.Debug("fn", fn.Fn, fmt.Sprintf("executed in %d ms", duration.Milliseconds()))
+		seq.log.Debug("fn", fn.Fn, "executed in", time.Since(start).Milliseconds(), "ms")
 	}()
 
 	// calculate the FQFN
