@@ -181,8 +181,8 @@ github.com/stretchr/testify v1.7.0 h1:nwc3DEeHmmLAfoZucVR881uASk0Mfjw8xYJ99tb5Cc
 github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/suborbital/grav v0.3.0 h1:dxe3YCKIblSlZ0Pl+uy0qW/xtXrmRD2gQNLSY4ErgvY=
 github.com/suborbital/grav v0.3.0/go.mod h1:PapJ62PtT9dPmW37WaCD+UMhoZiNPp0N9E3nUfEujC4=
-github.com/suborbital/reactr v0.7.2-0.20210309004447-577a36aed4c4 h1:gpTZmxkQZg3iYkCeUOylPfOyPuPlCJ9D8k07yi344o0=
-github.com/suborbital/reactr v0.7.2-0.20210309004447-577a36aed4c4/go.mod h1:5arEv/OCrzC08bb1x5nbkQ2qnKyU6C9nziSZu/nmi9w=
+github.com/suborbital/reactr v0.8.1 h1:5e1hIzhQIJnqqpRmvXOJ4uIxY4R4F3+DG9I7hdJjAPY=
+github.com/suborbital/reactr v0.8.1/go.mod h1:5arEv/OCrzC08bb1x5nbkQ2qnKyU6C9nziSZu/nmi9w=
 github.com/suborbital/vektor v0.2.2/go.mod h1:6YQE7r6t1JcVs3twpqjXDftsLUaTNUk5YorRKHcDamI=
 github.com/suborbital/vektor v0.2.3 h1:PtEL4n2tRfGSUrE2Fx0hm2YkUwyXM4fVePJeRJgyJJs=
 github.com/suborbital/vektor v0.2.3/go.mod h1:6YQE7r6t1JcVs3twpqjXDftsLUaTNUk5YorRKHcDamI=

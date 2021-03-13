@@ -13,13 +13,14 @@ import (
 // CoordinatedRequest represents a request whose fulfillment can be coordinated across multiple hosts
 // and is serializable to facilitate interoperation with Wasm Runnables and transmissible over the wire
 type CoordinatedRequest struct {
-	Method  string            `json:"method"`
-	URL     string            `json:"url"`
-	ID      string            `json:"request_id"`
-	Body    []byte            `json:"body"`
-	Headers map[string]string `json:"headers"`
-	Params  map[string]string `json:"params"`
-	State   map[string][]byte `json:"state"`
+	Method      string            `json:"method"`
+	URL         string            `json:"url"`
+	ID          string            `json:"request_id"`
+	Body        []byte            `json:"body"`
+	Headers     map[string]string `json:"headers"`
+	RespHeaders map[string]string `json:"resp_headers"`
+	Params      map[string]string `json:"params"`
+	State       map[string][]byte `json:"state"`
 
 	bodyValues map[string]interface{} `json:"-"`
 }
@@ -44,13 +45,14 @@ func FromVKRequest(r *http.Request, ctx *vk.Ctx) (*CoordinatedRequest, error) {
 	}
 
 	req := &CoordinatedRequest{
-		Method:  r.Method,
-		URL:     r.URL.RequestURI(),
-		ID:      ctx.RequestID(),
-		Body:    reqBody,
-		Headers: flatHeaders,
-		Params:  flatParams,
-		State:   map[string][]byte{},
+		Method:      r.Method,
+		URL:         r.URL.RequestURI(),
+		ID:          ctx.RequestID(),
+		Body:        reqBody,
+		Headers:     flatHeaders,
+		RespHeaders: map[string]string{},
+		Params:      flatParams,
+		State:       map[string][]byte{},
 	}
 
 	return req, nil

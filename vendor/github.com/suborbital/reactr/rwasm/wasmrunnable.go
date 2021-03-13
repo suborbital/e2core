@@ -101,6 +101,20 @@ func (w *Runner) Run(job rt.Job, ctx *rt.Ctx) (interface{}, error) {
 		return nil, errors.Wrap(runErr, "failed to execute Wasm Runnable")
 	}
 
+	if req != nil {
+		resp := &request.CoordinatedResponse{
+			Output:      output,
+			RespHeaders: req.RespHeaders,
+		}
+
+		respBytes, err := resp.ToJSON()
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to resp.ToJSON")
+		}
+
+		output = respBytes
+	}
+
 	return output, nil
 }
 

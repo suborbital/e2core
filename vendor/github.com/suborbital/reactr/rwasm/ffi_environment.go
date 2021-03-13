@@ -206,6 +206,7 @@ func (w *wasmEnvironment) internals() (*wasmer.Module, *wasmer.Store, *wasmer.Im
 			cacheGet(),
 			logMsg(),
 			requestGetField(),
+			respSetHeader(),
 			getStaticFile(),
 		)
 
