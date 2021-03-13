@@ -9,7 +9,8 @@ require (
 	github.com/suborbital/grav v0.3.0
 	github.com/suborbital/reactr v0.8.1
 	github.com/suborbital/vektor v0.2.3
-	golang.org/x/mod v0.4.1 // indirect
+	golang.org/x/mod v0.4.1
 	golang.org/x/net v0.0.0-20210119194325-5f4716e94777 // indirect
 	golang.org/x/text v0.3.5 // indirect
+	gopkg.in/yaml.v2 v2.4.0
 )

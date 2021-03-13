@@ -7,8 +7,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	"github.com/suborbital/atmo/directive"
 	"github.com/suborbital/reactr/bundle"
-	"github.com/suborbital/reactr/directive"
 	"github.com/suborbital/reactr/request"
 	"github.com/suborbital/vektor/vlog"
 )
