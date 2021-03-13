@@ -9,7 +9,7 @@ impl Runnable for ModifyUrl {
         let mut body_str = util::to_string(req::body_raw());
 
         if body_str == "" {
-            body_str = req::state("url");
+            body_str = req::state("url").unwrap_or_default();
         }
 
         let modified = format!("{}/suborbital", body_str.as_str());

@@ -67,6 +67,7 @@ type Input struct {
 type Executable struct {
 	CallableFn `yaml:"callableFn,inline"`
 	Group      []CallableFn `yaml:"group,omitempty"`
+	ForEach    *ForEach     `yaml:"forEach,omitempty"`
 }
 
 // CallableFn is a fn along with its "variable name" and "args"
@@ -83,6 +84,12 @@ type FnOnErr struct {
 	Code  map[int]string `yaml:"code,omitempty"`
 	Any   string         `yaml:"any,omitempty"`
 	Other string         `yaml:"other,omitempty"`
+}
+
+type ForEach struct {
+	In string     `yaml:"in"`
+	Fn CallableFn `yaml:"fn"`
+	As string     `yaml:"as"`
 }
 
 // Alias is the parsed version of an entry in the `With` array from a CallableFn
@@ -343,12 +350,17 @@ func (s *Schedule) NumberOfSeconds() int {
 
 // IsGroup returns true if the executable is a group
 func (e *Executable) IsGroup() bool {
-	return e.Fn == "" && e.Group != nil && len(e.Group) > 0
+	return e.Fn == "" && e.Group != nil && len(e.Group) > 0 && e.ForEach == nil
 }
 
 // IsFn returns true if the executable is a group
 func (e *Executable) IsFn() bool {
-	return e.Fn != "" && e.Group == nil
+	return e.Fn != "" && e.Group == nil && e.ForEach == nil
+}
+
+// IsForEach returns true if the exectuable is a ForEach
+func (e *Executable) IsForEach() bool {
+	return e.ForEach != nil && e.Fn == "" && e.Group == nil
 }
 
 // ParseWith parses the fn's 'with' clause and returns the desired state
