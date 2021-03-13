@@ -40,7 +40,7 @@ type fnResult struct {
 	key      string
 	response *request.CoordinatedResponse
 	runErr   *rt.RunErr // runErr is an error returned from a Runnable
-	err      error      // err is an annoying "hack" that allows runGroup to propogate errors out of its loop. Should be refactored when possible.
+	err      error      // err is an annoying workaround that allows runGroup to propogate non-RunErrs out of its loop. Should be refactored when possible.
 }
 
 func newSequence(steps []directive.Executable, connect connectFunc, fqfn fqfnFunc, log *vlog.Logger) *sequence {
@@ -110,9 +110,12 @@ func (seq *sequence) exec(req *request.CoordinatedRequest) (*sequenceState, erro
 						return state, ErrSequenceRunErr
 					} else {
 						seq.log.Info("continuing after error from", result.fqfn)
+
+						// set the error's JSON as the state value
+						req.State[result.key] = []byte(result.runErr.Error())
 					}
 				} else {
-					// set the error's JSON as the state value
+					// the default if no onErr is set is to continue, so put the error JSON in state
 					req.State[result.key] = []byte(result.runErr.Error())
 				}
 			} else {
