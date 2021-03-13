@@ -15,17 +15,16 @@ github.com/sethvargo/go-envconfig
 github.com/spf13/cobra
 # github.com/spf13/pflag v1.0.5
 github.com/spf13/pflag
-# github.com/suborbital/grav v0.3.0
+# github.com/suborbital/grav v0.3.2
 ## explicit
 github.com/suborbital/grav/grav
-# github.com/suborbital/reactr v0.8.1
+# github.com/suborbital/reactr v0.8.2-0.20210313181650-a56d26f1fabf
 ## explicit
 github.com/suborbital/reactr/bundle
-github.com/suborbital/reactr/directive
 github.com/suborbital/reactr/request
 github.com/suborbital/reactr/rt
 github.com/suborbital/reactr/rwasm
-# github.com/suborbital/vektor v0.2.3
+# github.com/suborbital/vektor v0.2.4
 ## explicit
 github.com/suborbital/vektor/vk
 github.com/suborbital/vektor/vlog
@@ -36,16 +35,15 @@ github.com/wasmerio/wasmer-go/wasmer/packaged/lib
 github.com/wasmerio/wasmer-go/wasmer/packaged/lib/darwin-amd64
 github.com/wasmerio/wasmer-go/wasmer/packaged/lib/linux-aarch64
 github.com/wasmerio/wasmer-go/wasmer/packaged/lib/linux-amd64
-# golang.org/x/crypto v0.0.0-20201221181555-eec23a3978ad
+# golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83
 golang.org/x/crypto/acme
 golang.org/x/crypto/acme/autocert
-# golang.org/x/mod v0.4.1
+# golang.org/x/mod v0.4.2
 ## explicit
 golang.org/x/mod/semver
-# golang.org/x/net v0.0.0-20210119194325-5f4716e94777
-## explicit
+# golang.org/x/net v0.0.0-20210226172049-e18ecbb05110
 golang.org/x/net/idna
-# golang.org/x/sync v0.0.0-20201207232520-09787c993a3a
+# golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 golang.org/x/sync/errgroup
 # golang.org/x/text v0.3.5
 ## explicit

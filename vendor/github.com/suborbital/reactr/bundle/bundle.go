@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"github.com/suborbital/reactr/directive"
+	"github.com/suborbital/atmo/directive"
 )
 
 // FileFunc is a function that returns the contents of a requested file
