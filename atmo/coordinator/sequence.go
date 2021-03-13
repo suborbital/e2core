@@ -40,7 +40,7 @@ type fnResult struct {
 	key      string
 	response *request.CoordinatedResponse
 	runErr   *rt.RunErr // runErr is an error returned from a Runnable
-	err      error      // err is an error arising from trying and failing to execute a Runnable
+	err      error      // err is an annoying "hack" that allows runGroup to propogate errors out of its loop. Should be refactored when possible.
 }
 
 func newSequence(steps []directive.Executable, connect connectFunc, fqfn fqfnFunc, log *vlog.Logger) *sequence {
@@ -54,8 +54,8 @@ func newSequence(steps []directive.Executable, connect connectFunc, fqfn fqfnFun
 	return s
 }
 
-// exec will return the "final state" of a sequence. If the state's err is not nil, it means a "handled error" occurred, and it should be returned or handled.
-// if exec itself actually returns an error, it means there was a problem executing the sequence as described, and should be treated as such.
+// exec will return the "final state" of a sequence. If the state's err is not nil, it means a runnable returned an error, and the Directive indicates the sequence should return.
+// if exec itself actually returns an error other than ErrSequenceRunErr, it means there was a problem executing the sequence as described, and should be treated as such.
 func (seq *sequence) exec(req *request.CoordinatedRequest) (*sequenceState, error) {
 	for _, step := range seq.steps {
 		stateJSON, err := stateJSONForStep(req, step)
@@ -112,15 +112,17 @@ func (seq *sequence) exec(req *request.CoordinatedRequest) (*sequenceState, erro
 						seq.log.Info("continuing after error from", result.fqfn)
 					}
 				} else {
-					// if onErr is not set, the default is to continue. this should be revisited after some real-world usage.
+					// set the error's JSON as the state value
+					req.State[result.key] = []byte(result.runErr.Error())
 				}
 			} else {
 				req.State[result.key] = result.response.Output
+			}
 
-				if result.response.RespHeaders != nil {
-					for k, v := range result.response.RespHeaders {
-						req.RespHeaders[k] = v
-					}
+			// check if the Runnable set any response headers
+			if result.response.RespHeaders != nil {
+				for k, v := range result.response.RespHeaders {
+					req.RespHeaders[k] = v
 				}
 			}
 		}
