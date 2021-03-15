@@ -9,7 +9,7 @@ impl Runnable for GetFile {
         let mut filename = req::url_param("file");
 
         if filename == "" {
-            filename = req::state("file");
+            filename = req::state("file").unwrap_or_default();
         }
 
         Ok(file::get_static(filename.as_str()).unwrap_or("failed".as_bytes().to_vec()))

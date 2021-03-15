@@ -11,25 +11,40 @@ handlers:
         - fn: modify-url
         - fn: helloworld-rs
           as: hello
+      
       - fn: fetch-test
         with:
           - "url: modify-url"
           - "logme: hello"
+
   - type: request
     resource: /set/:key
     method: POST
     steps:
       - fn: cache-set
+  
   - type: request
     resource: /get/:key
     method: GET
     steps:
       - fn: cache-get
+  
   - type: request
     resource: /file/*file
     method: GET
     steps:
       - fn: get-file
+  
+  - type: request
+    resource: /foreach
+    method: POST
+    steps:
+      - fn: set-array
+
+      - forEach:
+          in: set-array
+          fn: run-each
+          as: output
 
 # uncomment to try out scheduled jobs!
 # schedules:

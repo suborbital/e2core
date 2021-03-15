@@ -3,12 +3,13 @@ package coordinator
 import (
 	"bytes"
 	"log"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	"github.com/suborbital/atmo/directive"
 	"github.com/suborbital/reactr/bundle"
-	"github.com/suborbital/reactr/directive"
 	"github.com/suborbital/reactr/request"
 	"github.com/suborbital/vektor/vlog"
 )
@@ -224,5 +225,56 @@ func TestWithSequence(t *testing.T) {
 		t.Error("modify-url state is missing")
 	} else if !bytes.Equal(val, []byte("hello /suborbital")) {
 		t.Error("unexpected modify-url state value:", string(val))
+	}
+}
+
+func TestForEachSequence(t *testing.T) {
+	steps := []directive.Executable{
+		{
+			ForEach: &directive.ForEach{
+				In: "people",
+				Fn: "run-each",
+				As: "hello-people",
+			},
+		},
+	}
+
+	seq := newSequence(steps, coord.grav.Connect, coord.bundle.Directive.FQFN, coord.log)
+
+	req := &request.CoordinatedRequest{
+		Method: "GET",
+		URL:    "/hello/world",
+		ID:     uuid.New().String(),
+		Body:   []byte(""),
+		State: map[string][]byte{
+			"people": []byte(`[
+				{
+					"name": "Connor"
+				},
+				{
+					"name": "Jimmy"
+				},
+				{
+					"name": "Bob"
+				}
+			]`),
+		},
+	}
+
+	state, err := seq.exec(req)
+	if err != nil {
+		t.Error(err)
+	}
+
+	val, ok := state.state["hello-people"]
+	if !ok {
+		t.Error("hello-people state is missing")
+		return
+	}
+
+	stringVal := string(val)
+
+	if !strings.Contains(stringVal, "{\"name\":\"Hello Jimmy\"}") {
+		t.Error("unexpected hello-people state value:", string(val))
 	}
 }

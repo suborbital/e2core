@@ -7,9 +7,9 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	"github.com/suborbital/atmo/directive"
 	"github.com/suborbital/grav/grav"
 	"github.com/suborbital/reactr/bundle"
-	"github.com/suborbital/reactr/directive"
 	"github.com/suborbital/reactr/request"
 	"github.com/suborbital/reactr/rt"
 	"github.com/suborbital/reactr/rwasm"
@@ -201,11 +201,17 @@ func resultFromState(handler directive.Handler, state map[string][]byte) []byte 
 
 	// if not, use the last step. If last step is a group, return nil
 	step := handler.Steps[len(handler.Steps)-1]
-	if step.Fn == "" {
+	if step.IsGroup() {
 		return nil
 	}
 
-	val, exists := state[step.Fn]
+	// determine what the state key is
+	key := step.Fn
+	if step.IsForEach() {
+		key = step.ForEach.As
+	}
+
+	val, exists := state[key]
 	if exists {
 		return val
 	}
