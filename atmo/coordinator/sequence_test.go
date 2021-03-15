@@ -3,6 +3,7 @@ package coordinator
 import (
 	"bytes"
 	"log"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -265,9 +266,15 @@ func TestForEachSequence(t *testing.T) {
 		t.Error(err)
 	}
 
-	if val, ok := state.state["hello-people"]; !ok {
+	val, ok := state.state["hello-people"]
+	if !ok {
 		t.Error("hello-people state is missing")
-	} else if !bytes.Equal(val[:21], []byte("[{\"name\": \"Hello Jimmy\"")) {
+		return
+	}
+
+	stringVal := string(val)
+
+	if !strings.Contains(stringVal, "{\"name\":\"Hello Jimmy\"}") {
 		t.Error("unexpected hello-people state value:", string(val))
 	}
 }
