@@ -107,7 +107,7 @@ func (seq *sequence) exec(req *request.CoordinatedRequest) (*sequenceState, erro
 				// if the step is a forEach, use that
 				onErr := step.OnErr
 				if onErr == nil && step.ForEach != nil {
-					onErr = step.ForEach.Fn.OnErr
+					onErr = step.ForEach.OnErr
 				}
 
 				if onErr != nil {

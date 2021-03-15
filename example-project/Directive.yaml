@@ -43,8 +43,7 @@ handlers:
 
       - forEach:
           in: set-array
-          fn: 
-            fn: run-each
+          fn: run-each
           as: output
 
 # uncomment to try out scheduled jobs!

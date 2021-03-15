@@ -226,3 +226,48 @@ func TestWithSequence(t *testing.T) {
 		t.Error("unexpected modify-url state value:", string(val))
 	}
 }
+
+func TestForEachSequence(t *testing.T) {
+	steps := []directive.Executable{
+		{
+			ForEach: &directive.ForEach{
+				In: "people",
+				Fn: "run-each",
+				As: "hello-people",
+			},
+		},
+	}
+
+	seq := newSequence(steps, coord.grav.Connect, coord.bundle.Directive.FQFN, coord.log)
+
+	req := &request.CoordinatedRequest{
+		Method: "GET",
+		URL:    "/hello/world",
+		ID:     uuid.New().String(),
+		Body:   []byte(""),
+		State: map[string][]byte{
+			"people": []byte(`[
+				{
+					"name": "Connor"
+				},
+				{
+					"name": "Jimmy"
+				},
+				{
+					"name": "Bob"
+				}
+			]`),
+		},
+	}
+
+	state, err := seq.exec(req)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if val, ok := state.state["hello-people"]; !ok {
+		t.Error("hello-people state is missing")
+	} else if !bytes.Equal(val[:21], []byte("[{\"name\": \"Hello Jimmy\"")) {
+		t.Error("unexpected hello-people state value:", string(val))
+	}
+}

@@ -87,9 +87,10 @@ type FnOnErr struct {
 }
 
 type ForEach struct {
-	In string     `yaml:"in"`
-	Fn CallableFn `yaml:"fn"`
-	As string     `yaml:"as"`
+	In    string   `yaml:"in"`
+	Fn    string   `yaml:"fn"`
+	As    string   `yaml:"as"`
+	OnErr *FnOnErr `yaml:"onErr,omitempty"`
 }
 
 // Alias is the parsed version of an entry in the `With` array from a CallableFn
@@ -309,19 +310,16 @@ func validateSteps(exType executableType, name string, steps []Executable, initi
 				validateFn(gfn)
 			}
 		} else if s.IsForEach() {
+			if s.ForEach.In == "" {
+				problems.add(fmt.Errorf("ForEach at position %d for %s %s is missing 'in' value", j, exType, name))
+			}
+
 			if s.ForEach.As == "" {
 				problems.add(fmt.Errorf("ForEach at position %d for %s %s is missing 'as' value", j, exType, name))
 			}
 
-			if s.ForEach.Fn.As != "" || (s.ForEach.Fn.With != nil && len(s.ForEach.Fn.With) > 0) {
-				problems.add(fmt.Errorf("ForEach at position %d for %s %s should not have 'fn.as' or 'fn.with' ", j, exType, name))
-			}
-
-			validateFn(s.ForEach.Fn)
-
-			// the key for a ForEach is not the actual Fn, it's the ForEach's As value
-			// so replace the value that validateFn sets automatically
-			fnsToAdd[len(fnsToAdd)-1] = s.ForEach.As
+			forEachFn := CallableFn{Fn: s.ForEach.Fn, OnErr: s.ForEach.OnErr, As: s.ForEach.As}
+			validateFn(forEachFn)
 		}
 
 		for _, newFn := range fnsToAdd {

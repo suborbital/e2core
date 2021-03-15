@@ -30,7 +30,7 @@ func (seq *sequence) runForEach(forEach *directive.ForEach, req request.Coordina
 	}
 
 	// prepare to loop over all the array values
-	fn := forEach.Fn
+	fn := directive.CallableFn{Fn: forEach.Fn, OnErr: forEach.OnErr, As: forEach.As}
 	resultChan := make(chan fnResult, len(arrayVals))
 
 	// run the fn for each element in the array
