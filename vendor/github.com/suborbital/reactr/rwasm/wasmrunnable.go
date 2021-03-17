@@ -3,8 +3,8 @@ package rwasm
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 
-	"github.com/suborbital/reactr/bundle"
 	"github.com/suborbital/reactr/request"
 	"github.com/suborbital/reactr/rt"
 	"github.com/suborbital/vektor/vlog"
@@ -17,6 +17,13 @@ type Runner struct {
 	env *wasmEnvironment
 }
 
+// WasmModuleRef is a reference to a Wasm module (either its filepath or its bytes)
+type WasmModuleRef struct {
+	Filepath string
+	Name     string
+	data     []byte
+}
+
 // UseLogger sets the logger to be used by Wasm Runnables
 func UseLogger(l *vlog.Logger) {
 	logger = l
@@ -24,14 +31,14 @@ func UseLogger(l *vlog.Logger) {
 
 // NewRunner returns a new *Runner
 func NewRunner(filepath string) *Runner {
-	ref := &bundle.WasmModuleRef{
+	ref := &WasmModuleRef{
 		Filepath: filepath,
 	}
 
-	return newRunnerWithRef(ref, nil)
+	return NewRunnerWithRef(ref, nil)
 }
 
-func newRunnerWithRef(ref *bundle.WasmModuleRef, staticFileFunc bundle.FileFunc) *Runner {
+func NewRunnerWithRef(ref *WasmModuleRef, staticFileFunc FileFunc) *Runner {
 	environment := newEnvironment(ref, staticFileFunc)
 
 	r := &Runner{
@@ -127,6 +134,33 @@ func (w *Runner) OnChange(evt rt.ChangeEvent) error {
 	}
 
 	return nil
+}
+
+func ModuleRefWithData(name string, data []byte) *WasmModuleRef {
+	ref := &WasmModuleRef{
+		Name: name,
+		data: data,
+	}
+
+	return ref
+}
+
+// ModuleBytes returns the bytes for the module
+func (w *WasmModuleRef) ModuleBytes() ([]byte, error) {
+	if w.data == nil {
+		if w.Filepath == "" {
+			return nil, errors.New("missing Wasm module filepath in ref")
+		}
+
+		bytes, err := ioutil.ReadFile(w.Filepath)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to ReadFile for Wasm module")
+		}
+
+		w.data = bytes
+	}
+
+	return w.data, nil
 }
 
 func interfaceToBytes(data interface{}) ([]byte, error) {

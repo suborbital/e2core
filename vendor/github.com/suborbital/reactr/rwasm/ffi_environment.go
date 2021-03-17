@@ -8,7 +8,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
-	"github.com/suborbital/reactr/bundle"
 	"github.com/suborbital/reactr/request"
 	"github.com/suborbital/reactr/rt"
 	"github.com/suborbital/vektor/vlog"
@@ -42,16 +41,19 @@ var instanceMapper = sync.Map{}
 // the logger used by Wasm Runnables
 var logger = vlog.Default()
 
+// FileFunc is a function that returns the contents of a requested file
+type FileFunc func(string) ([]byte, error)
+
 // wasmEnvironment is an environmenr in which Wasm instances run
 type wasmEnvironment struct {
 	UUID      string
-	ref       *bundle.WasmModuleRef
+	ref       *WasmModuleRef
 	module    *wasmer.Module
 	store     *wasmer.Store
 	imports   *wasmer.ImportObject
 	instances []*wasmInstance
 
-	staticFileFunc bundle.FileFunc
+	staticFileFunc FileFunc
 
 	// the index of the last used wasm instance
 	instIndex int
@@ -64,7 +66,7 @@ type wasmInstance struct {
 	rtCtx   *rt.Ctx
 	request *request.CoordinatedRequest
 
-	staticFileFunc bundle.FileFunc
+	staticFileFunc FileFunc
 
 	resultChan chan []byte
 	errChan    chan rt.RunErr
@@ -80,7 +82,7 @@ type instanceReference struct {
 
 // newEnvironment creates a new environment and adds it to the shared environments array
 // such that Wasm instances can return data to the correct place
-func newEnvironment(ref *bundle.WasmModuleRef, staticFileFunc bundle.FileFunc) *wasmEnvironment {
+func newEnvironment(ref *WasmModuleRef, staticFileFunc FileFunc) *wasmEnvironment {
 	envLock.Lock()
 	defer envLock.Unlock()
 
