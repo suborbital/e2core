@@ -12,7 +12,6 @@ import (
 	"github.com/suborbital/reactr/bundle"
 	"github.com/suborbital/reactr/request"
 	"github.com/suborbital/reactr/rt"
-	"github.com/suborbital/reactr/rwasm"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
 )
@@ -58,20 +57,20 @@ func New(logger *vlog.Logger) *Coordinator {
 }
 
 // UseBundle sets a bundle to be used
-func (c *Coordinator) UseBundle(bundle *bundle.Bundle) *vk.RouteGroup {
+func (c *Coordinator) UseBundle(bdl *bundle.Bundle) *vk.RouteGroup {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-	c.bundle = bundle
+	c.bundle = bdl
 
 	// mount all of the Wasm modules into the Reactr instance
-	rwasm.HandleBundle(c.reactr, bundle)
+	bundle.Load(c.reactr, bdl)
 
 	group := vk.Group("").Before(scopeMiddleware)
 
 	// connect a Grav pod to each function
-	for _, fn := range bundle.Directive.Runnables {
-		fqfn, err := bundle.Directive.FQFN(fn.Name)
+	for _, fn := range bdl.Directive.Runnables {
+		fqfn, err := bdl.Directive.FQFN(fn.Name)
 		if err != nil {
 			c.log.Error(errors.Wrapf(err, "failed to derive FQFN for Directive function %s, function will not be available", fn.Name))
 			continue
@@ -81,7 +80,7 @@ func (c *Coordinator) UseBundle(bundle *bundle.Bundle) *vk.RouteGroup {
 	}
 
 	// mount each handler into the VK group
-	for _, h := range bundle.Directive.Handlers {
+	for _, h := range bdl.Directive.Handlers {
 		if h.Input.Type != directive.InputTypeRequest {
 			continue
 		}
@@ -92,7 +91,7 @@ func (c *Coordinator) UseBundle(bundle *bundle.Bundle) *vk.RouteGroup {
 	}
 
 	// mount each schedule into Reactr
-	for _, s := range bundle.Directive.Schedules {
+	for _, s := range bdl.Directive.Schedules {
 		rtFunc := c.rtFuncForDirectiveSchedule(s)
 
 		jobName := fmt.Sprintf("atmo.schedule.%s", s.Name)

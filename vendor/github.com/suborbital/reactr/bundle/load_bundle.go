@@ -1,4 +1,4 @@
-package rwasm
+package bundle
 
 import (
 	"fmt"
@@ -6,32 +6,32 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"github.com/suborbital/reactr/bundle"
 	"github.com/suborbital/reactr/rt"
+	"github.com/suborbital/reactr/rwasm"
 )
 
-// HandleBundleAtPath loads a .wasm.zip file into the rt instance
-func HandleBundleAtPath(h *rt.Reactr, path string) error {
+// LoadFromPath loads a .wasm.zip file into the rt instance
+func LoadFromPath(h *rt.Reactr, path string) error {
 	if !strings.HasSuffix(path, ".wasm.zip") {
 		return fmt.Errorf("cannot load bundle %s, does not have .wasm.zip extension", filepath.Base(path))
 	}
 
-	bundle, err := bundle.Read(path)
+	bundle, err := Read(path)
 	if err != nil {
 		return errors.Wrap(err, "failed to ReadBundle")
 	}
 
-	return HandleBundle(h, bundle)
+	return Load(h, bundle)
 }
 
-// HandleBundle loads a .wasm.zip file into the rt instance
-func HandleBundle(h *rt.Reactr, bundle *bundle.Bundle) error {
+// Load loads a .wasm.zip file into the rt instance
+func Load(h *rt.Reactr, bundle *Bundle) error {
 	if err := bundle.Directive.Validate(); err != nil {
 		return errors.Wrap(err, "failed to Validate bundle directive")
 	}
 
 	for i, r := range bundle.Runnables {
-		runner := newRunnerWithRef(&bundle.Runnables[i], bundle.StaticFile)
+		runner := rwasm.NewRunnerWithRef(&bundle.Runnables[i], bundle.StaticFile)
 
 		jobName := strings.TrimSuffix(r.Name, ".wasm")
 		fqfn, err := bundle.Directive.FQFN(jobName)

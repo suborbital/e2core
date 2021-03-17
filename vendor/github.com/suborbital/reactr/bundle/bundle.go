@@ -11,24 +11,15 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/suborbital/atmo/directive"
+	"github.com/suborbital/reactr/rwasm"
 )
-
-// FileFunc is a function that returns the contents of a requested file
-type FileFunc func(string) ([]byte, error)
 
 // Bundle represents a Runnable bundle
 type Bundle struct {
 	filepath    string
 	Directive   *directive.Directive
-	Runnables   []WasmModuleRef
+	Runnables   []rwasm.WasmModuleRef
 	staticFiles map[string]bool
-}
-
-// WasmModuleRef is a reference to a Wasm module (either its filepath or its bytes)
-type WasmModuleRef struct {
-	Filepath string
-	Name     string
-	data     []byte
 }
 
 // StaticFile returns a static file from the bundle, if it exists
@@ -76,8 +67,8 @@ func (b *Bundle) StaticFile(filePath string) ([]byte, error) {
 // Write writes a runnable bundle
 // based loosely on https://golang.org/src/archive/zip/example_test.go
 // staticFiles should be a map of *relative* filepaths to their associated files, with or without the `static/` prefix.
-func Write(directive *directive.Directive, modules []os.File, staticFiles map[string]os.File, targetPath string) error {
-	if directive == nil {
+func Write(directiveBytes []byte, modules []os.File, staticFiles map[string]os.File, targetPath string) error {
+	if directiveBytes == nil || len(directiveBytes) == 0 {
 		return errors.New("directive must be provided")
 	}
 
@@ -88,7 +79,7 @@ func Write(directive *directive.Directive, modules []os.File, staticFiles map[st
 	w := zip.NewWriter(buf)
 
 	// Add Directive to archive.
-	if err := writeDirective(w, directive); err != nil {
+	if err := writeDirective(w, directiveBytes); err != nil {
 		return errors.Wrap(err, "failed to writeDirective")
 	}
 
@@ -133,12 +124,7 @@ func Write(directive *directive.Directive, modules []os.File, staticFiles map[st
 	return nil
 }
 
-func writeDirective(w *zip.Writer, directive *directive.Directive) error {
-	directiveBytes, err := directive.Marshal()
-	if err != nil {
-		return errors.Wrap(err, "failed to Marshal Directive")
-	}
-
+func writeDirective(w *zip.Writer, directiveBytes []byte) error {
 	if err := writeFile(w, "Directive.yaml", directiveBytes); err != nil {
 		return errors.Wrap(err, "failed to writeFile for Directive")
 	}
@@ -173,7 +159,7 @@ func Read(path string) (*Bundle, error) {
 
 	bundle := &Bundle{
 		filepath:    path,
-		Runnables:   []WasmModuleRef{},
+		Runnables:   []rwasm.WasmModuleRef{},
 		staticFiles: map[string]bool{},
 	}
 
@@ -208,7 +194,7 @@ func Read(path string) (*Bundle, error) {
 			return nil, errors.Wrapf(err, "failed to read %s from bundle", f.Name)
 		}
 
-		ref := refWithData(f.Name, wasmBytes)
+		ref := rwasm.ModuleRefWithData(f.Name, wasmBytes)
 
 		bundle.Runnables = append(bundle.Runnables, *ref)
 	}
@@ -237,33 +223,6 @@ func readDirective(f *zip.File) (*directive.Directive, error) {
 	}
 
 	return d, nil
-}
-
-func refWithData(name string, data []byte) *WasmModuleRef {
-	ref := &WasmModuleRef{
-		Name: name,
-		data: data,
-	}
-
-	return ref
-}
-
-// ModuleBytes returns the bytes for the module
-func (w *WasmModuleRef) ModuleBytes() ([]byte, error) {
-	if w.data == nil {
-		if w.Filepath == "" {
-			return nil, errors.New("missing Wasm module filepath in ref")
-		}
-
-		bytes, err := ioutil.ReadFile(w.Filepath)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to ReadFile for Wasm module")
-		}
-
-		w.data = bytes
-	}
-
-	return w.data, nil
 }
 
 func ensurePrefix(val, prefix string) string {
