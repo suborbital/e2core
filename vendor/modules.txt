@@ -26,7 +26,7 @@ github.com/suborbital/reactr/bundle
 github.com/suborbital/reactr/request
 github.com/suborbital/reactr/rt
 github.com/suborbital/reactr/rwasm
-# github.com/suborbital/vektor v0.2.4
+# github.com/suborbital/vektor v0.2.5-0.20210317234701-42e37f72c3d2
 ## explicit
 github.com/suborbital/vektor/vk
 github.com/suborbital/vektor/vlog
@@ -37,7 +37,7 @@ github.com/wasmerio/wasmer-go/wasmer/packaged/lib
 github.com/wasmerio/wasmer-go/wasmer/packaged/lib/darwin-amd64
 github.com/wasmerio/wasmer-go/wasmer/packaged/lib/linux-aarch64
 github.com/wasmerio/wasmer-go/wasmer/packaged/lib/linux-amd64
-# golang.org/x/crypto v0.0.0-20210314154223-e6e6c4f2bb5b
+# golang.org/x/crypto v0.0.0-20210317152858-513c2a44f670
 golang.org/x/crypto/acme
 golang.org/x/crypto/acme/autocert
 # golang.org/x/mod v0.4.2
