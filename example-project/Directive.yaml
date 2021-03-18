@@ -14,8 +14,8 @@ handlers:
       
       - fn: fetch-test
         with:
-          - "url: modify-url"
-          - "logme: hello"
+          url: modify-url
+          logme: hello
 
   - type: request
     resource: /set/:key

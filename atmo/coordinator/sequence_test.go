@@ -195,7 +195,7 @@ func TestWithSequence(t *testing.T) {
 		{
 			CallableFn: directive.CallableFn{
 				Fn:   "modify-url", // if there's no body, it'll look in state for '
-				With: []string{"url: helloworld-rs"},
+				With: map[string]string{"url": "helloworld-rs"},
 			},
 		},
 	}

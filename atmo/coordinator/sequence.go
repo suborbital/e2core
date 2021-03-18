@@ -172,14 +172,8 @@ func (seq *sequence) shouldReturn(onErr *directive.FnOnErr, result fnResult) (*s
 }
 
 func stateJSONForStep(req *request.CoordinatedRequest, step directive.Executable) ([]byte, error) {
-	// the desired state is cached, so after the first call this is very efficient
-	desired, err := step.ParseWith()
-	if err != nil {
-		return nil, vk.Wrap(http.StatusInternalServerError, errors.Wrap(err, "failed to ParseWith"))
-	}
-
 	// based on the step's `with` clause, build the state to pass into the function
-	stepState, err := desiredState(desired, req.State)
+	stepState, err := desiredState(step.With, req.State)
 	if err != nil {
 		return nil, vk.Wrap(http.StatusInternalServerError, errors.Wrap(err, "failed to build desiredState"))
 	}
@@ -202,20 +196,20 @@ func stateJSONForStep(req *request.CoordinatedRequest, step directive.Executable
 	return stateJSON, nil
 }
 
-func desiredState(desired []directive.Alias, state map[string][]byte) (map[string][]byte, error) {
+func desiredState(desired map[string]string, state map[string][]byte) (map[string][]byte, error) {
 	if desired == nil || len(desired) == 0 {
 		return state, nil
 	}
 
 	desiredState := map[string][]byte{}
 
-	for _, a := range desired {
-		val, exists := state[a.Key]
+	for alias, key := range desired {
+		val, exists := state[key]
 		if !exists {
-			return nil, fmt.Errorf("failed to build desired state, %s does not exists in handler state", a.Key)
+			return nil, fmt.Errorf("failed to build desired state, %s does not exists in handler state", key)
 		}
 
-		desiredState[a.Alias] = val
+		desiredState[alias] = val
 	}
 
 	return desiredState, nil

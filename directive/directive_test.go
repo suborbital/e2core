@@ -325,8 +325,8 @@ func TestDirectiveValidatorWithMissingState(t *testing.T) {
 						Group: []CallableFn{
 							{
 								Fn: "getUser",
-								With: []string{
-									"data: someData",
+								With: map[string]string{
+									"data": "someData",
 								},
 							},
 							{
