@@ -3,7 +3,6 @@ package directive
 import (
 	"errors"
 	"fmt"
-	"strings"
 
 	"golang.org/x/mod/semver"
 	"gopkg.in/yaml.v2"
@@ -72,11 +71,10 @@ type Executable struct {
 
 // CallableFn is a fn along with its "variable name" and "args"
 type CallableFn struct {
-	Fn           string   `yaml:"fn,omitempty"`
-	As           string   `yaml:"as,omitempty"`
-	With         []string `yaml:"with,omitempty"`
-	OnErr        *FnOnErr `yaml:"onErr,omitempty"`
-	DesiredState []Alias  `yaml:"-"`
+	Fn    string            `yaml:"fn,omitempty"`
+	As    string            `yaml:"as,omitempty"`
+	With  map[string]string `yaml:"with,omitempty"`
+	OnErr *FnOnErr          `yaml:"onErr,omitempty"`
 }
 
 // FnOnErr describes how to handle an error from a function call
@@ -91,14 +89,6 @@ type ForEach struct {
 	Fn    string   `yaml:"fn"`
 	As    string   `yaml:"as"`
 	OnErr *FnOnErr `yaml:"onErr,omitempty"`
-}
-
-// Alias is the parsed version of an entry in the `With` array from a CallableFn
-// If you do user: activeUser, then activeUser is the state key and user
-// is the key that gets put into the function's state (i.e. the alias)
-type Alias struct {
-	Key   string
-	Alias string
 }
 
 // Marshal outputs the YAML bytes of the Directive
@@ -259,13 +249,9 @@ func validateSteps(exType executableType, name string, steps []Executable, initi
 				problems.add(fmt.Errorf("%s for %s lists fn at step %d that does not exist: %s (did you forget a namespace?)", exType, name, j, fn.Fn))
 			}
 
-			if _, err := fn.ParseWith(); err != nil {
-				problems.add(fmt.Errorf("%s for %s has invalid 'with' value at step %d: %s", exType, name, j, err.Error()))
-			}
-
-			for _, d := range fn.DesiredState {
-				if _, exists := fullState[d.Key]; !exists {
-					problems.add(fmt.Errorf("%s for %s has 'with' value at step %d referencing a key that is not yet available in the handler's state: %s", exType, name, j, d.Key))
+			for _, key := range fn.With {
+				if _, exists := fullState[key]; !exists {
+					problems.add(fmt.Errorf("%s for %s has 'with' value at step %d referencing a key that is not yet available in the handler's state: %s", exType, name, j, key))
 				}
 			}
 
@@ -373,26 +359,6 @@ func (e *Executable) IsFn() bool {
 // IsForEach returns true if the exectuable is a ForEach
 func (e *Executable) IsForEach() bool {
 	return e.ForEach != nil && e.Fn == "" && e.Group == nil
-}
-
-// ParseWith parses the fn's 'with' clause and returns the desired state
-func (c *CallableFn) ParseWith() ([]Alias, error) {
-	if c.DesiredState != nil && len(c.DesiredState) > 0 {
-		return c.DesiredState, nil
-	}
-
-	c.DesiredState = make([]Alias, len(c.With))
-
-	for i, w := range c.With {
-		parts := strings.Split(w, ": ")
-		if len(parts) != 2 {
-			return nil, fmt.Errorf("with value has wrong format: parsed %d parts seperated by : , expected 2", len(parts))
-		}
-
-		c.DesiredState[i] = Alias{Alias: parts[0], Key: parts[1]}
-	}
-
-	return c.DesiredState, nil
 }
 
 type problems []error

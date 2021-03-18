@@ -28,5 +28,6 @@ test:
 
 deps:
 	go get -u -d ./...
+	go mod vendor
 
 .PHONY: build atmo atmo/docker docker/dev docker/dev/multi docker/publish docker/builder example-project test deps
