@@ -18,8 +18,8 @@ handlers:
           as: hello
       - fn: fetch-test
         with:
-          - "url: modify-url"
-          - "logme: hello"
+          url: modify-url
+          logme: hello
 ```
 
 After each `step`, its function results gets stored in the request handler's `state`. The `state` is an ephemeral set of key/value pairs created for each request. State is used to pass values between functions, since they are completely isolated and unaware of one another.

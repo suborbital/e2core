@@ -95,7 +95,7 @@ public func ReqParam(key: String) -> String
 Returns the value from [request state](../usage/managing-state.md) for the provided key
 
 ```rust
-pub fn state(key: &str) -> String
+pub fn state(key: &str) -> Option<String>
 ```
 
 ```swift

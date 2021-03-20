@@ -119,9 +119,11 @@ func (seq *sequence) exec(req *request.CoordinatedRequest) (*sequenceState, erro
 						val = []byte(result.runErr.Error())
 					}
 				} else {
-					// the default if no onErr is set is to continue, so put the error JSON in state
-					seq.log.Info("continuing after error from", result.fqfn)
-					val = []byte(result.runErr.Error())
+					// the default if no onErr is set is to return, so put the error JSON in state
+					seq.log.Info("returning after error from", result.fqfn)
+					state := &sequenceState{err: result.runErr}
+
+					return state, ErrSequenceRunErr
 				}
 			}
 
@@ -144,18 +146,18 @@ func (seq *sequence) exec(req *request.CoordinatedRequest) (*sequenceState, erro
 }
 
 func (seq *sequence) shouldReturn(onErr *directive.FnOnErr, result fnResult) (*sequenceState, error) {
-	shouldErr := false
+	shouldErr := true
 
 	// if the error code is listed as return, or any/other indicates a return, then create an erroring state object and return it.
 
 	if len(onErr.Code) > 0 {
-		if val, ok := onErr.Code[result.runErr.Code]; ok && val == "return" {
-			shouldErr = true
-		} else if !ok && onErr.Other == "return" {
-			shouldErr = true
+		if val, ok := onErr.Code[result.runErr.Code]; ok && val == "continue" {
+			shouldErr = false
+		} else if !ok && onErr.Other == "continue" {
+			shouldErr = false
 		}
-	} else if onErr.Any == "return" {
-		shouldErr = true
+	} else if onErr.Any == "continue" {
+		shouldErr = false
 	}
 
 	if shouldErr {

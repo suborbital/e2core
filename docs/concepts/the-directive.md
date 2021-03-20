@@ -17,12 +17,17 @@ handlers:
       - group:
         - fn: modify-url
         - fn: helloworld-rs
+          onErr:
+            any: continue
+
       - fn: fetch
+
   - type: request
     resource: /set/:key
     method: POST
     steps:
       - fn: cache-set
+
   - type: request
     resource: /get/:key
     method: GET

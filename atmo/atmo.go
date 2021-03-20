@@ -3,6 +3,7 @@ package atmo
 import (
 	"github.com/pkg/errors"
 	"github.com/suborbital/atmo/atmo/coordinator"
+	"github.com/suborbital/atmo/atmo/release"
 	"github.com/suborbital/reactr/bundle"
 	"github.com/suborbital/reactr/rwasm"
 	"github.com/suborbital/vektor/vk"
@@ -17,10 +18,16 @@ type Atmo struct {
 	server *vk.Server
 }
 
+type atmoInfo struct {
+	AtmoVersion string `json:"atmo_version"`
+}
+
 // New creates a new Atmo instance
 func New(mods ...OptionModifier) *Atmo {
 	logger := vlog.Default(
-		vlog.Level(vlog.LogLevelDebug),
+		vlog.AppMeta(atmoInfo{AtmoVersion: release.AtmoDotVersion}),
+		vlog.Level(vlog.LogLevelInfo),
+		vlog.EnvPrefix("ATMO"),
 	)
 
 	rwasm.UseLogger(logger)

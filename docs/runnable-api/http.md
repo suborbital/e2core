@@ -11,7 +11,7 @@ The following namespace methods are available:
 Performs an HTTP GET request
 
 ```rust
-pub fn get(url: &str, headers: Option<BTreeMap<&str, &str>>) -> Vec<u8>
+pub fn get(url: &str, headers: Option<BTreeMap<&str, &str>>) -> Result<Vec<u8>, RunErr>
 ```
 
 ```swift
@@ -23,7 +23,7 @@ public func HttpGet(url: String) -> String
 Performs an HTTP POST request
 
 ```rust
-pub fn post(url: &str, body: Option<Vec<u8>>, headers: Option<BTreeMap<&str, &str>>) -> Vec<u8>
+pub fn post(url: &str, body: Option<Vec<u8>>, headers: Option<BTreeMap<&str, &str>>) -> Result<Vec<u8>, RunErr>
 ```
 
 ```swift
@@ -35,7 +35,7 @@ public func HttpPost(url: String, body: String) -> String
 Performs an HTTP PATCH request
 
 ```rust
-pub fn patch(url: &str, body: Option<Vec<u8>>, headers: Option<BTreeMap<&str, &str>>) -> Vec<u8>
+pub fn patch(url: &str, body: Option<Vec<u8>>, headers: Option<BTreeMap<&str, &str>>) -> Result<Vec<u8>, RunErr>
 ```
 
 ```swift
@@ -47,7 +47,7 @@ public func HttpPatch(url: String, body: String) -> String
 Performs an HTTP DELETE request
 
 ```rust
-pub fn delete(url: &str, headers: Option<BTreeMap<&str, &str>>) -> Vec<u8>
+pub fn delete(url: &str, headers: Option<BTreeMap<&str, &str>>) -> Result<Vec<u8>, RunErr>
 ```
 
 ```swift

@@ -26,7 +26,7 @@ func (seq *sequence) runForEach(forEach *directive.ForEach, req request.Coordina
 	// turn the array into an array of bytes for each element
 	arrayVals, err := arrayFromStateVal(val)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to arrayFromState")
+		return nil, errors.Wrap(err, "failed to arrayFromStateVal")
 	}
 
 	// prepare to loop over all the array values
@@ -40,7 +40,7 @@ func (seq *sequence) runForEach(forEach *directive.ForEach, req request.Coordina
 
 		seq.log.Debug("running fn", fn.Fn, "from forEach on element", i)
 		// add the iteration value to a spectial state field
-		req.State["__foreach"] = val
+		req.State["__elem"] = val
 
 		reqJSON, err := req.ToJSON()
 		if err != nil {
@@ -58,7 +58,7 @@ func (seq *sequence) runForEach(forEach *directive.ForEach, req request.Coordina
 		}()
 	}
 
-	resultBytes := [][]byte{}
+	resultElements := [][]byte{}
 	respCount := 0
 	timeoutChan := time.After(30 * time.Second)
 
@@ -74,7 +74,7 @@ func (seq *sequence) runForEach(forEach *directive.ForEach, req request.Coordina
 				return &result, nil
 			}
 
-			resultBytes = append(resultBytes, result.response.Output)
+			resultElements = append(resultElements, result.response.Output)
 		case <-timeoutChan:
 			return nil, errors.New("fn group timed out")
 		}
@@ -83,7 +83,7 @@ func (seq *sequence) runForEach(forEach *directive.ForEach, req request.Coordina
 	}
 
 	// re-build the results array
-	resultJSON, err := stateValFromArray(resultBytes)
+	resultJSON, err := stateValFromArray(resultElements)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to stateValFromArray")
 	}

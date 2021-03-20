@@ -21,7 +21,7 @@ pub trait Runnable {
 ```
 
 {% hint style="warning" %}
-The Swift Runnable API library is still considered experimental
+The Swift Runnable API library is still considered experimental, and tends to lag slightly behind Rust in terms of available features.
 {% endhint %}
 
 And in Swift:

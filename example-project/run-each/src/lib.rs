@@ -12,7 +12,7 @@ struct RunEach{}
 
 impl Runnable for RunEach {
     fn run(&self, _: Vec<u8>) -> Result<Vec<u8>, RunErr> {
-        let elem_json = req::state_raw("__foreach");
+        let elem_json = req::state_raw("__elem");
 
         let mut elem: Elem = match serde_json::from_slice(elem_json.unwrap_or_default().as_slice()) {
             Ok(e) => e,

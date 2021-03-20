@@ -3,6 +3,7 @@ package coordinator
 import (
 	"fmt"
 	"net/http"
+	"os"
 	"sync"
 
 	"github.com/google/uuid"
@@ -17,7 +18,8 @@ import (
 )
 
 const (
-	atmoMethodSchedule = "SCHED"
+	atmoMethodSchedule  = "SCHED"
+	atmoEnvKeySchedules = "ATMO_RUN_SCHEDULES"
 )
 
 type rtFunc func(rt.Job, *rt.Ctx) (interface{}, error)
@@ -101,9 +103,12 @@ func (c *Coordinator) UseBundle(bdl *bundle.Bundle) *vk.RouteGroup {
 
 		seconds := s.NumberOfSeconds()
 
-		c.reactr.Schedule(rt.Every(seconds, func() rt.Job {
-			return rt.NewJob(jobName, nil)
-		}))
+		// only actually schedule the job if the env var isn't set (or is set but not 'false')
+		if val, exists := os.LookupEnv(atmoEnvKeySchedules); !exists || val != "false" {
+			c.reactr.Schedule(rt.Every(seconds, func() rt.Job {
+				return rt.NewJob(jobName, nil)
+			}))
+		}
 	}
 
 	return group

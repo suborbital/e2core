@@ -7,7 +7,8 @@ The `subo` CLI tool will automatically create new Runnables for you with the `su
 {% endhint %}
 
 ```rust
-use suborbital::{req, runnable, util};
+use suborbital::runnable::*;
+use suborbital::{req, util};
 
 struct Foobar{}
 
