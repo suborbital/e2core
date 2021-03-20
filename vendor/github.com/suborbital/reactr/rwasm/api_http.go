@@ -38,22 +38,20 @@ func fetchURL() *HostFn {
 		urlSize := args[2].I32()
 		bodyPointer := args[3].I32()
 		bodySize := args[4].I32()
-		destPointer := args[5].I32()
-		destMaxSize := args[6].I32()
-		ident := args[7].I32()
+		ident := args[5].I32()
 
-		ret := fetch_url(method, urlPointer, urlSize, bodyPointer, bodySize, destPointer, destMaxSize, ident)
+		ret := fetch_url(method, urlPointer, urlSize, bodyPointer, bodySize, ident)
 
 		return ret, nil
 	}
 
-	return newHostFn("fetch_url", 8, true, fn)
+	return newHostFn("fetch_url", 6, true, fn)
 }
 
-func fetch_url(method int32, urlPointer int32, urlSize int32, bodyPointer int32, bodySize int32, destPointer int32, destMaxSize int32, identifier int32) int32 {
+func fetch_url(method int32, urlPointer int32, urlSize int32, bodyPointer int32, bodySize int32, identifier int32) int32 {
 	// fetch makes a network request on bahalf of the wasm runner.
 	// fetch writes the http response body into memory starting at returnBodyPointer, and the return value is a pointer to that memory
-	inst, err := instanceForIdentifier(identifier)
+	inst, err := instanceForIdentifier(identifier, true)
 	if err != nil {
 		logger.Error(errors.Wrap(err, "[rwasm] alert: invalid identifier used, potential malicious activity"))
 		return -1
@@ -113,10 +111,7 @@ func fetch_url(method int32, urlPointer int32, urlSize int32, bodyPointer int32,
 		return -4
 	}
 
-	// if the size is greater than what's been allocated, then the module will increase the size and try again
-	if len(respBytes) <= int(destMaxSize) {
-		inst.writeMemoryAtLocation(destPointer, respBytes)
-	}
+	inst.setFFIResult(respBytes)
 
 	return int32(len(respBytes))
 }

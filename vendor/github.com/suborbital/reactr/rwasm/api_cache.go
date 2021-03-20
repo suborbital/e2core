@@ -23,7 +23,7 @@ func cacheSet() *HostFn {
 }
 
 func cache_set(keyPointer int32, keySize int32, valPointer int32, valSize int32, ttl int32, identifier int32) int32 {
-	inst, err := instanceForIdentifier(identifier)
+	inst, err := instanceForIdentifier(identifier, false)
 	if err != nil {
 		logger.Error(errors.Wrap(err, "[rwasm] alert: invalid identifier used, potential malicious activity"))
 		return -1
@@ -46,20 +46,18 @@ func cacheGet() *HostFn {
 	fn := func(args ...wasmer.Value) (interface{}, error) {
 		keyPointer := args[0].I32()
 		keySize := args[1].I32()
-		destPointer := args[2].I32()
-		destMaxSize := args[3].I32()
-		ident := args[4].I32()
+		ident := args[2].I32()
 
-		ret := cache_get(keyPointer, keySize, destPointer, destMaxSize, ident)
+		ret := cache_get(keyPointer, keySize, ident)
 
 		return ret, nil
 	}
 
-	return newHostFn("cache_get", 5, true, fn)
+	return newHostFn("cache_get", 3, true, fn)
 }
 
-func cache_get(keyPointer int32, keySize int32, destPointer int32, destMaxSize int32, identifier int32) int32 {
-	inst, err := instanceForIdentifier(identifier)
+func cache_get(keyPointer int32, keySize int32, identifier int32) int32 {
+	inst, err := instanceForIdentifier(identifier, true)
 	if err != nil {
 		logger.Error(errors.Wrap(err, "[rwasm] alert: invalid identifier used, potential malicious activity"))
 		return -1
@@ -75,11 +73,7 @@ func cache_get(keyPointer int32, keySize int32, destPointer int32, destMaxSize i
 		return -2
 	}
 
-	valBytes := []byte(val)
+	inst.setFFIResult(val)
 
-	if len(valBytes) <= int(destMaxSize) {
-		inst.writeMemoryAtLocation(destPointer, valBytes)
-	}
-
-	return int32(len(valBytes))
+	return int32(len(val))
 }

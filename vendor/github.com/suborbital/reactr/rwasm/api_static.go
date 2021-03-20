@@ -11,20 +11,18 @@ func getStaticFile() *HostFn {
 	fn := func(args ...wasmer.Value) (interface{}, error) {
 		namePointer := args[0].I32()
 		nameeSize := args[1].I32()
-		destPointer := args[2].I32()
-		destMaxSize := args[3].I32()
-		ident := args[4].I32()
+		ident := args[2].I32()
 
-		ret := get_static_file(namePointer, nameeSize, destPointer, destMaxSize, ident)
+		ret := get_static_file(namePointer, nameeSize, ident)
 
 		return ret, nil
 	}
 
-	return newHostFn("get_static_file", 5, true, fn)
+	return newHostFn("get_static_file", 3, true, fn)
 }
 
-func get_static_file(namePtr int32, nameSize int32, destPtr int32, destMaxSize int32, ident int32) int32 {
-	inst, err := instanceForIdentifier(ident)
+func get_static_file(namePtr int32, nameSize int32, ident int32) int32 {
+	inst, err := instanceForIdentifier(ident, true)
 	if err != nil {
 		logger.Error(errors.Wrap(err, "[rwasm] alert: invalid identifier used, potential malicious activity"))
 		return -1
@@ -48,9 +46,7 @@ func get_static_file(namePtr int32, nameSize int32, destPtr int32, destMaxSize i
 		return -4
 	}
 
-	if len(file) <= int(destMaxSize) {
-		inst.writeMemoryAtLocation(destPtr, file)
-	}
+	inst.setFFIResult(file)
 
 	return int32(len(file))
 }

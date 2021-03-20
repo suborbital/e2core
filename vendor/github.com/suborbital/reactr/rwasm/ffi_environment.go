@@ -66,6 +66,8 @@ type wasmInstance struct {
 	rtCtx   *rt.Ctx
 	request *request.CoordinatedRequest
 
+	ffiResult []byte
+
 	staticFileFunc FileFunc
 
 	resultChan chan []byte
@@ -161,14 +163,18 @@ func (w *wasmEnvironment) useInstance(req *request.CoordinatedRequest, ctx *rt.C
 		return errors.Wrap(err, "failed to setupNewIdentifier")
 	}
 
+	// setup the instance's temporary state
 	inst.rtCtx = ctx
 	inst.request = req
+	inst.ffiResult = nil
 
 	instFunc(inst, ident)
 
+	// clear the instance's temporary state
 	removeIdentifier(ident)
 	inst.rtCtx = nil
 	inst.request = nil
+	inst.ffiResult = nil
 
 	return nil
 }
@@ -203,6 +209,7 @@ func (w *wasmEnvironment) internals() (*wasmer.Module, *wasmer.Store, *wasmer.Im
 		addHostFns(imports, store,
 			returnResult(),
 			returnError(),
+			getFFIResult(),
 			fetchURL(),
 			cacheSet(),
 			cacheGet(),
@@ -248,7 +255,7 @@ func removeIdentifier(ident int32) {
 	instanceMapper.Delete(ident)
 }
 
-func instanceForIdentifier(ident int32) (*wasmInstance, error) {
+func instanceForIdentifier(ident int32, needsFFIResult bool) (*wasmInstance, error) {
 	rawRef, exists := instanceMapper.Load(ident)
 	if !exists {
 		return nil, errors.New("instance does not exist")
@@ -270,6 +277,10 @@ func instanceForIdentifier(ident int32) (*wasmInstance, error) {
 
 	inst := env.instances[ref.InstIndex]
 
+	if needsFFIResult && inst.ffiResult != nil {
+		return nil, errors.New("cannot use instance for host call with existing call in progress")
+	}
+
 	return inst, nil
 }
 
@@ -289,6 +300,28 @@ func randomIdentifier() (int32, error) {
 // - allocate                                                              //
 // - deallocate                                                            //
 /////////////////////////////////////////////////////////////////////////////
+
+func (w *wasmInstance) setFFIResult(data []byte) error {
+	if w.ffiResult != nil {
+		return errors.New("instance ffiResult is already set")
+	}
+
+	w.ffiResult = data
+
+	return nil
+}
+
+func (w *wasmInstance) useFFIResult() ([]byte, error) {
+	if w.ffiResult == nil {
+		return nil, errors.New("instance ffiResult is not set")
+	}
+
+	defer func() {
+		w.ffiResult = nil
+	}()
+
+	return w.ffiResult, nil
+}
 
 func (w *wasmInstance) readMemory(pointer int32, size int32) []byte {
 	memory, err := w.wasmerInst.Exports.GetMemory("memory")
