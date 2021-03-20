@@ -21,7 +21,7 @@ docker/builder:
 	docker buildx create --use
 
 example-project:
-	subo build ./example-project --bundle --native
+	subo build ./example-project --native
 
 test:
 	go test -v --count=1 -p=1 ./...

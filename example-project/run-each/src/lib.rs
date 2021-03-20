@@ -1,5 +1,5 @@
 use suborbital::runnable::*;
-use suborbital::req;
+use suborbital::{req, log};
 use serde_json;
 use serde::{Serialize, Deserialize};
 
@@ -16,7 +16,10 @@ impl Runnable for RunEach {
 
         let mut elem: Elem = match serde_json::from_slice(elem_json.unwrap_or_default().as_slice()) {
             Ok(e) => e,
-            Err(_) => return Err(RunErr::new(500, "failed to from_slice"))
+            Err(err) => {
+                log::error(format!("{}", err).as_str());
+                return Err(RunErr::new(500, "failed to from_slice"));
+            }
         };
 
         elem.name = format!("Hello {}", elem.name);
