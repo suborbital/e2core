@@ -31,12 +31,12 @@ To gain more control, you can choose what to do based on error codes:
         as: report
 		onErr:
           code:
-		  	404: continue
+		    404: continue
 		  other: return
 
       - fn: send-report
 ```
-Technically, any `return` (such as an 'any' or 'other') can be omitted since it is the default behaviour, but it can improve readability of your Directive to include.
+Technically, any `return` (such as an 'any' or 'other') can be omitted since it is the default behaviour, but it can improve readability of your Directive when included.
 
 When defining specific error codes, you cannot use 'any', use 'other' instead. If no specific codes are specified, use 'any'.
 

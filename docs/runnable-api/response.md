@@ -6,7 +6,7 @@ For Rust, these methods are available under the `resp` module, for example `resp
 
 The following namespace methods are available:
 
-## Method
+## Response header
 
 Sets an HTTP response header
 
@@ -15,7 +15,7 @@ pub fn set_header(key: &str, val: &str)
 ```
 
 ```swift
-// Not yet available
+// Swift not yet available
 ```
 
 ## Content-Type
@@ -26,5 +26,5 @@ pub fn content_type(ctype: &str)
 ```
 
 ```swift
-// Not yet available
+// Swift not yet available
 ```

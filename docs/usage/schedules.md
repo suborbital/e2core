@@ -14,7 +14,7 @@ schedules:
 
       - fn: send-report
         with:
-          - "stargazers: ghstars"
+          stargazers: ghstars
 ```
 
 As you can see, you can choose how often the job runs using the `every` clause. You can set seconds, minutes, hours, or days (and you can combine them for values such as 'every 1 hour and 15 minutes').

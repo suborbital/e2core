@@ -37,6 +37,7 @@ Your Runnable object will be created automatically by `subo` when you use the `c
 There are several namespaces available in the Runnable API, each are discussed in the following pages.
 
 * [req](request.md)
+* [resp](response.md)
 * [http](http.md)
 * [cache](cache.md)
 * [file](file.md)
