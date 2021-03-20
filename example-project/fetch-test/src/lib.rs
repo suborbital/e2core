@@ -13,7 +13,7 @@ impl Runnable for FetchTest {
 
         let url = req::state("url").unwrap_or_default();
 
-        let data = http::get(url.as_str(), None); 
+        let data = http::get(url.as_str(), None)?; 
 
         Ok(data)
     }

@@ -72,9 +72,9 @@ dependencies = [
 
 [[package]]
 name = "suborbital"
-version = "0.8.2"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "48e45208b939ff6ab3e5589727ee1198c388f8365144528b6b7d3324bc39b1f2"
+checksum = "881252525620511337a3c1f3bfb46aae4524d74ef6d141d701584c8aa27dfe9e"
 
 [[package]]
 name = "syn"
