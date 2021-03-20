@@ -26,7 +26,7 @@ github.com/suborbital/reactr/bundle
 github.com/suborbital/reactr/request
 github.com/suborbital/reactr/rt
 github.com/suborbital/reactr/rwasm
-# github.com/suborbital/vektor v0.2.5-0.20210317234701-42e37f72c3d2
+# github.com/suborbital/vektor v0.2.5
 ## explicit
 github.com/suborbital/vektor/vk
 github.com/suborbital/vektor/vlog

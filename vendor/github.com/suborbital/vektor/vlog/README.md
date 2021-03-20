@@ -68,16 +68,19 @@ log := vlog.Default(
 ```
 Passing in options will allow you to tweak the behaviour of the logger. The available options are:
 ```golang
-// Level sets the logging level to one of error, warn, info, debug, or trace
+// Level sets the logging level to one of error, warn, info, debug, or trace (VLOG_LOG_LEVEL env var)
 func Level(level string) {}
 
-// ToFile sets the logger to open the file specified and write logs to it
+// ToFile sets the logger to open the file specified and write logs to it (VLOG_LOG_FILE env var)
 func ToFile(filepath string) {}
 
-// Prefix sets a prefix on all of the log messages
-func Prefix(prefix string) {}
+// LogPrefix sets a prefix on all of the log messages (VLOG_LOG_PREFIX env var)
+func LogPrefix(prefix string) {}
 
-// AppMeta sets the meta object to be included with structured logs
+// EnvPrefix sets the prefix to be used for environment variable settings (replaces VLOG with prefix in env var keys above)
+func EnvPrefix(prefix string) {}
+
+// AppMeta sets the meta object to be included with structured logs (not configurable from env vars)
 func AppMeta(meta interface{}) {}
 ```
 > Note if `ToFile` is used, structured logs are written to the file and plain text logs are duplicated to stdout.
