@@ -12,8 +12,8 @@ const atmoEnvPrefix = "ATMO"
 
 // Options defines options for Atmo
 type Options struct {
-	Logger       *vlog.Logger
-	RunSchedules bool `env:"ATMO_RUN_SCHEDULES"`
+	Logger       *vlog.Logger `env:"-"`
+	RunSchedules string       `env:"ATMO_RUN_SCHEDULES"`
 }
 
 // Modifier defines options for Atmo
@@ -45,15 +45,19 @@ func (o *Options) finalize(prefix string) {
 	}
 
 	envOpts := Options{}
-	if err := envconfig.ProcessWith(context.Background(), &envOpts, envconfig.OsLookuper()); err != nil {
-		o.Logger.Error(errors.Wrap(err, "failed to ProcessWith environment config"))
+	if err := envconfig.Process(context.Background(), &envOpts); err != nil {
+		o.Logger.Error(errors.Wrap(err, "failed to Process environment config"))
 		return
+	}
+
+	if envOpts.RunSchedules != "" {
+		o.RunSchedules = envOpts.RunSchedules
 	}
 }
 
 func defaultOptions() *Options {
 	o := &Options{
-		RunSchedules: true,
+		RunSchedules: "true",
 	}
 
 	return o

@@ -49,6 +49,7 @@ func New(options *options.Options) *Coordinator {
 	)
 
 	c := &Coordinator{
+		opts:   options,
 		log:    options.Logger,
 		reactr: reactr,
 		grav:   grav,
@@ -106,7 +107,7 @@ func (c *Coordinator) UseBundle(bdl *bundle.Bundle) *vk.RouteGroup {
 
 		// only actually schedule the job if the env var isn't set (or is set but not 'false')
 		// the job stays mounted on reactr because we could get a request to run it from grav
-		if c.opts.RunSchedules {
+		if c.opts.RunSchedules == "true" {
 			c.reactr.Schedule(rt.Every(seconds, func() rt.Job {
 				return rt.NewJob(jobName, nil)
 			}))
