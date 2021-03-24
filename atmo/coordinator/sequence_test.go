@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	"github.com/suborbital/atmo/atmo/options"
 	"github.com/suborbital/atmo/directive"
 	"github.com/suborbital/reactr/bundle"
 	"github.com/suborbital/reactr/request"
@@ -17,7 +18,13 @@ import (
 var coord *Coordinator
 
 func init() {
-	coord = New(vlog.Default(vlog.Level(vlog.LogLevelDebug)))
+	opts := options.NewWithModifiers(
+		options.UseLogger(vlog.Default(
+			vlog.Level(vlog.LogLevelDebug),
+		)),
+	)
+
+	coord = New(opts)
 
 	bundle, err := bundle.Read("../../example-project/runnables.wasm.zip")
 	if err != nil {

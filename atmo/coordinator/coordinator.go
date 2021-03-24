@@ -3,11 +3,11 @@ package coordinator
 import (
 	"fmt"
 	"net/http"
-	"os"
 	"sync"
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	"github.com/suborbital/atmo/atmo/options"
 	"github.com/suborbital/atmo/directive"
 	"github.com/suborbital/grav/grav"
 	"github.com/suborbital/reactr/bundle"
@@ -18,8 +18,7 @@ import (
 )
 
 const (
-	atmoMethodSchedule  = "SCHED"
-	atmoEnvKeySchedules = "ATMO_RUN_SCHEDULES"
+	atmoMethodSchedule = "SCHED"
 )
 
 type rtFunc func(rt.Job, *rt.Ctx) (interface{}, error)
@@ -28,6 +27,7 @@ type rtFunc func(rt.Job, *rt.Ctx) (interface{}, error)
 // usable Vektor handles by coordinating Reactr jobs and meshing when needed.
 type Coordinator struct {
 	bundle *bundle.Bundle
+	opts   *options.Options
 
 	log *vlog.Logger
 
@@ -42,14 +42,14 @@ type requestScope struct {
 }
 
 // New creates a coordinator
-func New(logger *vlog.Logger) *Coordinator {
+func New(options *options.Options) *Coordinator {
 	reactr := rt.New()
 	grav := grav.New(
-		grav.UseLogger(logger),
+		grav.UseLogger(options.Logger),
 	)
 
 	c := &Coordinator{
-		log:    logger,
+		log:    options.Logger,
 		reactr: reactr,
 		grav:   grav,
 		lock:   sync.Mutex{},
@@ -96,7 +96,8 @@ func (c *Coordinator) UseBundle(bdl *bundle.Bundle) *vk.RouteGroup {
 	for _, s := range bdl.Directive.Schedules {
 		rtFunc := c.rtFuncForDirectiveSchedule(s)
 
-		jobName := fmt.Sprintf("atmo.schedule.%s", s.Name)
+		// create basically an fqfn for this schedule (com.suborbital.appname#schedule.dojob@v0.1.0)
+		jobName := fmt.Sprintf("%s#schedule.%s@%s", bdl.Directive.Identifier, s.Name, bdl.Directive.AppVersion)
 		c.log.Debug("adding schedule", jobName)
 
 		c.reactr.Handle(jobName, &scheduledRunner{rtFunc})
@@ -104,7 +105,8 @@ func (c *Coordinator) UseBundle(bdl *bundle.Bundle) *vk.RouteGroup {
 		seconds := s.NumberOfSeconds()
 
 		// only actually schedule the job if the env var isn't set (or is set but not 'false')
-		if val, exists := os.LookupEnv(atmoEnvKeySchedules); !exists || val != "false" {
+		// the job stays mounted on reactr because we could get a request to run it from grav
+		if c.opts.RunSchedules {
 			c.reactr.Schedule(rt.Every(seconds, func() rt.Job {
 				return rt.NewJob(jobName, nil)
 			}))
