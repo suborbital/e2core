@@ -117,7 +117,7 @@ func Write(directiveBytes []byte, modules []os.File, staticFiles map[string]os.F
 		return errors.Wrap(err, "failed to close bundle writer")
 	}
 
-	if err := ioutil.WriteFile(targetPath, buf.Bytes(), 0700); err != nil {
+	if err := ioutil.WriteFile(targetPath, buf.Bytes(), 0777); err != nil {
 		return errors.Wrap(err, "failed to write bundle to disk")
 	}
 
