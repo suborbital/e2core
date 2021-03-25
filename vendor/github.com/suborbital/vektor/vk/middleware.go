@@ -2,8 +2,6 @@ package vk
 
 import (
 	"net/http"
-
-	"github.com/suborbital/vektor/vlog"
 )
 
 // Middleware represents a handler that runs on a request before reaching its handler
@@ -49,9 +47,9 @@ func enableCors(ctx *Ctx, domain string) {
 	}
 }
 
-func loggerMiddleware(logger *vlog.Logger) Middleware {
+func loggerMiddleware() Middleware {
 	return func(r *http.Request, ctx *Ctx) error {
-		logger.Info(r.Method, r.URL.String())
+		ctx.Log.Info(r.Method, r.URL.String())
 
 		return nil
 	}
@@ -60,6 +58,14 @@ func loggerMiddleware(logger *vlog.Logger) Middleware {
 // generate a HandlerFunc that passes the request through a set of Middleware first and Afterware after
 func augmentHandler(inner HandlerFunc, middleware []Middleware, afterware []Afterware) HandlerFunc {
 	return func(r *http.Request, ctx *Ctx) (interface{}, error) {
+		defer func() {
+			// run the afterware (which cannot affect the response)
+			// even if something in the request chain fails
+			for _, a := range afterware {
+				a(r, ctx)
+			}
+		}()
+
 		// run the middleware (which can error to stop progression)
 		for _, m := range middleware {
 			if err := m(r, ctx); err != nil {
@@ -68,11 +74,6 @@ func augmentHandler(inner HandlerFunc, middleware []Middleware, afterware []Afte
 		}
 
 		resp, err := inner(r, ctx)
-
-		// run the afterware (which cannot affect the response)
-		for _, a := range afterware {
-			a(r, ctx)
-		}
 
 		return resp, err
 	}

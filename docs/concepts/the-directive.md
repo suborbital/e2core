@@ -7,7 +7,7 @@ Here's an example Directive:
 ```yaml
 identifier: com.suborbital.guide
 appVersion: v0.0.1
-atmoVersion: v0.0.6
+atmoVersion: v0.2.0
 
 handlers:
   - type: request
@@ -17,12 +17,17 @@ handlers:
       - group:
         - fn: modify-url
         - fn: helloworld-rs
+          onErr:
+            any: continue
+
       - fn: fetch
+
   - type: request
     resource: /set/:key
     method: POST
     steps:
       - fn: cache-set
+
   - type: request
     resource: /get/:key
     method: GET

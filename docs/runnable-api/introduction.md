@@ -16,12 +16,12 @@ In Rust:
 
 ```rust
 pub trait Runnable {
-    fn run(&self, input: Vec<u8>) -> Option<Vec<u8>>;
+    fn run(&self, input: Vec<u8>) -> Result<Vec<u8>, RunErr>;
 }
 ```
 
 {% hint style="warning" %}
-The Swift Runnable API library is still considered experimental
+The Swift Runnable API library is still considered experimental, and tends to lag slightly behind Rust in terms of available features.
 {% endhint %}
 
 And in Swift:
@@ -37,6 +37,7 @@ Your Runnable object will be created automatically by `subo` when you use the `c
 There are several namespaces available in the Runnable API, each are discussed in the following pages.
 
 * [req](request.md)
+* [resp](response.md)
 * [http](http.md)
 * [cache](cache.md)
 * [file](file.md)

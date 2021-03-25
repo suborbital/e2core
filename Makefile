@@ -20,10 +20,14 @@ docker/publish:
 docker/builder:
 	docker buildx create --use
 
-test/go:
+example-project:
+	subo build ./example-project --native
+
+test:
 	go test -v --count=1 -p=1 ./...
 
 deps:
 	go get -u -d ./...
+	go mod vendor
 
-.PHONY: build atmo atmo/docker docker/dev docker/dev/multi docker/publish docker/builder test/go deps
+.PHONY: build atmo atmo/docker docker/dev docker/dev/multi docker/publish docker/builder example-project test deps

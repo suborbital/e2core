@@ -25,7 +25,7 @@ func logMsg() *HostFn {
 }
 
 func log_msg(pointer int32, size int32, level int32, identifier int32) {
-	inst, err := instanceForIdentifier(identifier)
+	inst, err := instanceForIdentifier(identifier, false)
 	if err != nil {
 		logger.Error(errors.Wrap(err, "[rwasm] alert: invalid identifier used, potential malicious activity"))
 		return

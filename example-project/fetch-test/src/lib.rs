@@ -1,21 +1,21 @@
-use suborbital::runnable;
+use suborbital::runnable::*;
 use suborbital::req;
 use suborbital::http;
 use suborbital::log;
 
 struct FetchTest{}
 
-impl runnable::Runnable for FetchTest {
-    fn run(&self, _: Vec<u8>) -> Option<Vec<u8>> {
+impl Runnable for FetchTest {
+    fn run(&self, _: Vec<u8>) -> Result<Vec<u8>, RunErr> {
 
-        let msg = req::state("logme");
+        let msg = req::state("logme").unwrap_or_default();
         log::info(msg.as_str());
 
-        let url = req::state("url");
+        let url = req::state("url").unwrap_or_default();
 
-        let data = http::get(url.as_str(), None); 
+        let data = http::get(url.as_str(), None)?; 
 
-        Some(data)
+        Ok(data)
     }
 }
 
@@ -25,5 +25,5 @@ static RUNNABLE: &FetchTest = &FetchTest{};
 
 #[no_mangle]
 pub extern fn init() {
-    runnable::set(RUNNABLE);
+    use_runnable(RUNNABLE);
 }

@@ -20,5 +20,9 @@ Once you have your Runnable Bundle, you can run Atmo:
 
 Atmo will start up serving on port 8080, and you will begin to see its structured logs in your terminal. Make a request to `POST localhost:8080/hello` with a request body to see it in action.
 
-Continue on to learn how Atmo works, and how you can build powerful server apps powered by WebAssembly.
+{% hint style="info" %}
+The version of Atmo being run by `subo dev` is dictated by the `atmoVersion` key in your Directive.
+{% endhint %}
+
+Continue on to learn how to operate Atmo in real-world scenarios.
 

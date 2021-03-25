@@ -8,7 +8,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
-	"github.com/suborbital/reactr/bundle"
 	"github.com/suborbital/reactr/request"
 	"github.com/suborbital/reactr/rt"
 	"github.com/suborbital/vektor/vlog"
@@ -42,16 +41,19 @@ var instanceMapper = sync.Map{}
 // the logger used by Wasm Runnables
 var logger = vlog.Default()
 
+// FileFunc is a function that returns the contents of a requested file
+type FileFunc func(string) ([]byte, error)
+
 // wasmEnvironment is an environmenr in which Wasm instances run
 type wasmEnvironment struct {
 	UUID      string
-	ref       *bundle.WasmModuleRef
+	ref       *WasmModuleRef
 	module    *wasmer.Module
 	store     *wasmer.Store
 	imports   *wasmer.ImportObject
 	instances []*wasmInstance
 
-	staticFileFunc bundle.FileFunc
+	staticFileFunc FileFunc
 
 	// the index of the last used wasm instance
 	instIndex int
@@ -64,9 +66,12 @@ type wasmInstance struct {
 	rtCtx   *rt.Ctx
 	request *request.CoordinatedRequest
 
-	staticFileFunc bundle.FileFunc
+	ffiResult []byte
+
+	staticFileFunc FileFunc
 
 	resultChan chan []byte
+	errChan    chan rt.RunErr
 	lock       sync.Mutex
 }
 
@@ -79,7 +84,7 @@ type instanceReference struct {
 
 // newEnvironment creates a new environment and adds it to the shared environments array
 // such that Wasm instances can return data to the correct place
-func newEnvironment(ref *bundle.WasmModuleRef, staticFileFunc bundle.FileFunc) *wasmEnvironment {
+func newEnvironment(ref *WasmModuleRef, staticFileFunc FileFunc) *wasmEnvironment {
 	envLock.Lock()
 	defer envLock.Unlock()
 
@@ -124,6 +129,7 @@ func (w *wasmEnvironment) addInstance() error {
 		wasmerInst:     inst,
 		staticFileFunc: w.staticFileFunc,
 		resultChan:     make(chan []byte, 1),
+		errChan:        make(chan rt.RunErr, 1),
 		lock:           sync.Mutex{},
 	}
 
@@ -157,14 +163,18 @@ func (w *wasmEnvironment) useInstance(req *request.CoordinatedRequest, ctx *rt.C
 		return errors.Wrap(err, "failed to setupNewIdentifier")
 	}
 
+	// setup the instance's temporary state
 	inst.rtCtx = ctx
 	inst.request = req
+	inst.ffiResult = nil
 
 	instFunc(inst, ident)
 
+	// clear the instance's temporary state
 	removeIdentifier(ident)
 	inst.rtCtx = nil
 	inst.request = nil
+	inst.ffiResult = nil
 
 	return nil
 }
@@ -198,11 +208,14 @@ func (w *wasmEnvironment) internals() (*wasmer.Module, *wasmer.Store, *wasmer.Im
 		// mount the Runnable API host functions to the module's imports
 		addHostFns(imports, store,
 			returnResult(),
+			returnError(),
+			getFFIResult(),
 			fetchURL(),
 			cacheSet(),
 			cacheGet(),
 			logMsg(),
 			requestGetField(),
+			respSetHeader(),
 			getStaticFile(),
 		)
 
@@ -242,7 +255,7 @@ func removeIdentifier(ident int32) {
 	instanceMapper.Delete(ident)
 }
 
-func instanceForIdentifier(ident int32) (*wasmInstance, error) {
+func instanceForIdentifier(ident int32, needsFFIResult bool) (*wasmInstance, error) {
 	rawRef, exists := instanceMapper.Load(ident)
 	if !exists {
 		return nil, errors.New("instance does not exist")
@@ -264,6 +277,10 @@ func instanceForIdentifier(ident int32) (*wasmInstance, error) {
 
 	inst := env.instances[ref.InstIndex]
 
+	if needsFFIResult && inst.ffiResult != nil {
+		return nil, errors.New("cannot use instance for host call with existing call in progress")
+	}
+
 	return inst, nil
 }
 
@@ -283,6 +300,28 @@ func randomIdentifier() (int32, error) {
 // - allocate                                                              //
 // - deallocate                                                            //
 /////////////////////////////////////////////////////////////////////////////
+
+func (w *wasmInstance) setFFIResult(data []byte) error {
+	if w.ffiResult != nil {
+		return errors.New("instance ffiResult is already set")
+	}
+
+	w.ffiResult = data
+
+	return nil
+}
+
+func (w *wasmInstance) useFFIResult() ([]byte, error) {
+	if w.ffiResult == nil {
+		return nil, errors.New("instance ffiResult is not set")
+	}
+
+	defer func() {
+		w.ffiResult = nil
+	}()
+
+	return w.ffiResult, nil
+}
 
 func (w *wasmInstance) readMemory(pointer int32, size int32) []byte {
 	memory, err := w.wasmerInst.Exports.GetMemory("memory")

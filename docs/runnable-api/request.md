@@ -2,9 +2,21 @@
 
 When a Runnable is used to handle an HTTP request, Atmo will bind that request to the Runnable. The `req` namespace of the Runnable API can then be used to access all of the information about the request. Note if the Runnable is not being used to handle a request, then all methods in the `req` namespace will return empty or an error.
 
-For Rust, these methods are available under the `req` module, for example `req::method()`. For Swift, they are prefixed with `Req`, for example `Suborbital.ReqMethod()`
+For Rust, these methods are available under the `req` module, for example `req::method()`. For Swift, they are prefixed with `Req`, for example `Suborbital.ReqMethod() (except for `Suborbital.State`)`
 
 The following namespace methods are available:
+
+## State
+
+Returns the value from [request state](../usage/managing-state.md) for the provided key
+
+```rust
+pub fn state(key: &str) -> Option<String>
+```
+
+```swift
+public func State(key: String) -> String
+```
 
 ## Method
 
@@ -88,17 +100,5 @@ pub fn url_param(key: &str) -> String
 
 ```swift
 public func ReqParam(key: String) -> String
-```
-
-## State
-
-Returns the value from [request state](../usage/managing-state.md) for the provided key
-
-```rust
-pub fn state(key: &str) -> String
-```
-
-```swift
-public func State(key: String) -> String
 ```
 

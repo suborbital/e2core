@@ -3,7 +3,10 @@ package atmo
 import (
 	"github.com/pkg/errors"
 	"github.com/suborbital/atmo/atmo/coordinator"
+	"github.com/suborbital/atmo/atmo/options"
+	"github.com/suborbital/atmo/atmo/release"
 	"github.com/suborbital/reactr/bundle"
+	"github.com/suborbital/reactr/rwasm"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
 )
@@ -11,16 +14,24 @@ import (
 // Atmo is an Atmo server
 type Atmo struct {
 	coordinator *coordinator.Coordinator
-	options     Options
+	options     options.Options
 
 	server *vk.Server
 }
 
+type atmoInfo struct {
+	AtmoVersion string `json:"atmo_version"`
+}
+
 // New creates a new Atmo instance
-func New(mods ...OptionModifier) *Atmo {
+func New() *Atmo {
 	logger := vlog.Default(
-		vlog.Level(vlog.LogLevelDebug),
+		vlog.AppMeta(atmoInfo{AtmoVersion: release.AtmoDotVersion}),
+		vlog.Level(vlog.LogLevelInfo),
+		vlog.EnvPrefix("ATMO"),
 	)
+
+	rwasm.UseLogger(logger)
 
 	server := vk.New(
 		vk.UseEnvPrefix("ATMO"),
@@ -28,8 +39,12 @@ func New(mods ...OptionModifier) *Atmo {
 		vk.UseLogger(logger),
 	)
 
+	opts := options.NewWithModifiers(
+		options.UseLogger(logger),
+	)
+
 	a := &Atmo{
-		coordinator: coordinator.New(logger),
+		coordinator: coordinator.New(opts),
 		server:      server,
 	}
 

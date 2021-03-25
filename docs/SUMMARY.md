@@ -12,9 +12,12 @@
 
 ## Usage
 
-* [Creating Runnables](usage/building-runnables.md)
+* [Creating Runnables](usage/creating-runnables.md)
 * [Creating handlers](usage/creating-handlers.md)
 * [Managing state](usage/managing-state.md)
+* [Error handling](usage/error-handling.md)
+* [Scheduled jobs](usage/schedules.md)
+* [ForEach](usage/foreach.md)
 * [Building a Bundle](usage/building-a-bundle.md)
 * [Running Atmo](usage/running-atmo.md)
 
@@ -23,6 +26,7 @@
 * [Introduction](runnable-api/introduction.md)
 * [Example Runnable](runnable-api/example-runnable.md)
 * [Handling requests](runnable-api/request.md)
+* [Modifying responses](runnable-api/response.md)
 * [Structured logging](runnable-api/logging.md)
 * [HTTP requests](runnable-api/http.md)
 * [Accessing cache](runnable-api/cache.md)

@@ -23,7 +23,7 @@ type Producer interface {
 type Logger struct {
 	producer Producer
 	scope    interface{}
-	opts     Options
+	opts     *Options
 	output   io.Writer
 	lock     *sync.Mutex
 }
@@ -125,12 +125,12 @@ func (v *Logger) Trace(fnName string) func() {
 }
 
 func (v *Logger) log(message string, scope interface{}, level int) {
-	if level > v.opts.level {
+	if level > v.opts.Level {
 		return
 	}
 
-	if v.opts.prefix != "" {
-		message = v.opts.prefix + " " + message
+	if v.opts.LogPrefix != "" {
+		message = v.opts.LogPrefix + " " + message
 	}
 
 	// send the raw message to the console
@@ -148,7 +148,7 @@ func (v *Logger) log(message string, scope interface{}, level int) {
 		LogMessage: message,
 		Timestamp:  time.Now(),
 		Level:      level,
-		AppMeta:    v.opts.appMeta,
+		AppMeta:    v.opts.AppMeta,
 		ScopeMeta:  scope,
 	}
 
@@ -166,11 +166,11 @@ func (v *Logger) log(message string, scope interface{}, level int) {
 
 }
 
-func outputForOptions(opts Options) (io.Writer, error) {
+func outputForOptions(opts *Options) (io.Writer, error) {
 	var output io.Writer
 
-	if opts.filepath != "" {
-		file, err := os.OpenFile(opts.filepath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, os.ModePerm)
+	if opts.Filepath != "" {
+		file, err := os.OpenFile(opts.Filepath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, os.ModePerm)
 		if err != nil {
 			return nil, err
 		}

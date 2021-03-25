@@ -3,8 +3,8 @@ package vk
 import (
 	"context"
 	"fmt"
-	"log"
 
+	"github.com/pkg/errors"
 	"github.com/sethvargo/go-envconfig"
 	"github.com/suborbital/vektor/vlog"
 )
@@ -47,16 +47,17 @@ func (o *Options) ShouldUseHTTP() (bool, string) {
 
 // finalize "locks in" the options by overriding any existing options with the version from the environment, and setting the default logger if needed
 func (o *Options) finalize(prefix string) {
+	if o.Logger == nil {
+		o.Logger = vlog.Default(vlog.EnvPrefix(prefix))
+	}
+
 	envOpts := Options{}
 	if err := envconfig.ProcessWith(context.Background(), &envOpts, envconfig.PrefixLookuper(prefix, envconfig.OsLookuper())); err != nil {
-		log.Fatal(err)
+		o.Logger.Error(errors.Wrap(err, "[vk] failed to ProcessWith environment config"))
+		return
 	}
 
 	o.replaceFieldsIfNeeded(&envOpts)
-
-	if o.Logger == nil {
-		o.Logger = vlog.Default()
-	}
 }
 
 func (o *Options) replaceFieldsIfNeeded(replacement *Options) {

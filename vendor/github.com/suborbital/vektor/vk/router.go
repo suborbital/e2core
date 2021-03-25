@@ -25,10 +25,14 @@ type Router struct {
 	getLogger func() *vlog.Logger
 }
 
+type defaultScope struct {
+	RequestID string `json:"request_id"`
+}
+
 // routerWithOptions returns a router with the specified options and optional middleware on the root route group
 func routerWithOptions(options *Options, middleware ...Middleware) *Router {
 	// add the logger middleware first
-	middleware = append([]Middleware{loggerMiddleware(options.Logger)}, middleware...)
+	middleware = append([]Middleware{loggerMiddleware()}, middleware...)
 
 	r := &Router{
 		hrouter: httprouter.New(),
@@ -144,6 +148,7 @@ func (rt *Router) with(inner HandlerFunc) httprouter.Handle {
 		// (and use the ctx.Log for all remaining logging
 		// in case a scope was set on it)
 		ctx := NewCtx(rt.getLogger(), params, w.Header())
+		ctx.UseScope(defaultScope{ctx.RequestID()})
 
 		resp, err := inner(r, ctx)
 		if err != nil {

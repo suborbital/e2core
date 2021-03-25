@@ -18,20 +18,18 @@ func requestGetField() *HostFn {
 		fieldType := args[0].I32()
 		keyPointer := args[1].I32()
 		keySize := args[2].I32()
-		destPointer := args[3].I32()
-		destMaxSize := args[4].I32()
-		ident := args[5].I32()
+		ident := args[3].I32()
 
-		ret := request_get_field(fieldType, keyPointer, keySize, destPointer, destMaxSize, ident)
+		ret := request_get_field(fieldType, keyPointer, keySize, ident)
 
 		return ret, nil
 	}
 
-	return newHostFn("request_get_field", 6, true, fn)
+	return newHostFn("request_get_field", 4, true, fn)
 }
 
-func request_get_field(fieldType int32, keyPointer int32, keySize int32, destPointer int32, destMaxSize int32, identifier int32) int32 {
-	inst, err := instanceForIdentifier(identifier)
+func request_get_field(fieldType int32, keyPointer int32, keySize int32, identifier int32) int32 {
+	inst, err := instanceForIdentifier(identifier, true)
 	if err != nil {
 		logger.Error(errors.Wrap(err, "[rwasm] alert: invalid identifier used, potential malicious activity"))
 		return -1
@@ -96,9 +94,7 @@ func request_get_field(fieldType int32, keyPointer int32, keySize int32, destPoi
 
 	valBytes := []byte(val)
 
-	if len(valBytes) <= int(destMaxSize) {
-		inst.writeMemoryAtLocation(destPointer, valBytes)
-	}
+	inst.setFFIResult(valBytes)
 
 	// logger.Debug(fmt.Sprintf("returning value length %d", len(valBytes)))
 	return int32(len(valBytes))
