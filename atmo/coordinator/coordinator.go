@@ -11,6 +11,7 @@ import (
 	"github.com/suborbital/atmo/directive"
 	"github.com/suborbital/grav/grav"
 	"github.com/suborbital/reactr/bundle"
+	"github.com/suborbital/reactr/bundle/load"
 	"github.com/suborbital/reactr/request"
 	"github.com/suborbital/reactr/rt"
 	"github.com/suborbital/vektor/vk"
@@ -67,7 +68,7 @@ func (c *Coordinator) UseBundle(bdl *bundle.Bundle) *vk.RouteGroup {
 	c.bundle = bdl
 
 	// mount all of the Wasm modules into the Reactr instance
-	bundle.Load(c.reactr, bdl)
+	load.IntoInstance(c.reactr, bdl)
 
 	group := vk.Group("").Before(scopeMiddleware)
 
@@ -131,7 +132,12 @@ func (c *Coordinator) vkHandlerForDirectiveHandler(handler directive.Handler) vk
 		seqState, err := seq.exec(req)
 		if err != nil {
 			if errors.Is(err, ErrSequenceRunErr) && seqState.err != nil {
-				return nil, seqState.err.ToVKErr()
+				if seqState.err.Code < 200 || seqState.err.Code > 599 {
+					// if the Runnable returned an invalid code for HTTP, default to 500
+					return nil, vk.Err(http.StatusInternalServerError, seqState.err.Message)
+				}
+
+				return nil, vk.Err(seqState.err.Code, seqState.err.Message)
 			}
 
 			return nil, vk.Wrap(http.StatusInternalServerError, err)

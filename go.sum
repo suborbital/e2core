@@ -191,6 +191,8 @@ github.com/suborbital/reactr v0.9.0 h1:q5d/Tq+5b2LL5OiOLu4Tl7rvwPqHGn8/iiKXhOCqQ
 github.com/suborbital/reactr v0.9.0/go.mod h1:64Ui4q6d/NSUS0vJfoqCGXmjW5Q0D5RUY2HcobaPBW0=
 github.com/suborbital/reactr v0.9.1 h1:2f0of5Ojp5Z/e2Ymc6trXApSMZSVTWhBzipC94XoehE=
 github.com/suborbital/reactr v0.9.1/go.mod h1:64Ui4q6d/NSUS0vJfoqCGXmjW5Q0D5RUY2HcobaPBW0=
+github.com/suborbital/reactr v0.9.2 h1:2opncmx8SHQKtO5tY0qJYQGFOOQFy8m3U9cboXKyEUY=
+github.com/suborbital/reactr v0.9.2/go.mod h1:64Ui4q6d/NSUS0vJfoqCGXmjW5Q0D5RUY2HcobaPBW0=
 github.com/suborbital/vektor v0.2.2/go.mod h1:6YQE7r6t1JcVs3twpqjXDftsLUaTNUk5YorRKHcDamI=
 github.com/suborbital/vektor v0.2.3/go.mod h1:6YQE7r6t1JcVs3twpqjXDftsLUaTNUk5YorRKHcDamI=
 github.com/suborbital/vektor v0.2.4/go.mod h1:uzSf3LuTDt7omkVgevQLGsGm6PuhWE7JF6zr+kw2PQs=

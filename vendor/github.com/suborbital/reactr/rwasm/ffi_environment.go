@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/suborbital/reactr/request"
 	"github.com/suborbital/reactr/rt"
+	"github.com/suborbital/reactr/rwasm/moduleref"
 	"github.com/suborbital/vektor/vlog"
 	"github.com/wasmerio/wasmer-go/wasmer"
 )
@@ -47,7 +48,7 @@ type FileFunc func(string) ([]byte, error)
 // wasmEnvironment is an environmenr in which Wasm instances run
 type wasmEnvironment struct {
 	UUID      string
-	ref       *WasmModuleRef
+	ref       *moduleref.WasmModuleRef
 	module    *wasmer.Module
 	store     *wasmer.Store
 	imports   *wasmer.ImportObject
@@ -84,7 +85,7 @@ type instanceReference struct {
 
 // newEnvironment creates a new environment and adds it to the shared environments array
 // such that Wasm instances can return data to the correct place
-func newEnvironment(ref *WasmModuleRef, staticFileFunc FileFunc) *wasmEnvironment {
+func newEnvironment(ref *moduleref.WasmModuleRef, staticFileFunc FileFunc) *wasmEnvironment {
 	envLock.Lock()
 	defer envLock.Unlock()
 
@@ -181,7 +182,7 @@ func (w *wasmEnvironment) useInstance(req *request.CoordinatedRequest, ctx *rt.C
 
 func (w *wasmEnvironment) internals() (*wasmer.Module, *wasmer.Store, *wasmer.ImportObject, error) {
 	if w.module == nil {
-		moduleBytes, err := w.ref.ModuleBytes()
+		moduleBytes, err := w.ref.Bytes()
 		if err != nil {
 			return nil, nil, nil, errors.Wrap(err, "failed to get ref ModuleBytes")
 		}

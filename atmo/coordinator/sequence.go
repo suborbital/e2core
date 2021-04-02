@@ -70,9 +70,11 @@ func (seq *sequence) exec(req *request.CoordinatedRequest) (*sequenceState, erro
 			singleResult, err := seq.runSingleFn(step.CallableFn, stateJSON)
 			if err != nil {
 				return nil, err
+			} else if singleResult != nil {
+				// in rare cases, this can be nil and so only append if not
+				stepResults = append(stepResults, *singleResult)
 			}
 
-			stepResults = append(stepResults, *singleResult)
 		} else if step.IsGroup() {
 			seq.log.Debug("running group")
 
@@ -92,9 +94,10 @@ func (seq *sequence) exec(req *request.CoordinatedRequest) (*sequenceState, erro
 			forEachResult, err := seq.runForEach(step.ForEach, *req)
 			if err != nil {
 				return nil, err
+			} else if forEachResult != nil {
+				// in rare cases, this can be nil and so only append if not
+				stepResults = append(stepResults, *forEachResult)
 			}
-
-			stepResults = append(stepResults, *forEachResult)
 		}
 
 		for _, result := range stepResults {

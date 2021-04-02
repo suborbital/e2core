@@ -11,14 +11,14 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/suborbital/atmo/directive"
-	"github.com/suborbital/reactr/rwasm"
+	"github.com/suborbital/reactr/rwasm/moduleref"
 )
 
 // Bundle represents a Runnable bundle
 type Bundle struct {
 	filepath    string
 	Directive   *directive.Directive
-	Runnables   []rwasm.WasmModuleRef
+	Runnables   []moduleref.WasmModuleRef
 	staticFiles map[string]bool
 }
 
@@ -159,7 +159,7 @@ func Read(path string) (*Bundle, error) {
 
 	bundle := &Bundle{
 		filepath:    path,
-		Runnables:   []rwasm.WasmModuleRef{},
+		Runnables:   []moduleref.WasmModuleRef{},
 		staticFiles: map[string]bool{},
 	}
 
@@ -194,7 +194,7 @@ func Read(path string) (*Bundle, error) {
 			return nil, errors.Wrapf(err, "failed to read %s from bundle", f.Name)
 		}
 
-		ref := rwasm.ModuleRefWithData(f.Name, wasmBytes)
+		ref := moduleref.RefWithData(f.Name, wasmBytes)
 
 		bundle.Runnables = append(bundle.Runnables, *ref)
 	}
