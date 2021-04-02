@@ -59,7 +59,7 @@ func fetch_url(method int32, urlPointer int32, urlSize int32, bodyPointer int32,
 
 	httpMethod, exists := methodValToMethod[method]
 	if !exists {
-		logger.ErrorString("invalid method provided")
+		logger.ErrorString("invalid method provided: ", method)
 		return -2
 	}
 
@@ -78,7 +78,7 @@ func fetch_url(method int32, urlPointer int32, urlSize int32, bodyPointer int32,
 
 	urlObj, err := url.Parse(urlString)
 	if err != nil {
-		logger.ErrorString("couldn't parse URL")
+		logger.Error(errors.Wrap(err, "couldn't parse URL"))
 		return -2
 	}
 
@@ -92,7 +92,7 @@ func fetch_url(method int32, urlPointer int32, urlSize int32, bodyPointer int32,
 
 	req, err := http.NewRequest(httpMethod, urlObj.String(), bytes.NewBuffer(body))
 	if err != nil {
-		logger.ErrorString("failed to build request")
+		logger.Error(errors.Wrap(err, "failed to build request"))
 		return -2
 	}
 
@@ -104,10 +104,15 @@ func fetch_url(method int32, urlPointer int32, urlSize int32, bodyPointer int32,
 		return -3
 	}
 
+	if resp.StatusCode > 299 {
+		logger.Debug("runnable's http request returned non-200 response:", resp.StatusCode)
+		return int32(resp.StatusCode) * -1 // return a negative value, i.e. -404 for a 404 error
+	}
+
 	defer resp.Body.Close()
 	respBytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		logger.ErrorString("failed to Read response body")
+		logger.Error(errors.Wrap(err, "failed to Read response body"))
 		return -4
 	}
 

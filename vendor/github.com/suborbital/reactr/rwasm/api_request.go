@@ -66,7 +66,7 @@ func request_get_field(fieldType int32, keyPointer int32, keySize int32, identif
 		if err == nil {
 			val = bodyVal
 		} else {
-			logger.Error(errors.Wrap(err, "failed to get BodyField"))
+			logger.Debug(errors.Wrap(err, "failed to get BodyField"))
 			return -4
 		}
 	case fieldTypeHeader:
