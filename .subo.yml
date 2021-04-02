@@ -9,3 +9,4 @@ preMakeTargets:
 
 postMakeTargets:
   - docker/publish version={{ .Version }}
+  - docker/publish/latest
