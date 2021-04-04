@@ -19,7 +19,7 @@
 * [Scheduled jobs](usage/schedules.md)
 * [ForEach](usage/foreach.md)
 * [Building a Bundle](usage/building-a-bundle.md)
-* [Running Atmo](usage/running-atmo.md)
+* [Deploying Atmo](usage/deploying-atmo.md)
 
 ## Runnable API
 
