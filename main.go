@@ -3,8 +3,18 @@ package main
 import (
 	"github.com/spf13/cobra"
 	"github.com/suborbital/atmo/atmo"
+	"github.com/suborbital/atmo/atmo/options"
 	"github.com/suborbital/atmo/atmo/release"
+	"github.com/suborbital/vektor/vlog"
 )
+
+const (
+	waitFlag = "wait"
+)
+
+type atmoInfo struct {
+	AtmoVersion string `json:"atmo_version"`
+}
 
 func main() {
 	cmd := rootCommand()
@@ -31,13 +41,26 @@ Directive format and the powerful Runnable API using a variety of languages.`,
 				path = args[0]
 			}
 
-			server := atmo.New()
+			logger := vlog.Default(
+				vlog.AppMeta(atmoInfo{AtmoVersion: release.AtmoDotVersion}),
+				vlog.Level(vlog.LogLevelInfo),
+				vlog.EnvPrefix("ATMO"),
+			)
+
+			shouldWait := cmd.Flags().Changed(waitFlag)
+
+			server := atmo.New(
+				options.UseLogger(logger),
+				options.ShouldWait(shouldWait),
+			)
 
 			return server.Start(path)
 		},
 	}
 
 	cmd.SetVersionTemplate("{{.Version}}\n")
+
+	cmd.Flags().Bool(waitFlag, false, "if passed, Atmo will wait until a bundle becomes available on disk, checking once per second")
 
 	return cmd
 }

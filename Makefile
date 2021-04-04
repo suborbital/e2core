@@ -6,7 +6,7 @@ atmo: build
 	ATMO_HTTP_PORT=8080 .bin/atmo $(bundle)
 
 atmo/docker: docker/dev
-	docker run -v ${PWD}/$(dir):/home/atmo -e ATMO_HTTP_PORT=8080 -p 8080:8080 atmo:dev atmo
+	docker run -v ${PWD}/$(dir):/home/atmo -e ATMO_HTTP_PORT=8080 -p 8080:8080 atmo:dev atmo --wait
 
 docker/dev:
 	docker build . -t atmo:dev
