@@ -14,6 +14,7 @@ const atmoEnvPrefix = "ATMO"
 type Options struct {
 	Logger       *vlog.Logger `env:"-"`
 	RunSchedules string       `env:"ATMO_RUN_SCHEDULES"`
+	Wait         bool         `env:"ATMO_WAIT"`
 }
 
 // Modifier defines options for Atmo
@@ -35,6 +36,13 @@ func NewWithModifiers(mods ...Modifier) *Options {
 func UseLogger(logger *vlog.Logger) Modifier {
 	return func(opts *Options) {
 		opts.Logger = logger
+	}
+}
+
+// ShouldWait sets wether Atmo should wait for a bundle to become available on disk
+func ShouldWait(wait bool) Modifier {
+	return func(opts *Options) {
+		opts.Wait = wait
 	}
 }
 
