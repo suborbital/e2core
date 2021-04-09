@@ -29,7 +29,7 @@ github.com/suborbital/reactr/request
 github.com/suborbital/reactr/rt
 github.com/suborbital/reactr/rwasm
 github.com/suborbital/reactr/rwasm/moduleref
-# github.com/suborbital/vektor v0.2.5
+# github.com/suborbital/vektor v0.3.0
 ## explicit
 github.com/suborbital/vektor/vk
 github.com/suborbital/vektor/vlog
