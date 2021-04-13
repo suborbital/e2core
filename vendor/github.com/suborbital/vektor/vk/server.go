@@ -2,6 +2,7 @@ package vk
 
 import (
 	"crypto/tls"
+	"fmt"
 	"net/http"
 
 	"golang.org/x/crypto/acme/autocert"
@@ -42,15 +43,11 @@ func (s *Server) Start() error {
 		s.options.Logger.Info("starting", s.options.AppName, "...")
 	}
 
-	if useHTTP, _ := s.options.ShouldUseHTTP(); !useHTTP && s.options.Domain == "" {
-		s.options.Logger.ErrorString("domain and HTTP port options are both unset, server will start up but will fail to acquire a certificate, reconfigure and restart")
-	} else if s.options.Domain != "" {
-		s.options.Logger.Info("using domain", s.options.Domain)
-	}
-
 	s.options.Logger.Info("serving on", s.server.Addr)
 
-	if useHTTP, _ := s.options.ShouldUseHTTP(); useHTTP {
+	if !s.options.HTTPPortSet() && !s.options.ShouldUseTLS() {
+		s.options.Logger.ErrorString("domain and HTTP port options are both unset, server will start up but fail to acquire a certificate. reconfigure and restart")
+	} else if s.options.ShouldUseHTTP() {
 		return s.server.ListenAndServe()
 	}
 
@@ -58,21 +55,32 @@ func (s *Server) Start() error {
 }
 
 func createGoServer(options *Options, handler http.Handler) *http.Server {
-	if useHTTP, portString := options.ShouldUseHTTP(); useHTTP {
-		return goHTTPServerWithPort(portString, handler)
+	if useHTTP := options.ShouldUseHTTP(); useHTTP {
+		return goHTTPServerWithPort(options, handler)
 	}
 
-	return goTLSServerWithDomain(options.Domain, handler)
+	return goTLSServerWithDomain(options, handler)
 }
 
-func goTLSServerWithDomain(domain string, handler http.Handler) *http.Server {
+func goTLSServerWithDomain(options *Options, handler http.Handler) *http.Server {
+	if options.Domain != "" {
+		options.Logger.Info("configured for HTTPS using domain", options.Domain)
+	}
+
 	m := &autocert.Manager{
 		Cache:      autocert.DirCache("~/.autocert"),
 		Prompt:     autocert.AcceptTOS,
-		HostPolicy: autocert.HostWhitelist(domain),
+		HostPolicy: autocert.HostWhitelist(options.Domain),
 	}
 
-	go http.ListenAndServe(":80", m.HTTPHandler(nil))
+	addr := fmt.Sprintf(":%d", options.HTTPPort)
+	if options.HTTPPort == 0 {
+		addr = ":8080"
+	}
+
+	options.Logger.Info("serving TLS challenges on", addr)
+
+	go http.ListenAndServe(addr, m.HTTPHandler(nil))
 
 	s := &http.Server{
 		Addr:      ":443",
@@ -83,9 +91,11 @@ func goTLSServerWithDomain(domain string, handler http.Handler) *http.Server {
 	return s
 }
 
-func goHTTPServerWithPort(port string, handler http.Handler) *http.Server {
+func goHTTPServerWithPort(options *Options, handler http.Handler) *http.Server {
+	options.Logger.Warn("configured to use HTTP with no TLS")
+
 	s := &http.Server{
-		Addr:    port,
+		Addr:    fmt.Sprintf(":%d", options.HTTPPort),
 		Handler: handler,
 	}
 

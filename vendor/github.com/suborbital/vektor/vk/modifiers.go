@@ -14,8 +14,10 @@ func UseDomain(domain string) OptionsModifier {
 	}
 }
 
-// UseInsecureHTTP sets the server to serve on HTTP
-func UseInsecureHTTP(port int) OptionsModifier {
+// UseHTTPPort sets the HTTP port to be used:
+// If domain is set, HTTP port will be used for LetsEncrypt challenge server
+// If domain is NOT set, this option will put VK in insecure HTTP mode
+func UseHTTPPort(port int) OptionsModifier {
 	return func(o *Options) {
 		o.HTTPPort = port
 	}

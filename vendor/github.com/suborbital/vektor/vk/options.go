@@ -2,7 +2,6 @@ package vk
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/pkg/errors"
 	"github.com/sethvargo/go-envconfig"
@@ -36,13 +35,19 @@ func newOptsWithModifiers(mods ...OptionsModifier) *Options {
 	return options
 }
 
-// ShouldUseHTTP returns true and a port string if the option is enabled
-func (o *Options) ShouldUseHTTP() (bool, string) {
-	if o.HTTPPort != 0 {
-		return true, fmt.Sprintf(":%d", o.HTTPPort)
-	}
+// ShouldUseTLS returns true if domain is set and TLS should be used
+func (o *Options) ShouldUseTLS() bool {
+	return o.Domain != ""
+}
 
-	return false, ""
+// HTTPPortSet returns true if the HTTP port is set
+func (o *Options) HTTPPortSet() bool {
+	return o.HTTPPort != 0
+}
+
+// ShouldUseHTTP returns true if insecure HTTP should be used
+func (o *Options) ShouldUseHTTP() bool {
+	return !o.ShouldUseTLS() && o.HTTPPortSet()
 }
 
 // finalize "locks in" the options by overriding any existing options with the version from the environment, and setting the default logger if needed
