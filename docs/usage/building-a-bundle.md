@@ -3,7 +3,7 @@
 To run your Atmo application, we need to create a Runnable Bundle. A Bundle is a `.wasm.zip` file that includes your Directive, along with all of your Runnables compiled to WebAssembly modules. Bundles are built using `subo`. **Note** that you should pass the root of your Atmo project as the first argument:
 
 ```bash
-subo build . --bundle
+subo build .
 ```
 
 The end of this command should read:
@@ -25,4 +25,3 @@ The version of Atmo being run by `subo dev` is dictated by the `atmoVersion` key
 {% endhint %}
 
 Continue on to learn how to operate Atmo in real-world scenarios.
-
