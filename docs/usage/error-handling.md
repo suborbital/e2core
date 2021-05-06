@@ -1,6 +1,6 @@
 # Error Handling
 
-When building your Atmo app, handling errors returned from Runnables is pretty essential. When a Runnable returns an error, it contains a `code` and a `message`. Using the Directive, you can manage how your application behaves when an error is returned:
+When building your Atmo app, handling errors returned from Runnables is pretty essential. When a Runnable returns an error, it contains a `code` and a `message`. The `code` must be a valid [HTTP response status code](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status). Using the Directive, you can manage how your application behaves when an error is returned:
 
 {% hint style="info" %}
 The default behaviour for any error is for the handler to return.
