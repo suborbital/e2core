@@ -35,16 +35,16 @@ func TestYAMLMarshalUnmarshal(t *testing.T) {
 					{
 						Group: []CallableFn{
 							{
-								Fn: "db#getUser",
+								Fn: "db::getUser",
 							},
 							{
-								Fn: "db#getUserDetails",
+								Fn: "db::getUserDetails",
 							},
 						},
 					},
 					{
 						CallableFn: CallableFn{
-							Fn: "api#returnUser",
+							Fn: "api::returnUser",
 						},
 					},
 				},
@@ -108,16 +108,16 @@ func TestDirectiveValidatorGroupLast(t *testing.T) {
 				Steps: []Executable{
 					{
 						CallableFn: CallableFn{
-							Fn: "api#returnUser",
+							Fn: "api::returnUser",
 						},
 					},
 					{
 						Group: []CallableFn{
 							{
-								Fn: "db#getUser",
+								Fn: "db::getUser",
 							},
 							{
-								Fn: "db#getUserDetails",
+								Fn: "db::getUserDetails",
 							},
 						},
 					},
@@ -162,7 +162,7 @@ func TestDirectiveValidatorInvalidOnErr(t *testing.T) {
 				Steps: []Executable{
 					{
 						CallableFn: CallableFn{
-							Fn: "api#returnUser",
+							Fn: "api::returnUser",
 							OnErr: &FnOnErr{
 								Code: map[int]string{
 									400: "continue",
@@ -173,7 +173,7 @@ func TestDirectiveValidatorInvalidOnErr(t *testing.T) {
 					},
 					{
 						CallableFn: CallableFn{
-							Fn: "api#returnUser",
+							Fn: "api::returnUser",
 							OnErr: &FnOnErr{
 								Other: "continue",
 							},
@@ -241,7 +241,7 @@ func TestDirectiveValidatorMissingFns(t *testing.T) {
 }
 
 func TestDirectiveFQFNs(t *testing.T) {
-	dir := Directive{
+	dir := &Directive{
 		Identifier:  "dev.suborbital.appname",
 		AppVersion:  "v0.1.1",
 		AtmoVersion: "v0.0.6",
@@ -261,36 +261,78 @@ func TestDirectiveFQFNs(t *testing.T) {
 		},
 	}
 
-	fqfn1, err := dir.FQFN("getUser")
-	if err != nil {
-		t.Error("fqfn1 err", err)
+	if err := dir.Validate(); err != nil {
+		t.Error("failed to Validate directive")
+		return
 	}
 
-	if fqfn1 != "default#getUser@v0.1.1" {
-		t.Error("fqfn1 should be 'default#getUser@v0.1.1', got", fqfn1)
+	run1 := dir.FindRunnable("getUser")
+	if run1 == nil {
+		t.Error("failed to find Runnable for getUser")
+		return
 	}
 
-	fqfn2, err := dir.FQFN("db#getUserDetails")
-	if err != nil {
-		t.Error("fqfn2 err", err)
+	fqfn1 := dir.fqfnForFunc(run1.Namespace, run1.Name)
+
+	if fqfn1 != "dev.suborbital.appname#default::getUser@v0.1.1" {
+		t.Error("fqfn1 should be 'dev.suborbital.appname#default::getUser@v0.1.1', got", fqfn1)
 	}
 
-	if fqfn2 != "db#getUserDetails@v0.1.1" {
-		t.Error("fqfn2 should be 'db#getUserDetails@v0.1.1', got", fqfn2)
+	if fqfn1 != run1.FQFN {
+		t.Errorf("fqfn1 %q did not match run1.FQFN %q", fqfn1, run1.FQFN)
 	}
 
-	fqfn3, err := dir.FQFN("api#returnUser")
-	if err != nil {
-		t.Error("fqfn3 err", err)
+	run2 := dir.FindRunnable("db::getUserDetails")
+	if run2 == nil {
+		t.Error("failed to find Runnable for db::getUserDetails")
+		return
 	}
 
-	if fqfn3 != "api#returnUser@v0.1.1" {
-		t.Error("fqfn3 should be 'api#returnUser@v0.1.1', got", fqfn3)
+	fqfn2 := dir.fqfnForFunc(run2.Namespace, run2.Name)
+
+	if fqfn2 != "dev.suborbital.appname#db::getUserDetails@v0.1.1" {
+		t.Error("fqfn2 should be 'dev.suborbital.appname#db::getUserDetails@v0.1.1', got", fqfn2)
 	}
 
-	_, err = dir.FQFN("foo#bar")
-	if err == nil {
-		t.Error("foo#bar should have errored")
+	if fqfn2 != run2.FQFN {
+		t.Error("fqfn2 did not match run2.FQFN")
+	}
+
+	run3 := dir.FindRunnable("api::returnUser")
+	if run3 == nil {
+		t.Error("failed to find Runnable for api::returnUser")
+		return
+	}
+
+	fqfn3 := dir.fqfnForFunc(run3.Namespace, run3.Name)
+
+	if fqfn3 != "dev.suborbital.appname#api::returnUser@v0.1.1" {
+		t.Error("fqfn3 should be 'dev.suborbital.appname#api::returnUser@v0.1.1', got", fqfn3)
+	}
+
+	if fqfn3 != run3.FQFN {
+		t.Error("fqfn1 did not match run1.FQFN")
+	}
+
+	run4 := dir.FindRunnable("dev.suborbital.appname#api::returnUser@v0.1.1")
+	if run4 == nil {
+		t.Error("failed to find Runnable for dev.suborbital.appname#api::returnUser@v0.1.1")
+		return
+	}
+
+	fqfn4 := dir.fqfnForFunc(run3.Namespace, run3.Name)
+
+	if fqfn4 != "dev.suborbital.appname#api::returnUser@v0.1.1" {
+		t.Error("fqfn4 should be 'dev.suborbital.appname#api::returnUser@v0.1.1', got", fqfn3)
+	}
+
+	if fqfn4 != run4.FQFN {
+		t.Error("fqfn1 did not match run1.FQFN")
+	}
+
+	run5 := dir.FindRunnable("foo::bar")
+	if run5 != nil {
+		t.Error("should not have found a Runnable for foo::bar")
 	}
 }
 

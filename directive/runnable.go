@@ -6,4 +6,5 @@ type Runnable struct {
 	Namespace  string `yaml:"namespace"`
 	Lang       string `yaml:"lang"`
 	APIVersion string `yaml:"apiVersion,omitempty"`
+	FQFN       string `yaml:"fqfn,omitempty"`
 }
