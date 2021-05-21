@@ -23,8 +23,6 @@ github.com/spf13/pflag
 github.com/suborbital/grav/grav
 # github.com/suborbital/reactr v0.9.2 => /Users/cohix-so/Workspaces/suborbital/reactr
 ## explicit
-github.com/suborbital/reactr/bundle
-github.com/suborbital/reactr/bundle/load
 github.com/suborbital/reactr/request
 github.com/suborbital/reactr/rt
 github.com/suborbital/reactr/rwasm

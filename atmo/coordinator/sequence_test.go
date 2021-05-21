@@ -28,6 +28,10 @@ func init() {
 
 	coord = New(appSource, opts)
 
+	if err := coord.App.Start(*opts); err != nil {
+		opts.Logger.Error(errors.Wrap(err, "failed to App.Start"))
+	}
+
 	for {
 		if coord.App.Ready() {
 			break
@@ -35,13 +39,17 @@ func init() {
 			time.Sleep(time.Millisecond * 500)
 		}
 	}
+
+	// calling this so that the coordinator loads the Wasm modules into the Reactr instance
+	coord.GenerateRouter()
 }
 
 func TestBasicSequence(t *testing.T) {
 	steps := []directive.Executable{
 		{
 			CallableFn: directive.CallableFn{
-				Fn: "helloworld-rs",
+				Fn:   "helloworld-rs",
+				FQFN: "com.suborbital.test#default::helloworld-rs@v0.0.1",
 			},
 		},
 	}
@@ -59,6 +67,7 @@ func TestBasicSequence(t *testing.T) {
 	state, err := seq.exec(req)
 	if err != nil {
 		t.Error(err)
+		return
 	}
 
 	if val, ok := state.state["helloworld-rs"]; !ok {
@@ -73,11 +82,13 @@ func TestGroupSequence(t *testing.T) {
 		{
 			Group: []directive.CallableFn{
 				{
-					Fn: "helloworld-rs",
+					Fn:   "helloworld-rs",
+					FQFN: "com.suborbital.test#default::helloworld-rs@v0.0.1",
 				},
 				{
-					Fn: "get-file",
-					As: "main.md",
+					Fn:   "get-file",
+					FQFN: "com.suborbital.test#default::get-file@v0.0.1",
+					As:   "main.md",
 				},
 			},
 		},
@@ -117,13 +128,15 @@ func TestAsOnErrContinueSequence(t *testing.T) {
 	steps := []directive.Executable{
 		{
 			CallableFn: directive.CallableFn{
-				Fn: "helloworld-rs",
-				As: "hello",
+				Fn:   "helloworld-rs",
+				FQFN: "com.suborbital.test#default::helloworld-rs@v0.0.1",
+				As:   "hello",
 			},
 		},
 		{
 			CallableFn: directive.CallableFn{
-				Fn: "return-err",
+				Fn:   "return-err",
+				FQFN: "com.suborbital.test#default::return-err@v0.0.1",
 				OnErr: &directive.FnOnErr{
 					Any: "continue",
 				},
@@ -157,13 +170,15 @@ func TestAsOnErrReturnSequence(t *testing.T) {
 	steps := []directive.Executable{
 		{
 			CallableFn: directive.CallableFn{
-				Fn: "helloworld-rs",
-				As: "hello",
+				Fn:   "helloworld-rs",
+				FQFN: "com.suborbital.test#default::helloworld-rs@v0.0.1",
+				As:   "hello",
 			},
 		},
 		{
 			CallableFn: directive.CallableFn{
-				Fn: "return-err",
+				Fn:   "return-err",
+				FQFN: "com.suborbital.test#default::return-err@v0.0.1",
 				OnErr: &directive.FnOnErr{
 					Any: "return",
 				},
@@ -199,12 +214,14 @@ func TestWithSequence(t *testing.T) {
 	steps := []directive.Executable{
 		{
 			CallableFn: directive.CallableFn{
-				Fn: "helloworld-rs", // the body is empty, so this will return only "hello"
+				Fn:   "helloworld-rs", // the body is empty, so this will return only "hello"
+				FQFN: "com.suborbital.test#default::helloworld-rs@v0.0.1",
 			},
 		},
 		{
 			CallableFn: directive.CallableFn{
 				Fn:   "modify-url", // if there's no body, it'll look in state for '
+				FQFN: "com.suborbital.test#default::modify-url@v0.0.1",
 				With: map[string]string{"url": "helloworld-rs"},
 			},
 		},
@@ -245,6 +262,10 @@ func TestForEachSequence(t *testing.T) {
 				In: "people",
 				Fn: "run-each",
 				As: "hello-people",
+				CallableFn: directive.CallableFn{
+					Fn:   "run-each",
+					FQFN: "com.suborbital.test#default::run-each@v0.0.1",
+				},
 			},
 		},
 	}

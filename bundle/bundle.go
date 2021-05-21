@@ -183,6 +183,7 @@ func Read(path string) (*Bundle, error) {
 	// Iterate through the files in the archive,
 	for _, f := range r.File {
 		if f.Name == "Directive.yaml" {
+			// we already have a Directive by now
 			continue
 		} else if strings.HasPrefix(f.Name, "static/") {
 			// build up the list of available static files in the bundle for quick reference later
@@ -205,12 +206,12 @@ func Read(path string) (*Bundle, error) {
 			return nil, errors.Wrapf(err, "failed to read %s from bundle", f.Name)
 		}
 
-		fqfn, err := bundle.Directive.FQFN(strings.TrimSuffix(f.Name, ".wasm"))
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to calculate FQFN for module %s", f.Name)
+		runnable := bundle.Directive.FindRunnable(strings.TrimSuffix(f.Name, ".wasm"))
+		if runnable == nil {
+			return nil, fmt.Errorf("unable to find Runnable for module %s", f.Name)
 		}
 
-		ref := moduleref.RefWithData(f.Name, fqfn, wasmBytes)
+		ref := moduleref.RefWithData(f.Name, runnable.FQFN, wasmBytes)
 
 		bundle.ModuleRefs = append(bundle.ModuleRefs, *ref)
 	}

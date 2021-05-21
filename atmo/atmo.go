@@ -44,6 +44,10 @@ func New(opts ...options.Modifier) *Atmo {
 
 // Start starts the Atmo server
 func (a *Atmo) Start() error {
+	if err := a.coordinator.App.Start(*a.options); err != nil {
+		return errors.Wrap(err, "failed to App.Start")
+	}
+
 	// wait until the AppSource claims to be ready
 	for {
 		if a.coordinator.App.Ready() {

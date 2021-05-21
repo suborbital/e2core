@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"github.com/suborbital/reactr/bundle"
+	"github.com/suborbital/atmo/bundle"
 	"github.com/suborbital/reactr/rt"
 	"github.com/suborbital/reactr/rwasm"
 	"github.com/suborbital/reactr/rwasm/moduleref"
@@ -59,7 +59,6 @@ func ModuleRefsIntoInstance(r *rt.Reactr, refs []moduleref.WasmModuleRef, static
 		if ref.FQFN != "" {
 			r.Register(ref.FQFN, runner, rt.PreWarm())
 		}
-
 	}
 
 	return nil

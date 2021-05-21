@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/suborbital/atmo/atmo/options"
+	"github.com/suborbital/atmo/bundle"
 	"github.com/suborbital/atmo/directive"
-	"github.com/suborbital/reactr/bundle"
 	"github.com/suborbital/reactr/rwasm/moduleref"
 )
 
@@ -82,7 +82,7 @@ func (b *BundleSource) File(filename string) ([]byte, error) {
 		return nil, os.ErrNotExist
 	}
 
-	return b.File(filename)
+	return b.bundle.StaticFile(filename)
 }
 
 func (b *BundleSource) Meta() Meta {
