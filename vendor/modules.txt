@@ -21,7 +21,7 @@ github.com/spf13/pflag
 # github.com/suborbital/grav v0.3.2
 ## explicit
 github.com/suborbital/grav/grav
-# github.com/suborbital/reactr v0.9.2 => /Users/cohix-so/Workspaces/suborbital/reactr
+# github.com/suborbital/reactr v0.9.3-0.20210521151323-0a06b6e64358
 ## explicit
 github.com/suborbital/reactr/request
 github.com/suborbital/reactr/rt
@@ -58,4 +58,3 @@ golang.org/x/text/unicode/norm
 # gopkg.in/yaml.v2 v2.4.0
 ## explicit
 gopkg.in/yaml.v2
-# github.com/suborbital/reactr => /Users/cohix-so/Workspaces/suborbital/reactr
