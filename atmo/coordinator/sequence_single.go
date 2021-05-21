@@ -11,16 +11,16 @@ import (
 	"github.com/suborbital/reactr/rt"
 )
 
+var ErrMissingFQFN = errors.New("callableFn missing FQFN")
+
 func (seq sequence) runSingleFn(fn directive.CallableFn, reqJSON []byte) (*fnResult, error) {
 	start := time.Now()
 	defer func() {
 		seq.log.Debug("fn", fn.Fn, "executed in", time.Since(start).Milliseconds(), "ms")
 	}()
 
-	// calculate the FQFN
-	fqfn, err := seq.fqfn(fn.Fn)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to FQFN for fn %s", fn.Fn)
+	if fn.FQFN == "" {
+		return nil, ErrMissingFQFN
 	}
 
 	pod := seq.connectFunc()
@@ -28,7 +28,7 @@ func (seq sequence) runSingleFn(fn directive.CallableFn, reqJSON []byte) (*fnRes
 
 	// compose a message containing the serialized request state, and send it via Grav
 	// for the appropriate meshed Reactr to handle. It may be handled by self if appropriate.
-	jobMsg := grav.NewMsg(fqfn, reqJSON)
+	jobMsg := grav.NewMsg(fn.FQFN, reqJSON)
 
 	var jobResult []byte
 	var runErr *rt.RunErr
@@ -57,7 +57,7 @@ func (seq sequence) runSingleFn(fn directive.CallableFn, reqJSON []byte) (*fnRes
 	// podErr would be something that happened whily trying to run a function, not an error returned from a function
 	if podErr != nil {
 		if podErr == grav.ErrWaitTimeout {
-			return nil, errors.Wrapf(err, "fn %s timed out", fn.Fn)
+			return nil, errors.Wrapf(podErr, "fn %s timed out", fn.Fn)
 		}
 
 		return nil, errors.Wrapf(podErr, "failed to execute fn %s", fn.Fn)
@@ -79,7 +79,7 @@ func (seq sequence) runSingleFn(fn directive.CallableFn, reqJSON []byte) (*fnRes
 	}
 
 	result := &fnResult{
-		fqfn:     fqfn,
+		fqfn:     fn.FQFN,
 		key:      key,
 		response: cResponse,
 		runErr:   runErr,

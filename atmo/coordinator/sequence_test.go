@@ -2,15 +2,15 @@ package coordinator
 
 import (
 	"bytes"
-	"log"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	"github.com/suborbital/atmo/atmo/appsource"
 	"github.com/suborbital/atmo/atmo/options"
 	"github.com/suborbital/atmo/directive"
-	"github.com/suborbital/reactr/bundle"
 	"github.com/suborbital/reactr/request"
 	"github.com/suborbital/vektor/vlog"
 )
@@ -24,14 +24,17 @@ func init() {
 		)),
 	)
 
-	coord = New(opts)
+	appSource := appsource.NewBundleSource("../../example-project/runnables.wasm.zip")
 
-	bundle, err := bundle.Read("../../example-project/runnables.wasm.zip")
-	if err != nil {
-		log.Fatal(errors.Wrap(err, "failed to Read bundle"))
+	coord = New(appSource, opts)
+
+	for {
+		if coord.App.Ready() {
+			break
+		} else {
+			time.Sleep(time.Millisecond * 500)
+		}
 	}
-
-	coord.UseBundle(bundle)
 }
 
 func TestBasicSequence(t *testing.T) {
@@ -43,7 +46,7 @@ func TestBasicSequence(t *testing.T) {
 		},
 	}
 
-	seq := newSequence(steps, coord.grav.Connect, coord.bundle.Directive.FQFN, coord.log)
+	seq := newSequence(steps, coord.grav.Connect, coord.log)
 
 	req := &request.CoordinatedRequest{
 		Method: "GET",
@@ -80,7 +83,7 @@ func TestGroupSequence(t *testing.T) {
 		},
 	}
 
-	seq := newSequence(steps, coord.grav.Connect, coord.bundle.Directive.FQFN, coord.log)
+	seq := newSequence(steps, coord.grav.Connect, coord.log)
 
 	req := &request.CoordinatedRequest{
 		Method: "GET",
@@ -128,7 +131,7 @@ func TestAsOnErrContinueSequence(t *testing.T) {
 		},
 	}
 
-	seq := newSequence(steps, coord.grav.Connect, coord.bundle.Directive.FQFN, coord.log)
+	seq := newSequence(steps, coord.grav.Connect, coord.log)
 
 	req := &request.CoordinatedRequest{
 		Method: "GET",
@@ -168,7 +171,7 @@ func TestAsOnErrReturnSequence(t *testing.T) {
 		},
 	}
 
-	seq := newSequence(steps, coord.grav.Connect, coord.bundle.Directive.FQFN, coord.log)
+	seq := newSequence(steps, coord.grav.Connect, coord.log)
 
 	req := &request.CoordinatedRequest{
 		Method: "GET",
@@ -207,7 +210,7 @@ func TestWithSequence(t *testing.T) {
 		},
 	}
 
-	seq := newSequence(steps, coord.grav.Connect, coord.bundle.Directive.FQFN, coord.log)
+	seq := newSequence(steps, coord.grav.Connect, coord.log)
 
 	req := &request.CoordinatedRequest{
 		Method: "GET",
@@ -246,7 +249,7 @@ func TestForEachSequence(t *testing.T) {
 		},
 	}
 
-	seq := newSequence(steps, coord.grav.Connect, coord.bundle.Directive.FQFN, coord.log)
+	seq := newSequence(steps, coord.grav.Connect, coord.log)
 
 	req := &request.CoordinatedRequest{
 		Method: "GET",

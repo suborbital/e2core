@@ -30,7 +30,6 @@ func (seq *sequence) runForEach(forEach *directive.ForEach, req request.Coordina
 	}
 
 	// prepare to loop over all the array values
-	fn := directive.CallableFn{Fn: forEach.Fn, OnErr: forEach.OnErr, As: forEach.As}
 	resultChan := make(chan fnResult, len(arrayVals))
 
 	// run the fn for each element in the array
@@ -38,7 +37,7 @@ func (seq *sequence) runForEach(forEach *directive.ForEach, req request.Coordina
 	for i := range arrayVals {
 		val := arrayVals[i]
 
-		seq.log.Debug("running fn", fn.Fn, "from forEach on element", i)
+		seq.log.Debug("running fn", forEach.CallableFn.FQFN, "from forEach on element", i)
 		// add the iteration value to a spectial state field
 		req.State["__elem"] = val
 
@@ -48,7 +47,7 @@ func (seq *sequence) runForEach(forEach *directive.ForEach, req request.Coordina
 		}
 
 		go func() {
-			res, err := seq.runSingleFn(fn, reqJSON)
+			res, err := seq.runSingleFn(forEach.CallableFn, reqJSON)
 			if err != nil {
 				seq.log.Error(errors.Wrap(err, "failed to runSingleFn"))
 				resultChan <- fnResult{err: err}
@@ -88,14 +87,8 @@ func (seq *sequence) runForEach(forEach *directive.ForEach, req request.Coordina
 		return nil, errors.Wrap(err, "failed to stateValFromArray")
 	}
 
-	// calculate the FQFN again since we lost it when collecting results
-	fqfn, err := seq.fqfn(fn.Fn)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to FQFN for fn %s", fn.Fn)
-	}
-
 	result := &fnResult{
-		fqfn:     fqfn,
+		fqfn:     forEach.CallableFn.FQFN,
 		key:      forEach.As,
 		response: &request.CoordinatedResponse{Output: resultJSON},
 	}
