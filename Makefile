@@ -33,4 +33,7 @@ deps:
 	go get -u -d ./...
 	go mod vendor
 
+mod/replace/reactr:
+	go mod edit -replace github.com/suborbital/reactr=$(HOME)/Workspaces/suborbital/reactr
+
 .PHONY: build atmo atmo/docker docker/dev docker/dev/multi docker/publish docker/builder example-project test deps

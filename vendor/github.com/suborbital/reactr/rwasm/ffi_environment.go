@@ -203,7 +203,7 @@ func (w *wasmEnvironment) internals() (*wasmer.Module, *wasmer.Store, *wasmer.Im
 
 		imports, err := env.GenerateImportObject(store, mod)
 		if err != nil {
-			return nil, nil, nil, errors.Wrap(err, "failed to GenerateImportObject")
+			imports = wasmer.NewImportObject() // for now, defaulting to creating non-WASI imports if there's a failure.
 		}
 
 		// mount the Runnable API host functions to the module's imports
@@ -218,6 +218,7 @@ func (w *wasmEnvironment) internals() (*wasmer.Module, *wasmer.Store, *wasmer.Im
 			requestGetField(),
 			respSetHeader(),
 			getStaticFile(),
+			abortHandler(),
 		)
 
 		w.module = mod

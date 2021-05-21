@@ -7,10 +7,10 @@ var errDoFuncNotSet = errors.New("do func has not been set")
 // Ctx is a Job context
 type Ctx struct {
 	Cache  Cache
-	doFunc DoFunc
+	doFunc coreDoFunc
 }
 
-func newCtx(cache Cache, doFunc DoFunc) *Ctx {
+func newCtx(cache Cache, doFunc coreDoFunc) *Ctx {
 	c := &Ctx{
 		Cache:  cache,
 		doFunc: doFunc,
@@ -22,10 +22,10 @@ func newCtx(cache Cache, doFunc DoFunc) *Ctx {
 // Do runs a new job
 func (c *Ctx) Do(job Job) *Result {
 	if c.doFunc == nil {
-		r := newResult(job.uuid, func(_ string) {})
+		r := newResult(job.UUID())
 		r.sendErr(errDoFuncNotSet)
 		return r
 	}
 
-	return c.doFunc(job)
+	return c.doFunc(&job)
 }

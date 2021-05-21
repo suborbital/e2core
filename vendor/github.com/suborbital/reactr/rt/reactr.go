@@ -21,8 +21,8 @@ type JobFunc func(interface{}) *Result
 
 // Reactr represents the main control object
 type Reactr struct {
-	scheduler *scheduler
-	log       *vlog.Logger
+	core *core
+	log  *vlog.Logger
 }
 
 // New returns a Reactr ready to accept Jobs
@@ -31,8 +31,8 @@ func New() *Reactr {
 	cache := newMemoryCache()
 
 	h := &Reactr{
-		scheduler: newScheduler(logger, cache),
-		log:       logger,
+		core: newCore(logger, cache),
+		log:  logger,
 	}
 
 	return h
@@ -40,18 +40,18 @@ func New() *Reactr {
 
 // Do schedules a job to be worked on and returns a result object
 func (h *Reactr) Do(job Job) *Result {
-	return h.scheduler.schedule(job)
+	return h.core.do(&job)
 }
 
 // Schedule adds a new Schedule to the instance, Reactr will 'watch' the Schedule
 // and Do any jobs when the Schedule indicates it's needed
 func (h *Reactr) Schedule(s Schedule) {
-	h.scheduler.watch(s)
+	h.core.watch(s)
 }
 
-// Handle registers a Runnable with the Reactr and returns a shortcut function to run those jobs
-func (h *Reactr) Handle(jobType string, runner Runnable, options ...Option) JobFunc {
-	h.scheduler.handle(jobType, runner, options...)
+// Register registers a Runnable with the Reactr and returns a shortcut function to run those jobs
+func (h *Reactr) Register(jobType string, runner Runnable, options ...Option) JobFunc {
+	h.core.register(jobType, runner, options...)
 
 	helper := func(data interface{}) *Result {
 		job := NewJob(jobType, data)
@@ -65,7 +65,7 @@ func (h *Reactr) Handle(jobType string, runner Runnable, options ...Option) JobF
 // HandleMsg registers a Runnable with the Reactr and triggers that job whenever the provided Grav pod
 // receives a message of a particular type.
 func (h *Reactr) HandleMsg(pod *grav.Pod, msgType string, runner Runnable, options ...Option) {
-	h.scheduler.handle(msgType, runner, options...)
+	h.core.register(msgType, runner, options...)
 
 	h.Listen(pod, msgType)
 }
@@ -115,9 +115,9 @@ func (h *Reactr) Listen(pod *grav.Pod, msgType string) {
 				if err != nil {
 					h.log.Error(errors.Wrapf(err, "job from message %s returned result that could not be JSON marshalled", msg.UUID()))
 					replyMsg = grav.NewMsg(MsgTypeReactrJobErr, []byte(errors.Wrap(err, "failed to Marshal job result").Error()))
+				} else {
+					replyMsg = grav.NewMsg(MsgTypeReactrResult, resultJSON)
 				}
-
-				replyMsg = grav.NewMsg(MsgTypeReactrResult, resultJSON)
 			}
 		}
 
@@ -125,6 +125,12 @@ func (h *Reactr) Listen(pod *grav.Pod, msgType string) {
 
 		return nil
 	})
+}
+
+// IsRegistered returns true if the instance
+// has a worker registered for the given jobType
+func (r *Reactr) IsRegistered(jobType string) bool {
+	return r.core.hasWorker(jobType)
 }
 
 // Job is a shorter alias for NewJob

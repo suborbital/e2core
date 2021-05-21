@@ -7,42 +7,27 @@ import (
 	"github.com/google/uuid"
 )
 
-// JobReference is a lightweight reference to a Job
-type JobReference struct {
+// Job describes a job to be done
+type Job struct {
 	uuid    string
 	jobType string
 	result  *Result
-}
-
-// Job describes a job to be done
-type Job struct {
-	JobReference
-	data       interface{}
-	resultData interface{}
-	resultErr  error
+	data    interface{}
 }
 
 // NewJob creates a new job
 func NewJob(jobType string, data interface{}) Job {
 	j := Job{
-		JobReference: JobReference{
-			uuid:    uuid.New().String(),
-			jobType: jobType,
-		},
-		data: data,
+		uuid:    uuid.New().String(),
+		jobType: jobType,
+		data:    data,
 	}
 
 	return j
 }
 
-// UUID returns the Job's UUID
-func (j JobReference) UUID() string {
+func (j Job) UUID() string {
 	return j.uuid
-}
-
-// Reference returns a reference to the Job
-func (j Job) Reference() JobReference {
-	return j.JobReference
 }
 
 // Unmarshal unmarshals the job's data into a struct
@@ -88,10 +73,4 @@ func (j Job) Int() int {
 // Data returns the "raw" data for the job
 func (j Job) Data() interface{} {
 	return j.data
-}
-
-// loadResult has a pointer reciever such that it actually modifies the object it's being called on
-func (j *Job) loadResult(resultData interface{}, errString string) {
-	j.resultData = resultData
-	j.resultErr = errors.New(errString)
 }

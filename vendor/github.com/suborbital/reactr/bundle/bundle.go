@@ -18,7 +18,7 @@ import (
 type Bundle struct {
 	filepath    string
 	Directive   *directive.Directive
-	Runnables   []moduleref.WasmModuleRef
+	ModuleRefs  []moduleref.WasmModuleRef
 	staticFiles map[string]bool
 }
 
@@ -159,11 +159,11 @@ func Read(path string) (*Bundle, error) {
 
 	bundle := &Bundle{
 		filepath:    path,
-		Runnables:   []moduleref.WasmModuleRef{},
+		ModuleRefs:  []moduleref.WasmModuleRef{},
 		staticFiles: map[string]bool{},
 	}
 
-	// Iterate through the files in the archive,
+	// first, find the Directive
 	for _, f := range r.File {
 		if f.Name == "Directive.yaml" {
 			directive, err := readDirective(f)
@@ -172,6 +172,17 @@ func Read(path string) (*Bundle, error) {
 			}
 
 			bundle.Directive = directive
+			continue
+		}
+	}
+
+	if bundle.Directive == nil {
+		return nil, errors.New("bundle is missing Directive.yaml")
+	}
+
+	// Iterate through the files in the archive,
+	for _, f := range r.File {
+		if f.Name == "Directive.yaml" {
 			continue
 		} else if strings.HasPrefix(f.Name, "static/") {
 			// build up the list of available static files in the bundle for quick reference later
@@ -194,9 +205,14 @@ func Read(path string) (*Bundle, error) {
 			return nil, errors.Wrapf(err, "failed to read %s from bundle", f.Name)
 		}
 
-		ref := moduleref.RefWithData(f.Name, wasmBytes)
+		fqfn, err := bundle.Directive.FQFN(strings.TrimSuffix(f.Name, ".wasm"))
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to calculate FQFN for module %s", f.Name)
+		}
 
-		bundle.Runnables = append(bundle.Runnables, *ref)
+		ref := moduleref.RefWithData(f.Name, fqfn, wasmBytes)
+
+		bundle.ModuleRefs = append(bundle.ModuleRefs, *ref)
 	}
 
 	if bundle.Directive == nil {

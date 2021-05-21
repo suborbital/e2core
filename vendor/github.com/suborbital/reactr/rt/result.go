@@ -14,18 +14,16 @@ type Result struct {
 
 	resultChan chan bool
 	errChan    chan bool
-	removeFunc removeFunc
 }
 
 // ResultFunc is a result callback function.
 type ResultFunc func(interface{}, error)
 
-func newResult(uuid string, remove removeFunc) *Result {
+func newResult(uuid string) *Result {
 	r := &Result{
 		uuid:       uuid,
 		resultChan: make(chan bool, 1), // buffered, so the result can be written and related goroutines can end before Then() is called
 		errChan:    make(chan bool, 1),
-		removeFunc: remove,
 	}
 
 	return r
@@ -38,8 +36,6 @@ func (r *Result) UUID() string {
 
 // Then returns the result or error from a Result
 func (r *Result) Then() (interface{}, error) {
-	defer r.removeFunc(r.uuid)
-
 	select {
 	case <-r.resultChan:
 		return r.data, nil
