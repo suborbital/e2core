@@ -4,6 +4,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/suborbital/atmo/atmo/options"
 	"github.com/suborbital/atmo/bundle"
 	"github.com/suborbital/atmo/directive"
@@ -30,14 +31,11 @@ func NewBundleSource(path string) AppSource {
 func (b *BundleSource) Start(opts options.Options) error {
 	b.opts = opts
 
-	go b.findBundle()
+	if err := b.findBundle(); err != nil {
+		return errors.Wrap(err, "failed to findBundle")
+	}
 
 	return nil
-}
-
-// Ready returns true if the app is ready
-func (b *BundleSource) Ready() bool {
-	return b.bundle != nil
 }
 
 // Runnables returns the Runnables for the app
@@ -99,10 +97,14 @@ func (b *BundleSource) Meta() Meta {
 }
 
 // findBundle loops forever until it finds a bundle at the configured path
-func (b *BundleSource) findBundle() {
+func (b *BundleSource) findBundle() error {
 	for {
 		bdl, err := bundle.Read(b.path)
 		if err != nil {
+			if !b.opts.Wait {
+				return errors.Wrap(err, "failed to Read bundle")
+			}
+
 			b.opts.Logger.Warn("failed to Read bundle, will try again:", err.Error())
 			time.Sleep(time.Second)
 
@@ -114,4 +116,6 @@ func (b *BundleSource) findBundle() {
 		b.bundle = bdl
 		break
 	}
+
+	return nil
 }

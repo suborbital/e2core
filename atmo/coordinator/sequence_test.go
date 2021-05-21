@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
@@ -28,20 +27,9 @@ func init() {
 
 	coord = New(appSource, opts)
 
-	if err := coord.App.Start(*opts); err != nil {
-		opts.Logger.Error(errors.Wrap(err, "failed to App.Start"))
+	if err := coord.Start(); err != nil {
+		opts.Logger.Error(errors.Wrap(err, "failed to coord.Start"))
 	}
-
-	for {
-		if coord.App.Ready() {
-			break
-		} else {
-			time.Sleep(time.Millisecond * 500)
-		}
-	}
-
-	// calling this so that the coordinator loads the Wasm modules into the Reactr instance
-	coord.GenerateRouter()
 }
 
 func TestBasicSequence(t *testing.T) {

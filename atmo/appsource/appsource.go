@@ -15,8 +15,6 @@ type Meta struct {
 type AppSource interface {
 	// Start indicates to the AppSource that it should begin preparing for app startup
 	Start(options.Options) error
-	// Ready returns true if the AppSource is ready to provide real data for an app
-	Ready() bool
 	// Runnables returns all of the available Runnables
 	Runnables() []directive.Runnable
 	// Refs returns all of the available WasmModuleRefs

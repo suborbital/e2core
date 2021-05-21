@@ -3,7 +3,6 @@ package coordinator
 import (
 	"fmt"
 	"net/http"
-	"sync"
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
@@ -34,8 +33,6 @@ type Coordinator struct {
 
 	reactr *rt.Reactr
 	grav   *grav.Grav
-
-	lock sync.Mutex
 }
 
 type requestScope struct {
@@ -55,21 +52,21 @@ func New(appSource appsource.AppSource, options *options.Options) *Coordinator {
 		log:    options.Logger,
 		reactr: reactr,
 		grav:   grav,
-		lock:   sync.Mutex{},
 	}
 
 	return c
 }
 
-// GenerateRouter generates a Vektor routeGroup for the app
-func (c *Coordinator) GenerateRouter() *vk.RouteGroup {
-	c.lock.Lock()
-	defer c.lock.Unlock()
+// Start allows the Coordinator to bootstrap
+func (c *Coordinator) Start() error {
+	if err := c.App.Start(*c.opts); err != nil {
+		return errors.Wrap(err, "failed to App.Start")
+	}
 
 	// mount all of the Wasm modules into the Reactr instance
-	load.ModuleRefsIntoInstance(c.reactr, c.App.Refs(), c.App.File)
-
-	group := vk.Group("").Before(scopeMiddleware)
+	if err := load.ModuleRefsIntoInstance(c.reactr, c.App.Refs(), c.App.File); err != nil {
+		return errors.Wrap(err, "failed to ModuleRefsIntoInstance")
+	}
 
 	// connect a Grav pod to each function
 	for _, fn := range c.App.Runnables() {
@@ -80,6 +77,13 @@ func (c *Coordinator) GenerateRouter() *vk.RouteGroup {
 
 		c.reactr.Listen(c.grav.Connect(), fn.FQFN)
 	}
+
+	return nil
+}
+
+// GenerateRouter generates a Vektor routeGroup for the app
+func (c *Coordinator) GenerateRouter() *vk.RouteGroup {
+	group := vk.Group("").Before(scopeMiddleware)
 
 	// mount each handler into the VK group
 	for _, h := range c.App.Handlers() {

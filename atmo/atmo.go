@@ -1,8 +1,6 @@
 package atmo
 
 import (
-	"time"
-
 	"github.com/pkg/errors"
 	"github.com/suborbital/atmo/atmo/appsource"
 	"github.com/suborbital/atmo/atmo/coordinator"
@@ -44,25 +42,15 @@ func New(opts ...options.Modifier) *Atmo {
 
 // Start starts the Atmo server
 func (a *Atmo) Start() error {
-	if err := a.coordinator.App.Start(*a.options); err != nil {
-		return errors.Wrap(err, "failed to App.Start")
-	}
-
-	// wait until the AppSource claims to be ready
-	for {
-		if a.coordinator.App.Ready() {
-			break
-		} else {
-			time.Sleep(time.Second)
-			continue
-		}
+	if err := a.coordinator.Start(); err != nil {
+		return errors.Wrap(err, "failed to coordinator.Start")
 	}
 
 	routes := a.coordinator.GenerateRouter()
 	a.server.AddGroup(routes)
 
 	if err := a.server.Start(); err != nil {
-		return errors.Wrap(err, "failed to Start server")
+		return errors.Wrap(err, "failed to server.Start")
 	}
 
 	return nil
