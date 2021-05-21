@@ -18,7 +18,6 @@ import (
 type Bundle struct {
 	filepath    string
 	Directive   *directive.Directive
-	ModuleRefs  []moduleref.WasmModuleRef
 	staticFiles map[string]bool
 }
 
@@ -159,7 +158,6 @@ func Read(path string) (*Bundle, error) {
 
 	bundle := &Bundle{
 		filepath:    path,
-		ModuleRefs:  []moduleref.WasmModuleRef{},
 		staticFiles: map[string]bool{},
 	}
 
@@ -211,9 +209,7 @@ func Read(path string) (*Bundle, error) {
 			return nil, fmt.Errorf("unable to find Runnable for module %s", f.Name)
 		}
 
-		ref := moduleref.RefWithData(f.Name, runnable.FQFN, wasmBytes)
-
-		bundle.ModuleRefs = append(bundle.ModuleRefs, *ref)
+		runnable.ModuleRef = moduleref.RefWithData(f.Name, runnable.FQFN, wasmBytes)
 	}
 
 	if bundle.Directive == nil {

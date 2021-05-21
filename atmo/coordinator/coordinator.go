@@ -63,8 +63,8 @@ func (c *Coordinator) Start() error {
 		return errors.Wrap(err, "failed to App.Start")
 	}
 
-	// mount all of the Wasm modules into the Reactr instance
-	if err := load.ModuleRefsIntoInstance(c.reactr, c.App.Refs(), c.App.File); err != nil {
+	// mount all of the Wasm Runnables into the Reactr instance
+	if err := load.Runnables(c.reactr, c.App.Runnables(), c.App.File); err != nil {
 		return errors.Wrap(err, "failed to ModuleRefsIntoInstance")
 	}
 

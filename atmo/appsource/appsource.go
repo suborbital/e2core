@@ -3,7 +3,6 @@ package appsource
 import (
 	"github.com/suborbital/atmo/atmo/options"
 	"github.com/suborbital/atmo/directive"
-	"github.com/suborbital/reactr/rwasm/moduleref"
 )
 
 // Meta describes the metadata for an App
@@ -13,12 +12,10 @@ type Meta struct {
 }
 
 type AppSource interface {
-	// Start indicates to the AppSource that it should begin preparing for app startup
+	// Start indicates to the AppSource that it should prepare for app startup
 	Start(options.Options) error
 	// Runnables returns all of the available Runnables
 	Runnables() []directive.Runnable
-	// Refs returns all of the available WasmModuleRefs
-	Refs() []moduleref.WasmModuleRef
 	// Handlers returns the handlers for the app
 	Handlers() []directive.Handler
 	// Schedules returns the requested schedules for the app

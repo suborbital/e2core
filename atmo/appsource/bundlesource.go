@@ -8,7 +8,6 @@ import (
 	"github.com/suborbital/atmo/atmo/options"
 	"github.com/suborbital/atmo/bundle"
 	"github.com/suborbital/atmo/directive"
-	"github.com/suborbital/reactr/rwasm/moduleref"
 )
 
 // BundleSource is an AppSource backed by a bundle file
@@ -45,15 +44,6 @@ func (b *BundleSource) Runnables() []directive.Runnable {
 	}
 
 	return b.bundle.Directive.Runnables
-}
-
-// Refs returns the module references for the app
-func (b *BundleSource) Refs() []moduleref.WasmModuleRef {
-	if b.bundle == nil {
-		return []moduleref.WasmModuleRef{}
-	}
-
-	return b.bundle.ModuleRefs
 }
 
 // Handlers returns the handlers for the app

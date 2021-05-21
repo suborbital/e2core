@@ -20,19 +20,19 @@ func TestRead(t *testing.T) {
 		return
 	}
 
-	if len(bundle.ModuleRefs) == 0 {
+	if len(bundle.Directive.Runnables) == 0 {
 		t.Error("bundle had 0 runnables")
 		return
 	}
 
 	hasDefault := false
-	for _, r := range bundle.ModuleRefs {
-		if r.Name == "helloworld-rs.wasm" {
+	for _, r := range bundle.Directive.Runnables {
+		if r.Name == "helloworld-rs" && r.ModuleRef != nil {
 			hasDefault = true
 		}
 	}
 
 	if !hasDefault {
-		t.Error("helloworld-rs.wasm runnable not found in bundle")
+		t.Error("helloworld-rs.wasm runnable not found in bundle or missing ModuleReference")
 	}
 }
