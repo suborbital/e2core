@@ -13,6 +13,7 @@ const atmoEnvPrefix = "ATMO"
 // Options defines options for Atmo
 type Options struct {
 	Logger       *vlog.Logger `env:"-"`
+	BundlePath   string       `env:"ATMO_BUNDLE_PATH"`
 	RunSchedules string       `env:"ATMO_RUN_SCHEDULES"`
 	Wait         bool         `env:"ATMO_WAIT"`
 }
@@ -36,6 +37,13 @@ func NewWithModifiers(mods ...Modifier) *Options {
 func UseLogger(logger *vlog.Logger) Modifier {
 	return func(opts *Options) {
 		opts.Logger = logger
+	}
+}
+
+// UseBundlePath sets the bundle path to be used
+func UseBundlePath(path string) Modifier {
+	return func(opts *Options) {
+		opts.BundlePath = path
 	}
 }
 

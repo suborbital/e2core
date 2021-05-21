@@ -4,9 +4,9 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/suborbital/atmo/atmo/appsource"
 	"github.com/suborbital/atmo/atmo/coordinator"
 	"github.com/suborbital/atmo/atmo/options"
-	"github.com/suborbital/reactr/bundle"
 	"github.com/suborbital/reactr/rwasm"
 	"github.com/suborbital/vektor/vk"
 )
@@ -31,8 +31,10 @@ func New(opts ...options.Modifier) *Atmo {
 		vk.UseLogger(atmoOpts.Logger),
 	)
 
+	appSource := appsource.NewBundleSource(atmoOpts.BundlePath)
+
 	a := &Atmo{
-		coordinator: coordinator.New(atmoOpts),
+		coordinator: coordinator.New(appSource, atmoOpts),
 		server:      server,
 		options:     atmoOpts,
 	}
@@ -41,30 +43,18 @@ func New(opts ...options.Modifier) *Atmo {
 }
 
 // Start starts the Atmo server
-func (a *Atmo) Start(bundlePath string) error {
-	var bdl *bundle.Bundle
-
+func (a *Atmo) Start() error {
+	// wait until the AppSource claims to be ready
 	for {
-		b, err := bundle.Read(bundlePath)
-		if err != nil {
-			// if there was a problem, but the 'wait' option is set,
-			// then try again after a second
-			if a.options.Wait {
-				a.options.Logger.Warn("failed to Read bundle, will try again:", err.Error())
-				time.Sleep(time.Second)
-				continue
-			}
-
-			return errors.Wrap(err, "failed to ReadBundle")
+		if a.coordinator.App.Ready() {
+			break
+		} else {
+			time.Sleep(time.Second)
+			continue
 		}
-
-		a.options.Logger.Info("found bundle at", bundlePath)
-
-		bdl = b
-		break
 	}
 
-	routes := a.coordinator.UseBundle(bdl)
+	routes := a.coordinator.GenerateRouter()
 	a.server.AddGroup(routes)
 
 	if err := a.server.Start(); err != nil {
