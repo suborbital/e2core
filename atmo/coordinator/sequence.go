@@ -62,7 +62,7 @@ func (seq *sequence) exec(req *request.CoordinatedRequest) (*sequenceState, erro
 		stepResults := []fnResult{}
 
 		if step.IsFn() {
-			seq.log.Debug("running single fn")
+			seq.log.Debug("running single fn", step.FQFN)
 
 			singleResult, err := seq.runSingleFn(step.CallableFn, stateJSON)
 			if err != nil {

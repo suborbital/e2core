@@ -34,6 +34,10 @@ func (b *BundleSource) Start(opts options.Options) error {
 		return errors.Wrap(err, "failed to findBundle")
 	}
 
+	if err := b.bundle.Directive.Validate(); err != nil {
+		return errors.Wrap(err, "failed to Validate Directive")
+	}
+
 	return nil
 }
 

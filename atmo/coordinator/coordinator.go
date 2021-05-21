@@ -75,6 +75,7 @@ func (c *Coordinator) Start() error {
 			continue
 		}
 
+		c.log.Debug("adding listener for", fn.FQFN)
 		c.reactr.Listen(c.grav.Connect(), fn.FQFN)
 	}
 

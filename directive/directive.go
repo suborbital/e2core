@@ -289,6 +289,8 @@ func (d *Directive) validateSteps(exType executableType, name string, steps []Ex
 			problems.add(fmt.Errorf("step at position %d for %s %s isn't an Fn, Group, or ForEach", j, exType, name))
 		}
 
+		// this function is key as it compartmentalizes 'step validation', and importantly it
+		// ensures that a Runnable is available to handle it and binds it by setting the FQFN field
 		validateFn := func(fn *CallableFn) {
 			runnable := d.FindRunnable(fn.Fn)
 			if runnable == nil {
@@ -337,11 +339,12 @@ func (d *Directive) validateSteps(exType executableType, name string, steps []Ex
 			fnsToAdd = append(fnsToAdd, key)
 		}
 
+		// the steps below are referenced by index (j) to ensure the addition of the FQFN in validateFn 'sticks'
 		if s.IsFn() {
-			validateFn(&s.CallableFn)
+			validateFn(&steps[j].CallableFn)
 		} else if s.IsGroup() {
 			for p := range s.Group {
-				validateFn(&s.Group[p])
+				validateFn(&steps[j].Group[p])
 			}
 		} else if s.IsForEach() {
 			if s.ForEach.In == "" {
@@ -352,7 +355,7 @@ func (d *Directive) validateSteps(exType executableType, name string, steps []Ex
 				problems.add(fmt.Errorf("ForEach at position %d for %s %s is missing 'as' value", j, exType, name))
 			}
 
-			s.ForEach.CallableFn = CallableFn{Fn: s.ForEach.Fn, OnErr: s.ForEach.OnErr, As: s.ForEach.As}
+			steps[j].ForEach.CallableFn = CallableFn{Fn: s.ForEach.Fn, OnErr: s.ForEach.OnErr, As: s.ForEach.As}
 			validateFn(&s.ForEach.CallableFn)
 		}
 
