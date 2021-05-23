@@ -111,7 +111,7 @@ func (c *Coordinator) GenerateRouter() *vk.RouteGroup {
 
 		// only actually schedule the job if the env var isn't set (or is set but not 'false')
 		// the job stays mounted on reactr because we could get a request to run it from grav
-		if c.opts.RunSchedules == "true" {
+		if *c.opts.RunSchedules {
 			c.reactr.Schedule(rt.Every(seconds, func() rt.Job {
 				return rt.NewJob(jobName, nil)
 			}))

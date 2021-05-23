@@ -36,4 +36,7 @@ deps:
 mod/replace/reactr:
 	go mod edit -replace github.com/suborbital/reactr=$(HOME)/Workspaces/suborbital/reactr
 
+mod/replace/vektor:
+	go mod edit -replace github.com/suborbital/vektor=$(HOME)/Workspaces/suborbital/vektor
+
 .PHONY: build atmo atmo/docker docker/dev docker/dev/multi docker/publish docker/builder example-project test deps

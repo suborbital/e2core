@@ -95,7 +95,7 @@ func (b *BundleSource) findBundle() error {
 	for {
 		bdl, err := bundle.Read(b.path)
 		if err != nil {
-			if !b.opts.Wait {
+			if !*b.opts.Wait {
 				return errors.Wrap(err, "failed to Read bundle")
 			}
 
