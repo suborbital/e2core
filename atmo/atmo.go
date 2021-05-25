@@ -28,6 +28,11 @@ func New(opts ...options.Modifier) *Atmo {
 	rwasm.UseLogger(atmoOpts.Logger)
 
 	appSource := appsource.NewBundleSource(atmoOpts.BundlePath)
+	if *atmoOpts.Headless {
+		// the headless appsource ignores the Directive and mounts
+		// each Runnable as its own route (for testing, other purposes)
+		appSource = appsource.NewHeadlessBundleSource(atmoOpts.BundlePath)
+	}
 
 	a := &Atmo{
 		coordinator: coordinator.New(appSource, atmoOpts),

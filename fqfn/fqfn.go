@@ -64,6 +64,11 @@ func Parse(name string) FQFN {
 	return fqfn
 }
 
+// HeadlessURLPath returns the headless URL path for a function
+func (f FQFN) HeadlessURLPath() string {
+	return fmt.Sprintf("/%s/%s/%s/%s", f.Identifier, f.Namespace, f.Fn, f.Version)
+}
+
 func FromParts(ident, namespace, fn, version string) string {
 	return fmt.Sprintf("%s#%s::%s@%s", ident, namespace, fn, version)
 }
