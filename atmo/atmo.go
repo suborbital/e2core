@@ -1,10 +1,14 @@
 package atmo
 
 import (
+	"fmt"
+	"net/http"
+
 	"github.com/pkg/errors"
 	"github.com/suborbital/atmo/atmo/appsource"
 	"github.com/suborbital/atmo/atmo/coordinator"
 	"github.com/suborbital/atmo/atmo/options"
+	"github.com/suborbital/atmo/fqfn"
 	"github.com/suborbital/reactr/rwasm"
 	"github.com/suborbital/vektor/vk"
 )
@@ -23,19 +27,22 @@ func New(opts ...options.Modifier) *Atmo {
 
 	rwasm.UseLogger(atmoOpts.Logger)
 
-	server := vk.New(
-		vk.UseEnvPrefix("ATMO"),
-		vk.UseAppName("Atmo"),
-		vk.UseLogger(atmoOpts.Logger),
-	)
-
 	appSource := appsource.NewBundleSource(atmoOpts.BundlePath)
 
 	a := &Atmo{
 		coordinator: coordinator.New(appSource, atmoOpts),
-		server:      server,
 		options:     atmoOpts,
 	}
+
+	// set up the server so that Atmo can inspect
+	// each request to trigger Router re-generation
+	// when needed (during headless mode)
+	a.server = vk.New(
+		vk.UseEnvPrefix("ATMO"),
+		vk.UseAppName("Atmo"),
+		vk.UseLogger(atmoOpts.Logger),
+		vk.UseInspector(a.inspectRequest),
+	)
 
 	return a
 }
@@ -46,12 +53,55 @@ func (a *Atmo) Start() error {
 		return errors.Wrap(err, "failed to coordinator.Start")
 	}
 
-	routes := a.coordinator.GenerateRouter()
-	a.server.AddGroup(routes)
+	// get information from the AppSource about the
+	// handlers and create a router from it
+	router := a.coordinator.GenerateRouter()
+	a.server.SwapRouter(router)
+
+	// mount the Schedules defined in the App
+	a.coordinator.SetSchedules()
 
 	if err := a.server.Start(); err != nil {
 		return errors.Wrap(err, "failed to server.Start")
 	}
 
 	return nil
+}
+
+// inspectRequest is critical and runs BEFORE every single request that Atmo receives, which means it must be very efficient
+// and only block the request if it's absolutely needed. It is a no-op unless Atmo is in headless mode, and even then only
+// does anything if a request is made for a function that we've never seen before. Read on to see what it does.
+func (a *Atmo) inspectRequest(r http.Request) {
+	// we only need to inspect the request
+	// if we're in headless mode
+	if !*a.options.Headless {
+		return
+	}
+
+	// if Vektor tells us it cannot handle the headless request (i.e. we have no knowledge of the function in question)
+	// then ask the AppSource to find it, and if successful sync Runnables into Reactr and generate a new Router
+	if !a.server.CanHandle(r.Method, r.URL.Path) {
+		FQFN, err := fqfn.FromURL(r.URL)
+		if err != nil {
+			a.options.Logger.Debug(errors.Wrap(err, "failed to fqfn.FromURL, likely invalid, request will proceed and fail").Error())
+			return
+		}
+
+		if err := a.coordinator.App.FindRunnable(FQFN); err != nil {
+			a.options.Logger.Debug(errors.Wrapf(err, "failed to FindRunnable %s, request will proceed and fail").Error())
+			return
+		}
+
+		a.options.Logger.Debug(fmt.Sprintf("found new Runnable %s, will be available at next sync", FQFN))
+
+		// do a sync to load the new Runnable into Reactr
+		a.coordinator.SyncAppState()
+
+		// re-generate the Router which should now include
+		// the new function as a handler
+		newRouter := a.coordinator.GenerateRouter()
+		a.server.SwapRouter(newRouter)
+
+		a.options.Logger.Debug("app sync and router swap completed")
+	}
 }

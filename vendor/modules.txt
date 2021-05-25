@@ -27,7 +27,7 @@ github.com/suborbital/reactr/request
 github.com/suborbital/reactr/rt
 github.com/suborbital/reactr/rwasm
 github.com/suborbital/reactr/rwasm/moduleref
-# github.com/suborbital/vektor v0.3.0
+# github.com/suborbital/vektor v0.3.0 => /Users/cohix-so/Workspaces/suborbital/vektor
 ## explicit
 github.com/suborbital/vektor/vk
 github.com/suborbital/vektor/vlog
@@ -58,3 +58,4 @@ golang.org/x/text/unicode/norm
 # gopkg.in/yaml.v2 v2.4.0
 ## explicit
 gopkg.in/yaml.v2
+# github.com/suborbital/vektor => /Users/cohix-so/Workspaces/suborbital/vektor

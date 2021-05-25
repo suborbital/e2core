@@ -50,6 +50,23 @@ func (b *BundleSource) Runnables() []directive.Runnable {
 	return b.bundle.Directive.Runnables
 }
 
+// FindRunnable returns a nil error if a Runnable with the
+// provided FQFN can be made available at the next sync,
+// otherwise ErrRunnableNotFound is returned
+func (b *BundleSource) FindRunnable(fqfn string) error {
+	if b.bundle == nil {
+		return ErrRunnableNotFound
+	}
+
+	for _, r := range b.bundle.Directive.Runnables {
+		if r.FQFN == fqfn {
+			return nil
+		}
+	}
+
+	return ErrRunnableNotFound
+}
+
 // Handlers returns the handlers for the app
 func (b *BundleSource) Handlers() []directive.Handler {
 	if b.bundle == nil {

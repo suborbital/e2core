@@ -36,7 +36,7 @@ func Bundle(r *rt.Reactr, bundle *bundle.Bundle) error {
 		return errors.Wrap(err, "failed to Validate bundle directive")
 	}
 
-	if err := Runnables(r, bundle.Directive.Runnables, bundle.StaticFile); err != nil {
+	if err := Runnables(r, bundle.Directive.Runnables, bundle.StaticFile, true); err != nil {
 		return errors.Wrap(err, "failed to ModuleRefsIntoInstance")
 	}
 
@@ -44,22 +44,38 @@ func Bundle(r *rt.Reactr, bundle *bundle.Bundle) error {
 }
 
 // Runnables loads a set of WasmModuleRefs into a Reactr instance
-func Runnables(r *rt.Reactr, runnables []directive.Runnable, staticFileFunc rwasm.FileFunc) error {
+// if you're trying to use this directly, you probably want BundleFromPath or Bundle instead
+func Runnables(r *rt.Reactr, runnables []directive.Runnable, staticFileFunc rwasm.FileFunc, registerSimpleName bool) error {
 	for i, runnable := range runnables {
 		if runnable.ModuleRef == nil {
 			return fmt.Errorf("missing ModuleRef for Runnable %s", runnable.Name)
 		}
 
-		runner := rwasm.NewRunnerWithRef(runnables[i].ModuleRef, staticFileFunc)
+		// this func is an odd but needed optimization;
+		// if neither of the two `r.Register` calls
+		// below end up getting called, we don't want
+		// to create the Runner, since that adds things
+		// to Reactr's global state, which would be a waste.
+		getRunner := func() *rwasm.Runner {
+			return rwasm.NewRunnerWithRef(runnables[i].ModuleRef, staticFileFunc)
+		}
 
-		// pre-warm so that Runnables have at least one instance active
-		// when the first request is received.
-		r.Register(runnable.Name, runner, rt.PreWarm())
+		// TODO: in the future, this should be updated to
+		// de-register a Runnable if one with the same name
+		// is already registered, since over-registering can
+		// cause workers to languish in the background
+		if registerSimpleName {
+			r.Register(runnable.Name, getRunner())
+		}
 
-		// mount the fqfn if possible in case multiple
-		// bundles with conflicting names get mounted.
+		// we load the Runnable under its FQFN because
+		// that's what will be called when a sequence runs
 		if runnable.FQFN != "" {
-			r.Register(runnable.FQFN, runner, rt.PreWarm())
+			// if a module is already registered, don't bother over-writing
+			// since FQFNs are 'guaranteed' to be unique, so there's no point
+			if !r.IsRegistered(runnable.FQFN) {
+				r.Register(runnable.FQFN, getRunner(), rt.PreWarm())
+			}
 		}
 	}
 

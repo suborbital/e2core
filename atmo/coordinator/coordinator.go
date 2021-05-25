@@ -3,12 +3,12 @@ package coordinator
 import (
 	"fmt"
 	"net/http"
+	"sync"
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/suborbital/atmo/atmo/appsource"
 	"github.com/suborbital/atmo/atmo/options"
-	"github.com/suborbital/atmo/bundle/load"
 	"github.com/suborbital/atmo/directive"
 	"github.com/suborbital/grav/grav"
 	"github.com/suborbital/reactr/request"
@@ -33,6 +33,8 @@ type Coordinator struct {
 
 	reactr *rt.Reactr
 	grav   *grav.Grav
+
+	listening sync.Map
 }
 
 type requestScope struct {
@@ -47,11 +49,12 @@ func New(appSource appsource.AppSource, options *options.Options) *Coordinator {
 	)
 
 	c := &Coordinator{
-		App:    appSource,
-		opts:   options,
-		log:    options.Logger,
-		reactr: reactr,
-		grav:   grav,
+		App:       appSource,
+		opts:      options,
+		log:       options.Logger,
+		reactr:    reactr,
+		grav:      grav,
+		listening: sync.Map{},
 	}
 
 	return c
@@ -63,28 +66,19 @@ func (c *Coordinator) Start() error {
 		return errors.Wrap(err, "failed to App.Start")
 	}
 
-	// mount all of the Wasm Runnables into the Reactr instance
-	if err := load.Runnables(c.reactr, c.App.Runnables(), c.App.File); err != nil {
-		return errors.Wrap(err, "failed to ModuleRefsIntoInstance")
-	}
-
-	// connect a Grav pod to each function
-	for _, fn := range c.App.Runnables() {
-		if fn.FQFN == "" {
-			c.log.ErrorString("fn", fn.Name, "missing calculated FQFN, will not be available")
-			continue
-		}
-
-		c.log.Debug("adding listener for", fn.FQFN)
-		c.reactr.Listen(c.grav.Connect(), fn.FQFN)
-	}
+	// do an initial sync of Runnables
+	// from the AppSource into RVG
+	c.SyncAppState()
 
 	return nil
 }
 
-// GenerateRouter generates a Vektor routeGroup for the app
-func (c *Coordinator) GenerateRouter() *vk.RouteGroup {
-	group := vk.Group("").Before(scopeMiddleware)
+// GenerateRouter generates a Vektor Router for the app
+func (c *Coordinator) GenerateRouter() *vk.Router {
+	router := vk.NewRouter(c.log)
+
+	// set a middleware on the root RouteGroup
+	router.Before(scopeMiddleware)
 
 	// mount each handler into the VK group
 	for _, h := range c.App.Handlers() {
@@ -94,9 +88,13 @@ func (c *Coordinator) GenerateRouter() *vk.RouteGroup {
 
 		handler := c.vkHandlerForDirectiveHandler(h)
 
-		group.Handle(h.Input.Method, h.Input.Resource, handler)
+		router.Handle(h.Input.Method, h.Input.Resource, handler)
 	}
 
+	return router
+}
+
+func (c *Coordinator) SetSchedules() {
 	// mount each schedule into Reactr
 	for _, s := range c.App.Schedules() {
 		rtFunc := c.rtFuncForDirectiveSchedule(s)
@@ -117,8 +115,6 @@ func (c *Coordinator) GenerateRouter() *vk.RouteGroup {
 			}))
 		}
 	}
-
-	return group
 }
 
 func (c *Coordinator) vkHandlerForDirectiveHandler(handler directive.Handler) vk.HandlerFunc {

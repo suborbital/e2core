@@ -1,6 +1,9 @@
 package vk
 
 import (
+	"crypto/tls"
+	"net/http"
+
 	"github.com/suborbital/vektor/vlog"
 )
 
@@ -11,6 +14,21 @@ type OptionsModifier func(*Options)
 func UseDomain(domain string) OptionsModifier {
 	return func(o *Options) {
 		o.Domain = domain
+	}
+}
+
+// UseTLSConfig sets a TLS config that will be used for HTTPS
+// This will take precedence over the Domain option in all cases
+func UseTLSConfig(config *tls.Config) OptionsModifier {
+	return func(o *Options) {
+		o.TLSConfig = config
+	}
+}
+
+// UseTLSPort sets the HTTPS port to be used:
+func UseTLSPort(port int) OptionsModifier {
+	return func(o *Options) {
+		o.TLSPort = port
 	}
 }
 
@@ -41,5 +59,15 @@ func UseAppName(name string) OptionsModifier {
 func UseEnvPrefix(prefix string) OptionsModifier {
 	return func(o *Options) {
 		o.EnvPrefix = prefix
+	}
+}
+
+// UseInspector sets a function that will be allowed to inspect every HTTP request
+// before it reaches VK's internal router, but cannot modify said request or affect
+// the handling of said request in any way. Use at your own risk, as it may introduce
+// performance issues if not used correctly.
+func UseInspector(isp func(http.Request)) OptionsModifier {
+	return func(o *Options) {
+		o.PreRouterInspector = isp
 	}
 }
