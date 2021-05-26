@@ -1,6 +1,7 @@
 package coordinator
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"sync"
@@ -18,7 +19,8 @@ import (
 )
 
 const (
-	atmoMethodSchedule = "SCHED"
+	atmoMethodSchedule      = "SCHED"
+	atmoHeadlessStateHeader = "X-Atmo-State"
 )
 
 type rtFunc func(rt.Job, *rt.Ctx) (interface{}, error)
@@ -123,6 +125,31 @@ func (c *Coordinator) vkHandlerForDirectiveHandler(handler directive.Handler) vk
 		if err != nil {
 			ctx.Log.Error(errors.Wrap(err, "failed to request.FromVKRequest"))
 			return nil, vk.E(http.StatusInternalServerError, "failed to handle request")
+		}
+
+		// this should probably be factored out into the CoordinateRequest object
+		if *c.opts.Headless {
+			// fill in initial state from the state header
+			if stateJSON := r.Header.Get(atmoHeadlessStateHeader); stateJSON != "" {
+				state := map[string]string{}
+				byteState := map[string][]byte{}
+
+				if err := json.Unmarshal([]byte(stateJSON), &state); err != nil {
+					c.log.Error(errors.Wrap(err, "failed to Unmarshal X-Atmo-State header"))
+				} else {
+					// iterate over the state and convert each field to bytes
+					for k, v := range state {
+						byteState[k] = []byte(v)
+					}
+				}
+
+				req.State = byteState
+			}
+
+			// fill in the URL params from query params
+			for k, v := range r.URL.Query() {
+				req.Params[k] = v[0]
+			}
 		}
 
 		// a sequence executes the handler's steps and manages its state
