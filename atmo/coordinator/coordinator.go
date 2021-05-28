@@ -103,7 +103,6 @@ func (c *Coordinator) SetSchedules() {
 
 		// create basically an fqfn for this schedule (com.suborbital.appname#schedule.dojob@v0.1.0)
 		jobName := fmt.Sprintf("%s#schedule.%s@%s", c.App.Meta().Identifier, s.Name, c.App.Meta().AppVersion)
-		c.log.Debug("adding schedule", jobName)
 
 		c.reactr.Register(jobName, &scheduledRunner{rtFunc})
 
@@ -112,6 +111,8 @@ func (c *Coordinator) SetSchedules() {
 		// only actually schedule the job if the env var isn't set (or is set but not 'false')
 		// the job stays mounted on reactr because we could get a request to run it from grav
 		if *c.opts.RunSchedules {
+			c.log.Debug("adding schedule", jobName)
+
 			c.reactr.Schedule(rt.Every(seconds, func() rt.Job {
 				return rt.NewJob(jobName, nil)
 			}))

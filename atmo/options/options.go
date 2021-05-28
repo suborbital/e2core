@@ -14,9 +14,9 @@ const atmoEnvPrefix = "ATMO"
 type Options struct {
 	Logger       *vlog.Logger `env:"-"`
 	BundlePath   string       `env:"ATMO_BUNDLE_PATH"`
-	RunSchedules *bool        `env:"ATMO_RUN_SCHEDULES"`
-	Headless     *bool        `env:"ATMO_HEADLESS"`
-	Wait         *bool        `env:"ATMO_WAIT"`
+	RunSchedules *bool        `env:"ATMO_RUN_SCHEDULES,default=true"`
+	Headless     *bool        `env:"ATMO_HEADLESS,default=false"`
+	Wait         *bool        `env:"ATMO_WAIT,default=false"`
 }
 
 // Modifier defines options for Atmo
@@ -80,15 +80,17 @@ func (o *Options) finalize(prefix string) {
 		return
 	}
 
-	o.RunSchedules = envOpts.RunSchedules
+	// set RunSchedules if it was not passed as a flag
+	if o.RunSchedules == nil {
+		if envOpts.RunSchedules != nil {
+			o.RunSchedules = envOpts.RunSchedules
+		}
+	}
 
 	// set Wait if it was not passed as a flag
 	if o.Wait == nil {
 		if envOpts.Wait != nil {
 			o.Wait = envOpts.Wait
-		} else {
-			wait := false
-			o.Wait = &wait
 		}
 	}
 
@@ -96,9 +98,6 @@ func (o *Options) finalize(prefix string) {
 	if o.Headless == nil {
 		if envOpts.Headless != nil {
 			o.Headless = envOpts.Headless
-		} else {
-			headless := false
-			o.Headless = &headless
 		}
 	}
 }
