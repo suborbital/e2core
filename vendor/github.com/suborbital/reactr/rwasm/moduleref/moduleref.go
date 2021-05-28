@@ -10,13 +10,15 @@ import (
 type WasmModuleRef struct {
 	Filepath string
 	Name     string
+	FQFN     string
 	data     []byte
 }
 
 // RefWithData returns a module ref from module bytes
-func RefWithData(name string, data []byte) *WasmModuleRef {
+func RefWithData(name, fqfn string, data []byte) *WasmModuleRef {
 	ref := &WasmModuleRef{
 		Name: name,
+		FQFN: fqfn,
 		data: data,
 	}
 

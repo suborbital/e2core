@@ -2,15 +2,14 @@ package coordinator
 
 import (
 	"bytes"
-	"log"
 	"strings"
 	"testing"
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	"github.com/suborbital/atmo/atmo/appsource"
 	"github.com/suborbital/atmo/atmo/options"
 	"github.com/suborbital/atmo/directive"
-	"github.com/suborbital/reactr/bundle"
 	"github.com/suborbital/reactr/request"
 	"github.com/suborbital/vektor/vlog"
 )
@@ -24,26 +23,26 @@ func init() {
 		)),
 	)
 
-	coord = New(opts)
+	appSource := appsource.NewBundleSource("../../example-project/runnables.wasm.zip")
 
-	bundle, err := bundle.Read("../../example-project/runnables.wasm.zip")
-	if err != nil {
-		log.Fatal(errors.Wrap(err, "failed to Read bundle"))
+	coord = New(appSource, opts)
+
+	if err := coord.Start(); err != nil {
+		opts.Logger.Error(errors.Wrap(err, "failed to coord.Start"))
 	}
-
-	coord.UseBundle(bundle)
 }
 
 func TestBasicSequence(t *testing.T) {
 	steps := []directive.Executable{
 		{
 			CallableFn: directive.CallableFn{
-				Fn: "helloworld-rs",
+				Fn:   "helloworld-rs",
+				FQFN: "com.suborbital.test#default::helloworld-rs@v0.0.1",
 			},
 		},
 	}
 
-	seq := newSequence(steps, coord.grav.Connect, coord.bundle.Directive.FQFN, coord.log)
+	seq := newSequence(steps, coord.grav.Connect, coord.log)
 
 	req := &request.CoordinatedRequest{
 		Method: "GET",
@@ -56,6 +55,7 @@ func TestBasicSequence(t *testing.T) {
 	state, err := seq.exec(req)
 	if err != nil {
 		t.Error(err)
+		return
 	}
 
 	if val, ok := state.state["helloworld-rs"]; !ok {
@@ -70,17 +70,19 @@ func TestGroupSequence(t *testing.T) {
 		{
 			Group: []directive.CallableFn{
 				{
-					Fn: "helloworld-rs",
+					Fn:   "helloworld-rs",
+					FQFN: "com.suborbital.test#default::helloworld-rs@v0.0.1",
 				},
 				{
-					Fn: "get-file",
-					As: "main.md",
+					Fn:   "get-file",
+					FQFN: "com.suborbital.test#default::get-file@v0.0.1",
+					As:   "main.md",
 				},
 			},
 		},
 	}
 
-	seq := newSequence(steps, coord.grav.Connect, coord.bundle.Directive.FQFN, coord.log)
+	seq := newSequence(steps, coord.grav.Connect, coord.log)
 
 	req := &request.CoordinatedRequest{
 		Method: "GET",
@@ -114,13 +116,15 @@ func TestAsOnErrContinueSequence(t *testing.T) {
 	steps := []directive.Executable{
 		{
 			CallableFn: directive.CallableFn{
-				Fn: "helloworld-rs",
-				As: "hello",
+				Fn:   "helloworld-rs",
+				FQFN: "com.suborbital.test#default::helloworld-rs@v0.0.1",
+				As:   "hello",
 			},
 		},
 		{
 			CallableFn: directive.CallableFn{
-				Fn: "return-err",
+				Fn:   "return-err",
+				FQFN: "com.suborbital.test#default::return-err@v0.0.1",
 				OnErr: &directive.FnOnErr{
 					Any: "continue",
 				},
@@ -128,7 +132,7 @@ func TestAsOnErrContinueSequence(t *testing.T) {
 		},
 	}
 
-	seq := newSequence(steps, coord.grav.Connect, coord.bundle.Directive.FQFN, coord.log)
+	seq := newSequence(steps, coord.grav.Connect, coord.log)
 
 	req := &request.CoordinatedRequest{
 		Method: "GET",
@@ -154,13 +158,15 @@ func TestAsOnErrReturnSequence(t *testing.T) {
 	steps := []directive.Executable{
 		{
 			CallableFn: directive.CallableFn{
-				Fn: "helloworld-rs",
-				As: "hello",
+				Fn:   "helloworld-rs",
+				FQFN: "com.suborbital.test#default::helloworld-rs@v0.0.1",
+				As:   "hello",
 			},
 		},
 		{
 			CallableFn: directive.CallableFn{
-				Fn: "return-err",
+				Fn:   "return-err",
+				FQFN: "com.suborbital.test#default::return-err@v0.0.1",
 				OnErr: &directive.FnOnErr{
 					Any: "return",
 				},
@@ -168,7 +174,7 @@ func TestAsOnErrReturnSequence(t *testing.T) {
 		},
 	}
 
-	seq := newSequence(steps, coord.grav.Connect, coord.bundle.Directive.FQFN, coord.log)
+	seq := newSequence(steps, coord.grav.Connect, coord.log)
 
 	req := &request.CoordinatedRequest{
 		Method: "GET",
@@ -196,18 +202,20 @@ func TestWithSequence(t *testing.T) {
 	steps := []directive.Executable{
 		{
 			CallableFn: directive.CallableFn{
-				Fn: "helloworld-rs", // the body is empty, so this will return only "hello"
+				Fn:   "helloworld-rs", // the body is empty, so this will return only "hello"
+				FQFN: "com.suborbital.test#default::helloworld-rs@v0.0.1",
 			},
 		},
 		{
 			CallableFn: directive.CallableFn{
 				Fn:   "modify-url", // if there's no body, it'll look in state for '
+				FQFN: "com.suborbital.test#default::modify-url@v0.0.1",
 				With: map[string]string{"url": "helloworld-rs"},
 			},
 		},
 	}
 
-	seq := newSequence(steps, coord.grav.Connect, coord.bundle.Directive.FQFN, coord.log)
+	seq := newSequence(steps, coord.grav.Connect, coord.log)
 
 	req := &request.CoordinatedRequest{
 		Method: "GET",
@@ -242,11 +250,15 @@ func TestForEachSequence(t *testing.T) {
 				In: "people",
 				Fn: "run-each",
 				As: "hello-people",
+				CallableFn: directive.CallableFn{
+					Fn:   "run-each",
+					FQFN: "com.suborbital.test#default::run-each@v0.0.1",
+				},
 			},
 		},
 	}
 
-	seq := newSequence(steps, coord.grav.Connect, coord.bundle.Directive.FQFN, coord.log)
+	seq := newSequence(steps, coord.grav.Connect, coord.log)
 
 	req := &request.CoordinatedRequest{
 		Method: "GET",

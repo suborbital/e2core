@@ -80,7 +80,8 @@ func (w *Runner) Run(job rt.Job, ctx *rt.Ctx) (interface{}, error) {
 		// ident is a random identifier for this job run that allows for "easy" FFI function calls in both directions
 		if _, wasmErr := wasmRun(inPointer, len(jobBytes), ident); wasmErr != nil {
 			runErr = errors.Wrap(wasmErr, "failed to wasmRun")
-			return
+			// don't return here because the Runnable can still return its own error
+			// (select statement below) and that should be taken over this error
 		}
 
 		// determine if the instance called return_result or return_error
@@ -89,6 +90,8 @@ func (w *Runner) Run(job rt.Job, ctx *rt.Ctx) (interface{}, error) {
 			output = res
 		case err := <-instance.errChan:
 			runErr = err
+		default:
+			// do nothing and fall through
 		}
 
 		// deallocate the memory used for the input

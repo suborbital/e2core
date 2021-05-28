@@ -3,15 +3,14 @@ package coordinator
 import (
 	"fmt"
 	"net/http"
-	"sync"
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	"github.com/suborbital/atmo/atmo/appsource"
 	"github.com/suborbital/atmo/atmo/options"
+	"github.com/suborbital/atmo/bundle/load"
 	"github.com/suborbital/atmo/directive"
 	"github.com/suborbital/grav/grav"
-	"github.com/suborbital/reactr/bundle"
-	"github.com/suborbital/reactr/bundle/load"
 	"github.com/suborbital/reactr/request"
 	"github.com/suborbital/reactr/rt"
 	"github.com/suborbital/vektor/vk"
@@ -27,15 +26,13 @@ type rtFunc func(rt.Job, *rt.Ctx) (interface{}, error)
 // Coordinator is a type that is responsible for covnerting the directive into
 // usable Vektor handles by coordinating Reactr jobs and meshing when needed.
 type Coordinator struct {
-	bundle *bundle.Bundle
-	opts   *options.Options
+	App  appsource.AppSource
+	opts *options.Options
 
 	log *vlog.Logger
 
 	reactr *rt.Reactr
 	grav   *grav.Grav
-
-	lock sync.Mutex
 }
 
 type requestScope struct {
@@ -43,48 +40,54 @@ type requestScope struct {
 }
 
 // New creates a coordinator
-func New(options *options.Options) *Coordinator {
+func New(appSource appsource.AppSource, options *options.Options) *Coordinator {
 	reactr := rt.New()
 	grav := grav.New(
 		grav.UseLogger(options.Logger),
 	)
 
 	c := &Coordinator{
+		App:    appSource,
 		opts:   options,
 		log:    options.Logger,
 		reactr: reactr,
 		grav:   grav,
-		lock:   sync.Mutex{},
 	}
 
 	return c
 }
 
-// UseBundle sets a bundle to be used
-func (c *Coordinator) UseBundle(bdl *bundle.Bundle) *vk.RouteGroup {
-	c.lock.Lock()
-	defer c.lock.Unlock()
+// Start allows the Coordinator to bootstrap
+func (c *Coordinator) Start() error {
+	if err := c.App.Start(*c.opts); err != nil {
+		return errors.Wrap(err, "failed to App.Start")
+	}
 
-	c.bundle = bdl
-
-	// mount all of the Wasm modules into the Reactr instance
-	load.IntoInstance(c.reactr, bdl)
-
-	group := vk.Group("").Before(scopeMiddleware)
+	// mount all of the Wasm Runnables into the Reactr instance
+	if err := load.Runnables(c.reactr, c.App.Runnables(), c.App.File); err != nil {
+		return errors.Wrap(err, "failed to ModuleRefsIntoInstance")
+	}
 
 	// connect a Grav pod to each function
-	for _, fn := range bdl.Directive.Runnables {
-		fqfn, err := bdl.Directive.FQFN(fn.Name)
-		if err != nil {
-			c.log.Error(errors.Wrapf(err, "failed to derive FQFN for Directive function %s, function will not be available", fn.Name))
+	for _, fn := range c.App.Runnables() {
+		if fn.FQFN == "" {
+			c.log.ErrorString("fn", fn.Name, "missing calculated FQFN, will not be available")
 			continue
 		}
 
-		c.reactr.Listen(c.grav.Connect(), fqfn)
+		c.log.Debug("adding listener for", fn.FQFN)
+		c.reactr.Listen(c.grav.Connect(), fn.FQFN)
 	}
 
+	return nil
+}
+
+// GenerateRouter generates a Vektor routeGroup for the app
+func (c *Coordinator) GenerateRouter() *vk.RouteGroup {
+	group := vk.Group("").Before(scopeMiddleware)
+
 	// mount each handler into the VK group
-	for _, h := range bdl.Directive.Handlers {
+	for _, h := range c.App.Handlers() {
 		if h.Input.Type != directive.InputTypeRequest {
 			continue
 		}
@@ -95,14 +98,14 @@ func (c *Coordinator) UseBundle(bdl *bundle.Bundle) *vk.RouteGroup {
 	}
 
 	// mount each schedule into Reactr
-	for _, s := range bdl.Directive.Schedules {
+	for _, s := range c.App.Schedules() {
 		rtFunc := c.rtFuncForDirectiveSchedule(s)
 
 		// create basically an fqfn for this schedule (com.suborbital.appname#schedule.dojob@v0.1.0)
-		jobName := fmt.Sprintf("%s#schedule.%s@%s", bdl.Directive.Identifier, s.Name, bdl.Directive.AppVersion)
+		jobName := fmt.Sprintf("%s#schedule.%s@%s", c.App.Meta().Identifier, s.Name, c.App.Meta().AppVersion)
 		c.log.Debug("adding schedule", jobName)
 
-		c.reactr.Handle(jobName, &scheduledRunner{rtFunc})
+		c.reactr.Register(jobName, &scheduledRunner{rtFunc})
 
 		seconds := s.NumberOfSeconds()
 
@@ -127,7 +130,7 @@ func (c *Coordinator) vkHandlerForDirectiveHandler(handler directive.Handler) vk
 		}
 
 		// a sequence executes the handler's steps and manages its state
-		seq := newSequence(handler.Steps, c.grav.Connect, c.bundle.Directive.FQFN, ctx.Log)
+		seq := newSequence(handler.Steps, c.grav.Connect, ctx.Log)
 
 		seqState, err := seq.exec(req)
 		if err != nil {
@@ -186,7 +189,7 @@ func (c *Coordinator) rtFuncForDirectiveSchedule(sched directive.Schedule) rtFun
 		}
 
 		// a sequence executes the handler's steps and manages its state
-		seq := newSequence(sched.Steps, c.grav.Connect, c.bundle.Directive.FQFN, c.log)
+		seq := newSequence(sched.Steps, c.grav.Connect, c.log)
 
 		if seqState, err := seq.exec(req); err != nil {
 			if errors.Is(err, ErrSequenceRunErr) && seqState.err != nil {

@@ -11,13 +11,13 @@ import (
 // them for new jobs to send to the scheduler
 type watcher struct {
 	schedules    map[string]Schedule
-	scheduleFunc func(Job) *Result
+	scheduleFunc func(*Job) *Result
 
 	lock      sync.RWMutex
 	startOnce sync.Once
 }
 
-func newWatcher(scheduleFunc func(Job) *Result) *watcher {
+func newWatcher(scheduleFunc func(*Job) *Result) *watcher {
 	w := &watcher{
 		schedules:    map[string]Schedule{},
 		scheduleFunc: scheduleFunc,
@@ -53,7 +53,7 @@ func (w *watcher) watch(sched Schedule) {
 					} else {
 						if job := s.Check(); job != nil {
 							// schedule the job and discard the result
-							w.scheduleFunc(*job).Discard()
+							w.scheduleFunc(job).Discard()
 						}
 					}
 				}

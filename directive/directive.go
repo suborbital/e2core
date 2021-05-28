@@ -3,6 +3,7 @@ package directive
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"golang.org/x/mod/semver"
 	"gopkg.in/yaml.v2"
@@ -27,9 +28,6 @@ type Directive struct {
 	Runnables   []Runnable `yaml:"runnables"`
 	Handlers    []Handler  `yaml:"handlers,omitempty"`
 	Schedules   []Schedule `yaml:"schedules,omitempty"`
-
-	// "fully qualified function names"
-	fqfns map[string]string `yaml:"-"`
 }
 
 // Handler represents the mapping between an input and a composition of functions
@@ -75,6 +73,7 @@ type CallableFn struct {
 	As    string            `yaml:"as,omitempty"`
 	With  map[string]string `yaml:"with,omitempty"`
 	OnErr *FnOnErr          `yaml:"onErr,omitempty"`
+	FQFN  string            `yaml:"-"` // calculated during Validate
 }
 
 // FnOnErr describes how to handle an error from a function call
@@ -85,40 +84,86 @@ type FnOnErr struct {
 }
 
 type ForEach struct {
-	In    string   `yaml:"in"`
-	Fn    string   `yaml:"fn"`
-	As    string   `yaml:"as"`
-	OnErr *FnOnErr `yaml:"onErr,omitempty"`
+	In         string     `yaml:"in"`
+	Fn         string     `yaml:"fn"`
+	As         string     `yaml:"as"`
+	OnErr      *FnOnErr   `yaml:"onErr,omitempty"`
+	CallableFn CallableFn `yaml:"-"` // calculated during Validate
+}
+
+func (d *Directive) FindRunnable(name string) *Runnable {
+	// if this is an FQFN, parse the identifier and bail out
+	// if it doesn't match this Directive
+
+	// reminder an FQFN looks like this: identifier#namespace::fnName@version
+
+	identifier := ""
+	identParts := strings.SplitN(name, "#", 2)
+	if len(identParts) == 2 {
+		identifier = identParts[0]
+		name = identParts[1]
+	}
+
+	if identifier != "" && identifier != d.Identifier {
+		return nil
+	}
+
+	// if a Runnable is referenced with its namespace, i.e. users#getUser
+	// then we need to parse that and ensure we only match that namespace
+
+	namespace := NamespaceDefault
+	namespaceParts := strings.SplitN(name, "::", 2)
+	if len(namespaceParts) == 2 {
+		namespace = namespaceParts[0]
+		name = namespaceParts[1]
+	}
+
+	// next, if the name contains an @, it's an FQFN so we should bail if the
+	// version number doesn't match (since this is the wrong Directive)
+	appVersion := ""
+	versionParts := strings.SplitN(name, "@", 2)
+	if len(versionParts) == 2 {
+		name = versionParts[0]
+		appVersion = versionParts[1]
+	}
+
+	if appVersion != "" && appVersion != d.AppVersion {
+		return nil
+	}
+
+	for i, r := range d.Runnables {
+		if r.Name == name && r.Namespace == namespace {
+			return &d.Runnables[i]
+		}
+	}
+
+	return nil
 }
 
 // Marshal outputs the YAML bytes of the Directive
 func (d *Directive) Marshal() ([]byte, error) {
+	d.calculateFQFNs()
+
 	return yaml.Marshal(d)
 }
 
 // Unmarshal unmarshals YAML bytes into a Directive struct
 // it also calculates a map of FQFNs for later use
 func (d *Directive) Unmarshal(in []byte) error {
-	return yaml.Unmarshal(in, d)
-}
-
-// FQFN returns the FQFN for a given function in the directive
-func (d *Directive) FQFN(fn string) (string, error) {
-	if d.fqfns == nil {
-		d.calculateFQFNs()
+	if err := yaml.Unmarshal(in, d); err != nil {
+		return err
 	}
 
-	fqfn, exists := d.fqfns[fn]
-	if !exists {
-		return "", fmt.Errorf("fn %s does not exist", fn)
-	}
+	d.calculateFQFNs()
 
-	return fqfn, nil
+	return nil
 }
 
 // Validate validates a directive
 func (d *Directive) Validate() error {
 	problems := &problems{}
+
+	d.calculateFQFNs()
 
 	if d.Identifier == "" {
 		problems.add(errors.New("identifier is missing"))
@@ -139,7 +184,7 @@ func (d *Directive) Validate() error {
 	fns := map[string]bool{}
 
 	for i, f := range d.Runnables {
-		namespaced := fmt.Sprintf("%s#%s", f.Namespace, f.Name)
+		namespaced := fmt.Sprintf("%s::%s", f.Namespace, f.Name)
 
 		if _, exists := fns[namespaced]; exists {
 			problems.add(fmt.Errorf("duplicate fn %s found", namespaced))
@@ -187,7 +232,7 @@ func (d *Directive) Validate() error {
 		}
 
 		name := fmt.Sprintf("%s %s", h.Input.Method, h.Input.Resource)
-		fullState := validateSteps(executableTypeHandler, name, h.Steps, map[string]bool{}, fns, problems)
+		fullState := d.validateSteps(executableTypeHandler, name, h.Steps, map[string]bool{}, problems)
 
 		lastStep := h.Steps[len(h.Steps)-1]
 		if h.Response == "" && lastStep.IsGroup() {
@@ -220,7 +265,7 @@ func (d *Directive) Validate() error {
 			initialState[k] = true
 		}
 
-		validateSteps(executableTypeSchedule, s.Name, s.Steps, initialState, fns, problems)
+		d.validateSteps(executableTypeSchedule, s.Name, s.Steps, initialState, problems)
 	}
 
 	return problems.render()
@@ -233,7 +278,7 @@ const (
 	executableTypeSchedule = executableType("schedule")
 )
 
-func validateSteps(exType executableType, name string, steps []Executable, initialState map[string]bool, fns map[string]bool, problems *problems) map[string]bool {
+func (d *Directive) validateSteps(exType executableType, name string, steps []Executable, initialState map[string]bool, problems *problems) map[string]bool {
 	// keep track of the functions that have run so far at each step
 	fullState := initialState
 
@@ -244,9 +289,14 @@ func validateSteps(exType executableType, name string, steps []Executable, initi
 			problems.add(fmt.Errorf("step at position %d for %s %s isn't an Fn, Group, or ForEach", j, exType, name))
 		}
 
-		validateFn := func(fn CallableFn) {
-			if _, exists := fns[fn.Fn]; !exists {
+		// this function is key as it compartmentalizes 'step validation', and importantly it
+		// ensures that a Runnable is available to handle it and binds it by setting the FQFN field
+		validateFn := func(fn *CallableFn) {
+			runnable := d.FindRunnable(fn.Fn)
+			if runnable == nil {
 				problems.add(fmt.Errorf("%s for %s lists fn at step %d that does not exist: %s (did you forget a namespace?)", exType, name, j, fn.Fn))
+			} else {
+				fn.FQFN = runnable.FQFN
 			}
 
 			for _, key := range fn.With {
@@ -289,11 +339,12 @@ func validateSteps(exType executableType, name string, steps []Executable, initi
 			fnsToAdd = append(fnsToAdd, key)
 		}
 
+		// the steps below are referenced by index (j) to ensure the addition of the FQFN in validateFn 'sticks'
 		if s.IsFn() {
-			validateFn(s.CallableFn)
+			validateFn(&steps[j].CallableFn)
 		} else if s.IsGroup() {
-			for _, gfn := range s.Group {
-				validateFn(gfn)
+			for p := range s.Group {
+				validateFn(&steps[j].Group[p])
 			}
 		} else if s.IsForEach() {
 			if s.ForEach.In == "" {
@@ -304,8 +355,8 @@ func validateSteps(exType executableType, name string, steps []Executable, initi
 				problems.add(fmt.Errorf("ForEach at position %d for %s %s is missing 'as' value", j, exType, name))
 			}
 
-			forEachFn := CallableFn{Fn: s.ForEach.Fn, OnErr: s.ForEach.OnErr, As: s.ForEach.As}
-			validateFn(forEachFn)
+			steps[j].ForEach.CallableFn = CallableFn{Fn: s.ForEach.Fn, OnErr: s.ForEach.OnErr, As: s.ForEach.As}
+			validateFn(&s.ForEach.CallableFn)
 		}
 
 		for _, newFn := range fnsToAdd {
@@ -317,23 +368,21 @@ func validateSteps(exType executableType, name string, steps []Executable, initi
 }
 
 func (d *Directive) calculateFQFNs() {
-	d.fqfns = map[string]string{}
-
-	for _, fn := range d.Runnables {
-		namespaced := fmt.Sprintf("%s#%s", fn.Namespace, fn.Name)
-
-		// if the function is in the default namespace, add it to the map both namespaced and not
-		if fn.Namespace == NamespaceDefault {
-			d.fqfns[fn.Name] = d.fqfnForFunc(fn.Namespace, fn.Name)
-			d.fqfns[namespaced] = d.fqfnForFunc(fn.Namespace, fn.Name)
-		} else {
-			d.fqfns[namespaced] = d.fqfnForFunc(fn.Namespace, fn.Name)
+	for i, fn := range d.Runnables {
+		if fn.FQFN != "" {
+			continue
 		}
+
+		if fn.Namespace == "" {
+			fn.Namespace = NamespaceDefault
+		}
+
+		d.Runnables[i].FQFN = d.fqfnForFunc(fn.Namespace, fn.Name)
 	}
 }
 
 func (d *Directive) fqfnForFunc(namespace, fn string) string {
-	return fmt.Sprintf("%s#%s@%s", namespace, fn, d.AppVersion)
+	return fmt.Sprintf("%s#%s::%s@%s", d.Identifier, namespace, fn, d.AppVersion)
 }
 
 // NumberOfSeconds calculates the total time in seconds for the schedule's 'every' value

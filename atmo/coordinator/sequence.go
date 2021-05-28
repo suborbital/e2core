@@ -13,7 +13,6 @@ import (
 	"github.com/suborbital/vektor/vlog"
 )
 
-type fqfnFunc func(string) (string, error)
 type connectFunc func() *grav.Pod
 
 // ErrSequenceRunErr is returned when the sequence returned due to a Runnable's RunErr
@@ -23,7 +22,6 @@ type sequence struct {
 	steps []directive.Executable
 
 	connectFunc connectFunc
-	fqfn        fqfnFunc
 
 	log *vlog.Logger
 }
@@ -41,11 +39,10 @@ type fnResult struct {
 	err      error      // err is an annoying workaround that allows runGroup to propogate non-RunErrs out of its loop. Should be refactored when possible.
 }
 
-func newSequence(steps []directive.Executable, connect connectFunc, fqfn fqfnFunc, log *vlog.Logger) *sequence {
+func newSequence(steps []directive.Executable, connect connectFunc, log *vlog.Logger) *sequence {
 	s := &sequence{
 		steps:       steps,
 		connectFunc: connect,
-		fqfn:        fqfn,
 		log:         log,
 	}
 
@@ -65,7 +62,7 @@ func (seq *sequence) exec(req *request.CoordinatedRequest) (*sequenceState, erro
 		stepResults := []fnResult{}
 
 		if step.IsFn() {
-			seq.log.Debug("running single fn")
+			seq.log.Debug("running single fn", step.FQFN)
 
 			singleResult, err := seq.runSingleFn(step.CallableFn, stateJSON)
 			if err != nil {

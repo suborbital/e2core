@@ -51,10 +51,11 @@ Directive format and the powerful Runnable API using a variety of languages.`,
 
 			server := atmo.New(
 				options.UseLogger(logger),
+				options.UseBundlePath(path),
 				options.ShouldWait(shouldWait),
 			)
 
-			return server.Start(path)
+			return server.Start()
 		},
 	}
 
