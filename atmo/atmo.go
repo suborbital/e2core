@@ -28,7 +28,11 @@ func New(opts ...options.Modifier) *Atmo {
 	rwasm.UseLogger(atmoOpts.Logger)
 
 	appSource := appsource.NewBundleSource(atmoOpts.BundlePath)
-	if *atmoOpts.Headless {
+	if atmoOpts.ControlPlane != "" {
+		// the HTTP appsource gets Atmo's data from a remote server
+		// which can essentially control Atmo's behaviour
+		appSource = appsource.NewHTTPSource(atmoOpts.ControlPlane)
+	} else if *atmoOpts.Headless {
 		// the headless appsource ignores the Directive and mounts
 		// each Runnable as its own route (for testing, other purposes)
 		appSource = appsource.NewHeadlessBundleSource(atmoOpts.BundlePath)

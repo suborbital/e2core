@@ -74,7 +74,8 @@ func FromParts(ident, namespace, fn, version string) string {
 }
 
 func FromURL(u *url.URL) (string, error) {
-	path := u.Path
+	path := strings.TrimPrefix(u.Path, "/")
+
 	parts := strings.Split(path, "/")
 	if len(parts) != 4 {
 		return "", errors.New("path is not an FQFN")

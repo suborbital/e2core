@@ -17,6 +17,7 @@ type Options struct {
 	RunSchedules *bool        `env:"ATMO_RUN_SCHEDULES,default=true"`
 	Headless     *bool        `env:"ATMO_HEADLESS,default=false"`
 	Wait         *bool        `env:"ATMO_WAIT,default=false"`
+	ControlPlane string       `env:"ATMO_CONTROL_PLANE"`
 }
 
 // Modifier defines options for Atmo
@@ -79,6 +80,8 @@ func (o *Options) finalize(prefix string) {
 		o.Logger.Error(errors.Wrap(err, "failed to Process environment config"))
 		return
 	}
+
+	o.ControlPlane = envOpts.ControlPlane
 
 	// set RunSchedules if it was not passed as a flag
 	if o.RunSchedules == nil {

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -27,6 +28,10 @@ type HTTPSource struct {
 
 // NewHTTPSource creates a new HTTPSource that looks for a bundle at [host]
 func NewHTTPSource(host string) AppSource {
+	if !strings.HasPrefix(host, "http://") && !strings.HasPrefix(host, "https://") {
+		host = fmt.Sprintf("http://%s", host)
+	}
+
 	b := &HTTPSource{
 		host:      host,
 		runnables: map[string]directive.Runnable{},
@@ -55,7 +60,7 @@ func (h *HTTPSource) Runnables() []directive.Runnable {
 		h.lock.RLock()
 		defer h.lock.RUnlock()
 
-		return h.runnableList()
+		return h.headlessRunnableList()
 	}
 
 	runnables := []directive.Runnable{}
@@ -92,6 +97,10 @@ func (h *HTTPSource) FindRunnable(FQFN string) (*directive.Runnable, error) {
 
 // Handlers returns the handlers for the app
 func (h *HTTPSource) Handlers() []directive.Handler {
+	if *h.opts.Headless {
+		return h.headlessHandlers()
+	}
+
 	handlers := []directive.Handler{}
 	if _, err := h.get("/handlers", &handlers); err != nil {
 		h.opts.Logger.Error(errors.Wrap(err, "failed to get /handlers"))
@@ -144,10 +153,10 @@ func (h *HTTPSource) pingServer() error {
 		_, err := h.get("/meta", nil)
 		if err != nil {
 			if !*h.opts.Wait {
-				return errors.Wrap(err, "failed to Read bundle")
+				return errors.Wrapf(err, "failed to connect to source at %s", h.host)
 			}
 
-			h.opts.Logger.Warn("failed to Read bundle, will try again:", err.Error())
+			h.opts.Logger.Warn("failed to connect to source, will try again:", err.Error())
 			time.Sleep(time.Second)
 
 			continue
@@ -197,7 +206,7 @@ func (h *HTTPSource) get(path string, dest interface{}) (*http.Response, error) 
 	return resp, nil
 }
 
-func (h *HTTPSource) runnableList() []directive.Runnable {
+func (h *HTTPSource) headlessRunnableList() []directive.Runnable {
 	runnables := []directive.Runnable{}
 
 	for _, r := range h.runnables {
@@ -205,4 +214,33 @@ func (h *HTTPSource) runnableList() []directive.Runnable {
 	}
 
 	return runnables
+}
+
+func (h *HTTPSource) headlessHandlers() []directive.Handler {
+	handlers := []directive.Handler{}
+
+	// for each Runnable, construct a handler that executes it
+	// based on a POST request to its FQFN URL /identifier/namespace/fn/version
+	for _, runnable := range h.headlessRunnableList() {
+		handler := directive.Handler{
+			Input: directive.Input{
+				Type:     directive.InputTypeRequest,
+				Method:   http.MethodPost,
+				Resource: fqfn.Parse(runnable.FQFN).HeadlessURLPath(),
+			},
+			Steps: []directive.Executable{
+				{
+					CallableFn: directive.CallableFn{
+						Fn:   runnable.Name,
+						With: map[string]string{},
+						FQFN: runnable.FQFN,
+					},
+				},
+			},
+		}
+
+		handlers = append(handlers, handler)
+	}
+
+	return handlers
 }
