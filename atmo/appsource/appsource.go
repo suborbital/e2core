@@ -11,8 +11,8 @@ var ErrRunnableNotFound = errors.New("failed to find requested Runnable")
 
 // Meta describes the metadata for an App
 type Meta struct {
-	Identifier string
-	AppVersion string
+	Identifier string `json:"identifier"`
+	AppVersion string `json:"appVersion"`
 }
 
 type AppSource interface {
@@ -24,7 +24,7 @@ type AppSource interface {
 	// a particular Runnable and make it available at next
 	// AppSource state sync via a call to Runnables().
 	// ErrRunnableNotFound should be returned if the Runnable cannot be found.
-	FindRunnable(string) error
+	FindRunnable(string) (*directive.Runnable, error)
 	// Handlers returns the handlers for the app
 	Handlers() []directive.Handler
 	// Schedules returns the requested schedules for the app

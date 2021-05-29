@@ -92,7 +92,7 @@ func (a *Atmo) inspectRequest(r http.Request) {
 			return
 		}
 
-		if err := a.coordinator.App.FindRunnable(FQFN); err != nil {
+		if _, err := a.coordinator.App.FindRunnable(FQFN); err != nil {
 			a.options.Logger.Debug(errors.Wrapf(err, "failed to FindRunnable %s, request will proceed and fail", FQFN).Error())
 			return
 		}

@@ -10,7 +10,7 @@ import (
 	"github.com/suborbital/atmo/fqfn"
 )
 
-// HeadlessBundleSource is an AppSource backed by a bundle file
+// HeadlessBundleSource is an AppSource backed by a bundle file (but headless)
 type HeadlessBundleSource struct {
 	path         string
 	opts         options.Options
@@ -51,18 +51,12 @@ func (h *HeadlessBundleSource) Runnables() []directive.Runnable {
 // FindRunnable returns a nil error if a Runnable with the
 // provided FQFN can be made available at the next sync,
 // otherwise ErrRunnableNotFound is returned
-func (h *HeadlessBundleSource) FindRunnable(fqfn string) error {
+func (h *HeadlessBundleSource) FindRunnable(fqfn string) (*directive.Runnable, error) {
 	if h.bundlesource.bundle == nil {
-		return ErrRunnableNotFound
+		return nil, ErrRunnableNotFound
 	}
 
-	for _, r := range h.bundlesource.Runnables() {
-		if r.FQFN == fqfn {
-			return nil
-		}
-	}
-
-	return ErrRunnableNotFound
+	return h.bundlesource.FindRunnable(fqfn)
 }
 
 // Handlers returns the handlers for the app

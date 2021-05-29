@@ -27,63 +27,63 @@ type Directive struct {
 
 // Handler represents the mapping between an input and a composition of functions
 type Handler struct {
-	Input    Input        `yaml:"input,inline"`
-	Steps    []Executable `yaml:"steps"`
-	Response string       `yaml:"response,omitempty"`
+	Input    Input        `yaml:"input,inline" json:"input"`
+	Steps    []Executable `yaml:"steps" json:"steps"`
+	Response string       `yaml:"response,omitempty" json:"response,omitempty"`
 }
 
 // Schedule represents the mapping between an input and a composition of functions
 type Schedule struct {
-	Name  string            `yaml:"name"`
-	Every ScheduleEvery     `yaml:"every"`
-	State map[string]string `yaml:"state,omitempty"`
-	Steps []Executable      `yaml:"steps"`
+	Name  string            `yaml:"name" json:"name"`
+	Every ScheduleEvery     `yaml:"every" json:"every"`
+	State map[string]string `yaml:"state,omitempty" json:"state,omitempty"`
+	Steps []Executable      `yaml:"steps" json:"steps"`
 }
 
 // ScheduleEvery represents the 'every' value for a schedule
 type ScheduleEvery struct {
-	Seconds int `yaml:"seconds,omitempty"`
-	Minutes int `yaml:"minutes,omitempty"`
-	Hours   int `yaml:"hours,omitempty"`
-	Days    int `yaml:"days,omitempty"`
+	Seconds int `yaml:"seconds,omitempty" json:"seconds,omitempty"`
+	Minutes int `yaml:"minutes,omitempty" json:"minutes,omitempty"`
+	Hours   int `yaml:"hours,omitempty" json:"hours,omitempty"`
+	Days    int `yaml:"days,omitempty" json:"days,omitempty"`
 }
 
 // Input represents an input source
 type Input struct {
-	Type     string
-	Method   string
-	Resource string
+	Type     string `yaml:"type" json:"type"`
+	Method   string `yaml:"method" json:"method"`
+	Resource string `yaml:"resource" json:"resource"`
 }
 
 // Executable represents an executable step in a handler
 type Executable struct {
-	CallableFn `yaml:"callableFn,inline"`
-	Group      []CallableFn `yaml:"group,omitempty"`
-	ForEach    *ForEach     `yaml:"forEach,omitempty"`
+	CallableFn `yaml:"callableFn,inline" json:"callableFn"`
+	Group      []CallableFn `yaml:"group,omitempty" json:"group,omitempty"`
+	ForEach    *ForEach     `yaml:"forEach,omitempty" json:"forEach,omitempty"`
 }
 
 // CallableFn is a fn along with its "variable name" and "args"
 type CallableFn struct {
-	Fn    string            `yaml:"fn,omitempty"`
-	As    string            `yaml:"as,omitempty"`
-	With  map[string]string `yaml:"with,omitempty"`
-	OnErr *FnOnErr          `yaml:"onErr,omitempty"`
-	FQFN  string            `yaml:"-"` // calculated during Validate
+	Fn    string            `yaml:"fn,omitempty" json:"fn,omitempty"`
+	As    string            `yaml:"as,omitempty" json:"as,omitempty"`
+	With  map[string]string `yaml:"with,omitempty" json:"with,omitempty"`
+	OnErr *FnOnErr          `yaml:"onErr,omitempty" json:"onErr,omitempty"`
+	FQFN  string            `yaml:"-" json:"fqfn"` // calculated during Validate
 }
 
 // FnOnErr describes how to handle an error from a function call
 type FnOnErr struct {
-	Code  map[int]string `yaml:"code,omitempty"`
-	Any   string         `yaml:"any,omitempty"`
-	Other string         `yaml:"other,omitempty"`
+	Code  map[int]string `yaml:"code,omitempty" json:"code,omitempty"`
+	Any   string         `yaml:"any,omitempty" json:"any,omitempty"`
+	Other string         `yaml:"other,omitempty" json:"other,omitempty"`
 }
 
 type ForEach struct {
-	In         string     `yaml:"in"`
-	Fn         string     `yaml:"fn"`
-	As         string     `yaml:"as"`
-	OnErr      *FnOnErr   `yaml:"onErr,omitempty"`
-	CallableFn CallableFn `yaml:"-"` // calculated during Validate
+	In         string     `yaml:"in" json:"in"`
+	Fn         string     `yaml:"fn" json:"fn"`
+	As         string     `yaml:"as" json:"as"`
+	OnErr      *FnOnErr   `yaml:"onErr,omitempty" json:"onErr,omitempty"`
+	CallableFn CallableFn `yaml:"-" json:"callableFn"` // calculated during Validate
 }
 
 func (d *Directive) FindRunnable(name string) *Runnable {
