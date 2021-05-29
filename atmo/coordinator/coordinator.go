@@ -19,8 +19,9 @@ import (
 )
 
 const (
-	atmoMethodSchedule      = "SCHED"
-	atmoHeadlessStateHeader = "X-Atmo-State"
+	atmoMethodSchedule       = "SCHED"
+	atmoHeadlessStateHeader  = "X-Atmo-State"
+	atmoHeadlessParamsHeader = "X-Atmo-Params"
 )
 
 type rtFunc func(rt.Job, *rt.Ctx) (interface{}, error)
@@ -147,9 +148,15 @@ func (c *Coordinator) vkHandlerForDirectiveHandler(handler directive.Handler) vk
 				req.State = byteState
 			}
 
-			// fill in the URL params from query params
-			for k, v := range r.URL.Query() {
-				req.Params[k] = v[0]
+			// fill in the URL params from the Params header
+			if paramsJSON := r.Header.Get(atmoHeadlessParamsHeader); paramsJSON != "" {
+				params := map[string]string{}
+
+				if err := json.Unmarshal([]byte(paramsJSON), &params); err != nil {
+					c.log.Error(errors.Wrap(err, "failed to Unmarshal X-Atmo-Params header"))
+				} else {
+					req.Params = params
+				}
 			}
 		}
 
