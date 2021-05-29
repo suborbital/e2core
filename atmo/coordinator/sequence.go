@@ -199,7 +199,7 @@ func stateJSONForStep(req *request.CoordinatedRequest, step directive.Executable
 }
 
 func desiredState(desired map[string]string, state map[string][]byte) (map[string][]byte, error) {
-	if desired == nil || len(desired) == 0 {
+	if len(desired) == 0 {
 		return state, nil
 	}
 

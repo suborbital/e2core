@@ -1,14 +1,15 @@
 package coordinator
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"sync"
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/suborbital/atmo/atmo/appsource"
 	"github.com/suborbital/atmo/atmo/options"
-	"github.com/suborbital/atmo/bundle/load"
 	"github.com/suborbital/atmo/directive"
 	"github.com/suborbital/grav/grav"
 	"github.com/suborbital/reactr/request"
@@ -18,7 +19,9 @@ import (
 )
 
 const (
-	atmoMethodSchedule = "SCHED"
+	atmoMethodSchedule       = "SCHED"
+	atmoHeadlessStateHeader  = "X-Atmo-State"
+	atmoHeadlessParamsHeader = "X-Atmo-Params"
 )
 
 type rtFunc func(rt.Job, *rt.Ctx) (interface{}, error)
@@ -33,6 +36,8 @@ type Coordinator struct {
 
 	reactr *rt.Reactr
 	grav   *grav.Grav
+
+	listening sync.Map
 }
 
 type requestScope struct {
@@ -47,11 +52,12 @@ func New(appSource appsource.AppSource, options *options.Options) *Coordinator {
 	)
 
 	c := &Coordinator{
-		App:    appSource,
-		opts:   options,
-		log:    options.Logger,
-		reactr: reactr,
-		grav:   grav,
+		App:       appSource,
+		opts:      options,
+		log:       options.Logger,
+		reactr:    reactr,
+		grav:      grav,
+		listening: sync.Map{},
 	}
 
 	return c
@@ -63,28 +69,19 @@ func (c *Coordinator) Start() error {
 		return errors.Wrap(err, "failed to App.Start")
 	}
 
-	// mount all of the Wasm Runnables into the Reactr instance
-	if err := load.Runnables(c.reactr, c.App.Runnables(), c.App.File); err != nil {
-		return errors.Wrap(err, "failed to ModuleRefsIntoInstance")
-	}
-
-	// connect a Grav pod to each function
-	for _, fn := range c.App.Runnables() {
-		if fn.FQFN == "" {
-			c.log.ErrorString("fn", fn.Name, "missing calculated FQFN, will not be available")
-			continue
-		}
-
-		c.log.Debug("adding listener for", fn.FQFN)
-		c.reactr.Listen(c.grav.Connect(), fn.FQFN)
-	}
+	// do an initial sync of Runnables
+	// from the AppSource into RVG
+	c.SyncAppState()
 
 	return nil
 }
 
-// GenerateRouter generates a Vektor routeGroup for the app
-func (c *Coordinator) GenerateRouter() *vk.RouteGroup {
-	group := vk.Group("").Before(scopeMiddleware)
+// GenerateRouter generates a Vektor Router for the app
+func (c *Coordinator) GenerateRouter() *vk.Router {
+	router := vk.NewRouter(c.log)
+
+	// set a middleware on the root RouteGroup
+	router.Before(scopeMiddleware)
 
 	// mount each handler into the VK group
 	for _, h := range c.App.Handlers() {
@@ -94,16 +91,19 @@ func (c *Coordinator) GenerateRouter() *vk.RouteGroup {
 
 		handler := c.vkHandlerForDirectiveHandler(h)
 
-		group.Handle(h.Input.Method, h.Input.Resource, handler)
+		router.Handle(h.Input.Method, h.Input.Resource, handler)
 	}
 
+	return router
+}
+
+func (c *Coordinator) SetSchedules() {
 	// mount each schedule into Reactr
 	for _, s := range c.App.Schedules() {
 		rtFunc := c.rtFuncForDirectiveSchedule(s)
 
 		// create basically an fqfn for this schedule (com.suborbital.appname#schedule.dojob@v0.1.0)
 		jobName := fmt.Sprintf("%s#schedule.%s@%s", c.App.Meta().Identifier, s.Name, c.App.Meta().AppVersion)
-		c.log.Debug("adding schedule", jobName)
 
 		c.reactr.Register(jobName, &scheduledRunner{rtFunc})
 
@@ -111,14 +111,14 @@ func (c *Coordinator) GenerateRouter() *vk.RouteGroup {
 
 		// only actually schedule the job if the env var isn't set (or is set but not 'false')
 		// the job stays mounted on reactr because we could get a request to run it from grav
-		if c.opts.RunSchedules == "true" {
+		if *c.opts.RunSchedules {
+			c.log.Debug("adding schedule", jobName)
+
 			c.reactr.Schedule(rt.Every(seconds, func() rt.Job {
 				return rt.NewJob(jobName, nil)
 			}))
 		}
 	}
-
-	return group
 }
 
 func (c *Coordinator) vkHandlerForDirectiveHandler(handler directive.Handler) vk.HandlerFunc {
@@ -127,6 +127,37 @@ func (c *Coordinator) vkHandlerForDirectiveHandler(handler directive.Handler) vk
 		if err != nil {
 			ctx.Log.Error(errors.Wrap(err, "failed to request.FromVKRequest"))
 			return nil, vk.E(http.StatusInternalServerError, "failed to handle request")
+		}
+
+		// this should probably be factored out into the CoordinateRequest object
+		if *c.opts.Headless {
+			// fill in initial state from the state header
+			if stateJSON := r.Header.Get(atmoHeadlessStateHeader); stateJSON != "" {
+				state := map[string]string{}
+				byteState := map[string][]byte{}
+
+				if err := json.Unmarshal([]byte(stateJSON), &state); err != nil {
+					c.log.Error(errors.Wrap(err, "failed to Unmarshal X-Atmo-State header"))
+				} else {
+					// iterate over the state and convert each field to bytes
+					for k, v := range state {
+						byteState[k] = []byte(v)
+					}
+				}
+
+				req.State = byteState
+			}
+
+			// fill in the URL params from the Params header
+			if paramsJSON := r.Header.Get(atmoHeadlessParamsHeader); paramsJSON != "" {
+				params := map[string]string{}
+
+				if err := json.Unmarshal([]byte(paramsJSON), &params); err != nil {
+					c.log.Error(errors.Wrap(err, "failed to Unmarshal X-Atmo-Params header"))
+				} else {
+					req.Params = params
+				}
+			}
 		}
 
 		// a sequence executes the handler's steps and manages its state

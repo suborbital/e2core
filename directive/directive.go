@@ -3,8 +3,8 @@ package directive
 import (
 	"errors"
 	"fmt"
-	"strings"
 
+	"github.com/suborbital/atmo/fqfn"
 	"golang.org/x/mod/semver"
 	"gopkg.in/yaml.v2"
 )
@@ -12,11 +12,6 @@ import (
 // InputTypeRequest and others represent consts for Directives
 const (
 	InputTypeRequest = "request"
-)
-
-// NamespaceDefault and others represent conts for namespaces
-const (
-	NamespaceDefault = "default"
 )
 
 // Directive describes a set of functions and a set of handlers
@@ -95,44 +90,18 @@ func (d *Directive) FindRunnable(name string) *Runnable {
 	// if this is an FQFN, parse the identifier and bail out
 	// if it doesn't match this Directive
 
-	// reminder an FQFN looks like this: identifier#namespace::fnName@version
+	FQFN := fqfn.Parse(name)
 
-	identifier := ""
-	identParts := strings.SplitN(name, "#", 2)
-	if len(identParts) == 2 {
-		identifier = identParts[0]
-		name = identParts[1]
-	}
-
-	if identifier != "" && identifier != d.Identifier {
+	if FQFN.Identifier != "" && FQFN.Identifier != d.Identifier {
 		return nil
 	}
 
-	// if a Runnable is referenced with its namespace, i.e. users#getUser
-	// then we need to parse that and ensure we only match that namespace
-
-	namespace := NamespaceDefault
-	namespaceParts := strings.SplitN(name, "::", 2)
-	if len(namespaceParts) == 2 {
-		namespace = namespaceParts[0]
-		name = namespaceParts[1]
-	}
-
-	// next, if the name contains an @, it's an FQFN so we should bail if the
-	// version number doesn't match (since this is the wrong Directive)
-	appVersion := ""
-	versionParts := strings.SplitN(name, "@", 2)
-	if len(versionParts) == 2 {
-		name = versionParts[0]
-		appVersion = versionParts[1]
-	}
-
-	if appVersion != "" && appVersion != d.AppVersion {
+	if FQFN.Version != "" && FQFN.Version != d.AppVersion {
 		return nil
 	}
 
 	for i, r := range d.Runnables {
-		if r.Name == name && r.Namespace == namespace {
+		if r.Name == FQFN.Fn && r.Namespace == FQFN.Namespace {
 			return &d.Runnables[i]
 		}
 	}
@@ -205,7 +174,7 @@ func (d *Directive) Validate() error {
 		}
 
 		// if the fn is in the default namespace, let it exist "naked" and namespaced
-		if f.Namespace == NamespaceDefault {
+		if f.Namespace == fqfn.NamespaceDefault {
 			fns[f.Name] = true
 			fns[namespaced] = true
 		} else {
@@ -374,7 +343,7 @@ func (d *Directive) calculateFQFNs() {
 		}
 
 		if fn.Namespace == "" {
-			fn.Namespace = NamespaceDefault
+			fn.Namespace = fqfn.NamespaceDefault
 		}
 
 		d.Runnables[i].FQFN = d.fqfnForFunc(fn.Namespace, fn.Name)
@@ -382,7 +351,7 @@ func (d *Directive) calculateFQFNs() {
 }
 
 func (d *Directive) fqfnForFunc(namespace, fn string) string {
-	return fmt.Sprintf("%s#%s::%s@%s", d.Identifier, namespace, fn, d.AppVersion)
+	return fqfn.FromParts(d.Identifier, namespace, fn, d.AppVersion)
 }
 
 // NumberOfSeconds calculates the total time in seconds for the schedule's 'every' value

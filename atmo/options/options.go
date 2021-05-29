@@ -14,15 +14,16 @@ const atmoEnvPrefix = "ATMO"
 type Options struct {
 	Logger       *vlog.Logger `env:"-"`
 	BundlePath   string       `env:"ATMO_BUNDLE_PATH"`
-	RunSchedules string       `env:"ATMO_RUN_SCHEDULES"`
-	Wait         bool         `env:"ATMO_WAIT"`
+	RunSchedules *bool        `env:"ATMO_RUN_SCHEDULES,default=true"`
+	Headless     *bool        `env:"ATMO_HEADLESS,default=false"`
+	Wait         *bool        `env:"ATMO_WAIT,default=false"`
 }
 
 // Modifier defines options for Atmo
 type Modifier func(*Options)
 
 func NewWithModifiers(mods ...Modifier) *Options {
-	opts := defaultOptions()
+	opts := &Options{}
 
 	for _, mod := range mods {
 		mod(opts)
@@ -47,10 +48,23 @@ func UseBundlePath(path string) Modifier {
 	}
 }
 
+// ShouldRunHeadless sets wether Atmo should operate in 'headless' mode
+func ShouldRunHeadless(headless bool) Modifier {
+	return func(opts *Options) {
+		// only set the pointer if the value is true
+		if headless {
+			opts.Headless = &headless
+		}
+	}
+}
+
 // ShouldWait sets wether Atmo should wait for a bundle to become available on disk
 func ShouldWait(wait bool) Modifier {
 	return func(opts *Options) {
-		opts.Wait = wait
+		// only set the pointer if the value is true
+		if wait {
+			opts.Wait = &wait
+		}
 	}
 }
 
@@ -66,15 +80,24 @@ func (o *Options) finalize(prefix string) {
 		return
 	}
 
-	if envOpts.RunSchedules != "" {
-		o.RunSchedules = envOpts.RunSchedules
-	}
-}
-
-func defaultOptions() *Options {
-	o := &Options{
-		RunSchedules: "true",
+	// set RunSchedules if it was not passed as a flag
+	if o.RunSchedules == nil {
+		if envOpts.RunSchedules != nil {
+			o.RunSchedules = envOpts.RunSchedules
+		}
 	}
 
-	return o
+	// set Wait if it was not passed as a flag
+	if o.Wait == nil {
+		if envOpts.Wait != nil {
+			o.Wait = envOpts.Wait
+		}
+	}
+
+	// set Headless if it was not passed as a flag
+	if o.Headless == nil {
+		if envOpts.Headless != nil {
+			o.Headless = envOpts.Headless
+		}
+	}
 }

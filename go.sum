@@ -194,6 +194,8 @@ github.com/suborbital/vektor v0.2.3/go.mod h1:6YQE7r6t1JcVs3twpqjXDftsLUaTNUk5Yo
 github.com/suborbital/vektor v0.2.4/go.mod h1:uzSf3LuTDt7omkVgevQLGsGm6PuhWE7JF6zr+kw2PQs=
 github.com/suborbital/vektor v0.3.0 h1:GOeA2egNGqvj8ZSEkZkMJ1FuMohCZ0t4kzpxvLbfrBc=
 github.com/suborbital/vektor v0.3.0/go.mod h1:3xIK+UsDed8llTgfMs8aw7GvghYhmaQnCAC3b4Oslog=
+github.com/suborbital/vektor v0.4.1-0.20210528122244-4c6599246636 h1:M0y5S4z7o1XECNwYJYGxHwD8ponEt0E+jfcP3xd/jFg=
+github.com/suborbital/vektor v0.4.1-0.20210528122244-4c6599246636/go.mod h1:3xIK+UsDed8llTgfMs8aw7GvghYhmaQnCAC3b4Oslog=
 github.com/subosito/gotenv v1.2.0/go.mod h1:N0PQaV/YGNqwC0u51sEeR/aUtSLEXKX9iv69rRypqCw=
 github.com/tmc/grpc-websocket-proxy v0.0.0-20190109142713-0ad062ec5ee5/go.mod h1:ncp9v5uamzpCO7NfCPTXjqaC+bZgJeR0sMTm6dMHP7U=
 github.com/wasmerio/wasmer-go v1.0.3 h1:9pWIlIqUKxALvFlWK8+Zy90qyqxd+8wlyVG91txh1TU=

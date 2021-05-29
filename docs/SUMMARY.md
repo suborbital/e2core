@@ -20,6 +20,7 @@
 * [ForEach](usage/foreach.md)
 * [Building a Bundle](usage/building-a-bundle.md)
 * [Deploying Atmo](usage/deploying-atmo.md)
+* [Headless Mode](usage/headless.md)
 
 ## Runnable API
 

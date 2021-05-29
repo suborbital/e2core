@@ -9,7 +9,8 @@ import (
 )
 
 const (
-	waitFlag = "wait"
+	headlessFlag = "headless"
+	waitFlag     = "wait"
 )
 
 type atmoInfo struct {
@@ -48,14 +49,16 @@ Directive format and the powerful Runnable API using a variety of languages.`,
 			)
 
 			shouldWait := cmd.Flags().Changed(waitFlag)
+			shouldRunHeadless := cmd.Flags().Changed(headlessFlag)
 
-			server := atmo.New(
+			atmo := atmo.New(
 				options.UseLogger(logger),
 				options.UseBundlePath(path),
+				options.ShouldRunHeadless(shouldRunHeadless),
 				options.ShouldWait(shouldWait),
 			)
 
-			return server.Start()
+			return atmo.Start()
 		},
 	}
 
