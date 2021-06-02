@@ -91,8 +91,13 @@ func (o *Options) finalize(prefix string) {
 	}
 
 	// set Wait if it was not passed as a flag
+	// if Wait is unset but ControlPlane IS set,
+	// Wait is implied to be true.
 	if o.Wait == nil {
-		if envOpts.Wait != nil {
+		if o.ControlPlane != "" {
+			wait := true
+			o.Wait = &wait
+		} else if envOpts.Wait != nil {
 			o.Wait = envOpts.Wait
 		}
 	}
