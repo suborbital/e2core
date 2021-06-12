@@ -17,6 +17,7 @@ type Options struct {
 	RunSchedules *bool        `env:"ATMO_RUN_SCHEDULES,default=true"`
 	Headless     *bool        `env:"ATMO_HEADLESS,default=false"`
 	Wait         *bool        `env:"ATMO_WAIT,default=false"`
+	ControlPlane string       `env:"ATMO_CONTROL_PLANE"`
 }
 
 // Modifier defines options for Atmo
@@ -80,6 +81,8 @@ func (o *Options) finalize(prefix string) {
 		return
 	}
 
+	o.ControlPlane = envOpts.ControlPlane
+
 	// set RunSchedules if it was not passed as a flag
 	if o.RunSchedules == nil {
 		if envOpts.RunSchedules != nil {
@@ -88,8 +91,13 @@ func (o *Options) finalize(prefix string) {
 	}
 
 	// set Wait if it was not passed as a flag
+	// if Wait is unset but ControlPlane IS set,
+	// Wait is implied to be true.
 	if o.Wait == nil {
-		if envOpts.Wait != nil {
+		if o.ControlPlane != "" {
+			wait := true
+			o.Wait = &wait
+		} else if envOpts.Wait != nil {
 			o.Wait = envOpts.Wait
 		}
 	}

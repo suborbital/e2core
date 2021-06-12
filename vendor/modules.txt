@@ -21,7 +21,7 @@ github.com/spf13/pflag
 # github.com/suborbital/grav v0.3.2
 ## explicit
 github.com/suborbital/grav/grav
-# github.com/suborbital/reactr v0.9.3-0.20210521151323-0a06b6e64358
+# github.com/suborbital/reactr v0.9.3-0.20210529212058-25492f1ccb63
 ## explicit
 github.com/suborbital/reactr/request
 github.com/suborbital/reactr/rt
@@ -38,17 +38,17 @@ github.com/wasmerio/wasmer-go/wasmer/packaged/lib
 github.com/wasmerio/wasmer-go/wasmer/packaged/lib/darwin-amd64
 github.com/wasmerio/wasmer-go/wasmer/packaged/lib/linux-aarch64
 github.com/wasmerio/wasmer-go/wasmer/packaged/lib/linux-amd64
-# golang.org/x/crypto v0.0.0-20210317152858-513c2a44f670
+# golang.org/x/crypto v0.0.0-20210513164829-c07d793c2f9a
 golang.org/x/crypto/acme
 golang.org/x/crypto/acme/autocert
 # golang.org/x/mod v0.4.2
 ## explicit
 golang.org/x/mod/semver
-# golang.org/x/net v0.0.0-20210316092652-d523dce5a7f4
+# golang.org/x/net v0.0.0-20210520170846-37e1c6afe023
 golang.org/x/net/idna
 # golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 golang.org/x/sync/errgroup
-# golang.org/x/text v0.3.5
+# golang.org/x/text v0.3.6
 golang.org/x/text/secure/bidirule
 golang.org/x/text/transform
 golang.org/x/text/unicode/bidi
