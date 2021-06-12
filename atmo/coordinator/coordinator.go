@@ -11,7 +11,9 @@ import (
 	"github.com/suborbital/atmo/atmo/appsource"
 	"github.com/suborbital/atmo/atmo/options"
 	"github.com/suborbital/atmo/directive"
+	"github.com/suborbital/grav/discovery/local"
 	"github.com/suborbital/grav/grav"
+	"github.com/suborbital/grav/transport/websocket"
 	"github.com/suborbital/reactr/request"
 	"github.com/suborbital/reactr/rt"
 	"github.com/suborbital/vektor/vk"
@@ -22,6 +24,7 @@ const (
 	atmoMethodSchedule       = "SCHED"
 	atmoHeadlessStateHeader  = "X-Atmo-State"
 	atmoHeadlessParamsHeader = "X-Atmo-Params"
+	atmoMessageURI           = "/meta/message"
 )
 
 type rtFunc func(rt.Job, *rt.Ctx) (interface{}, error)
@@ -35,7 +38,9 @@ type Coordinator struct {
 	log *vlog.Logger
 
 	reactr *rt.Reactr
-	grav   *grav.Grav
+
+	grav      *grav.Grav
+	transport *websocket.Transport
 
 	listening sync.Map
 }
@@ -47,9 +52,22 @@ type requestScope struct {
 // New creates a coordinator
 func New(appSource appsource.AppSource, options *options.Options) *Coordinator {
 	reactr := rt.New()
-	grav := grav.New(
+
+	gravOpts := []grav.OptionsModifier{
 		grav.UseLogger(options.Logger),
-	)
+	}
+
+	var transport *websocket.Transport
+
+	if options.ControlPlane != "" {
+		transport = websocket.New()
+		d := local.New()
+
+		gravOpts = append(gravOpts, grav.UseTransport(transport))
+		gravOpts = append(gravOpts, grav.UseDiscovery(d))
+	}
+
+	grav := grav.New(gravOpts...)
 
 	c := &Coordinator{
 		App:       appSource,
@@ -57,6 +75,7 @@ func New(appSource appsource.AppSource, options *options.Options) *Coordinator {
 		log:       options.Logger,
 		reactr:    reactr,
 		grav:      grav,
+		transport: transport,
 		listening: sync.Map{},
 	}
 
@@ -92,6 +111,10 @@ func (c *Coordinator) GenerateRouter() *vk.Router {
 		handler := c.vkHandlerForDirectiveHandler(h)
 
 		router.Handle(h.Input.Method, h.Input.Resource, handler)
+	}
+
+	if c.transport != nil {
+		router.HandleHTTP(http.MethodGet, atmoMessageURI, c.transport.HTTPHandlerFunc())
 	}
 
 	return router

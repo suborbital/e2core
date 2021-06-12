@@ -157,6 +157,10 @@ func (v *Logger) log(message string, scope interface{}, level int) {
 		os.Stderr.Write([]byte("[vlog] failed to marshal structured log"))
 	}
 
+	if v.opts.PreLogHook != nil {
+		v.opts.PreLogHook(structuredJSON)
+	}
+
 	_, err = v.output.Write(structuredJSON)
 	if err != nil {
 		os.Stderr.Write([]byte("[vlog] failed to write to configured output: " + err.Error() + "\n"))

@@ -35,7 +35,10 @@ type Options struct {
 	LogPrefix   string      `env:"_LOG_PREFIX"`
 	EnvPrefix   string      `env:"-"`
 	AppMeta     interface{} `env:"-"`
+	PreLogHook  LogHookFunc `env:"-"`
 }
+
+type LogHookFunc func([]byte)
 
 // OptionsModifier is a options modifier function
 type OptionsModifier func(*Options)
@@ -89,6 +92,13 @@ func EnvPrefix(envPrefix string) OptionsModifier {
 func AppMeta(meta interface{}) OptionsModifier {
 	return func(opt *Options) {
 		opt.AppMeta = meta
+	}
+}
+
+// PreLogHook sets a function to be run before each logged value
+func PreLogHook(hook LogHookFunc) OptionsModifier {
+	return func(opt *Options) {
+		opt.PreLogHook = hook
 	}
 }
 

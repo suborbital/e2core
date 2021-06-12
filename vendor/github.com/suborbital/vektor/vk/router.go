@@ -47,6 +47,13 @@ func NewRouter(logger *vlog.Logger) *Router {
 	return r
 }
 
+// HandleHTTP handles a classic Go HTTP handlerFunc
+func (rt *Router) HandleHTTP(method, path string, handler http.HandlerFunc) {
+	rt.hrouter.Handle(method, path, func(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+		handler(w, r)
+	})
+}
+
 // Finalize mounts the root group to prepare the Router to handle requests
 func (rt *Router) Finalize() {
 	rt.finalizeOnce.Do(func() {

@@ -1,8 +1,8 @@
-# github.com/google/go-cmp v0.5.5
-## explicit
 # github.com/google/uuid v1.2.0
 ## explicit
 github.com/google/uuid
+# github.com/gorilla/websocket v1.4.2
+github.com/gorilla/websocket
 # github.com/inconshreveable/mousetrap v1.0.0
 github.com/inconshreveable/mousetrap
 # github.com/julienschmidt/httprouter v1.3.0
@@ -10,6 +10,8 @@ github.com/julienschmidt/httprouter
 # github.com/pkg/errors v0.9.1
 ## explicit
 github.com/pkg/errors
+# github.com/schollz/peerdiscovery v1.6.1
+github.com/schollz/peerdiscovery
 # github.com/sethvargo/go-envconfig v0.3.2
 ## explicit
 github.com/sethvargo/go-envconfig
@@ -20,14 +22,16 @@ github.com/spf13/cobra
 github.com/spf13/pflag
 # github.com/suborbital/grav v0.3.2
 ## explicit
+github.com/suborbital/grav/discovery/local
 github.com/suborbital/grav/grav
+github.com/suborbital/grav/transport/websocket
 # github.com/suborbital/reactr v0.9.3-0.20210529212058-25492f1ccb63
 ## explicit
 github.com/suborbital/reactr/request
 github.com/suborbital/reactr/rt
 github.com/suborbital/reactr/rwasm
 github.com/suborbital/reactr/rwasm/moduleref
-# github.com/suborbital/vektor v0.4.1-0.20210528122244-4c6599246636
+# github.com/suborbital/vektor v0.4.1-0.20210612180834-fb09d0358440
 ## explicit
 github.com/suborbital/vektor/vk
 github.com/suborbital/vektor/vlog
@@ -45,16 +49,23 @@ golang.org/x/crypto/acme/autocert
 ## explicit
 golang.org/x/mod/semver
 # golang.org/x/net v0.0.0-20210520170846-37e1c6afe023
+golang.org/x/net/bpf
 golang.org/x/net/idna
+golang.org/x/net/internal/iana
+golang.org/x/net/internal/socket
+golang.org/x/net/ipv4
+golang.org/x/net/ipv6
 # golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 golang.org/x/sync/errgroup
+# golang.org/x/sys v0.0.0-20210423082822-04245dca01da
+golang.org/x/sys/internal/unsafeheader
+golang.org/x/sys/unix
+golang.org/x/sys/windows
 # golang.org/x/text v0.3.6
 golang.org/x/text/secure/bidirule
 golang.org/x/text/transform
 golang.org/x/text/unicode/bidi
 golang.org/x/text/unicode/norm
-# gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15
-## explicit
 # gopkg.in/yaml.v2 v2.4.0
 ## explicit
 gopkg.in/yaml.v2
