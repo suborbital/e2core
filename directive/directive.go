@@ -20,6 +20,7 @@ type Directive struct {
 	Identifier  string     `yaml:"identifier"`
 	AppVersion  string     `yaml:"appVersion"`
 	AtmoVersion string     `yaml:"atmoVersion"`
+	Headless    bool       `yaml:"headless,omitempty"`
 	Runnables   []Runnable `yaml:"runnables"`
 	Handlers    []Handler  `yaml:"handlers,omitempty"`
 	Schedules   []Schedule `yaml:"schedules,omitempty"`
@@ -169,6 +170,7 @@ func (d *Directive) Validate() error {
 			problems.add(fmt.Errorf("function at position %d missing name", i))
 			continue
 		}
+
 		if f.Namespace == "" {
 			problems.add(fmt.Errorf("function at position %d missing namespace", i))
 		}
@@ -344,6 +346,10 @@ func (d *Directive) calculateFQFNs() {
 
 		if fn.Namespace == "" {
 			fn.Namespace = fqfn.NamespaceDefault
+		}
+
+		if fn.Version == "" {
+			fn.Version = d.AppVersion
 		}
 
 		d.Runnables[i].FQFN = d.fqfnForFunc(fn.Namespace, fn.Name)
