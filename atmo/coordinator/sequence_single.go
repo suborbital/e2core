@@ -28,7 +28,7 @@ func (seq sequence) runSingleFn(fn directive.CallableFn, reqJSON []byte) (*fnRes
 
 	// compose a message containing the serialized request state, and send it via Grav
 	// for the appropriate meshed Reactr to handle. It may be handled by self if appropriate.
-	jobMsg := grav.NewMsg(fn.FQFN, reqJSON)
+	jobMsg := grav.NewMsgWithParentID(fn.FQFN, seq.ctx.RequestID(), reqJSON)
 
 	var jobResult []byte
 	var runErr *rt.RunErr
