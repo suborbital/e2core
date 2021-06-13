@@ -7,7 +7,6 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/julienschmidt/httprouter"
 	"golang.org/x/crypto/acme/autocert"
 )
 
@@ -197,9 +196,7 @@ func (s *Server) HandleHTTP(method, path string, handler http.HandlerFunc) {
 		return
 	}
 
-	s.router.hrouter.Handle(method, path, func(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-		handler(w, r)
-	})
+	s.router.HandleHTTP(method, path, handler)
 }
 
 func createGoServer(options *Options, handler http.Handler) *http.Server {

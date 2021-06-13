@@ -23,6 +23,7 @@ type sequence struct {
 
 	connectFunc connectFunc
 
+	ctx *vk.Ctx
 	log *vlog.Logger
 }
 
@@ -39,11 +40,12 @@ type fnResult struct {
 	err      error      // err is an annoying workaround that allows runGroup to propogate non-RunErrs out of its loop. Should be refactored when possible.
 }
 
-func newSequence(steps []directive.Executable, connect connectFunc, log *vlog.Logger) *sequence {
+func newSequence(steps []directive.Executable, connect connectFunc, ctx *vk.Ctx) *sequence {
 	s := &sequence{
 		steps:       steps,
 		connectFunc: connect,
-		log:         log,
+		ctx:         ctx,
+		log:         ctx.Log,
 	}
 
 	return s

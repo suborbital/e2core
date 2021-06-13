@@ -11,6 +11,7 @@ import (
 	"github.com/suborbital/atmo/atmo/options"
 	"github.com/suborbital/atmo/directive"
 	"github.com/suborbital/reactr/request"
+	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
 )
 
@@ -42,7 +43,7 @@ func TestBasicSequence(t *testing.T) {
 		},
 	}
 
-	seq := newSequence(steps, coord.grav.Connect, coord.log)
+	seq := newSequence(steps, coord.grav.Connect, &vk.Ctx{Log: coord.log})
 
 	req := &request.CoordinatedRequest{
 		Method: "GET",
@@ -82,7 +83,7 @@ func TestGroupSequence(t *testing.T) {
 		},
 	}
 
-	seq := newSequence(steps, coord.grav.Connect, coord.log)
+	seq := newSequence(steps, coord.grav.Connect, &vk.Ctx{Log: coord.log})
 
 	req := &request.CoordinatedRequest{
 		Method: "GET",
@@ -132,7 +133,7 @@ func TestAsOnErrContinueSequence(t *testing.T) {
 		},
 	}
 
-	seq := newSequence(steps, coord.grav.Connect, coord.log)
+	seq := newSequence(steps, coord.grav.Connect, &vk.Ctx{Log: coord.log})
 
 	req := &request.CoordinatedRequest{
 		Method: "GET",
@@ -174,7 +175,7 @@ func TestAsOnErrReturnSequence(t *testing.T) {
 		},
 	}
 
-	seq := newSequence(steps, coord.grav.Connect, coord.log)
+	seq := newSequence(steps, coord.grav.Connect, &vk.Ctx{Log: coord.log})
 
 	req := &request.CoordinatedRequest{
 		Method: "GET",
@@ -215,7 +216,7 @@ func TestWithSequence(t *testing.T) {
 		},
 	}
 
-	seq := newSequence(steps, coord.grav.Connect, coord.log)
+	seq := newSequence(steps, coord.grav.Connect, &vk.Ctx{Log: coord.log})
 
 	req := &request.CoordinatedRequest{
 		Method: "GET",
@@ -258,7 +259,7 @@ func TestForEachSequence(t *testing.T) {
 		},
 	}
 
-	seq := newSequence(steps, coord.grav.Connect, coord.log)
+	seq := newSequence(steps, coord.grav.Connect, &vk.Ctx{Log: coord.log})
 
 	req := &request.CoordinatedRequest{
 		Method: "GET",
