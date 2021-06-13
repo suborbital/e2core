@@ -11,5 +11,6 @@ type Runnable struct {
 	DraftVersion string                   `yaml:"-" json:"draftVersion,omitempty"`
 	APIVersion   string                   `yaml:"apiVersion,omitempty" json:"apiVersion,omitempty"`
 	FQFN         string                   `yaml:"fqfn,omitempty" json:"fqfn,omitempty"`
-	ModuleRef    *moduleref.WasmModuleRef `yaml:"-" json:"moduleRef"`
+	FQFNURI      string                   `yaml:"fqfnUri" json:"fqfnURI,omitempty"`
+	ModuleRef    *moduleref.WasmModuleRef `yaml:"-" json:"moduleRef,omitempty"`
 }

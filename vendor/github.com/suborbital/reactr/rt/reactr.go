@@ -91,32 +91,32 @@ func (h *Reactr) Listen(pod *grav.Pod, msgType string) {
 			runErr := &RunErr{}
 			if errors.As(err, runErr) {
 				// if a Wasm Runnable returned a RunErr, let's be sure to handle that
-				replyMsg = grav.NewMsg(MsgTypeReactrRunErr, []byte(runErr.Error()))
+				replyMsg = grav.NewMsgWithParentID(MsgTypeReactrRunErr, msg.ParentID(), []byte(runErr.Error()))
 			} else {
-				replyMsg = grav.NewMsg(MsgTypeReactrJobErr, []byte(err.Error()))
+				replyMsg = grav.NewMsgWithParentID(MsgTypeReactrJobErr, msg.ParentID(), []byte(err.Error()))
 			}
 		} else {
 			if result == nil {
 				// if the job returned no result
-				replyMsg = grav.NewMsg(MsgTypeReactrNilResult, []byte{})
+				replyMsg = grav.NewMsgWithParentID(MsgTypeReactrNilResult, msg.ParentID(), []byte{})
 			} else if resultMsg, isMsg := result.(grav.Message); isMsg {
 				// if the job returned a Grav message
 				resultMsg.SetReplyTo(msg.UUID())
 				replyMsg = resultMsg
 			} else if bytes, isBytes := result.([]byte); isBytes {
 				// if the job returned bytes
-				replyMsg = grav.NewMsg(MsgTypeReactrResult, bytes)
+				replyMsg = grav.NewMsgWithParentID(MsgTypeReactrResult, msg.ParentID(), bytes)
 			} else if resultString, isString := result.(string); isString {
 				// if the job returned a string
-				replyMsg = grav.NewMsg(MsgTypeReactrResult, []byte(resultString))
+				replyMsg = grav.NewMsgWithParentID(MsgTypeReactrResult, msg.ParentID(), []byte(resultString))
 			} else {
 				// if the job returned something else like a struct
 				resultJSON, err := json.Marshal(result)
 				if err != nil {
 					h.log.Error(errors.Wrapf(err, "job from message %s returned result that could not be JSON marshalled", msg.UUID()))
-					replyMsg = grav.NewMsg(MsgTypeReactrJobErr, []byte(errors.Wrap(err, "failed to Marshal job result").Error()))
+					replyMsg = grav.NewMsgWithParentID(MsgTypeReactrJobErr, msg.ParentID(), []byte(errors.Wrap(err, "failed to Marshal job result").Error()))
 				} else {
-					replyMsg = grav.NewMsg(MsgTypeReactrResult, resultJSON)
+					replyMsg = grav.NewMsgWithParentID(MsgTypeReactrResult, msg.ParentID(), resultJSON)
 				}
 			}
 		}
