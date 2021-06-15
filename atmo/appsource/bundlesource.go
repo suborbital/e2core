@@ -2,6 +2,7 @@ package appsource
 
 import (
 	"os"
+	"sync"
 	"time"
 
 	"github.com/pkg/errors"
@@ -15,12 +16,15 @@ type BundleSource struct {
 	path   string
 	opts   options.Options
 	bundle *bundle.Bundle
+
+	lock sync.RWMutex
 }
 
 // NewBundleSource creates a new BundleSource that looks for a bundle at [path]
 func NewBundleSource(path string) AppSource {
 	b := &BundleSource{
 		path: path,
+		lock: sync.RWMutex{},
 	}
 
 	return b
@@ -34,15 +38,14 @@ func (b *BundleSource) Start(opts options.Options) error {
 		return errors.Wrap(err, "failed to findBundle")
 	}
 
-	if err := b.bundle.Directive.Validate(); err != nil {
-		return errors.Wrap(err, "failed to Validate Directive")
-	}
-
 	return nil
 }
 
 // Runnables returns the Runnables for the app
 func (b *BundleSource) Runnables() []directive.Runnable {
+	b.lock.RLock()
+	defer b.lock.RUnlock()
+
 	if b.bundle == nil {
 		return []directive.Runnable{}
 	}
@@ -50,10 +53,18 @@ func (b *BundleSource) Runnables() []directive.Runnable {
 	return b.bundle.Directive.Runnables
 }
 
-// FindRunnable returns a nil error if a Runnable with the
-// provided FQFN can be made available at the next sync,
-// otherwise ErrRunnableNotFound is returned
+// FindRunnable searches for and returns the requested runnable
+// otherwise ErrRunnableNotFound
 func (b *BundleSource) FindRunnable(fqfn string) (*directive.Runnable, error) {
+	// refresh the bundle since it's possible it was updated underneath you
+	// this full-locks, so we call it before the RLock
+	if err := b.findBundle(); err != nil {
+		return nil, ErrRunnableNotFound
+	}
+
+	b.lock.RLock()
+	defer b.lock.RUnlock()
+
 	if b.bundle == nil {
 		return nil, ErrRunnableNotFound
 	}
@@ -69,6 +80,9 @@ func (b *BundleSource) FindRunnable(fqfn string) (*directive.Runnable, error) {
 
 // Handlers returns the handlers for the app
 func (b *BundleSource) Handlers() []directive.Handler {
+	b.lock.RLock()
+	defer b.lock.RUnlock()
+
 	if b.bundle == nil {
 		return []directive.Handler{}
 	}
@@ -78,6 +92,9 @@ func (b *BundleSource) Handlers() []directive.Handler {
 
 // Schedules returns the schedules for the app
 func (b *BundleSource) Schedules() []directive.Schedule {
+	b.lock.RLock()
+	defer b.lock.RUnlock()
+
 	if b.bundle == nil {
 		return []directive.Schedule{}
 	}
@@ -87,6 +104,9 @@ func (b *BundleSource) Schedules() []directive.Schedule {
 
 // File returns a requested file
 func (b *BundleSource) File(filename string) ([]byte, error) {
+	b.lock.RLock()
+	defer b.lock.RUnlock()
+
 	if b.bundle == nil {
 		return nil, os.ErrNotExist
 	}
@@ -95,6 +115,9 @@ func (b *BundleSource) File(filename string) ([]byte, error) {
 }
 
 func (b *BundleSource) Meta() Meta {
+	b.lock.RLock()
+	defer b.lock.RUnlock()
+
 	if b.bundle == nil {
 		return Meta{}
 	}
@@ -122,9 +145,17 @@ func (b *BundleSource) findBundle() error {
 			continue
 		}
 
-		b.opts.Logger.Info("found bundle at", b.path)
+		b.opts.Logger.Info("loaded bundle from", b.path)
+
+		b.lock.Lock()
+		defer b.lock.Unlock()
 
 		b.bundle = bdl
+
+		if err := b.bundle.Directive.Validate(); err != nil {
+			return errors.Wrap(err, "failed to Validate Directive")
+		}
+
 		break
 	}
 
