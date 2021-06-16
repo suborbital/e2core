@@ -20,18 +20,18 @@ github.com/sethvargo/go-envconfig
 github.com/spf13/cobra
 # github.com/spf13/pflag v1.0.5
 github.com/spf13/pflag
-# github.com/suborbital/grav v0.3.2
+# github.com/suborbital/grav v0.3.3
 ## explicit
 github.com/suborbital/grav/discovery/local
 github.com/suborbital/grav/grav
 github.com/suborbital/grav/transport/websocket
-# github.com/suborbital/reactr v0.9.3-0.20210612194921-85155d9b3020
+# github.com/suborbital/reactr v0.10.0
 ## explicit
 github.com/suborbital/reactr/request
 github.com/suborbital/reactr/rt
 github.com/suborbital/reactr/rwasm
 github.com/suborbital/reactr/rwasm/moduleref
-# github.com/suborbital/vektor v0.4.1-0.20210612180834-fb09d0358440
+# github.com/suborbital/vektor v0.4.1
 ## explicit
 github.com/suborbital/vektor/vk
 github.com/suborbital/vektor/vlog

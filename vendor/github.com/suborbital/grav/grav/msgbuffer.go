@@ -8,10 +8,10 @@ const (
 	defaultBufferSize = 128
 )
 
-// msgBuffer is a buffer of messages with a particular size limit.
+// MsgBuffer is a buffer of messages with a particular size limit.
 // Oldest messages are automatically evicted as new ones are added
 // past said limit. Push() and Iter() are thread-safe.
-type msgBuffer struct {
+type MsgBuffer struct {
 	msgs       map[string]Message
 	order      []string
 	limit      int
@@ -19,8 +19,8 @@ type msgBuffer struct {
 	lock       sync.RWMutex
 }
 
-func newMsgBuffer(limit int) *msgBuffer {
-	m := &msgBuffer{
+func NewMsgBuffer(limit int) *MsgBuffer {
+	m := &MsgBuffer{
 		msgs:       map[string]Message{},
 		order:      []string{},
 		limit:      limit,
@@ -32,7 +32,7 @@ func newMsgBuffer(limit int) *msgBuffer {
 }
 
 // Push pushes a new message onto the end of the buffer and evicts the oldest, if needed (based on limit)
-func (m *msgBuffer) Push(msg Message) {
+func (m *MsgBuffer) Push(msg Message) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
@@ -56,7 +56,7 @@ func (m *msgBuffer) Push(msg Message) {
 }
 
 // Iter calls msgFunc once per message in the buffer
-func (m *msgBuffer) Iter(msgFunc MsgFunc) {
+func (m *MsgBuffer) Iter(msgFunc MsgFunc) {
 	m.lock.RLock()
 	defer m.lock.RUnlock()
 

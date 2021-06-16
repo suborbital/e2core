@@ -9,7 +9,7 @@ const (
 type messageBus struct {
 	busChan MsgChan
 	pool    *connectionPool
-	buffer  *msgBuffer
+	buffer  *MsgBuffer
 }
 
 // newMessageBus creates a new messageBus
@@ -17,7 +17,7 @@ func newMessageBus() *messageBus {
 	b := &messageBus{
 		busChan: make(chan Message, defaultBusChanSize),
 		pool:    newConnectionPool(),
-		buffer:  newMsgBuffer(defaultBufferSize),
+		buffer:  NewMsgBuffer(defaultBufferSize),
 	}
 
 	b.start()
