@@ -24,6 +24,7 @@ const (
 	atmoMethodSchedule       = "SCHED"
 	atmoHeadlessStateHeader  = "X-Atmo-State"
 	atmoHeadlessParamsHeader = "X-Atmo-Params"
+	atmoRequestIDHeader      = "X-Atmo-RequestID"
 	atmoMessageURI           = "/meta/message"
 )
 
@@ -181,6 +182,9 @@ func (c *Coordinator) vkHandlerForDirectiveHandler(handler directive.Handler) vk
 					req.Params = params
 				}
 			}
+
+			// add the request ID as a response header
+			ctx.RespHeaders.Add(atmoRequestIDHeader, ctx.RequestID())
 		}
 
 		// a sequence executes the handler's steps and manages its state
