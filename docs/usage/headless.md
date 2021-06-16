@@ -21,6 +21,8 @@ For example, if your Runnable expects data in the `user` [request state](../conc
 ```
 And if your Runnable expects to parse URL parameters such as `/api/:user`, you can use the `X-Atmo-Params` header in a similar fashion.
 
+When running in headless mode, the unique UUID for each request will be returned in the `X-Atmo-Requestid` response header field.
+
 ## Running in Headless mode
 To run Atmo in headless mode, set the `ATMO_HEADLESS` env var:
 ```
