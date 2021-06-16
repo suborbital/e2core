@@ -75,7 +75,7 @@ func (c *connectionPool) next() *podConnection {
 // prepareNext ensures that the next pod connection in the ring is ready to recieve
 // new messages by checking its status, deleting it if unhealthy or disconnected, replaying the message
 // buffer if needed, or flushing failed messages back onto its channel if needeed.
-func (c *connectionPool) prepareNext(buffer *msgBuffer) error {
+func (c *connectionPool) prepareNext(buffer *MsgBuffer) error {
 	// peek gives us the next conn without advancing the ring
 	// this makes it easy to delete the next conn if it's unhealthy
 	next := c.peek()
@@ -109,7 +109,7 @@ func (c *connectionPool) prepareNext(buffer *msgBuffer) error {
 }
 
 // replayNext replays the current message buffer into the next connection
-func (c *connectionPool) replayNext(buffer *msgBuffer) {
+func (c *connectionPool) replayNext(buffer *MsgBuffer) {
 	next := c.peek()
 
 	// iterate over the buffer and send each message to the pod
