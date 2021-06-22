@@ -14,6 +14,10 @@ Retrieves the contents of the static file with the given name
 pub fn get_static(name: &str) -> Result<Vec<u8>, RunErr>
 ```
 
+```typescript
+// not yet supported
+```
+
 ```swift
 public func GetStaticFile(name: String) -> String
 ```
