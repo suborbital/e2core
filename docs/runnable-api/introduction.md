@@ -21,7 +21,16 @@ pub trait Runnable {
 ```
 
 {% hint style="warning" %}
-The Swift Runnable API library is still considered experimental, and tends to lag slightly behind Rust in terms of available features.
+The TypeScript/AssemblyScript Runnable API library is still considered experimental.
+{% endhint %}
+
+In TypeScript/AssemblyScript:
+```typescript
+export function run(input: ArrayBuffer): ArrayBuffer 
+```
+
+{% hint style="warning" %}
+The Swift Runnable API library is still considered experimental, and tends to lag slightly behind the others in terms of available features.
 {% endhint %}
 
 And in Swift:
