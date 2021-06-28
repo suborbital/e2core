@@ -98,6 +98,9 @@ func (h *HTTPSource) FindRunnable(FQFN string) (*directive.Runnable, error) {
 // Handlers returns the handlers for the app
 func (h *HTTPSource) Handlers() []directive.Handler {
 	if *h.opts.Headless {
+		h.lock.RLock()
+		defer h.lock.RUnlock()
+
 		return h.headlessHandlers()
 	}
 
