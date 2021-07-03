@@ -2,6 +2,7 @@ package rcap
 
 import "net/http"
 
+// HTTPClient gives Runnables the ability to make HTTP requests
 type HTTPClient interface {
 	Do(req *http.Request) (*http.Response, error)
 }

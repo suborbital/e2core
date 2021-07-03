@@ -8,7 +8,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
-	"github.com/suborbital/reactr/request"
 	"github.com/suborbital/reactr/rt"
 	"github.com/suborbital/reactr/rwasm/moduleref"
 	"github.com/suborbital/vektor/vlog"
@@ -130,7 +129,7 @@ func (w *wasmEnvironment) addInstance() error {
 }
 
 // useInstance provides an instance from the environment's pool to be used
-func (w *wasmEnvironment) useInstance(req *request.CoordinatedRequest, ctx *rt.Ctx, instFunc func(*wasmInstance, int32)) error {
+func (w *wasmEnvironment) useInstance(ctx *rt.Ctx, instFunc func(*wasmInstance, int32)) error {
 	// we have to do a lock dance between w.lock and inst.lock to ensure that
 	// a single instance isn't used by more than one runnable at the same time
 	w.lock.Lock()
@@ -159,15 +158,16 @@ func (w *wasmEnvironment) useInstance(req *request.CoordinatedRequest, ctx *rt.C
 	// setup the instance's temporary state
 	inst.ffiResult = nil
 	inst.ctx = ctx
-	inst.ctx.RequestHandler.SetReq(req)
 
-	// give control to the caller
+	// do the actual call into the Wasm module
 	instFunc(inst, ident)
 
 	// clear the instance's temporary state
-	removeIdentifier(ident)
 	inst.ctx = nil
 	inst.ffiResult = nil
+
+	// remove the instance from global state
+	removeIdentifier(ident)
 
 	return nil
 }

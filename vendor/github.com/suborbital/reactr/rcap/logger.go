@@ -12,9 +12,7 @@ type loggerSource struct {
 }
 
 // DefaultLoggerSource returns a LoggerSource that provides vlog.Default
-func DefaultLoggerSource() LoggerSource {
-	logger := vlog.Default()
-
+func DefaultLoggerSource(logger *vlog.Logger) LoggerSource {
 	l := &loggerSource{
 		log: logger,
 	}

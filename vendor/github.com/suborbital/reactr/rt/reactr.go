@@ -26,7 +26,8 @@ type Reactr struct {
 
 	// we store the default caps here so that new worker registrations use
 	// the same capability objects. It's not a pointer because we don't want
-	// external callers to be able to modify these (that would be a security issue)
+	// external callers of r.DefaultCaps to be able to modify these
+	// (that would be a security issue)
 	defaultCaps Capabilities
 }
 
@@ -38,7 +39,7 @@ func New() *Reactr {
 
 	r := &Reactr{
 		core:        core,
-		defaultCaps: defaultCaps(),
+		defaultCaps: defaultCaps(logger),
 		log:         logger,
 	}
 
@@ -70,9 +71,7 @@ func (r *Reactr) Register(jobType string, runner Runnable, options ...Option) Jo
 	r.RegisterWithCaps(jobType, runner, r.defaultCaps, options...)
 
 	helper := func(data interface{}) *Result {
-		job := NewJob(jobType, data)
-
-		return r.Do(job)
+		return r.Do(NewJob(jobType, data))
 	}
 
 	return helper

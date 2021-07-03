@@ -10,7 +10,7 @@ import (
 // ErrCacheKeyNotFound is returned when a non-existent cache key is requested
 var ErrCacheKeyNotFound = errors.New("key not found")
 
-// Cache represents access to a persistent cache
+// Cache gives Runnables access to a key/value cache
 type Cache interface {
 	Set(key string, val []byte, ttl int) error
 	Get(key string) ([]byte, error)

@@ -1,5 +1,10 @@
 package rt
 
+import (
+	"github.com/suborbital/reactr/rcap"
+	"github.com/suborbital/reactr/request"
+)
+
 // Ctx is a Job context
 type Ctx struct {
 	*Capabilities
@@ -25,4 +30,9 @@ func (c *Ctx) Do(job Job) *Result {
 	job.caps = c.Capabilities
 
 	return c.doFunc(&job)
+}
+
+// UseRequest sets a CoordinatedRequest to be used by the capabilities
+func (c *Ctx) UseRequest(req *request.CoordinatedRequest) {
+	c.RequestHandler = rcap.NewRequestHandler(req)
 }

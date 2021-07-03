@@ -50,7 +50,10 @@ func (w *Runner) Run(job rt.Job, ctx *rt.Ctx) (interface{}, error) {
 
 		jobBytes = bytes
 	} else {
-		// if the job is a request, the input to the Runnable is the URL
+		// if the job is a request, add it to the Ctx and
+		// set the job input to be a summary of the request
+		ctx.UseRequest(req)
+
 		input := fmt.Sprintf("%s %s %s", req.Method, req.URL, req.ID)
 		jobBytes = []byte(input)
 	}
@@ -58,7 +61,7 @@ func (w *Runner) Run(job rt.Job, ctx *rt.Ctx) (interface{}, error) {
 	var output []byte
 	var runErr error
 
-	if err := w.env.useInstance(req, ctx, func(instance *wasmInstance, ident int32) {
+	if err := w.env.useInstance(ctx, func(instance *wasmInstance, ident int32) {
 		inPointer, writeErr := instance.writeMemory(jobBytes)
 		if writeErr != nil {
 			runErr = errors.Wrap(writeErr, "failed to instance.writeMemory")

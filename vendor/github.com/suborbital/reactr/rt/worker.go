@@ -51,7 +51,11 @@ func newWorker(runner Runnable, caps Capabilities, opts workerOpts) *worker {
 
 func (w *worker) schedule(job *Job) {
 	if job.caps == nil {
-		job.caps = &w.defaultCaps
+		// create a copy of the caps object so as to not
+		// accidentally share anything between jobs that
+		// shouldn't be shared (like the RequestHandler)
+		jobCaps := w.defaultCaps
+		job.caps = &jobCaps
 	}
 
 	go func() {
