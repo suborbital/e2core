@@ -61,19 +61,10 @@ func Runnables(r *rt.Reactr, runnables []directive.Runnable, staticFileFunc rcap
 			return rwasm.NewRunnerWithRef(runnables[i].ModuleRef)
 		}
 
-		// get the default caps from the Reactr instance and then
-		// COPY the individual caps into a new object (along with the specific
-		// file func), because editing the original object would give all runnables
-		// access to the file func being loaded here, which is no bueno.
-		defaultCaps := r.DefaultCaps()
-
-		caps := &rt.Capabilities{
-			LoggerSource:   defaultCaps.LoggerSource,
-			RequestHandler: defaultCaps.RequestHandler,
-			HTTPClient:     defaultCaps.HTTPClient,
-			FileSource:     rcap.DefaultFileSource(staticFileFunc),
-			Cache:          defaultCaps.Cache,
-		}
+		// take the default capabilites from the Reactr instance and
+		// set our own FileSource that is connected to the Bundle's FileFunc
+		caps := r.DefaultCaps()
+		caps.FileSource = rcap.DefaultFileSource(staticFileFunc)
 
 		// TODO: in the future, this should be updated to
 		// de-register a Runnable if one with the same name

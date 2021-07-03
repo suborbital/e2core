@@ -60,7 +60,7 @@ func (c *core) do(job *Job) *Result {
 }
 
 // register adds a handler
-func (c *core) register(jobType string, runnable Runnable, caps *Capabilities, options ...Option) {
+func (c *core) register(jobType string, runnable Runnable, caps Capabilities, options ...Option) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 

@@ -19,8 +19,8 @@ type Capabilities struct {
 	doFunc coreDoFunc
 }
 
-func defaultCaps() *Capabilities {
-	caps := &Capabilities{
+func defaultCaps() Capabilities {
+	caps := Capabilities{
 		LoggerSource:   rcap.DefaultLoggerSource(),
 		RequestHandler: rcap.DefaultRequestHandler(),
 		HTTPClient:     rcap.DefaultHTTPClient(),

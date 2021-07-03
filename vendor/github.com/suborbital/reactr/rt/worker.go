@@ -24,7 +24,7 @@ type worker struct {
 	workChan chan *Job
 	options  workerOpts
 
-	defaultCaps *Capabilities
+	defaultCaps Capabilities
 
 	threads    []*workThread
 	threadLock sync.Mutex
@@ -33,7 +33,7 @@ type worker struct {
 }
 
 // newWorker creates a new goWorker
-func newWorker(runner Runnable, caps *Capabilities, opts workerOpts) *worker {
+func newWorker(runner Runnable, caps Capabilities, opts workerOpts) *worker {
 	w := &worker{
 		runner:      runner,
 		workChan:    make(chan *Job, defaultChanSize),
@@ -51,7 +51,7 @@ func newWorker(runner Runnable, caps *Capabilities, opts workerOpts) *worker {
 
 func (w *worker) schedule(job *Job) {
 	if job.caps == nil {
-		job.caps = w.defaultCaps
+		job.caps = &w.defaultCaps
 	}
 
 	go func() {

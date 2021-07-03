@@ -21,9 +21,13 @@ type JobFunc func(interface{}) *Result
 
 // Reactr represents the main control object
 type Reactr struct {
-	core        *core
-	defaultCaps *Capabilities
-	log         *vlog.Logger
+	log  *vlog.Logger
+	core *core
+
+	// we store the default caps here so that new worker registrations use
+	// the same capability objects. It's not a pointer because we don't want
+	// external callers to be able to modify these (that would be a security issue)
+	defaultCaps Capabilities
 }
 
 // New returns a Reactr ready to accept Jobs
@@ -43,16 +47,14 @@ func New() *Reactr {
 
 // Do schedules a job to be worked on and returns a result object
 func (r *Reactr) Do(job Job) *Result {
-	return r.DoWithCaps(job, nil)
+	return r.core.do(&job)
 }
 
 // DoWithCaps schedules a job with a custom Capabilities set
-// passing nil caps will cause the worker's default caps to be used
-func (r *Reactr) DoWithCaps(job Job, caps *Capabilities) *Result {
-	if caps != nil {
-		caps.doFunc = r.core.do
-		job.caps = caps
-	}
+// use Do() to use the default capability set for this job's worker
+func (r *Reactr) DoWithCaps(job Job, caps Capabilities) *Result {
+	caps.doFunc = r.core.do
+	job.caps = &caps
 
 	return r.core.do(&job)
 }
@@ -77,7 +79,9 @@ func (r *Reactr) Register(jobType string, runner Runnable, options ...Option) Jo
 }
 
 // RegisterWithCaps registers a Runnable with the provided Capabilities
-func (r *Reactr) RegisterWithCaps(jobType string, runner Runnable, caps *Capabilities, options ...Option) {
+// when building your capabilites, you should call r.DefaultCaps() and then copy
+// individual capability objects so that they remain shared with other workers
+func (r *Reactr) RegisterWithCaps(jobType string, runner Runnable, caps Capabilities, options ...Option) {
 	caps.doFunc = r.core.do
 
 	r.core.register(jobType, runner, caps, options...)
@@ -141,11 +145,7 @@ func (r *Reactr) Listen(pod *grav.Pod, msgType string) {
 }
 
 // DefaultCaps returns this instance's Capabilities object
-// this is a POINTER, so any changes you make to the object
-// will be used for future new worker registrations. You should
-// probably ONLY copy specific single caps from this object, not
-// using the whole things wholesale, as that would be unsafe.
-func (r *Reactr) DefaultCaps() *Capabilities {
+func (r *Reactr) DefaultCaps() Capabilities {
 	return r.defaultCaps
 }
 
