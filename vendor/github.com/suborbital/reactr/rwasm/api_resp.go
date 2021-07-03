@@ -2,6 +2,7 @@ package rwasm
 
 import (
 	"github.com/pkg/errors"
+	"github.com/suborbital/reactr/rcap"
 	"github.com/wasmerio/wasmer-go/wasmer"
 )
 
@@ -24,18 +25,8 @@ func respSetHeader() *HostFn {
 func response_set_header(keyPointer int32, keySize int32, valPointer int32, valSize int32, ident int32) int32 {
 	inst, err := instanceForIdentifier(ident, false)
 	if err != nil {
-		logger.Error(errors.Wrap(err, "[rwasm] alert: invalid identifier used, potential malicious activity"))
+		internalLogger.Error(errors.Wrap(err, "[rwasm] alert: invalid identifier used, potential malicious activity"))
 		return -1
-	}
-
-	if inst.request == nil {
-		logger.ErrorString("[rwasm] Runnable attempted to access request when none is set")
-		return -2
-	}
-
-	req := inst.request
-	if req.RespHeaders == nil {
-		req.RespHeaders = map[string]string{}
 	}
 
 	keyBytes := inst.readMemory(keyPointer, keySize)
@@ -44,7 +35,15 @@ func response_set_header(keyPointer int32, keySize int32, valPointer int32, valS
 	valBytes := inst.readMemory(valPointer, valSize)
 	val := string(valBytes)
 
-	req.RespHeaders[key] = val
+	if err := inst.ctx.RequestHandler.SetResponseHeader(key, val); err != nil {
+		internalLogger.Error(errors.Wrap(err, "[rwasm] failed to SetResponseHeader"))
+
+		if err == rcap.ErrReqNotSet {
+			return -2
+		} else {
+			return -5
+		}
+	}
 
 	return 0
 }

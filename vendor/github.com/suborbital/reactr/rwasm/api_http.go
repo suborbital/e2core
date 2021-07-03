@@ -53,13 +53,13 @@ func fetch_url(method int32, urlPointer int32, urlSize int32, bodyPointer int32,
 	// fetch writes the http response body into memory starting at returnBodyPointer, and the return value is a pointer to that memory
 	inst, err := instanceForIdentifier(identifier, true)
 	if err != nil {
-		logger.Error(errors.Wrap(err, "[rwasm] alert: invalid identifier used, potential malicious activity"))
+		internalLogger.Error(errors.Wrap(err, "[rwasm] alert: invalid identifier used, potential malicious activity"))
 		return -1
 	}
 
 	httpMethod, exists := methodValToMethod[method]
 	if !exists {
-		logger.ErrorString("invalid method provided: ", method)
+		internalLogger.ErrorString("invalid method provided: ", method)
 		return -2
 	}
 
@@ -72,13 +72,13 @@ func fetch_url(method int32, urlPointer int32, urlSize int32, bodyPointer int32,
 
 	headers, err := parseHTTPHeaders(urlParts)
 	if err != nil {
-		logger.Error(errors.Wrap(err, "could not parse URL headers"))
+		internalLogger.Error(errors.Wrap(err, "could not parse URL headers"))
 		return -2
 	}
 
 	urlObj, err := url.Parse(urlString)
 	if err != nil {
-		logger.Error(errors.Wrap(err, "couldn't parse URL"))
+		internalLogger.Error(errors.Wrap(err, "couldn't parse URL"))
 		return -2
 	}
 
@@ -92,27 +92,28 @@ func fetch_url(method int32, urlPointer int32, urlSize int32, bodyPointer int32,
 
 	req, err := http.NewRequest(httpMethod, urlObj.String(), bytes.NewBuffer(body))
 	if err != nil {
-		logger.Error(errors.Wrap(err, "failed to build request"))
+		internalLogger.Error(errors.Wrap(err, "failed to build request"))
 		return -2
 	}
 
 	req.Header = *headers
 
-	resp, err := http.DefaultClient.Do(req)
+	// filter the request through the capabilities
+	resp, err := inst.ctx.HTTPClient.Do(req)
 	if err != nil {
-		logger.Error(errors.Wrap(err, "failed to Do request"))
+		internalLogger.Error(errors.Wrap(err, "failed to Do request"))
 		return -3
 	}
 
 	if resp.StatusCode > 299 {
-		logger.Debug("runnable's http request returned non-200 response:", resp.StatusCode)
+		internalLogger.Debug("runnable's http request returned non-200 response:", resp.StatusCode)
 		return int32(resp.StatusCode) * -1 // return a negative value, i.e. -404 for a 404 error
 	}
 
 	defer resp.Body.Close()
 	respBytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		logger.Error(errors.Wrap(err, "failed to Read response body"))
+		internalLogger.Error(errors.Wrap(err, "failed to Read response body"))
 		return -4
 	}
 

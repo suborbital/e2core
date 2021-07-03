@@ -4,6 +4,7 @@ import (
 	"os"
 
 	"github.com/pkg/errors"
+	"github.com/suborbital/reactr/rcap"
 	"github.com/wasmerio/wasmer-go/wasmer"
 )
 
@@ -24,25 +25,22 @@ func getStaticFile() *HostFn {
 func get_static_file(namePtr int32, nameSize int32, ident int32) int32 {
 	inst, err := instanceForIdentifier(ident, true)
 	if err != nil {
-		logger.Error(errors.Wrap(err, "[rwasm] alert: invalid identifier used, potential malicious activity"))
+		internalLogger.Error(errors.Wrap(err, "[rwasm] alert: invalid identifier used, potential malicious activity"))
 		return -1
-	}
-
-	if inst.staticFileFunc == nil {
-		logger.ErrorString("[rwasm] module attempted to access static file when no file access is available")
-		return -2
 	}
 
 	name := inst.readMemory(namePtr, nameSize)
 
-	file, err := inst.staticFileFunc(string(name))
+	file, err := inst.ctx.FileSource.GetStatic(string(name))
 	if err != nil {
-		if err == os.ErrNotExist {
-			logger.ErrorString("[rwasm] module requested static file that doesn't exist:", string(name))
+		internalLogger.Error(errors.Wrap(err, "[rwasm] failed to GetStatic"))
+
+		if err == rcap.ErrFileFuncNotSet {
+			return -2
+		} else if err == os.ErrNotExist {
 			return -3
 		}
 
-		logger.ErrorString("[rwasm] failed to get static file:", err)
 		return -4
 	}
 

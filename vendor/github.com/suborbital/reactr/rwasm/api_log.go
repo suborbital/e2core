@@ -27,13 +27,13 @@ func logMsg() *HostFn {
 func log_msg(pointer int32, size int32, level int32, identifier int32) {
 	inst, err := instanceForIdentifier(identifier, false)
 	if err != nil {
-		logger.Error(errors.Wrap(err, "[rwasm] alert: invalid identifier used, potential malicious activity"))
+		internalLogger.Error(errors.Wrap(err, "[rwasm] alert: invalid identifier used, potential malicious activity"))
 		return
 	}
 
 	msgBytes := inst.readMemory(pointer, size)
 
-	l := logger.CreateScoped(logScope{Identifier: identifier})
+	l := inst.ctx.LoggerSource.Logger().CreateScoped(logScope{Identifier: identifier})
 
 	switch level {
 	case 1:

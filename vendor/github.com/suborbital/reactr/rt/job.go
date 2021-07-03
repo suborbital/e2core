@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/google/uuid"
+	"github.com/suborbital/reactr/request"
 )
 
 // Job describes a job to be done
@@ -13,6 +14,9 @@ type Job struct {
 	jobType string
 	result  *Result
 	data    interface{}
+
+	caps *Capabilities
+	req  *request.CoordinatedRequest
 }
 
 // NewJob creates a new job
@@ -21,6 +25,11 @@ func NewJob(jobType string, data interface{}) Job {
 		uuid:    uuid.New().String(),
 		jobType: jobType,
 		data:    data,
+	}
+
+	// detect the coordinated request
+	if req, ok := data.(*request.CoordinatedRequest); ok {
+		j.req = req
 	}
 
 	return j
@@ -73,4 +82,9 @@ func (j Job) Int() int {
 // Data returns the "raw" data for the job
 func (j Job) Data() interface{} {
 	return j.data
+}
+
+// Req returns the Coordinated request attached to the Job
+func (j Job) Req() *request.CoordinatedRequest {
+	return j.req
 }

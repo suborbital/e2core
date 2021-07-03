@@ -7,7 +7,6 @@ import (
 	"github.com/suborbital/reactr/request"
 	"github.com/suborbital/reactr/rt"
 	"github.com/suborbital/reactr/rwasm/moduleref"
-	"github.com/suborbital/vektor/vlog"
 
 	"github.com/pkg/errors"
 )
@@ -17,22 +16,17 @@ type Runner struct {
 	env *wasmEnvironment
 }
 
-// UseLogger sets the logger to be used by Wasm Runnables
-func UseLogger(l *vlog.Logger) {
-	logger = l
-}
-
 // NewRunner returns a new *Runner
 func NewRunner(filepath string) *Runner {
 	ref := &moduleref.WasmModuleRef{
 		Filepath: filepath,
 	}
 
-	return NewRunnerWithRef(ref, nil)
+	return NewRunnerWithRef(ref)
 }
 
-func NewRunnerWithRef(ref *moduleref.WasmModuleRef, staticFileFunc FileFunc) *Runner {
-	environment := newEnvironment(ref, staticFileFunc)
+func NewRunnerWithRef(ref *moduleref.WasmModuleRef) *Runner {
+	environment := newEnvironment(ref)
 
 	r := &Runner{
 		env: environment,

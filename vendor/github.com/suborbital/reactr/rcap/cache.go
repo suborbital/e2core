@@ -1,4 +1,4 @@
-package rt
+package rcap
 
 import (
 	"sync"
@@ -29,7 +29,7 @@ type uniqueVal struct {
 	val []byte
 }
 
-func newMemoryCache() *memoryCache {
+func DefaultCache() Cache {
 	m := &memoryCache{
 		values: make(map[string]*uniqueVal),
 		lock:   sync.RWMutex{},

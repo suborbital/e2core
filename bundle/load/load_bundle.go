@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/suborbital/atmo/bundle"
 	"github.com/suborbital/atmo/directive"
+	"github.com/suborbital/reactr/rcap"
 	"github.com/suborbital/reactr/rt"
 	"github.com/suborbital/reactr/rwasm"
 )
@@ -45,7 +46,7 @@ func Bundle(r *rt.Reactr, bundle *bundle.Bundle) error {
 
 // Runnables loads a set of WasmModuleRefs into a Reactr instance
 // if you're trying to use this directly, you probably want BundleFromPath or Bundle instead
-func Runnables(r *rt.Reactr, runnables []directive.Runnable, staticFileFunc rwasm.FileFunc, registerSimpleName bool) error {
+func Runnables(r *rt.Reactr, runnables []directive.Runnable, staticFileFunc rcap.StaticFileFunc, registerSimpleName bool) error {
 	for i, runnable := range runnables {
 		if runnable.ModuleRef == nil {
 			return fmt.Errorf("missing ModuleRef for Runnable %s", runnable.Name)
@@ -57,7 +58,21 @@ func Runnables(r *rt.Reactr, runnables []directive.Runnable, staticFileFunc rwas
 		// to create the Runner, since that adds things
 		// to Reactr's global state, which would be a waste.
 		getRunner := func() *rwasm.Runner {
-			return rwasm.NewRunnerWithRef(runnables[i].ModuleRef, staticFileFunc)
+			return rwasm.NewRunnerWithRef(runnables[i].ModuleRef)
+		}
+
+		// get the default caps from the Reactr instance and then
+		// COPY the individual caps into a new object (along with the specific
+		// file func), because editing the original object would give all runnables
+		// access to the file func being loaded here, which is no bueno.
+		defaultCaps := r.DefaultCaps()
+
+		caps := &rt.Capabilities{
+			LoggerSource:   defaultCaps.LoggerSource,
+			RequestHandler: defaultCaps.RequestHandler,
+			HTTPClient:     defaultCaps.HTTPClient,
+			FileSource:     rcap.DefaultFileSource(staticFileFunc),
+			Cache:          defaultCaps.Cache,
 		}
 
 		// TODO: in the future, this should be updated to
@@ -65,7 +80,7 @@ func Runnables(r *rt.Reactr, runnables []directive.Runnable, staticFileFunc rwas
 		// is already registered, since over-registering can
 		// cause workers to languish in the background
 		if registerSimpleName {
-			r.Register(runnable.Name, getRunner())
+			r.RegisterWithCaps(runnable.Name, getRunner(), caps)
 		}
 
 		// we load the Runnable under its FQFN because
@@ -74,7 +89,7 @@ func Runnables(r *rt.Reactr, runnables []directive.Runnable, staticFileFunc rwas
 			// if a module is already registered, don't bother over-writing
 			// since FQFNs are 'guaranteed' to be unique, so there's no point
 			if !r.IsRegistered(runnable.FQFN) {
-				r.Register(runnable.FQFN, getRunner(), rt.PreWarm())
+				r.RegisterWithCaps(runnable.FQFN, getRunner(), caps, rt.PreWarm())
 			}
 		}
 	}
