@@ -25,17 +25,17 @@ func cacheSet() *HostFn {
 func cache_set(keyPointer int32, keySize int32, valPointer int32, valSize int32, ttl int32, identifier int32) int32 {
 	inst, err := instanceForIdentifier(identifier, false)
 	if err != nil {
-		logger.Error(errors.Wrap(err, "[rwasm] alert: invalid identifier used, potential malicious activity"))
+		internalLogger.Error(errors.Wrap(err, "[rwasm] alert: invalid identifier used, potential malicious activity"))
 		return -1
 	}
 
 	key := inst.readMemory(keyPointer, keySize)
 	val := inst.readMemory(valPointer, valSize)
 
-	logger.Debug("[rwasm] setting cache key", string(key))
+	internalLogger.Debug("[rwasm] setting cache key", string(key))
 
-	if err := inst.rtCtx.Cache.Set(string(key), val, int(ttl)); err != nil {
-		logger.ErrorString("[rwasm] failed to set cache key", string(key), err.Error())
+	if err := inst.ctx.Cache.Set(string(key), val, int(ttl)); err != nil {
+		internalLogger.ErrorString("[rwasm] failed to set cache key", string(key), err.Error())
 		return -2
 	}
 
@@ -59,17 +59,17 @@ func cacheGet() *HostFn {
 func cache_get(keyPointer int32, keySize int32, identifier int32) int32 {
 	inst, err := instanceForIdentifier(identifier, true)
 	if err != nil {
-		logger.Error(errors.Wrap(err, "[rwasm] alert: invalid identifier used, potential malicious activity"))
+		internalLogger.Error(errors.Wrap(err, "[rwasm] alert: invalid identifier used, potential malicious activity"))
 		return -1
 	}
 
 	key := inst.readMemory(keyPointer, keySize)
 
-	logger.Debug("[rwasm] getting cache key", string(key))
+	internalLogger.Debug("[rwasm] getting cache key", string(key))
 
-	val, err := inst.rtCtx.Cache.Get(string(key))
+	val, err := inst.ctx.Cache.Get(string(key))
 	if err != nil {
-		logger.ErrorString("[rwasm] failed to get cache key", string(key), err.Error())
+		internalLogger.ErrorString("[rwasm] failed to get cache key", string(key), err.Error())
 		return -2
 	}
 

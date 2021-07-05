@@ -22,8 +22,9 @@ var (
 type worker struct {
 	runner   Runnable
 	workChan chan *Job
-	cache    Cache
 	options  workerOpts
+
+	defaultCaps Capabilities
 
 	threads    []*workThread
 	threadLock sync.Mutex
@@ -32,15 +33,15 @@ type worker struct {
 }
 
 // newWorker creates a new goWorker
-func newWorker(runner Runnable, cache Cache, opts workerOpts) *worker {
+func newWorker(runner Runnable, caps Capabilities, opts workerOpts) *worker {
 	w := &worker{
-		runner:     runner,
-		workChan:   make(chan *Job, defaultChanSize),
-		cache:      cache,
-		options:    opts,
-		threads:    make([]*workThread, opts.poolSize),
-		threadLock: sync.Mutex{},
-		started:    atomic.Value{},
+		runner:      runner,
+		workChan:    make(chan *Job, defaultChanSize),
+		options:     opts,
+		defaultCaps: caps,
+		threads:     make([]*workThread, opts.poolSize),
+		threadLock:  sync.Mutex{},
+		started:     atomic.Value{},
 	}
 
 	w.started.Store(false)
@@ -49,6 +50,14 @@ func newWorker(runner Runnable, cache Cache, opts workerOpts) *worker {
 }
 
 func (w *worker) schedule(job *Job) {
+	if job.caps == nil {
+		// create a copy of the caps object so as to not
+		// accidentally share anything between jobs that
+		// shouldn't be shared (like the RequestHandler)
+		jobCaps := w.defaultCaps
+		job.caps = &jobCaps
+	}
+
 	go func() {
 		w.workChan <- job
 	}()
@@ -68,7 +77,7 @@ func (w *worker) start(doFunc coreDoFunc) error {
 	for {
 		// fill the "pool" with workThreads
 		for i := started; i < w.options.poolSize; i++ {
-			wt := newWorkThread(w.runner, w.workChan, w.cache, w.options.jobTimeoutSeconds)
+			wt := newWorkThread(w.runner, w.workChan, w.options.jobTimeoutSeconds)
 
 			// give the runner opportunity to provision resources if needed
 			if err := w.runner.OnChange(ChangeTypeStart); err != nil {
@@ -78,7 +87,7 @@ func (w *worker) start(doFunc coreDoFunc) error {
 				started++
 			}
 
-			wt.run(doFunc)
+			wt.run()
 
 			w.threads[i] = wt
 		}
@@ -111,19 +120,17 @@ func (w *worker) isStarted() bool {
 type workThread struct {
 	runner         Runnable
 	workChan       chan *Job
-	cache          Cache
 	timeoutSeconds int
 	context        context.Context
 	cancelFunc     context.CancelFunc
 }
 
-func newWorkThread(runner Runnable, workChan chan *Job, cache Cache, timeoutSeconds int) *workThread {
+func newWorkThread(runner Runnable, workChan chan *Job, timeoutSeconds int) *workThread {
 	ctx, cancelFunc := context.WithCancel(context.Background())
 
 	wt := &workThread{
 		runner:         runner,
 		workChan:       workChan,
-		cache:          cache,
 		timeoutSeconds: timeoutSeconds,
 		context:        ctx,
 		cancelFunc:     cancelFunc,
@@ -132,7 +139,7 @@ func newWorkThread(runner Runnable, workChan chan *Job, cache Cache, timeoutSeco
 	return wt
 }
 
-func (wt *workThread) run(doFunc coreDoFunc) {
+func (wt *workThread) run() {
 	go func() {
 		for {
 			// die if the context has been cancelled
@@ -146,7 +153,7 @@ func (wt *workThread) run(doFunc coreDoFunc) {
 
 			// TODO: check to see if the workThread pool is sufficient, and attempt to fill it if not
 
-			ctx := newCtx(wt.cache, doFunc)
+			ctx := newCtx(job.caps)
 
 			var result interface{}
 

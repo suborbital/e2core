@@ -8,7 +8,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
-	"github.com/suborbital/reactr/request"
 	"github.com/suborbital/reactr/rt"
 	"github.com/suborbital/reactr/rwasm/moduleref"
 	"github.com/suborbital/vektor/vlog"
@@ -39,11 +38,8 @@ var envLock = sync.RWMutex{}
 // the instance mapper maps a random int32 to a wasm instance to prevent malicious access to other instances via the FFI
 var instanceMapper = sync.Map{}
 
-// the logger used by Wasm Runnables
-var logger = vlog.Default()
-
-// FileFunc is a function that returns the contents of a requested file
-type FileFunc func(string) ([]byte, error)
+// the internal Logger used by the Wasm runtime system
+var internalLogger = vlog.Default()
 
 // wasmEnvironment is an environmenr in which Wasm instances run
 type wasmEnvironment struct {
@@ -54,8 +50,6 @@ type wasmEnvironment struct {
 	imports   *wasmer.ImportObject
 	instances []*wasmInstance
 
-	staticFileFunc FileFunc
-
 	// the index of the last used wasm instance
 	instIndex int
 	lock      sync.Mutex
@@ -64,12 +58,9 @@ type wasmEnvironment struct {
 type wasmInstance struct {
 	wasmerInst *wasmer.Instance
 
-	rtCtx   *rt.Ctx
-	request *request.CoordinatedRequest
+	ctx *rt.Ctx
 
 	ffiResult []byte
-
-	staticFileFunc FileFunc
 
 	resultChan chan []byte
 	errChan    chan rt.RunErr
@@ -85,17 +76,16 @@ type instanceReference struct {
 
 // newEnvironment creates a new environment and adds it to the shared environments array
 // such that Wasm instances can return data to the correct place
-func newEnvironment(ref *moduleref.WasmModuleRef, staticFileFunc FileFunc) *wasmEnvironment {
+func newEnvironment(ref *moduleref.WasmModuleRef) *wasmEnvironment {
 	envLock.Lock()
 	defer envLock.Unlock()
 
 	e := &wasmEnvironment{
-		UUID:           uuid.New().String(),
-		ref:            ref,
-		instances:      []*wasmInstance{},
-		staticFileFunc: staticFileFunc,
-		instIndex:      0,
-		lock:           sync.Mutex{},
+		UUID:      uuid.New().String(),
+		ref:       ref,
+		instances: []*wasmInstance{},
+		instIndex: 0,
+		lock:      sync.Mutex{},
 	}
 
 	environments[e.UUID] = e
@@ -127,11 +117,10 @@ func (w *wasmEnvironment) addInstance() error {
 	}
 
 	instance := &wasmInstance{
-		wasmerInst:     inst,
-		staticFileFunc: w.staticFileFunc,
-		resultChan:     make(chan []byte, 1),
-		errChan:        make(chan rt.RunErr, 1),
-		lock:           sync.Mutex{},
+		wasmerInst: inst,
+		resultChan: make(chan []byte, 1),
+		errChan:    make(chan rt.RunErr, 1),
+		lock:       sync.Mutex{},
 	}
 
 	w.instances = append(w.instances, instance)
@@ -140,7 +129,9 @@ func (w *wasmEnvironment) addInstance() error {
 }
 
 // useInstance provides an instance from the environment's pool to be used
-func (w *wasmEnvironment) useInstance(req *request.CoordinatedRequest, ctx *rt.Ctx, instFunc func(*wasmInstance, int32)) error {
+func (w *wasmEnvironment) useInstance(ctx *rt.Ctx, instFunc func(*wasmInstance, int32)) error {
+	// we have to do a lock dance between w.lock and inst.lock to ensure that
+	// a single instance isn't used by more than one runnable at the same time
 	w.lock.Lock()
 
 	if w.instIndex == len(w.instances)-1 {
@@ -152,10 +143,10 @@ func (w *wasmEnvironment) useInstance(req *request.CoordinatedRequest, ctx *rt.C
 	instIndex := w.instIndex
 	inst := w.instances[instIndex]
 
-	w.lock.Unlock() // now that we've acquired our instance, let the next one go
-
 	inst.lock.Lock()
 	defer inst.lock.Unlock()
+
+	w.lock.Unlock() // now that we've acquired our instance, let the next one go
 
 	// generate a random identifier as a reference to the instance in use to
 	// easily allow the Wasm module to reference itself when calling back over the FFI
@@ -165,17 +156,18 @@ func (w *wasmEnvironment) useInstance(req *request.CoordinatedRequest, ctx *rt.C
 	}
 
 	// setup the instance's temporary state
-	inst.rtCtx = ctx
-	inst.request = req
 	inst.ffiResult = nil
+	inst.ctx = ctx
 
+	// do the actual call into the Wasm module
 	instFunc(inst, ident)
 
 	// clear the instance's temporary state
-	removeIdentifier(ident)
-	inst.rtCtx = nil
-	inst.request = nil
+	inst.ctx = nil
 	inst.ffiResult = nil
+
+	// remove the instance from global state
+	removeIdentifier(ident)
 
 	return nil
 }
@@ -294,6 +286,11 @@ func randomIdentifier() (int32, error) {
 	}
 
 	return int32(num.Int64()), nil
+}
+
+// UseInternalLogger sets the logger to be used log internal wasm runtime messages
+func UseInternalLogger(l *vlog.Logger) {
+	internalLogger = l
 }
 
 /////////////////////////////////////////////////////////////////////////////

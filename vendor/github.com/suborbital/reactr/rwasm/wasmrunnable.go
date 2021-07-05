@@ -7,7 +7,6 @@ import (
 	"github.com/suborbital/reactr/request"
 	"github.com/suborbital/reactr/rt"
 	"github.com/suborbital/reactr/rwasm/moduleref"
-	"github.com/suborbital/vektor/vlog"
 
 	"github.com/pkg/errors"
 )
@@ -17,22 +16,17 @@ type Runner struct {
 	env *wasmEnvironment
 }
 
-// UseLogger sets the logger to be used by Wasm Runnables
-func UseLogger(l *vlog.Logger) {
-	logger = l
-}
-
 // NewRunner returns a new *Runner
 func NewRunner(filepath string) *Runner {
 	ref := &moduleref.WasmModuleRef{
 		Filepath: filepath,
 	}
 
-	return NewRunnerWithRef(ref, nil)
+	return NewRunnerWithRef(ref)
 }
 
-func NewRunnerWithRef(ref *moduleref.WasmModuleRef, staticFileFunc FileFunc) *Runner {
-	environment := newEnvironment(ref, staticFileFunc)
+func NewRunnerWithRef(ref *moduleref.WasmModuleRef) *Runner {
+	environment := newEnvironment(ref)
 
 	r := &Runner{
 		env: environment,
@@ -56,7 +50,10 @@ func (w *Runner) Run(job rt.Job, ctx *rt.Ctx) (interface{}, error) {
 
 		jobBytes = bytes
 	} else {
-		// if the job is a request, the input to the Runnable is the URL
+		// if the job is a request, add it to the Ctx and
+		// set the job input to be a summary of the request
+		ctx.UseRequest(req)
+
 		input := fmt.Sprintf("%s %s %s", req.Method, req.URL, req.ID)
 		jobBytes = []byte(input)
 	}
@@ -64,7 +61,7 @@ func (w *Runner) Run(job rt.Job, ctx *rt.Ctx) (interface{}, error) {
 	var output []byte
 	var runErr error
 
-	if err := w.env.useInstance(req, ctx, func(instance *wasmInstance, ident int32) {
+	if err := w.env.useInstance(ctx, func(instance *wasmInstance, ident int32) {
 		inPointer, writeErr := instance.writeMemory(jobBytes)
 		if writeErr != nil {
 			runErr = errors.Wrap(writeErr, "failed to instance.writeMemory")

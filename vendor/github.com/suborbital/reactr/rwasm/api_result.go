@@ -26,7 +26,7 @@ func return_result(pointer int32, size int32, identifier int32) {
 
 	inst, err := instanceForIdentifier(identifier, false)
 	if err != nil {
-		logger.Error(errors.Wrap(err, "[rwasm] alert: invalid identifier used, potential malicious activity"))
+		internalLogger.Error(errors.Wrap(err, "[rwasm] alert: invalid identifier used, potential malicious activity"))
 		return
 	}
 
@@ -56,7 +56,7 @@ func return_error(code int32, pointer int32, size int32, identifier int32) {
 
 	inst, err := instanceForIdentifier(identifier, false)
 	if err != nil {
-		logger.Error(errors.Wrap(err, "[rwasm] alert: invalid identifier used, potential malicious activity"))
+		internalLogger.Error(errors.Wrap(err, "[rwasm] alert: invalid identifier used, potential malicious activity"))
 		return
 	}
 

@@ -1,4 +1,4 @@
-package rt
+package rcap
 
 import (
 	"sync"
@@ -10,7 +10,7 @@ import (
 // ErrCacheKeyNotFound is returned when a non-existent cache key is requested
 var ErrCacheKeyNotFound = errors.New("key not found")
 
-// Cache represents access to a persistent cache
+// Cache gives Runnables access to a key/value cache
 type Cache interface {
 	Set(key string, val []byte, ttl int) error
 	Get(key string) ([]byte, error)
@@ -29,7 +29,7 @@ type uniqueVal struct {
 	val []byte
 }
 
-func newMemoryCache() *memoryCache {
+func DefaultCache() Cache {
 	m := &memoryCache{
 		values: make(map[string]*uniqueVal),
 		lock:   sync.RWMutex{},

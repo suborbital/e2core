@@ -2,15 +2,8 @@ package rwasm
 
 import (
 	"github.com/pkg/errors"
+	"github.com/suborbital/reactr/rcap"
 	"github.com/wasmerio/wasmer-go/wasmer"
-)
-
-const (
-	fieldTypeMeta   = int32(0)
-	fieldTypeBody   = int32(1)
-	fieldTypeHeader = int32(2)
-	fieldTypeParams = int32(3)
-	fieldTypeState  = int32(4)
 )
 
 func requestGetField() *HostFn {
@@ -31,71 +24,30 @@ func requestGetField() *HostFn {
 func request_get_field(fieldType int32, keyPointer int32, keySize int32, identifier int32) int32 {
 	inst, err := instanceForIdentifier(identifier, true)
 	if err != nil {
-		logger.Error(errors.Wrap(err, "[rwasm] alert: invalid identifier used, potential malicious activity"))
+		internalLogger.Error(errors.Wrap(err, "[rwasm] alert: invalid identifier used, potential malicious activity"))
 		return -1
 	}
-
-	if inst.request == nil {
-		logger.ErrorString("[rwasm] Runnable attempted to access request when none is set")
-		return -2
-	}
-
-	req := inst.request
 
 	keyBytes := inst.readMemory(keyPointer, keySize)
 	key := string(keyBytes)
 
-	val := ""
+	val, err := inst.ctx.RequestHandler.GetField(fieldType, key)
+	if err != nil {
+		internalLogger.Error(errors.Wrap(err, "failed to GetField"))
 
-	switch fieldType {
-	case fieldTypeMeta:
-		switch key {
-		case "method":
-			val = req.Method
-		case "url":
-			val = req.URL
-		case "id":
-			val = req.ID
-		case "body":
-			val = string(req.Body)
-		default:
+		switch err {
+		case rcap.ErrReqNotSet:
+			return -2
+		case rcap.ErrInvalidKey:
 			return -3
-		}
-	case fieldTypeBody:
-		bodyVal, err := req.BodyField(key)
-		if err == nil {
-			val = bodyVal
-		} else {
-			logger.Debug(errors.Wrap(err, "failed to get BodyField"))
+		case rcap.ErrInvalidFieldType:
 			return -4
-		}
-	case fieldTypeHeader:
-		header, ok := req.Headers[key]
-		if ok {
-			val = header
-		} else {
-			return -3
-		}
-	case fieldTypeParams:
-		param, ok := req.Params[key]
-		if ok {
-			val = param
-		} else {
-			return -3
-		}
-	case fieldTypeState:
-		stateVal, ok := req.State[key]
-		if ok {
-			val = string(stateVal)
-		} else {
-			return -3
+		default:
+			return -5
 		}
 	}
 
-	valBytes := []byte(val)
+	inst.setFFIResult(val)
 
-	inst.setFFIResult(valBytes)
-
-	// logger.Debug(fmt.Sprintf("returning value length %d", len(valBytes)))
-	return int32(len(valBytes))
+	return int32(len(val))
 }

@@ -24,13 +24,13 @@ func get_ffi_result(pointer int32, identifier int32) int32 {
 
 	inst, err := instanceForIdentifier(identifier, false)
 	if err != nil {
-		logger.Error(errors.Wrap(err, "[rwasm] failed to instanceForIdentifier"))
+		internalLogger.Error(errors.Wrap(err, "[rwasm] failed to instanceForIdentifier"))
 		return -1
 	}
 
 	result, err := inst.useFFIResult()
 	if err != nil {
-		logger.Error(errors.Wrap(err, "[rwasm] failed to useFFIResult"))
+		internalLogger.Error(errors.Wrap(err, "[rwasm] failed to useFFIResult"))
 		return -1
 	}
 

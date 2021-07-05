@@ -25,7 +25,7 @@ type Atmo struct {
 func New(opts ...options.Modifier) *Atmo {
 	atmoOpts := options.NewWithModifiers(opts...)
 
-	rwasm.UseLogger(atmoOpts.Logger)
+	rwasm.UseInternalLogger(atmoOpts.Logger)
 
 	appSource := appsource.NewBundleSource(atmoOpts.BundlePath)
 	if atmoOpts.ControlPlane != "" {

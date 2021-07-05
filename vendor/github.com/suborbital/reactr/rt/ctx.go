@@ -1,19 +1,18 @@
 package rt
 
-import "github.com/pkg/errors"
-
-var errDoFuncNotSet = errors.New("do func has not been set")
+import (
+	"github.com/suborbital/reactr/rcap"
+	"github.com/suborbital/reactr/request"
+)
 
 // Ctx is a Job context
 type Ctx struct {
-	Cache  Cache
-	doFunc coreDoFunc
+	*Capabilities
 }
 
-func newCtx(cache Cache, doFunc coreDoFunc) *Ctx {
+func newCtx(caps *Capabilities) *Ctx {
 	c := &Ctx{
-		Cache:  cache,
-		doFunc: doFunc,
+		Capabilities: caps,
 	}
 
 	return c
@@ -23,9 +22,17 @@ func newCtx(cache Cache, doFunc coreDoFunc) *Ctx {
 func (c *Ctx) Do(job Job) *Result {
 	if c.doFunc == nil {
 		r := newResult(job.UUID())
-		r.sendErr(errDoFuncNotSet)
+		r.sendErr(ErrCapabilityNotAvailable)
 		return r
 	}
 
+	// set the same capabilities as the Job who called Do
+	job.caps = c.Capabilities
+
 	return c.doFunc(&job)
+}
+
+// UseRequest sets a CoordinatedRequest to be used by the capabilities
+func (c *Ctx) UseRequest(req *request.CoordinatedRequest) {
+	c.RequestHandler = rcap.NewRequestHandler(req)
 }

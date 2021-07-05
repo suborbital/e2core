@@ -25,8 +25,9 @@ github.com/spf13/pflag
 github.com/suborbital/grav/discovery/local
 github.com/suborbital/grav/grav
 github.com/suborbital/grav/transport/websocket
-# github.com/suborbital/reactr v0.10.0
+# github.com/suborbital/reactr v0.10.1-0.20210703180801-dad2e23e943e
 ## explicit
+github.com/suborbital/reactr/rcap
 github.com/suborbital/reactr/request
 github.com/suborbital/reactr/rt
 github.com/suborbital/reactr/rwasm

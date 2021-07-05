@@ -29,7 +29,7 @@ func abortHandler() *HostFn {
 func return_abort(msgPtr int32, msgSize int32, filePtr int32, fileSize int32, lineNum int32, columnNum int32, ident int32) int32 {
 	inst, err := instanceForIdentifier(ident, false)
 	if err != nil {
-		logger.Error(errors.Wrap(err, "[rwasm] alert: invalid identifier used, potential malicious activity"))
+		internalLogger.Error(errors.Wrap(err, "[rwasm] alert: invalid identifier used, potential malicious activity"))
 		return -1
 	}
 
@@ -37,7 +37,7 @@ func return_abort(msgPtr int32, msgSize int32, filePtr int32, fileSize int32, li
 	fileName := inst.readMemory(filePtr, fileSize)
 
 	errMsg := fmt.Sprintf("runnable abort: %s; file: %s, line: %d, col: %d", msg, fileName, lineNum, columnNum)
-	logger.ErrorString(errMsg)
+	internalLogger.ErrorString(errMsg)
 
 	inst.errChan <- rt.RunErr{Code: -1, Message: errMsg}
 
