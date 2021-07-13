@@ -8,7 +8,7 @@ type Runnable struct {
 	Namespace    string                   `yaml:"namespace" json:"namespace"`
 	Lang         string                   `yaml:"lang" json:"lang"`
 	Version      string                   `yaml:"version" json:"version"`
-	DraftVersion string                   `yaml:"-" json:"draftVersion,omitempty"`
+	DraftVersion string                   `yaml:"draftVersion,omitempty" json:"draftVersion,omitempty"`
 	APIVersion   string                   `yaml:"apiVersion,omitempty" json:"apiVersion,omitempty"`
 	FQFN         string                   `yaml:"fqfn,omitempty" json:"fqfn,omitempty"`
 	FQFNURI      string                   `yaml:"fqfnUri" json:"fqfnURI,omitempty"`
