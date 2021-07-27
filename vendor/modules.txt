@@ -2,6 +2,7 @@
 ## explicit
 github.com/google/uuid
 # github.com/gorilla/websocket v1.4.2
+## explicit
 github.com/gorilla/websocket
 # github.com/inconshreveable/mousetrap v1.0.0
 github.com/inconshreveable/mousetrap
@@ -25,13 +26,16 @@ github.com/spf13/pflag
 github.com/suborbital/grav/discovery/local
 github.com/suborbital/grav/grav
 github.com/suborbital/grav/transport/websocket
-# github.com/suborbital/reactr v0.10.1-0.20210703180801-dad2e23e943e
+# github.com/suborbital/reactr v0.10.1-0.20210727154932-f316d5d35fd7
 ## explicit
 github.com/suborbital/reactr/rcap
 github.com/suborbital/reactr/request
 github.com/suborbital/reactr/rt
 github.com/suborbital/reactr/rwasm
 github.com/suborbital/reactr/rwasm/moduleref
+# github.com/suborbital/subo v0.0.18
+## explicit
+github.com/suborbital/subo/subo/input
 # github.com/suborbital/vektor v0.4.1
 ## explicit
 github.com/suborbital/vektor/vk

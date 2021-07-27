@@ -1,12 +1,10 @@
 package coordinator
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"sync"
 
-	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/suborbital/atmo/atmo/appsource"
 	"github.com/suborbital/atmo/atmo/options"
@@ -14,7 +12,6 @@ import (
 	"github.com/suborbital/grav/discovery/local"
 	"github.com/suborbital/grav/grav"
 	"github.com/suborbital/grav/transport/websocket"
-	"github.com/suborbital/reactr/request"
 	"github.com/suborbital/reactr/rt"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
@@ -105,13 +102,12 @@ func (c *Coordinator) GenerateRouter() *vk.Router {
 
 	// mount each handler into the VK group
 	for _, h := range c.App.Handlers() {
-		if h.Input.Type != directive.InputTypeRequest {
-			continue
+		switch h.Input.Type {
+		case directive.InputTypeRequest:
+			router.Handle(h.Input.Method, h.Input.Resource, c.vkHandlerForDirectiveHandler(h))
+		case directive.InputTypeStream:
+			router.HandleHTTP(http.MethodGet, h.Input.Resource, c.websocketHandlerForDirectiveHandler(h))
 		}
-
-		handler := c.vkHandlerForDirectiveHandler(h)
-
-		router.Handle(h.Input.Method, h.Input.Resource, handler)
 	}
 
 	if c.transport != nil {
@@ -142,122 +138,6 @@ func (c *Coordinator) SetSchedules() {
 				return rt.NewJob(jobName, nil)
 			}))
 		}
-	}
-}
-
-func (c *Coordinator) vkHandlerForDirectiveHandler(handler directive.Handler) vk.HandlerFunc {
-	return func(r *http.Request, ctx *vk.Ctx) (interface{}, error) {
-		req, err := request.FromVKRequest(r, ctx)
-		if err != nil {
-			ctx.Log.Error(errors.Wrap(err, "failed to request.FromVKRequest"))
-			return nil, vk.E(http.StatusInternalServerError, "failed to handle request")
-		}
-
-		// this should probably be factored out into the CoordinateRequest object
-		if *c.opts.Headless {
-			// fill in initial state from the state header
-			if stateJSON := r.Header.Get(atmoHeadlessStateHeader); stateJSON != "" {
-				state := map[string]string{}
-				byteState := map[string][]byte{}
-
-				if err := json.Unmarshal([]byte(stateJSON), &state); err != nil {
-					c.log.Error(errors.Wrap(err, "failed to Unmarshal X-Atmo-State header"))
-				} else {
-					// iterate over the state and convert each field to bytes
-					for k, v := range state {
-						byteState[k] = []byte(v)
-					}
-				}
-
-				req.State = byteState
-			}
-
-			// fill in the URL params from the Params header
-			if paramsJSON := r.Header.Get(atmoHeadlessParamsHeader); paramsJSON != "" {
-				params := map[string]string{}
-
-				if err := json.Unmarshal([]byte(paramsJSON), &params); err != nil {
-					c.log.Error(errors.Wrap(err, "failed to Unmarshal X-Atmo-Params header"))
-				} else {
-					req.Params = params
-				}
-			}
-
-			// add the request ID as a response header
-			ctx.RespHeaders.Add(atmoRequestIDHeader, ctx.RequestID())
-		}
-
-		// a sequence executes the handler's steps and manages its state
-		seq := newSequence(handler.Steps, c.grav.Connect, ctx)
-
-		seqState, err := seq.exec(req)
-		if err != nil {
-			if errors.Is(err, ErrSequenceRunErr) && seqState.err != nil {
-				if seqState.err.Code < 200 || seqState.err.Code > 599 {
-					// if the Runnable returned an invalid code for HTTP, default to 500
-					return nil, vk.Err(http.StatusInternalServerError, seqState.err.Message)
-				}
-
-				return nil, vk.Err(seqState.err.Code, seqState.err.Message)
-			}
-
-			return nil, vk.Wrap(http.StatusInternalServerError, err)
-		}
-
-		// handle any response headers that were set by the Runnables
-		if req.RespHeaders != nil {
-			for head, val := range req.RespHeaders {
-				ctx.RespHeaders.Set(head, val)
-			}
-		}
-
-		return resultFromState(handler, seqState.state), nil
-	}
-}
-
-// scheduledRunner is a runner that will run a schedule on a.... schedule
-type scheduledRunner struct {
-	RunFunc rtFunc
-}
-
-func (s *scheduledRunner) Run(job rt.Job, ctx *rt.Ctx) (interface{}, error) {
-	return s.RunFunc(job, ctx)
-}
-
-func (s *scheduledRunner) OnChange(_ rt.ChangeEvent) error { return nil }
-
-func (c *Coordinator) rtFuncForDirectiveSchedule(sched directive.Schedule) rtFunc {
-	return func(job rt.Job, ctx *rt.Ctx) (interface{}, error) {
-		c.log.Info("executing schedule", sched.Name)
-
-		// read the "initial" state from the Directive
-		state := map[string][]byte{}
-		for k, v := range sched.State {
-			state[k] = []byte(v)
-		}
-
-		req := &request.CoordinatedRequest{
-			Method:  atmoMethodSchedule,
-			URL:     sched.Name,
-			ID:      uuid.New().String(),
-			Body:    []byte{},
-			Headers: map[string]string{},
-			Params:  map[string]string{},
-			State:   state,
-		}
-
-		// a sequence executes the handler's steps and manages its state
-		seq := newSequence(sched.Steps, c.grav.Connect, &vk.Ctx{Log: c.log})
-
-		if seqState, err := seq.exec(req); err != nil {
-			if errors.Is(err, ErrSequenceRunErr) && seqState.err != nil {
-				c.log.Error(errors.Wrapf(seqState.err, "schedule %s returned an error", sched.Name))
-			} else {
-				c.log.Error(errors.Wrapf(err, "schedule %s failed", sched.Name))
-			}
-		}
-
-		return nil, nil
 	}
 }
 
