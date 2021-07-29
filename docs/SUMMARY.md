@@ -1,7 +1,9 @@
 # Table of contents
 
 * [Welcome](README.md)
-* [Get started](getstarted.md)
+* [Get Started](getstarted.md)
+  * [Creating a Project](introduction/create-a-project.md)
+  * [Building and Running](introduction/building-and-running.md)
 
 ## Concepts
 
