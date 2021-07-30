@@ -36,8 +36,8 @@ subo dev
 
 This creates a Docker container running Atmo, copies your `runnables.wasm.zip` into the container, and starts an Atmo server listening on `http://localhost:8080`.
 
-You can test the `/hello` route by sending a POST request to it:
+You can test the `/hello` route by sending a POST request with a body to it:
 
 ```
-curl -X POST http://localhost:8080/hello
+curl localhost:8080/hello -d 'from the Kármán line!'
 ```

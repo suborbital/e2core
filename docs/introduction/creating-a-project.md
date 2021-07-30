@@ -12,6 +12,7 @@ The project contains two important things: a `Directive.yaml` file, and an examp
 
 In the Directive file, you'll see a handler set up for you that serves the `POST /hello` route using the `helloworld` Runnable:
 
+{% code title="Directive.yaml" %}
 ```yaml
 # the Directive is a complete description of your application, including all of its business logic.
 # appVersion should be updated for each new deployment of your app.
@@ -29,3 +30,4 @@ handlers:
     steps:
       - fn: helloworld
 ```
+{% endcode %}
