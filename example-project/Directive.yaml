@@ -9,7 +9,7 @@ connections:
 authentication:
   domains:
     api.github.com:
-      headerType: bearer
+      headertype: bearer
       value: env(GITHUB_TOKEN)
 
 handlers:
@@ -60,7 +60,7 @@ handlers:
     resource: /github
     method: GET
     steps:
-      - as-graphql
+      - fn: as-graphql
   
   - type: stream
     resource: /stream
