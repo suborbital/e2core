@@ -108,6 +108,18 @@ func (b *BundleSource) Schedules() []directive.Schedule {
 	return b.bundle.Directive.Schedules
 }
 
+// Connections returns the Connections for the app
+func (b *BundleSource) Connections() *directive.Connections {
+	b.lock.RLock()
+	defer b.lock.RUnlock()
+
+	if b.bundle == nil {
+		return &directive.Connections{}
+	}
+
+	return b.bundle.Directive.Connections
+}
+
 // File returns a requested file
 func (b *BundleSource) File(filename string) ([]byte, error) {
 	b.lock.RLock()

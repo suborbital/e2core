@@ -98,6 +98,11 @@ func (h *HeadlessBundleSource) Schedules() []directive.Schedule {
 	return []directive.Schedule{}
 }
 
+// Connections returns the Connections for the app
+func (h *HeadlessBundleSource) Connections() *directive.Connections {
+	return &directive.Connections{}
+}
+
 // File returns a requested file
 func (h *HeadlessBundleSource) File(filename string) ([]byte, error) {
 	if h.bundlesource.bundle == nil {

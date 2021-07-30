@@ -40,6 +40,7 @@ func (a *AppSourceVKRouter) GenerateRouter() (*vk.Router, error) {
 	router.GET("/runnable/:ident/:namespace/:fn/:version", a.FindRunnableHandler())
 	router.GET("/handlers", a.HandlersHandler())
 	router.GET("/schedules", a.SchedulesHandler())
+	router.GET("/connections", a.ConnectionsHandler())
 	router.GET("/file/:filename", a.FileHandler())
 	router.GET("/meta", a.MetaHandler())
 
@@ -89,6 +90,13 @@ func (a *AppSourceVKRouter) HandlersHandler() vk.HandlerFunc {
 func (a *AppSourceVKRouter) SchedulesHandler() vk.HandlerFunc {
 	return func(r *http.Request, ctx *vk.Ctx) (interface{}, error) {
 		return a.appSource.Schedules(), nil
+	}
+}
+
+// ConnectionsHandler is a handler to fetch Handlers
+func (a *AppSourceVKRouter) ConnectionsHandler() vk.HandlerFunc {
+	return func(r *http.Request, ctx *vk.Ctx) (interface{}, error) {
+		return a.appSource.Connections(), nil
 	}
 }
 

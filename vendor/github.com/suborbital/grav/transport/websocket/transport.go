@@ -42,6 +42,11 @@ func New() *Transport {
 	return t
 }
 
+// Type returns the transport's type
+func (t *Transport) Type() grav.TransportType {
+	return grav.TransportTypeMesh
+}
+
 // Setup sets up the transport
 func (t *Transport) Setup(opts *grav.TransportOpts, connFunc grav.ConnectFunc, findFunc grav.FindFunc) error {
 	// independent serving is not yet implemented, use the HTTP handler
@@ -76,6 +81,11 @@ func (t *Transport) CreateConnection(endpoint string) (grav.Connection, error) {
 	}
 
 	return conn, nil
+}
+
+// ConnectBridgeTopic connects to a topic if the transport is a bridge
+func (t *Transport) ConnectBridgeTopic(topic string) (grav.TopicConnection, error) {
+	return nil, grav.ErrNotBridgeTransport
 }
 
 // HTTPHandlerFunc returns an http.HandlerFunc for incoming connections

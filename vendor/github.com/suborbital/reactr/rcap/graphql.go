@@ -73,7 +73,7 @@ func (g *defaultGraphQLClient) Do(auth AuthProvider, endpoint, query string) (*G
 	req.Header.Add("Content-Type", "application/json")
 
 	authHeader := auth.HeaderForDomain(endpointURL.Host)
-	if authHeader.Value != "" {
+	if authHeader != nil && authHeader.Value != "" {
 		req.Header.Add("Authorization", fmt.Sprintf("%s %s", authHeader.HeaderType, authHeader.Value))
 	}
 

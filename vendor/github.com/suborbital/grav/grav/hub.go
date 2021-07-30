@@ -9,26 +9,30 @@ import (
 
 // hub is responsible for coordinating the transport and discovery plugins
 type hub struct {
-	nodeUUID  string
-	transport Transport
-	discovery Discovery
-	pod       *Pod
-	log       *vlog.Logger
+	nodeUUID    string
+	transport   Transport
+	discovery   Discovery
+	log         *vlog.Logger
+	pod         *Pod
+	connectFunc func() *Pod
 
-	connections map[string]Connection
+	connections      map[string]Connection
+	topicConnections map[string]TopicConnection
 
 	lock sync.RWMutex
 }
 
-func initHub(nodeUUID string, options *Options, tspt Transport, dscv Discovery, pod *Pod) *hub {
+func initHub(nodeUUID string, options *Options, tspt Transport, dscv Discovery, connectFunc func() *Pod) *hub {
 	h := &hub{
-		nodeUUID:    nodeUUID,
-		transport:   tspt,
-		discovery:   dscv,
-		pod:         pod,
-		log:         options.Logger,
-		connections: map[string]Connection{},
-		lock:        sync.RWMutex{},
+		nodeUUID:         nodeUUID,
+		transport:        tspt,
+		discovery:        dscv,
+		log:              options.Logger,
+		pod:              connectFunc(),
+		connectFunc:      connectFunc,
+		connections:      map[string]Connection{},
+		topicConnections: map[string]TopicConnection{},
+		lock:             sync.RWMutex{},
 	}
 
 	// start transport, then discovery if each have been configured (can have transport but no discovery)
@@ -41,7 +45,7 @@ func initHub(nodeUUID string, options *Options, tspt Transport, dscv Discovery, 
 		}
 
 		// setup messages to be sent to all active connections
-		pod.On(h.outgoingMessageHandler())
+		h.pod.On(h.outgoingMessageHandler())
 
 		go func() {
 			if err := h.transport.Setup(transportOpts, h.handleIncomingConnection, h.findConnection); err != nil {
@@ -96,6 +100,10 @@ func (h *hub) connectEndpoint(endpoint, uuid string) error {
 		return ErrTransportNotConfigured
 	}
 
+	if h.transport.Type() == TransportTypeBridge {
+		return ErrBridgeOnlyTransport
+	}
+
 	h.log.Debug("connecting to endpoint", endpoint)
 
 	conn, err := h.transport.CreateConnection(endpoint)
@@ -104,6 +112,28 @@ func (h *hub) connectEndpoint(endpoint, uuid string) error {
 	}
 
 	h.setupOutgoingConnection(conn, uuid)
+
+	return nil
+}
+
+// connectBridgeTopic creates a new outgoing connection
+func (h *hub) connectBridgeTopic(topic string) error {
+	if h.transport == nil {
+		return ErrTransportNotConfigured
+	}
+
+	if h.transport.Type() != TransportTypeBridge {
+		return ErrNotBridgeTransport
+	}
+
+	h.log.Debug("connecting to topic", topic)
+
+	conn, err := h.transport.ConnectBridgeTopic(topic)
+	if err != nil {
+		return errors.Wrap(err, "failed to transport.CreateConnection")
+	}
+
+	h.addTopicConnection(conn, topic)
 
 	return nil
 }
@@ -215,6 +245,17 @@ func (h *hub) addConnection(connection Connection, uuid string) {
 	connection.Start(h.incomingMessageHandler(uuid))
 
 	h.connections[uuid] = connection
+}
+
+func (h *hub) addTopicConnection(connection TopicConnection, topic string) {
+	h.lock.Lock()
+	defer h.lock.Unlock()
+
+	h.log.Debug("adding bridge connection for", topic)
+
+	connection.Start(h.connectFunc())
+
+	h.topicConnections[topic] = connection
 }
 
 func (h *hub) replaceConnection(newConnection Connection, uuid string) {

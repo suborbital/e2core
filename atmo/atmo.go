@@ -62,12 +62,14 @@ func (a *Atmo) Start() error {
 		return errors.Wrap(err, "failed to coordinator.Start")
 	}
 
-	// get information from the AppSource about the
-	// handlers and create a router from it
-	router := a.coordinator.GenerateRouter()
+	// establish connections defined by the app
+	a.coordinator.CreateConnections()
+
+	// mount and set up the app's handlers
+	router := a.coordinator.SetupHandlers()
 	a.server.SwapRouter(router)
 
-	// mount the Schedules defined in the App
+	// mount the schedules defined in the App
 	a.coordinator.SetSchedules()
 
 	if err := a.server.Start(); err != nil {
@@ -108,7 +110,7 @@ func (a *Atmo) inspectRequest(r http.Request) {
 
 		// re-generate the Router which should now include
 		// the new function as a handler
-		newRouter := a.coordinator.GenerateRouter()
+		newRouter := a.coordinator.SetupHandlers()
 		a.server.SwapRouter(newRouter)
 
 		a.options.Logger.Debug("app sync and router swap completed")
