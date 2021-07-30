@@ -25,9 +25,9 @@ type Directive struct {
 	AtmoVersion string       `yaml:"atmoVersion" json:"atmoVersion"`
 	Headless    bool         `yaml:"headless,omitempty" json:"headless,omitempty"`
 	Runnables   []Runnable   `yaml:"runnables" json:"runnables"`
+	Connections *Connections `yaml:"connections,omitempty" json:"connections,omitempty"`
 	Handlers    []Handler    `yaml:"handlers,omitempty" json:"handlers,omitempty"`
 	Schedules   []Schedule   `yaml:"schedules,omitempty" json:"schedules,omitempty"`
-	Connections *Connections `yaml:"connections,omitempty" json:"connections,omitempty"`
 }
 
 // Handler represents the mapping between an input and a composition of functions

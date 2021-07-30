@@ -2,6 +2,10 @@ identifier: com.suborbital.test
 appVersion: v0.0.1
 atmoVersion: v0.2.3
 
+connections:
+  nats:
+    serverAddress: nats://localhost:4222
+
 handlers:
   - type: request
     resource: /hello
@@ -48,6 +52,12 @@ handlers:
   
   - type: stream
     resource: /stream
+    steps:
+      - fn: helloworld-rs
+  
+  - type: stream
+    source: nats
+    resource: grav.default
     steps:
       - fn: helloworld-rs
 
