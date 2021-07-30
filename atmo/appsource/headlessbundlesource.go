@@ -99,8 +99,17 @@ func (h *HeadlessBundleSource) Schedules() []directive.Schedule {
 }
 
 // Connections returns the Connections for the app
-func (h *HeadlessBundleSource) Connections() *directive.Connections {
-	return &directive.Connections{}
+func (h *HeadlessBundleSource) Connections() directive.Connections {
+	return directive.Connections{}
+}
+
+// Authentication returns the Authentication for the app
+func (b *HeadlessBundleSource) Authentication() directive.Authentication {
+	if b.bundlesource.bundle == nil {
+		return directive.Authentication{}
+	}
+
+	return b.bundlesource.Authentication()
 }
 
 // File returns a requested file

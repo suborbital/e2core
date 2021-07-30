@@ -123,13 +123,23 @@ func (h *HTTPSource) Schedules() []directive.Schedule {
 }
 
 // Connections returns the Connections for the app
-func (h *HTTPSource) Connections() *directive.Connections {
-	connections := &directive.Connections{}
-	if _, err := h.get("/connections", connections); err != nil {
+func (h *HTTPSource) Connections() directive.Connections {
+	connections := directive.Connections{}
+	if _, err := h.get("/connections", &connections); err != nil {
 		h.opts.Logger.Error(errors.Wrap(err, "failed to get /connections"))
 	}
 
 	return connections
+}
+
+// Authentication returns the Authentication for the app
+func (h *HTTPSource) Authentication() directive.Authentication {
+	authentication := directive.Authentication{}
+	if _, err := h.get("/authentication", &authentication); err != nil {
+		h.opts.Logger.Error(errors.Wrap(err, "failed to get /authentication"))
+	}
+
+	return authentication
 }
 
 // File returns a requested file

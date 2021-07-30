@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/suborbital/atmo/fqfn"
+	"github.com/suborbital/reactr/rcap"
 	"golang.org/x/mod/semver"
 	"gopkg.in/yaml.v2"
 )
@@ -20,14 +21,15 @@ const (
 // Directive describes a set of functions and a set of handlers
 // that take an input, and compose a set of functions to handle it
 type Directive struct {
-	Identifier  string       `yaml:"identifier" json:"identifier"`
-	AppVersion  string       `yaml:"appVersion" json:"appVersion"`
-	AtmoVersion string       `yaml:"atmoVersion" json:"atmoVersion"`
-	Headless    bool         `yaml:"headless,omitempty" json:"headless,omitempty"`
-	Runnables   []Runnable   `yaml:"runnables" json:"runnables"`
-	Connections *Connections `yaml:"connections,omitempty" json:"connections,omitempty"`
-	Handlers    []Handler    `yaml:"handlers,omitempty" json:"handlers,omitempty"`
-	Schedules   []Schedule   `yaml:"schedules,omitempty" json:"schedules,omitempty"`
+	Identifier     string          `yaml:"identifier" json:"identifier"`
+	AppVersion     string          `yaml:"appVersion" json:"appVersion"`
+	AtmoVersion    string          `yaml:"atmoVersion" json:"atmoVersion"`
+	Headless       bool            `yaml:"headless,omitempty" json:"headless,omitempty"`
+	Runnables      []Runnable      `yaml:"runnables" json:"runnables"`
+	Connections    *Connections    `yaml:"connections,omitempty" json:"connections,omitempty"`
+	Authentication *Authentication `yaml:"authentication,omitempty" json:"authentication,omitempty"`
+	Handlers       []Handler       `yaml:"handlers,omitempty" json:"handlers,omitempty"`
+	Schedules      []Schedule      `yaml:"schedules,omitempty" json:"schedules,omitempty"`
 }
 
 // Handler represents the mapping between an input and a composition of functions
@@ -97,6 +99,10 @@ type ForEach struct {
 // Connections describes connections
 type Connections struct {
 	NATS *NATSConnection `yaml:"nats,omitempty" json:"nats,omitempty"`
+}
+
+type Authentication struct {
+	Domains map[string]rcap.AuthHeader `yaml:"domains,omitempty" json:"domains,omitempty"`
 }
 
 func (d *Directive) FindRunnable(name string) *Runnable {
@@ -201,6 +207,20 @@ func (d *Directive) Validate() error {
 		if d.Connections.NATS != nil {
 			if err := d.Connections.NATS.validate(); err != nil {
 				problems.add(err)
+			}
+		}
+	}
+
+	if d.Authentication != nil {
+		if d.Authentication.Domains != nil {
+			for d, h := range d.Authentication.Domains {
+				if h.HeaderType == "" {
+					h.HeaderType = "bearer"
+				}
+
+				if h.Value == "" {
+					problems.add(fmt.Errorf("authentication for domain %s has an empty value", d))
+				}
 			}
 		}
 	}
