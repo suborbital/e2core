@@ -6,7 +6,7 @@ When a Runnable is handling a particular request, Atmo binds that request to the
 
 The Runnable API is provided via a library for each of the supported languages, and simply needs to be imported to turn your module into a Runnable. `subo` will configure all of this on your behalf.
 
-The first and most basic part of the Runnable API is the `Runnable` interface \(also known as a Rust trait or Swift protocol\). Every Runnable you write will provide an instance of an object that conforms to this interface. It is very simple, and only requires on method, `run`.
+The first and most basic part of the Runnable API is the `Runnable` interface \(also known as a Rust trait or Swift protocol\). Every Runnable you write will provide an instance of an object that conforms to this interface. It is very simple, and only requires one method, `run`.
 
 {% hint style="success" %}
 The Rust Runnable API crate is considered stable
