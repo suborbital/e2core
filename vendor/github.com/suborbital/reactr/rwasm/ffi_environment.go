@@ -204,7 +204,6 @@ func (w *wasmEnvironment) internals() (*wasmer.Module, *wasmer.Store, *wasmer.Im
 			returnError(),
 			getFFIResult(),
 			fetchURL(),
-			graphQLQuery(),
 			cacheSet(),
 			cacheGet(),
 			logMsg(),

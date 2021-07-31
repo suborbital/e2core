@@ -1,6 +1,6 @@
 identifier: com.suborbital.test
 appVersion: v0.0.1
-atmoVersion: v0.2.3
+atmoVersion: v0.0.6
 
 handlers:
   - type: request
@@ -45,16 +45,11 @@ handlers:
           in: set-array
           fn: run-each
           as: output
-  
-  - type: stream
-    resource: /stream
-    steps:
-      - fn: helloworld-rs
 
 # uncomment to try out scheduled jobs!
-# schedules:
-#   - name: run-every-10
-#     every:
-#       seconds: 30
-#     steps:
-#       - fn: log-it
+schedules:
+  - name: run-every-10
+    every:
+      seconds: 30
+    steps:
+      - fn: log-it
