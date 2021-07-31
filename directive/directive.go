@@ -12,6 +12,7 @@ import (
 // InputTypeRequest and others represent consts for Directives
 const (
 	InputTypeRequest = "request"
+	InputTypeStream  = "stream"
 )
 
 // Directive describes a set of functions and a set of handlers
@@ -52,6 +53,7 @@ type ScheduleEvery struct {
 // Input represents an input source
 type Input struct {
 	Type     string `yaml:"type" json:"type"`
+	Source   string `yaml:"source,omitempty" json:"source,omitempty"`
 	Method   string `yaml:"method" json:"method"`
 	Resource string `yaml:"resource" json:"resource"`
 }
@@ -185,8 +187,8 @@ func (d *Directive) Validate() error {
 	}
 
 	for _, h := range d.Handlers {
-		if h.Input.Type == "" {
-			problems.add(fmt.Errorf("handler for resource %s missing type", h.Input.Resource))
+		if h.Input.Type != InputTypeRequest && h.Input.Type != InputTypeStream {
+			problems.add(fmt.Errorf("handler for resource %s has invalid type, must be 'request' or 'stream'", h.Input.Resource))
 		}
 
 		if h.Input.Resource == "" {

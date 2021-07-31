@@ -43,7 +43,7 @@ func TestBasicSequence(t *testing.T) {
 		},
 	}
 
-	seq := newSequence(steps, coord.grav.Connect, &vk.Ctx{Log: coord.log})
+	seq := newSequence(steps, coord.grav.Connect, vk.NewCtx(coord.log, nil, nil))
 
 	req := &request.CoordinatedRequest{
 		Method: "GET",
@@ -83,7 +83,7 @@ func TestGroupSequence(t *testing.T) {
 		},
 	}
 
-	seq := newSequence(steps, coord.grav.Connect, &vk.Ctx{Log: coord.log})
+	seq := newSequence(steps, coord.grav.Connect, vk.NewCtx(coord.log, nil, nil))
 
 	req := &request.CoordinatedRequest{
 		Method: "GET",
@@ -133,7 +133,7 @@ func TestAsOnErrContinueSequence(t *testing.T) {
 		},
 	}
 
-	seq := newSequence(steps, coord.grav.Connect, &vk.Ctx{Log: coord.log})
+	seq := newSequence(steps, coord.grav.Connect, vk.NewCtx(coord.log, nil, nil))
 
 	req := &request.CoordinatedRequest{
 		Method: "GET",
@@ -175,7 +175,7 @@ func TestAsOnErrReturnSequence(t *testing.T) {
 		},
 	}
 
-	seq := newSequence(steps, coord.grav.Connect, &vk.Ctx{Log: coord.log})
+	seq := newSequence(steps, coord.grav.Connect, vk.NewCtx(coord.log, nil, nil))
 
 	req := &request.CoordinatedRequest{
 		Method: "GET",
@@ -216,7 +216,7 @@ func TestWithSequence(t *testing.T) {
 		},
 	}
 
-	seq := newSequence(steps, coord.grav.Connect, &vk.Ctx{Log: coord.log})
+	seq := newSequence(steps, coord.grav.Connect, vk.NewCtx(coord.log, nil, nil))
 
 	req := &request.CoordinatedRequest{
 		Method: "GET",
@@ -259,7 +259,7 @@ func TestForEachSequence(t *testing.T) {
 		},
 	}
 
-	seq := newSequence(steps, coord.grav.Connect, &vk.Ctx{Log: coord.log})
+	seq := newSequence(steps, coord.grav.Connect, vk.NewCtx(coord.log, nil, nil))
 
 	req := &request.CoordinatedRequest{
 		Method: "GET",

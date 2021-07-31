@@ -2,7 +2,6 @@ package rwasm
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/suborbital/reactr/request"
 	"github.com/suborbital/reactr/rt"
@@ -51,11 +50,10 @@ func (w *Runner) Run(job rt.Job, ctx *rt.Ctx) (interface{}, error) {
 		jobBytes = bytes
 	} else {
 		// if the job is a request, add it to the Ctx and
-		// set the job input to be a summary of the request
+		// set the job input to be the body of the request
 		ctx.UseRequest(req)
 
-		input := fmt.Sprintf("%s %s %s", req.Method, req.URL, req.ID)
-		jobBytes = []byte(input)
+		jobBytes = req.Body
 	}
 
 	var output []byte
@@ -118,7 +116,7 @@ func (w *Runner) Run(job rt.Job, ctx *rt.Ctx) (interface{}, error) {
 	return output, nil
 }
 
-// OnChange evt ChangeEventruns when a worker starts using this Runnable
+// OnChange runs when a worker starts using this Runnable
 func (w *Runner) OnChange(evt rt.ChangeEvent) error {
 	if evt == rt.ChangeTypeStart {
 		if err := w.env.addInstance(); err != nil {
