@@ -39,7 +39,17 @@ func Bundle(r *rt.Reactr, bundle *bundle.Bundle) error {
 
 	var authConfig *rcap.AuthProviderConfig
 	if bundle.Directive.Authentication != nil && bundle.Directive.Authentication.Domains != nil {
-		authConfig = &rcap.AuthProviderConfig{Headers: bundle.Directive.Authentication.Domains}
+		// need to convert the Directive headers to rcap headers
+		// rcap should add yaml tags so we don't need this
+		headers := map[string]rcap.AuthHeader{}
+		for k, v := range bundle.Directive.Authentication.Domains {
+			headers[k] = rcap.AuthHeader{
+				HeaderType: v.HeaderType,
+				Value:      v.Value,
+			}
+		}
+
+		authConfig = &rcap.AuthProviderConfig{Headers: headers}
 	}
 
 	if err := Runnables(r, bundle.Directive.Runnables, authConfig, bundle.StaticFile, true); err != nil {

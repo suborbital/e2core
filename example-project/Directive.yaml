@@ -9,7 +9,7 @@ connections:
 authentication:
   domains:
     api.github.com:
-      headertype: bearer
+      headerType: bearer
       value: env(GITHUB_TOKEN)
 
 handlers:
@@ -72,6 +72,7 @@ handlers:
     resource: grav.default
     steps:
       - fn: helloworld-rs
+    respondTo: grav.reply
 
 # uncomment to try out scheduled jobs!
 # schedules:

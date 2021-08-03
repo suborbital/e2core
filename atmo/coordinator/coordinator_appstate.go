@@ -11,7 +11,17 @@ func (c *Coordinator) SyncAppState() {
 
 	var authConfig *rcap.AuthProviderConfig
 	if auth := c.App.Authentication(); auth.Domains != nil {
-		authConfig = &rcap.AuthProviderConfig{Headers: auth.Domains}
+		// need to convert the Directive headers to rcap headers
+		// rcap should add yaml tags so we don't need this
+		headers := map[string]rcap.AuthHeader{}
+		for k, v := range auth.Domains {
+			headers[k] = rcap.AuthHeader{
+				HeaderType: v.HeaderType,
+				Value:      v.Value,
+			}
+		}
+
+		authConfig = &rcap.AuthProviderConfig{Headers: headers}
 	}
 
 	// mount all of the Wasm Runnables into the Reactr instance
