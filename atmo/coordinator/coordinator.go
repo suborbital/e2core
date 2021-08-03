@@ -138,6 +138,7 @@ func (c *Coordinator) CreateConnections() {
 			c.log.Error(errors.Wrap(err, "failed to nats.New for NATS connection"))
 		} else {
 			g := grav.New(
+				grav.UseLogger(c.log.CreateScoped(nil)), // using a scoped logger as using it directly seems to cause issues
 				grav.UseTransport(gnats),
 			)
 

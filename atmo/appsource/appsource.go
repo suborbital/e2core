@@ -30,7 +30,9 @@ type AppSource interface {
 	// Schedules returns the requested schedules for the app
 	Schedules() []directive.Schedule
 	// Connections returns the connections needed for the app
-	Connections() *directive.Connections
+	Connections() directive.Connections
+	// Authentication provides any auth headers or metadata for the app
+	Authentication() directive.Authentication
 	// File is a source of files for the Runnables
 	// TODO: refactor this into a set of capabilities / profiles
 	File(string) ([]byte, error)

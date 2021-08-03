@@ -6,6 +6,12 @@ connections:
   nats:
     serverAddress: nats://localhost:4222
 
+authentication:
+  domains:
+    api.github.com:
+      headerType: bearer
+      value: env(GITHUB_TOKEN)
+
 handlers:
   - type: request
     resource: /hello
@@ -50,6 +56,12 @@ handlers:
           fn: run-each
           as: output
   
+  - type: request
+    resource: /github
+    method: GET
+    steps:
+      - fn: as-graphql
+  
   - type: stream
     resource: /stream
     steps:
@@ -60,6 +72,7 @@ handlers:
     resource: grav.default
     steps:
       - fn: helloworld-rs
+    respondTo: grav.reply
 
 # uncomment to try out scheduled jobs!
 # schedules:

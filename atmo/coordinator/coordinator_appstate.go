@@ -3,15 +3,31 @@ package coordinator
 import (
 	"github.com/pkg/errors"
 	"github.com/suborbital/atmo/bundle/load"
+	"github.com/suborbital/reactr/rcap"
 )
 
 func (c *Coordinator) SyncAppState() {
 	c.log.Debug("syncing AppSource state")
 
+	var authConfig *rcap.AuthProviderConfig
+	if auth := c.App.Authentication(); auth.Domains != nil {
+		// need to convert the Directive headers to rcap headers
+		// rcap should add yaml tags so we don't need this
+		headers := map[string]rcap.AuthHeader{}
+		for k, v := range auth.Domains {
+			headers[k] = rcap.AuthHeader{
+				HeaderType: v.HeaderType,
+				Value:      v.Value,
+			}
+		}
+
+		authConfig = &rcap.AuthProviderConfig{Headers: headers}
+	}
+
 	// mount all of the Wasm Runnables into the Reactr instance
 	// pass 'false' for registerSimpleName since we'll only ever call
 	// functions by their FQFNs
-	if err := load.Runnables(c.reactr, c.App.Runnables(), c.App.File, false); err != nil {
+	if err := load.Runnables(c.reactr, c.App.Runnables(), authConfig, c.App.File, false); err != nil {
 		c.log.Error(errors.Wrap(err, "failed to load.Runnables"))
 	}
 

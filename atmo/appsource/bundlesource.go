@@ -109,15 +109,27 @@ func (b *BundleSource) Schedules() []directive.Schedule {
 }
 
 // Connections returns the Connections for the app
-func (b *BundleSource) Connections() *directive.Connections {
+func (b *BundleSource) Connections() directive.Connections {
 	b.lock.RLock()
 	defer b.lock.RUnlock()
 
 	if b.bundle == nil {
-		return &directive.Connections{}
+		return directive.Connections{}
 	}
 
-	return b.bundle.Directive.Connections
+	return *b.bundle.Directive.Connections
+}
+
+// Authentication returns the Authentication for the app
+func (b *BundleSource) Authentication() directive.Authentication {
+	b.lock.RLock()
+	defer b.lock.RUnlock()
+
+	if b.bundle == nil {
+		return directive.Authentication{}
+	}
+
+	return *b.bundle.Directive.Authentication
 }
 
 // File returns a requested file

@@ -11,8 +11,14 @@ import (
 	"github.com/suborbital/vektor/vk"
 )
 
+type messageScope struct {
+	MessageUUID string `json:"messageUUID"`
+}
+
 func (c *Coordinator) streamConnectionForDirectiveHandler(handler directive.Handler) {
 	handlerIdent := fmt.Sprintf("%s:%s", handler.Input.Source, handler.Input.Resource)
+
+	c.log.Debug("setting up stream connection for", handlerIdent)
 
 	connection, exists := c.connections[handler.Input.Source]
 	if !exists {
@@ -25,6 +31,14 @@ func (c *Coordinator) streamConnectionForDirectiveHandler(handler directive.Hand
 		return
 	}
 
+	if handler.RespondTo != "" {
+		c.log.Debug("setting up respondTo stream connection for", handler.RespondTo)
+		if err := connection.ConnectBridgeTopic(handler.RespondTo); err != nil {
+			c.log.Error(errors.Wrapf(err, "failed to ConnectBridgeTopic for resource %s's respondTo topic %s", handler.Input.Resource, handler.RespondTo))
+			return
+		}
+	}
+
 	existingPod, exists := c.handlerPods[handlerIdent]
 	if exists {
 		existingPod.Disconnect()
@@ -33,6 +47,11 @@ func (c *Coordinator) streamConnectionForDirectiveHandler(handler directive.Hand
 
 	pod := connection.Connect()
 	pod.OnType(handler.Input.Resource, func(msg grav.Message) error {
+		ctx := vk.NewCtx(c.log, nil, nil)
+		ctx.UseScope(messageScope{msg.UUID()})
+
+		ctx.Log.Info("handling message", msg.UUID(), "for handler", handlerIdent)
+
 		req := &request.CoordinatedRequest{
 			Method:      atmoMethodStream,
 			URL:         handler.Input.Resource,
@@ -45,7 +64,7 @@ func (c *Coordinator) streamConnectionForDirectiveHandler(handler directive.Hand
 		}
 
 		// a sequence executes the handler's steps and manages its state
-		seq := newSequence(handler.Steps, c.grav.Connect, vk.NewCtx(c.log, nil, nil))
+		seq := newSequence(handler.Steps, c.grav.Connect, ctx)
 
 		seqState, err := seq.exec(req)
 		if err != nil {

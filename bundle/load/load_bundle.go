@@ -37,7 +37,22 @@ func Bundle(r *rt.Reactr, bundle *bundle.Bundle) error {
 		return errors.Wrap(err, "failed to Validate bundle directive")
 	}
 
-	if err := Runnables(r, bundle.Directive.Runnables, bundle.StaticFile, true); err != nil {
+	var authConfig *rcap.AuthProviderConfig
+	if bundle.Directive.Authentication != nil && bundle.Directive.Authentication.Domains != nil {
+		// need to convert the Directive headers to rcap headers
+		// rcap should add yaml tags so we don't need this
+		headers := map[string]rcap.AuthHeader{}
+		for k, v := range bundle.Directive.Authentication.Domains {
+			headers[k] = rcap.AuthHeader{
+				HeaderType: v.HeaderType,
+				Value:      v.Value,
+			}
+		}
+
+		authConfig = &rcap.AuthProviderConfig{Headers: headers}
+	}
+
+	if err := Runnables(r, bundle.Directive.Runnables, authConfig, bundle.StaticFile, true); err != nil {
 		return errors.Wrap(err, "failed to ModuleRefsIntoInstance")
 	}
 
@@ -46,7 +61,7 @@ func Bundle(r *rt.Reactr, bundle *bundle.Bundle) error {
 
 // Runnables loads a set of WasmModuleRefs into a Reactr instance
 // if you're trying to use this directly, you probably want BundleFromPath or Bundle instead
-func Runnables(r *rt.Reactr, runnables []directive.Runnable, staticFileFunc rcap.StaticFileFunc, registerSimpleName bool) error {
+func Runnables(r *rt.Reactr, runnables []directive.Runnable, authConfig *rcap.AuthProviderConfig, staticFileFunc rcap.StaticFileFunc, registerSimpleName bool) error {
 	for i, runnable := range runnables {
 		if runnable.ModuleRef == nil {
 			return fmt.Errorf("missing ModuleRef for Runnable %s", runnable.Name)
@@ -61,10 +76,14 @@ func Runnables(r *rt.Reactr, runnables []directive.Runnable, staticFileFunc rcap
 			return rwasm.NewRunnerWithRef(runnables[i].ModuleRef)
 		}
 
-		// take the default capabilites from the Reactr instance and
-		// set our own FileSource that is connected to the Bundle's FileFunc
+		// take the default capabilites from the Reactr instance
 		caps := r.DefaultCaps()
+		// set our own FileSource that is connected to the Bundle's FileFunc
 		caps.FileSource = rcap.DefaultFileSource(staticFileFunc)
+		// set our own auth provider based on the Directive
+		if authConfig != nil {
+			caps.Auth = rcap.DefaultAuthProvider(authConfig)
+		}
 
 		// TODO: in the future, this should be updated to
 		// de-register a Runnable if one with the same name

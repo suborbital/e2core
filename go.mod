@@ -8,7 +8,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/sethvargo/go-envconfig v0.3.2
 	github.com/spf13/cobra v1.1.3
-	github.com/suborbital/grav v0.4.0
+	github.com/suborbital/grav v0.4.1
 	github.com/suborbital/reactr v0.11.0
 	github.com/suborbital/subo v0.0.18
 	github.com/suborbital/vektor v0.4.1
