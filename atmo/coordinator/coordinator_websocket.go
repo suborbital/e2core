@@ -15,7 +15,6 @@ func (c *Coordinator) websocketHandlerForDirectiveHandler(handler directive.Hand
 	upgrader := websocket.Upgrader{} // use default options
 
 	return func(w http.ResponseWriter, r *http.Request) {
-
 		conn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
 			c.log.Error(errors.Wrap(err, "failed to Upgrade connection"))
@@ -35,6 +34,9 @@ func (c *Coordinator) websocketHandlerForDirectiveHandler(handler directive.Hand
 			}
 
 			ctx := vk.NewCtx(c.log, nil, nil)
+			ctx.UseScope(messageScope{ctx.RequestID()})
+
+			ctx.Log.Info("handling message", ctx.RequestID(), "from handler", handler.Input.Resource)
 
 			//a sequence executes the handler's steps and manages its state
 			seq := newSequence(handler.Steps, c.grav.Connect, ctx)
