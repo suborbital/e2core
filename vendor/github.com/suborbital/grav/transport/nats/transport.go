@@ -87,7 +87,7 @@ func (t *Transport) ConnectBridgeTopic(topic string) (grav.TopicConnection, erro
 func (c *Conn) Start(pod *grav.Pod) {
 	c.pod = pod
 
-	c.pod.On(func(msg grav.Message) error {
+	c.pod.OnType(c.topic, func(msg grav.Message) error {
 		msgBytes, err := msg.Marshal()
 		if err != nil {
 			return errors.Wrap(err, "failed to Marshal message")
