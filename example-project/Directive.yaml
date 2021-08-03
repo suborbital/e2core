@@ -50,9 +50,10 @@ handlers:
     method: POST
     steps:
       - fn: set-array
+        as: array
 
       - forEach:
-          in: set-array
+          in: array
           fn: run-each
           as: output
   
@@ -75,9 +76,9 @@ handlers:
     respondTo: grav.reply
 
 # uncomment to try out scheduled jobs!
-# schedules:
-#   - name: run-every-10
-#     every:
-#       seconds: 30
-#     steps:
-#       - fn: log-it
+schedules:
+  - name: run-every-30
+    every:
+      seconds: 30
+    steps:
+      - fn: log-it
