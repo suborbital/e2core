@@ -10,13 +10,19 @@ The following namespace methods are available:
 
 Retrieves the contents of the static file with the given name
 
+Rust:
+
 ```rust
 pub fn get_static(name: &str) -> Result<Vec<u8>, RunErr>
 ```
 
+AssemblyScript:
+
 ```typescript
 // not yet supported
 ```
+
+Swift:
 
 ```swift
 public func GetStaticFile(name: String) -> String

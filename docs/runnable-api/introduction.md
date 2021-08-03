@@ -25,8 +25,9 @@ The TypeScript/AssemblyScript Runnable API library is still considered experimen
 {% endhint %}
 
 In TypeScript/AssemblyScript:
+
 ```typescript
-export function run(input: ArrayBuffer): ArrayBuffer 
+export function run(input: ArrayBuffer): ArrayBuffer
 ```
 
 {% hint style="warning" %}
@@ -48,6 +49,7 @@ There are several namespaces available in the Runnable API, each are discussed i
 * [req](request.md)
 * [resp](response.md)
 * [http](http.md)
+* [graphql](graphql-requests.md)
 * [cache](cache.md)
 * [file](file.md)
 * [log](https://github.com/suborbital/atmo/tree/215d8b0db4673915847a5fd25d4d5c84b8d89186/docs/runnable-api/log.md)

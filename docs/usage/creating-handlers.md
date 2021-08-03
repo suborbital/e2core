@@ -1,7 +1,7 @@
 # Creating handlers
 
 {% hint style="info" %}
-If you haven't created a project yet, see [Get started](../getstarted.md) first.
+If you haven't created a project yet, see [Get started](../getstarted/) first.
 {% endhint %}
 
 Your project contains a `Directive.yaml` file that controls your entire application. The Directive is included in the Runnable Bundle used by Atmo to run your application.
@@ -36,11 +36,11 @@ There are three types of `step`. The first step is a `group`, meaning that all o
 
 The second step is a single `fn` , which calls a Runnable that uses the [Runnable API](../runnable-api/introduction.md) to make an HTTP request. The API is continually evolving to include more capabilities. In addition to making HTTP requests, it includes logging abilities and more.
 
-The third kind of step is `forEach`, which is discussed [later on](./foreach.md).
+The third kind of step is `forEach`, which is discussed [later on](foreach.md).
 
 The output of the final function in a handler is used as the response data for the request, by default. If you wish to use the output from a different function, you can include the `response` option in your handler, listing the name of the function to use as a response. If the final step is a group, then the `response` clause must be included.
 
 Your application can contain as many handlers as needed, and functions can be re-used among many handlers. Each Runnable in your project can be called by its name. The `subo` tool will validate your directive to ensure it is not calling any Runnables that don't exist in your project.
 
-The `as` and `with` clauses shown above will be discussed [next](./managing-state.md).
+The `as` and `with` clauses shown above will be discussed [next](managing-state.md).
 

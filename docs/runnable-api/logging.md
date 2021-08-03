@@ -8,15 +8,21 @@ The following namespace methods are available:
 
 ## Info
 
-Logs the message with the 'info' level
+Logs the message with the 'info' level:
+
+Rust:
 
 ```rust
 pub fn info(msg: &str)
 ```
 
+AssemblyScript:
+
 ```typescript
 function logInfo(msg: string): void
 ```
+
+Swift:
 
 ```swift
 public func LogInfo(msg: String)
@@ -24,15 +30,21 @@ public func LogInfo(msg: String)
 
 ## Warn
 
-Logs the message with the 'warn' level
+Logs the message with the 'warn' level:
+
+Rust:
 
 ```rust
 pub fn warn(msg: &str)
 ```
 
+AssemblyScript:
+
 ```typescript
 function logWarn(msg: string): void
 ```
+
+Swift:
 
 ```swift
 public func LogWarn(msg: String)
@@ -40,15 +52,21 @@ public func LogWarn(msg: String)
 
 ## Error
 
-Logs the message with the 'err' level
+Logs the message with the 'err' level:
+
+Rust:
 
 ```rust
 pub fn error(msg: &str)
 ```
 
+AssemblyScript:
+
 ```typescript
 function logErr(msg: string): void
 ```
+
+Swift:
 
 ```swift
 public func LogErr(msg: String)

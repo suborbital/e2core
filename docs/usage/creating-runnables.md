@@ -8,7 +8,7 @@ To install the tool, [visit the subo repository](https://github.com/suborbital/s
 Docker is used to build Runnables and run the Atmo development server.
 {% endhint %}
 
-### Create a Runnable
+## Create a Runnable
 
 You can create a new Runnable with subo:
 
