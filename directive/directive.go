@@ -11,27 +11,31 @@ import (
 
 // InputTypeRequest and others represent consts for Directives
 const (
-	InputTypeRequest = "request"
-	InputTypeStream  = "stream"
+	InputTypeRequest  = "request"
+	InputTypeStream   = "stream"
+	InputSourceServer = "server"
+	InputSourceNATS   = "nats"
 )
 
 // Directive describes a set of functions and a set of handlers
 // that take an input, and compose a set of functions to handle it
 type Directive struct {
-	Identifier  string     `yaml:"identifier"`
-	AppVersion  string     `yaml:"appVersion"`
-	AtmoVersion string     `yaml:"atmoVersion"`
-	Headless    bool       `yaml:"headless,omitempty"`
-	Runnables   []Runnable `yaml:"runnables"`
-	Handlers    []Handler  `yaml:"handlers,omitempty"`
-	Schedules   []Schedule `yaml:"schedules,omitempty"`
+	Identifier  string       `yaml:"identifier" json:"identifier"`
+	AppVersion  string       `yaml:"appVersion" json:"appVersion"`
+	AtmoVersion string       `yaml:"atmoVersion" json:"atmoVersion"`
+	Headless    bool         `yaml:"headless,omitempty" json:"headless,omitempty"`
+	Runnables   []Runnable   `yaml:"runnables" json:"runnables"`
+	Connections *Connections `yaml:"connections,omitempty" json:"connections,omitempty"`
+	Handlers    []Handler    `yaml:"handlers,omitempty" json:"handlers,omitempty"`
+	Schedules   []Schedule   `yaml:"schedules,omitempty" json:"schedules,omitempty"`
 }
 
 // Handler represents the mapping between an input and a composition of functions
 type Handler struct {
-	Input    Input        `yaml:"input,inline" json:"input"`
-	Steps    []Executable `yaml:"steps" json:"steps"`
-	Response string       `yaml:"response,omitempty" json:"response,omitempty"`
+	Input     Input        `yaml:"input,inline" json:"input"`
+	Steps     []Executable `yaml:"steps" json:"steps"`
+	Response  string       `yaml:"response,omitempty" json:"response,omitempty"`
+	RespondTo string       `yaml:"respondTo,omitempty" json:"respondTo,omitempty"`
 }
 
 // Schedule represents the mapping between an input and a composition of functions
@@ -81,12 +85,18 @@ type FnOnErr struct {
 	Other string         `yaml:"other,omitempty" json:"other,omitempty"`
 }
 
+// ForEach describes a forEach operator
 type ForEach struct {
 	In         string     `yaml:"in" json:"in"`
 	Fn         string     `yaml:"fn" json:"fn"`
 	As         string     `yaml:"as" json:"as"`
 	OnErr      *FnOnErr   `yaml:"onErr,omitempty" json:"onErr,omitempty"`
 	CallableFn CallableFn `yaml:"-" json:"callableFn"` // calculated during Validate
+}
+
+// Connections describes connections
+type Connections struct {
+	NATS *NATSConnection `yaml:"nats,omitempty" json:"nats,omitempty"`
 }
 
 func (d *Directive) FindRunnable(name string) *Runnable {
@@ -186,17 +196,42 @@ func (d *Directive) Validate() error {
 		}
 	}
 
-	for _, h := range d.Handlers {
+	// validate connections before handlers because we want to make sure they're all correct first
+	if d.Connections != nil {
+		if d.Connections.NATS != nil {
+			if err := d.Connections.NATS.validate(); err != nil {
+				problems.add(err)
+			}
+		}
+	}
+
+	for i, h := range d.Handlers {
 		if h.Input.Type != InputTypeRequest && h.Input.Type != InputTypeStream {
 			problems.add(fmt.Errorf("handler for resource %s has invalid type, must be 'request' or 'stream'", h.Input.Resource))
 		}
 
 		if h.Input.Resource == "" {
-			problems.add(fmt.Errorf("handler for resource %s missing resource", h.Input.Resource))
+			problems.add(fmt.Errorf("handler at position %d missing resource", i))
 		}
 
-		if h.Input.Type == InputTypeRequest && h.Input.Method == "" {
-			problems.add(fmt.Errorf("handler for resource %s is of type request, but does not specify a method", h.Input.Resource))
+		if h.Input.Type == InputTypeRequest {
+			if h.Input.Method == "" {
+				problems.add(fmt.Errorf("handler for resource %s has type 'request', but does not specify a method", h.Input.Resource))
+			}
+
+			if h.RespondTo != "" {
+				problems.add(fmt.Errorf("handler for resource %s has type 'request', but defines a 'respondTo' field, which only valid for type 'stream'", h.Input.Resource))
+			}
+		} else if h.Input.Type == InputTypeStream {
+			if h.Input.Source == "" || h.Input.Source == InputSourceServer {
+				// all good
+			} else if h.Input.Source == InputSourceNATS {
+				if d.Connections == nil || d.Connections.NATS == nil {
+					problems.add(fmt.Errorf("handler for resource %s references source %s that is not configured", h.Input.Resource, h.Input.Source))
+				}
+			} else {
+				problems.add(fmt.Errorf("handler for resource %s references source %s that does not exist", h.Input.Resource, h.Input.Source))
+			}
 		}
 
 		if len(h.Steps) == 0 {

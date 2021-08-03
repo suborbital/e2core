@@ -11,6 +11,7 @@ import (
 	"github.com/suborbital/atmo/directive"
 	"github.com/suborbital/grav/discovery/local"
 	"github.com/suborbital/grav/grav"
+	"github.com/suborbital/grav/transport/nats"
 	"github.com/suborbital/grav/transport/websocket"
 	"github.com/suborbital/reactr/rt"
 	"github.com/suborbital/vektor/vk"
@@ -19,6 +20,7 @@ import (
 
 const (
 	atmoMethodSchedule       = "SCHED"
+	atmoMethodStream         = "STREAM"
 	atmoHeadlessStateHeader  = "X-Atmo-State"
 	atmoHeadlessParamsHeader = "X-Atmo-Params"
 	atmoRequestIDHeader      = "X-Atmo-RequestID"
@@ -39,6 +41,9 @@ type Coordinator struct {
 
 	grav      *grav.Grav
 	transport *websocket.Transport
+
+	connections map[string]*grav.Grav
+	handlerPods map[string]*grav.Pod
 
 	listening sync.Map
 }
@@ -65,16 +70,18 @@ func New(appSource appsource.AppSource, options *options.Options) *Coordinator {
 		gravOpts = append(gravOpts, grav.UseDiscovery(d))
 	}
 
-	grav := grav.New(gravOpts...)
+	g := grav.New(gravOpts...)
 
 	c := &Coordinator{
-		App:       appSource,
-		opts:      options,
-		log:       options.Logger,
-		reactr:    reactr,
-		grav:      grav,
-		transport: transport,
-		listening: sync.Map{},
+		App:         appSource,
+		opts:        options,
+		log:         options.Logger,
+		reactr:      reactr,
+		grav:        g,
+		connections: map[string]*grav.Grav{},
+		handlerPods: map[string]*grav.Pod{},
+		transport:   transport,
+		listening:   sync.Map{},
 	}
 
 	return c
@@ -93,8 +100,8 @@ func (c *Coordinator) Start() error {
 	return nil
 }
 
-// GenerateRouter generates a Vektor Router for the app
-func (c *Coordinator) GenerateRouter() *vk.Router {
+// SetupHandlers configures all of the app's handlers and generates a Vektor Router for the app
+func (c *Coordinator) SetupHandlers() *vk.Router {
 	router := vk.NewRouter(c.log)
 
 	// set a middleware on the root RouteGroup
@@ -106,7 +113,11 @@ func (c *Coordinator) GenerateRouter() *vk.Router {
 		case directive.InputTypeRequest:
 			router.Handle(h.Input.Method, h.Input.Resource, c.vkHandlerForDirectiveHandler(h))
 		case directive.InputTypeStream:
-			router.HandleHTTP(http.MethodGet, h.Input.Resource, c.websocketHandlerForDirectiveHandler(h))
+			if h.Input.Source == "" || h.Input.Source == directive.InputSourceServer {
+				router.HandleHTTP(http.MethodGet, h.Input.Resource, c.websocketHandlerForDirectiveHandler(h))
+			} else {
+				c.streamConnectionForDirectiveHandler(h)
+			}
 		}
 	}
 
@@ -115,6 +126,24 @@ func (c *Coordinator) GenerateRouter() *vk.Router {
 	}
 
 	return router
+}
+
+// CreateConnections establishes all of the connections described in the directive
+func (c *Coordinator) CreateConnections() {
+	connections := c.App.Connections()
+
+	if connections.NATS != nil {
+		gnats, err := nats.New(connections.NATS.ServerAddress)
+		if err != nil {
+			c.log.Error(errors.Wrap(err, "failed to nats.New for NATS connection"))
+		} else {
+			g := grav.New(
+				grav.UseTransport(gnats),
+			)
+
+			c.connections[directive.InputSourceNATS] = g
+		}
+	}
 }
 
 func (c *Coordinator) SetSchedules() {

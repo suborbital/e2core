@@ -33,7 +33,7 @@ func New(opts ...OptionsModifier) *Grav {
 	}
 
 	// the hub handles coordinating the transport and discovery plugins
-	g.hub = initHub(nodeUUID, options, options.Transport, options.Discovery, g.Connect())
+	g.hub = initHub(nodeUUID, options, options.Transport, options.Discovery, g.Connect)
 
 	return g
 }
@@ -58,11 +58,10 @@ func (g *Grav) ConnectEndpoint(endpoint string) error {
 	return g.hub.connectEndpoint(endpoint, "")
 }
 
-// ConnectEndpointWithReplay uses the configured transport to connect the bus to an external endpoint
-// and replays recent messages to the endpoint when the pod registers its onFunc
-// func (g *Grav) ConnectEndpointWithReplay(endpoint string) error {
-
-// }
+// ConnectBridgeTopic connects the Grav instance to a particular topic on the connected bridge
+func (g *Grav) ConnectBridgeTopic(topic string) error {
+	return g.hub.connectBridgeTopic(topic)
+}
 
 func (g *Grav) connectWithOpts(opts *podOpts) *Pod {
 	pod := newPod(g.bus.busChan, opts)

@@ -1,10 +1,8 @@
 package rwasm
 
 import (
-	"bytes"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -76,12 +74,6 @@ func fetch_url(method int32, urlPointer int32, urlSize int32, bodyPointer int32,
 		return -2
 	}
 
-	urlObj, err := url.Parse(urlString)
-	if err != nil {
-		internalLogger.Error(errors.Wrap(err, "couldn't parse URL"))
-		return -2
-	}
-
 	body := inst.readMemory(bodyPointer, bodySize)
 
 	if len(body) > 0 {
@@ -90,16 +82,8 @@ func fetch_url(method int32, urlPointer int32, urlSize int32, bodyPointer int32,
 		}
 	}
 
-	req, err := http.NewRequest(httpMethod, urlObj.String(), bytes.NewBuffer(body))
-	if err != nil {
-		internalLogger.Error(errors.Wrap(err, "failed to build request"))
-		return -2
-	}
-
-	req.Header = *headers
-
 	// filter the request through the capabilities
-	resp, err := inst.ctx.HTTPClient.Do(req)
+	resp, err := inst.ctx.HTTPClient.Do(inst.ctx.Auth, httpMethod, urlString, body, *headers)
 	if err != nil {
 		internalLogger.Error(errors.Wrap(err, "failed to Do request"))
 		return -3

@@ -122,6 +122,16 @@ func (h *HTTPSource) Schedules() []directive.Schedule {
 	return schedules
 }
 
+// Connections returns the Connections for the app
+func (h *HTTPSource) Connections() *directive.Connections {
+	connections := &directive.Connections{}
+	if _, err := h.get("/connections", connections); err != nil {
+		h.opts.Logger.Error(errors.Wrap(err, "failed to get /connections"))
+	}
+
+	return connections
+}
+
 // File returns a requested file
 func (h *HTTPSource) File(filename string) ([]byte, error) {
 	path := fmt.Sprintf("/file/%s", filename)

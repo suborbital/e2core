@@ -13,8 +13,15 @@ const (
 
 // ErrConnectionClosed and others are transport and connection related errors
 var (
-	ErrConnectionClosed = errors.New("connection was closed")
-	ErrNodeUUIDMismatch = errors.New("handshake UUID did not match node UUID")
+	ErrConnectionClosed    = errors.New("connection was closed")
+	ErrNodeUUIDMismatch    = errors.New("handshake UUID did not match node UUID")
+	ErrNotBridgeTransport  = errors.New("transport is not a bridge")
+	ErrBridgeOnlyTransport = errors.New("transport only supports bridge connection")
+)
+
+var (
+	TransportTypeMesh   = TransportType("transport.mesh")
+	TransportTypeBridge = TransportType("transport.bridge")
 )
 
 type (
@@ -24,6 +31,8 @@ type (
 	ConnectFunc func(Connection)
 	// FindFunc allows a Transport to query Grav for an active connection for the given UUID
 	FindFunc func(uuid string) (Connection, bool)
+	// TransportType defines the type of Transport (mesh or bridge)
+	TransportType string
 )
 
 // TransportOpts is a set of options for transports
@@ -37,11 +46,15 @@ type TransportOpts struct {
 
 // Transport represents a Grav transport plugin
 type Transport interface {
+	// Type returns the transport's type (mesh or bridge)
+	Type() TransportType
 	// Setup is a transport-specific function that allows bootstrapping
 	// Setup can block forever if needed; for example if a webserver is bring run
 	Setup(opts *TransportOpts, connFunc ConnectFunc, findFunc FindFunc) error
-	// CreateConnection connects to an endpoint and returns
+	// CreateConnection connects to an endpoint and returns the Connection
 	CreateConnection(endpoint string) (Connection, error)
+	// ConnectBridgeTopic connects to a topic and returns a TopicConnection
+	ConnectBridgeTopic(topic string) (TopicConnection, error)
 }
 
 // Connection represents a connection to another node
@@ -56,6 +69,14 @@ type Connection interface {
 	DoOutgoingHandshake(handshake *TransportHandshake) (*TransportHandshakeAck, error)
 	// Wait for an incoming handshake and return the provided Ack to the remote connection
 	DoIncomingHandshake(handshakeAck *TransportHandshakeAck) (*TransportHandshake, error)
+	// Close requests that the Connection close itself
+	Close()
+}
+
+// TopicConnection is a connection to something via a bridge such as a topic
+type TopicConnection interface {
+	// Called when the connection can actively start exchanging messages
+	Start(pod *Pod)
 	// Close requests that the Connection close itself
 	Close()
 }
