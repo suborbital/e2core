@@ -1,18 +1,18 @@
-# Building and Running
+# Building and Running a Project
 
 The `subo` command line tool is used again here to build and run your Atmo project.
 
 ## Building
 
-Inside the `important-api` directory run:
+Inside the `important-api` directory run: 
 
-```text
+```
 subo build .
 ```
 
-This automatically compiles each of your Runnables in a Docker container and bundles them together in `runnables.wasm.zip` to be used in Atmo.
+This automatically compiles each of your Runnables in a Docker container and bundles them together in `runnables.wasm.zip` to be used in Atmo. 
 
-```text
+```
 ⏩ START: building runnables in .
 ℹ️  🐳 using Docker toolchain
 ⏩ START: building runnable: helloworld (rust)
@@ -30,7 +30,7 @@ If you prefer not to use Docker, you can also [build your Runnables natively](ht
 
 Now that we have our application bundle built, we can start a development server. In the `important-api` directory, run:
 
-```text
+```
 subo dev
 ```
 
@@ -38,7 +38,6 @@ This creates a Docker container running Atmo, copies your `runnables.wasm.zip` i
 
 You can test the `/hello` route by sending a POST request with a body to it:
 
-```text
+```
 curl localhost:8080/hello -d 'from the Kármán line!'
 ```
-
