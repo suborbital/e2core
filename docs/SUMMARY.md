@@ -35,6 +35,7 @@
 * [Structured logging](runnable-api/logging.md)
 * [HTTP requests](runnable-api/http.md)
 * [GraphQL requests](runnable-api/graphql-requests.md)
+* [Authentication](runnable-api/authentication.md)
 * [Accessing cache](runnable-api/cache.md)
 * [Static files](runnable-api/file.md)
 
