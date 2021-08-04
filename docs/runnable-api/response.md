@@ -30,7 +30,7 @@ Swift:
 
 ## Content-Type
 
-An alias of `set_header` that allows easily setting the response Content-Type:
+An alias of `set_header` that allows easily setting the response Content-Type
 
 Rust:
 
