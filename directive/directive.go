@@ -3,6 +3,7 @@ package directive
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/suborbital/atmo/fqfn"
 	"golang.org/x/mod/semver"
@@ -234,6 +235,10 @@ func (d *Directive) Validate() error {
 		}
 
 		if h.Input.Type == InputTypeRequest {
+			if !strings.HasPrefix(h.Input.Resource, "/") {
+				problems.add(fmt.Errorf("handler resource must begin with leading slash '/': %s", h.Input.Resource))
+			}
+
 			if h.Input.Method == "" {
 				problems.add(fmt.Errorf("handler for resource %s has type 'request', but does not specify a method", h.Input.Resource))
 			}
@@ -243,7 +248,9 @@ func (d *Directive) Validate() error {
 			}
 		} else if h.Input.Type == InputTypeStream {
 			if h.Input.Source == "" || h.Input.Source == InputSourceServer {
-				// all good
+				if !strings.HasPrefix(h.Input.Resource, "/") {
+					problems.add(fmt.Errorf("handler resource must begin with leading slash '/': %s", h.Input.Resource))
+				}
 			} else if h.Input.Source == InputSourceNATS {
 				if d.Connections == nil || d.Connections.NATS == nil {
 					problems.add(fmt.Errorf("handler for resource %s references source %s that is not configured", h.Input.Resource, h.Input.Source))

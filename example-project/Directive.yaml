@@ -76,9 +76,9 @@ handlers:
     respondTo: grav.reply
 
 # uncomment to try out scheduled jobs!
-schedules:
-  - name: run-every-30
-    every:
-      seconds: 30
-    steps:
-      - fn: log-it
+# schedules:
+#   - name: run-every-30
+#     every:
+#       seconds: 30
+#     steps:
+#       - fn: log-it
