@@ -8,33 +8,45 @@ The following namespace methods are available:
 
 ## Response header
 
-Sets an HTTP response header
+Sets an HTTP response header:
+
+Rust:
 
 ```rust
 pub fn set_header(key: &str, val: &str)
 ```
 
+AssemblyScript:
+
 ```typescript
-// TypeScript not yet available
+// not yet available
 ```
 
+Swift:
+
 ```swift
-// Swift not yet available
+// not yet available
 ```
 
 ## Content-Type
 
 An alias of `set_header` that allows easily setting the response Content-Type
 
+Rust:
+
 ```rust
 pub fn content_type(ctype: &str)
 ```
 
+AssemblyScript:
+
 ```typescript
-// TypeScript not yet available
+// not yet available
 ```
 
+Swift:
+
 ```swift
-// Swift not yet available
+// not yet available
 ```
 

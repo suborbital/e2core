@@ -5,8 +5,8 @@ use suborbital::util;
 struct ModifyUrl{}
 
 impl Runnable for ModifyUrl {
-    fn run(&self, _: Vec<u8>) -> Result<Vec<u8>, RunErr> {
-        let mut body_str = util::to_string(req::body_raw());
+    fn run(&self, input: Vec<u8>) -> Result<Vec<u8>, RunErr> {
+        let mut body_str = util::to_string(input);
 
         if body_str == "" {
             body_str = req::state("url").unwrap_or_default();

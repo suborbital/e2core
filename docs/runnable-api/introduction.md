@@ -49,9 +49,10 @@ There are several namespaces available in the Runnable API, each are discussed i
 * [req](request.md)
 * [resp](response.md)
 * [http](http.md)
+* [graphql](graphql-requests.md)
 * [cache](cache.md)
 * [file](file.md)
 * [log](https://github.com/suborbital/atmo/tree/215d8b0db4673915847a5fd25d4d5c84b8d89186/docs/runnable-api/log.md)
 
-When handling an HTTP request, the input to the `run` method will be a **summary** of the request being handled, not the request itself. The full details of the request are available using the `req` namespace, which will be discussed next.
+When handling an HTTP request, the input to the `run` method is the body of the request being handled. The other details of the request are available using the `req` namespace, which will be discussed next.
 

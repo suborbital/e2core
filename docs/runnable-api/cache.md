@@ -12,13 +12,19 @@ The following namespace methods are available:
 
 Set a given key's value in the cache. The provided TTL is in seconds.
 
+Rust:
+
 ```rust
 pub fn set(key: &str, val: Vec<u8>, ttl: i32)
 ```
 
+AssemblyScript:
+
 ```typescript
 function cacheSet(key: string, value: ArrayBuffer, ttl: i32): void
 ```
+
+Swift:
 
 ```swift
 public func CacheSet(key: String, value: String, ttl: Int)
@@ -28,13 +34,19 @@ public func CacheSet(key: String, value: String, ttl: Int)
 
 Get the provided key from the cache.
 
+Rust:
+
 ```rust
 pub fn get(key: &str) -> Result<Vec<u8>, RunErr>
 ```
 
+AssemblyScript:
+
 ```typescript
 function cacheGet(key: string): ArrayBuffer
 ```
+
+Swift:
 
 ```swift
 public func CacheGet(key: String) -> String

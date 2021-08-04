@@ -1,14 +1,14 @@
 use suborbital::runnable::*;
-use suborbital::{req, resp};
+use suborbital::{resp};
 
 struct SetArray{}
 
 impl Runnable for SetArray {
-    fn run(&self, _: Vec<u8>) -> Result<Vec<u8>, RunErr> {
+    fn run(&self, body: Vec<u8>) -> Result<Vec<u8>, RunErr> {
         resp::content_type("application/json");
 
         // returning the request body so it gets set in state
-        Ok(req::body_raw())
+        Ok(body)
     }
 }
 

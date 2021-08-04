@@ -10,13 +10,19 @@ The following namespace methods are available:
 
 Performs an HTTP GET request
 
+Rust:
+
 ```rust
 pub fn get(url: &str, headers: Option<BTreeMap<&str, &str>>) -> Result<Vec<u8>, RunErr>
 ```
 
+AssemblyScript:
+
 ```typescript
 function httpGet(url: string, headers: Map<string, string> | null): ArrayBuffer
 ```
+
+Swift:
 
 ```swift
 public func HttpGet(url: String) -> String
@@ -24,15 +30,21 @@ public func HttpGet(url: String) -> String
 
 ## POST
 
-Performs an HTTP POST request
+Performs an HTTP POST request:
+
+Rust:
 
 ```rust
 pub fn post(url: &str, body: Option<Vec<u8>>, headers: Option<BTreeMap<&str, &str>>) -> Result<Vec<u8>, RunErr>
 ```
 
+AssemblyScript:
+
 ```typescript
 function httpPost(url: string, body: ArrayBuffer, headers: Map<string, string> | null): ArrayBuffer
 ```
+
+Swift:
 
 ```swift
 public func HttpPost(url: String, body: String) -> String
@@ -40,15 +52,21 @@ public func HttpPost(url: String, body: String) -> String
 
 ## PATCH
 
-Performs an HTTP PATCH request
+Performs an HTTP PATCH request:
+
+Rust:
 
 ```rust
 pub fn patch(url: &str, body: Option<Vec<u8>>, headers: Option<BTreeMap<&str, &str>>) -> Result<Vec<u8>, RunErr>
 ```
 
+AssemblyScript:
+
 ```typescript
 function httpPatch(url: string, body: ArrayBuffer, headers: Map<string, string> | null): ArrayBuffer
 ```
+
+Swift:
 
 ```swift
 public func HttpPatch(url: String, body: String) -> String
@@ -56,15 +74,21 @@ public func HttpPatch(url: String, body: String) -> String
 
 ## DELETE
 
-Performs an HTTP DELETE request
+Performs an HTTP DELETE request:
+
+Rust:
 
 ```rust
 pub fn delete(url: &str, headers: Option<BTreeMap<&str, &str>>) -> Result<Vec<u8>, RunErr>
 ```
 
+AssemblyScript:
+
 ```typescript
 function httpDelete(url: string, headers: Map<string, string> | null): ArrayBuffer
 ```
+
+Swift:
 
 ```swift
 public func HttpDelete(url: String) -> String

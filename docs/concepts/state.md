@@ -39,7 +39,7 @@ And then after the **second step**:
 }
 ```
 
-When each step executes, the current request state is made available to the Runnable using **Runnable API** functions. 
+When each step executes, the current request state is made available to the Runnable using **Runnable API** functions.
 
 {% hint style="info" %}
 Request state is updated after each **step**, so it is important to note that multiple functions in a **group** will all receive the same state from the beginning of the step, and all of their outputs will be added to state after they've all completed executing.
