@@ -113,7 +113,7 @@ func (b *BundleSource) Connections() directive.Connections {
 	b.lock.RLock()
 	defer b.lock.RUnlock()
 
-	if b.bundle == nil {
+	if b.bundle == nil || b.bundle.Directive.Connections == nil {
 		return directive.Connections{}
 	}
 
@@ -125,7 +125,7 @@ func (b *BundleSource) Authentication() directive.Authentication {
 	b.lock.RLock()
 	defer b.lock.RUnlock()
 
-	if b.bundle == nil {
+	if b.bundle == nil || b.bundle.Directive.Authentication == nil {
 		return directive.Authentication{}
 	}
 
