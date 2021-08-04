@@ -8,7 +8,7 @@ When building an Atmo request handler or schedule, you can use the `ForEach` cla
     method: POST
     steps:
       - fn: set-array
-	  	as: names
+          as: names
 
       - forEach:
           in: names
@@ -22,9 +22,9 @@ To use `forEach`, you must have a JSON array of objects in state. A simple array
 In your Runnable's code, use `req::state("__elem")` to get the current array element being handled.
 {% endhint %}
 
-The example above takes the request body, saves it to the handler's state, and runs the `hello-name` Runable against each element, which changes all of the values. The result is then saved to the `greetings` key in state:
-Input:
-```json
+The example above takes the request body, saves it to the handler's state, and runs the `hello-name` Runable against each element, which changes all of the values. The result is then saved to the `greetings` key in state: Input:
+
+```javascript
 [
     {
         "name": "Connor"
@@ -37,8 +37,10 @@ Input:
     }
 ]
 ```
+
 Output:
-```json
+
+```javascript
 [
     {
         "name": "Hello Connor"
@@ -53,6 +55,7 @@ Output:
 ```
 
 Here's an example Rust runnable that can be called with `forEach`:
+
 ```rust
 #[derive(Serialize, Deserialize)]
 struct Elem {
@@ -76,3 +79,4 @@ impl Runnable for HelloName {
     }
 }
 ```
+

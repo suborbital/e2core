@@ -25,8 +25,9 @@ The TypeScript/AssemblyScript Runnable API library is still considered experimen
 {% endhint %}
 
 In TypeScript/AssemblyScript:
+
 ```typescript
-export function run(input: ArrayBuffer): ArrayBuffer 
+export function run(input: ArrayBuffer): ArrayBuffer
 ```
 
 {% hint style="warning" %}
