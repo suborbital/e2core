@@ -37,7 +37,7 @@ func Bundle(r *rt.Reactr, bundle *bundle.Bundle) error {
 		return errors.Wrap(err, "failed to Validate bundle directive")
 	}
 
-	var authConfig *rcap.AuthProviderConfig
+	var authConfig *rcap.AuthConfig
 	if bundle.Directive.Authentication != nil && bundle.Directive.Authentication.Domains != nil {
 		// need to convert the Directive headers to rcap headers
 		// rcap should add yaml tags so we don't need this
@@ -49,10 +49,19 @@ func Bundle(r *rt.Reactr, bundle *bundle.Bundle) error {
 			}
 		}
 
-		authConfig = &rcap.AuthProviderConfig{Headers: headers}
+		authConfig = &rcap.AuthConfig{Enabled: true, Headers: headers}
 	}
 
-	if err := Runnables(r, bundle.Directive.Runnables, authConfig, bundle.StaticFile, true); err != nil {
+	// take the default capabilites from the Reactr instance
+	caps := r.DefaultCaps()
+	// set our own FileSource that is connected to the Bundle's FileFunc
+	caps.FileSource = rcap.DefaultFileSource(rcap.FileConfig{Enabled: true}, bundle.StaticFile)
+	// set our own auth provider based on the Directive
+	if authConfig != nil {
+		caps.Auth = rcap.DefaultAuthProvider(*authConfig)
+	}
+
+	if err := Runnables(r, bundle.Directive.Runnables, caps, true); err != nil {
 		return errors.Wrap(err, "failed to ModuleRefsIntoInstance")
 	}
 
@@ -61,7 +70,7 @@ func Bundle(r *rt.Reactr, bundle *bundle.Bundle) error {
 
 // Runnables loads a set of WasmModuleRefs into a Reactr instance
 // if you're trying to use this directly, you probably want BundleFromPath or Bundle instead
-func Runnables(r *rt.Reactr, runnables []directive.Runnable, authConfig *rcap.AuthProviderConfig, staticFileFunc rcap.StaticFileFunc, registerSimpleName bool) error {
+func Runnables(r *rt.Reactr, runnables []directive.Runnable, capabilities rt.Capabilities, registerSimpleName bool) error {
 	for i, runnable := range runnables {
 		if runnable.ModuleRef == nil {
 			return fmt.Errorf("missing ModuleRef for Runnable %s", runnable.Name)
@@ -76,21 +85,12 @@ func Runnables(r *rt.Reactr, runnables []directive.Runnable, authConfig *rcap.Au
 			return rwasm.NewRunnerWithRef(runnables[i].ModuleRef)
 		}
 
-		// take the default capabilites from the Reactr instance
-		caps := r.DefaultCaps()
-		// set our own FileSource that is connected to the Bundle's FileFunc
-		caps.FileSource = rcap.DefaultFileSource(staticFileFunc)
-		// set our own auth provider based on the Directive
-		if authConfig != nil {
-			caps.Auth = rcap.DefaultAuthProvider(authConfig)
-		}
-
 		// TODO: in the future, this should be updated to
 		// de-register a Runnable if one with the same name
 		// is already registered, since over-registering can
 		// cause workers to languish in the background
 		if registerSimpleName {
-			r.RegisterWithCaps(runnable.Name, getRunner(), caps)
+			r.RegisterWithCaps(runnable.Name, getRunner(), capabilities)
 		}
 
 		// we load the Runnable under its FQFN because
@@ -99,7 +99,7 @@ func Runnables(r *rt.Reactr, runnables []directive.Runnable, authConfig *rcap.Au
 			// if a module is already registered, don't bother over-writing
 			// since FQFNs are 'guaranteed' to be unique, so there's no point
 			if !r.IsRegistered(runnable.FQFN) {
-				r.RegisterWithCaps(runnable.FQFN, getRunner(), caps, rt.PreWarm())
+				r.RegisterWithCaps(runnable.FQFN, getRunner(), capabilities, rt.PreWarm())
 			}
 		}
 	}
