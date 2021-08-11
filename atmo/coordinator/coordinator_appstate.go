@@ -27,7 +27,7 @@ func (c *Coordinator) SyncAppState() {
 	// take the default capabilites from the Reactr instance
 	caps := c.reactr.DefaultCaps()
 	// set our own FileSource that is connected to the Bundle's FileFunc
-	caps.FileSource = rcap.DefaultFileSource(rcap.FileConfig{Enabled: true}, c.App.File)
+	caps.FileSource = rcap.DefaultFileSource(rcap.FileConfig{Enabled: true, FileFunc: c.App.File})
 	// set our own auth provider based on the Directive
 	if authConfig != nil {
 		caps.Auth = rcap.DefaultAuthProvider(*authConfig)

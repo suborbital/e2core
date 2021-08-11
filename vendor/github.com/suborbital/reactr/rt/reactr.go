@@ -5,6 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/suborbital/grav/grav"
+	"github.com/suborbital/reactr/rcap"
 	"github.com/suborbital/vektor/vlog"
 )
 
@@ -33,14 +34,17 @@ type Reactr struct {
 
 // New returns a Reactr ready to accept Jobs
 func New() *Reactr {
-	logger := vlog.Default()
+	return NewWithConfig(rcap.DefaultCapabilityConfig())
+}
 
-	core := newCore(logger)
+// NewWithConfig returns a Reactr with custom capability config
+func NewWithConfig(config rcap.CapabilityConfig) *Reactr {
+	core := newCore(config.Logger.Logger)
 
 	r := &Reactr{
 		core:        core,
-		defaultCaps: defaultCaps(logger),
-		log:         logger,
+		defaultCaps: CapabilitiesFromConfig(config),
+		log:         config.Logger.Logger,
 	}
 
 	return r

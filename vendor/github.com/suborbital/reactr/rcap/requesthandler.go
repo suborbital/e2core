@@ -19,21 +19,37 @@ var (
 	ErrInvalidKey       = errors.New("invalid key")
 )
 
-// RequestHandler allows runnables to handle HTTP requests
-type RequestHandler struct {
-	req *request.CoordinatedRequest
+// RequestHandlerConfig is configuration for the request capability
+type RequestHandlerConfig struct {
+	Enabled bool `json:"enabled" yaml:"enabled"`
+}
+
+// RequestHandlerCapability allows runnables to handle HTTP requests
+type RequestHandlerCapability interface {
+	GetField(fieldType int32, key string) ([]byte, error)
+	SetResponseHeader(key, val string) error
+}
+
+type requestHandler struct {
+	config RequestHandlerConfig
+	req    *request.CoordinatedRequest
 }
 
 // NewRequestHandler provides a handler for the given request
-func NewRequestHandler(req *request.CoordinatedRequest) *RequestHandler {
-	d := &RequestHandler{
-		req: req,
+func NewRequestHandler(config RequestHandlerConfig, req *request.CoordinatedRequest) RequestHandlerCapability {
+	d := &requestHandler{
+		config: config,
+		req:    req,
 	}
 
 	return d
 }
 
-func (r RequestHandler) GetField(fieldType int32, key string) ([]byte, error) {
+func (r *requestHandler) GetField(fieldType int32, key string) ([]byte, error) {
+	if !r.config.Enabled {
+		return nil, ErrCapabilityNotEnabled
+	}
+
 	if r.req == nil {
 		return nil, ErrReqNotSet
 	}
@@ -90,7 +106,11 @@ func (r RequestHandler) GetField(fieldType int32, key string) ([]byte, error) {
 }
 
 // SetResponseHeader sets a header on the response
-func (r RequestHandler) SetResponseHeader(key, val string) error {
+func (r *requestHandler) SetResponseHeader(key, val string) error {
+	if !r.config.Enabled {
+		return ErrCapabilityNotEnabled
+	}
+
 	if r.req == nil {
 		return ErrReqNotSet
 	}

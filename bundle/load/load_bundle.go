@@ -55,7 +55,7 @@ func Bundle(r *rt.Reactr, bundle *bundle.Bundle) error {
 	// take the default capabilites from the Reactr instance
 	caps := r.DefaultCaps()
 	// set our own FileSource that is connected to the Bundle's FileFunc
-	caps.FileSource = rcap.DefaultFileSource(rcap.FileConfig{Enabled: true}, bundle.StaticFile)
+	caps.FileSource = rcap.DefaultFileSource(rcap.FileConfig{Enabled: true, FileFunc: bundle.StaticFile})
 	// set our own auth provider based on the Directive
 	if authConfig != nil {
 		caps.Auth = rcap.DefaultAuthProvider(*authConfig)
