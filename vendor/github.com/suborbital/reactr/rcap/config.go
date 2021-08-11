@@ -8,14 +8,17 @@ import (
 var ErrCapabilityNotEnabled = errors.New("capability is not enabled")
 
 // CapabilityConfig is configuration for a Runnable's capabilities
+// NOTE: if any of the individual configs are nil, it will cause a crash,
+// but we need to be able to determine if they're set or not, hence the pointers
+// we are going to leave capabilities undocumented until we come up with a more elegant solution
 type CapabilityConfig struct {
-	Logger         LoggerConfig         `json:"logger" yaml:"logger"`
-	HTTP           HTTPConfig           `json:"http" yaml:"http"`
-	GraphQL        GraphQLConfig        `json:"graphql" yaml:"graphql"`
-	Auth           AuthConfig           `json:"auth" yaml:"auth"`
-	Cache          CacheConfig          `json:"cache" yaml:"cache"`
-	File           FileConfig           `json:"file" yaml:"file"`
-	RequestHandler RequestHandlerConfig `json:"requestHandler" yaml:"requestHandler"`
+	Logger         *LoggerConfig         `json:"logger,omitempty" yaml:"logger,omitempty"`
+	HTTP           *HTTPConfig           `json:"http,omitempty" yaml:"http,omitempty"`
+	GraphQL        *GraphQLConfig        `json:"graphql,omitempty" yaml:"graphql,omitempty"`
+	Auth           *AuthConfig           `json:"auth,omitempty" yaml:"auth,omitempty"`
+	Cache          *CacheConfig          `json:"cache,omitempty" yaml:"cache,omitempty"`
+	File           *FileConfig           `json:"file,omitempty" yaml:"file,omitempty"`
+	RequestHandler *RequestHandlerConfig `json:"requestHandler,omitempty" yaml:"requestHandler,omitempty"`
 }
 
 // DefaultCapabilityConfig returns the default all-enabled config (with a default logger)
@@ -25,26 +28,26 @@ func DefaultCapabilityConfig() CapabilityConfig {
 
 func DefaultConfigWithLogger(logger *vlog.Logger) CapabilityConfig {
 	c := CapabilityConfig{
-		Logger: LoggerConfig{
+		Logger: &LoggerConfig{
 			Enabled: true,
 			Logger:  logger,
 		},
-		HTTP: HTTPConfig{
+		HTTP: &HTTPConfig{
 			Enabled: true,
 		},
-		GraphQL: GraphQLConfig{
+		GraphQL: &GraphQLConfig{
 			Enabled: true,
 		},
-		Auth: AuthConfig{
+		Auth: &AuthConfig{
 			Enabled: true,
 		},
-		Cache: CacheConfig{
+		Cache: &CacheConfig{
 			Enabled: true,
 		},
-		File: FileConfig{
+		File: &FileConfig{
 			Enabled: true,
 		},
-		RequestHandler: RequestHandlerConfig{
+		RequestHandler: &RequestHandlerConfig{
 			Enabled: true,
 		},
 	}

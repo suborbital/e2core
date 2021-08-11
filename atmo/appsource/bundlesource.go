@@ -9,6 +9,7 @@ import (
 	"github.com/suborbital/atmo/atmo/options"
 	"github.com/suborbital/atmo/bundle"
 	"github.com/suborbital/atmo/directive"
+	"github.com/suborbital/reactr/rcap"
 )
 
 // BundleSource is an AppSource backed by a bundle file
@@ -130,6 +131,19 @@ func (b *BundleSource) Authentication() directive.Authentication {
 	}
 
 	return *b.bundle.Directive.Authentication
+}
+
+// Capabilities returns the configuration for the app's capabilities
+func (b *BundleSource) Capabilities() *rcap.CapabilityConfig {
+	b.lock.RLock()
+	defer b.lock.RUnlock()
+
+	if b.bundle == nil || b.bundle.Directive.Capabilities == nil {
+		config := rcap.DefaultCapabilityConfig()
+		return &config
+	}
+
+	return b.bundle.Directive.Capabilities
 }
 
 // File returns a requested file

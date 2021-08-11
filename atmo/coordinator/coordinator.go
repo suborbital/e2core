@@ -13,6 +13,7 @@ import (
 	"github.com/suborbital/grav/grav"
 	"github.com/suborbital/grav/transport/nats"
 	"github.com/suborbital/grav/transport/websocket"
+	"github.com/suborbital/reactr/rcap"
 	"github.com/suborbital/reactr/rt"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
@@ -54,7 +55,8 @@ type requestScope struct {
 
 // New creates a coordinator
 func New(appSource appsource.AppSource, options *options.Options) *Coordinator {
-	reactr := rt.New()
+	caps := renderCapabilities(appSource, options.Logger)
+	reactr := rt.NewWithConfig(caps)
 
 	gravOpts := []grav.OptionsModifier{
 		grav.UseLogger(options.Logger),
@@ -169,6 +171,48 @@ func (c *Coordinator) SetSchedules() {
 			}))
 		}
 	}
+}
+
+// renderCapabilities "renders" capabilities by layering any user-defined
+// capabilities onto the default set, thus allowing the user to omit any
+// individual capability (or all of them) to receive the defaults
+func renderCapabilities(source appsource.AppSource, log *vlog.Logger) rcap.CapabilityConfig {
+	config := rcap.DefaultConfigWithLogger(log)
+
+	userConfig := source.Capabilities()
+	if userConfig == nil {
+		return config
+	}
+
+	if userConfig.Logger != nil {
+		config.Logger = userConfig.Logger
+	}
+
+	if userConfig.HTTP != nil {
+		config.HTTP = userConfig.HTTP
+	}
+
+	if userConfig.GraphQL != nil {
+		config.GraphQL = userConfig.GraphQL
+	}
+
+	if userConfig.Auth != nil {
+		config.Auth = userConfig.Auth
+	}
+
+	if userConfig.Cache != nil {
+		config.Cache = userConfig.Cache
+	}
+
+	if userConfig.File != nil {
+		config.File = userConfig.File
+	}
+
+	if userConfig.RequestHandler != nil {
+		config.RequestHandler = userConfig.RequestHandler
+	}
+
+	return config
 }
 
 // resultFromState returns the state value for the last single function that ran in a handler

@@ -15,6 +15,7 @@ import (
 	"github.com/suborbital/atmo/atmo/options"
 	"github.com/suborbital/atmo/directive"
 	"github.com/suborbital/atmo/fqfn"
+	"github.com/suborbital/reactr/rcap"
 )
 
 // HTTPSource is an AppSource backed by an HTTP client connected to a remote source
@@ -140,6 +141,16 @@ func (h *HTTPSource) Authentication() directive.Authentication {
 	}
 
 	return authentication
+}
+
+// Capabilities returns the Capabilities for the app
+func (h *HTTPSource) Capabilities() *rcap.CapabilityConfig {
+	capabilities := rcap.CapabilityConfig{}
+	if _, err := h.get("/capabilities", &capabilities); err != nil {
+		h.opts.Logger.Error(errors.Wrap(err, "failed to get /authentication"))
+	}
+
+	return &capabilities
 }
 
 // File returns a requested file

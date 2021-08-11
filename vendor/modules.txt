@@ -35,7 +35,7 @@ github.com/suborbital/grav/discovery/local
 github.com/suborbital/grav/grav
 github.com/suborbital/grav/transport/nats
 github.com/suborbital/grav/transport/websocket
-# github.com/suborbital/reactr v0.11.1-0.20210811160758-b715bc22e760
+# github.com/suborbital/reactr v0.11.1-0.20210811185115-8fef13b98dd7
 ## explicit
 github.com/suborbital/reactr/rcap
 github.com/suborbital/reactr/request
