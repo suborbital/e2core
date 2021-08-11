@@ -3,30 +3,15 @@ package coordinator
 import (
 	"github.com/pkg/errors"
 	"github.com/suborbital/atmo/bundle/load"
-	"github.com/suborbital/reactr/rcap"
 )
 
 func (c *Coordinator) SyncAppState() {
 	c.log.Debug("syncing AppSource state")
 
-	var authConfig *rcap.AuthConfig
-	if domains := c.App.Authentication().Domains; domains != nil {
-		authConfig = &rcap.AuthConfig{Enabled: true, Headers: domains}
-	}
-
-	// take the default capabilites from the Reactr instance
-	caps := c.reactr.DefaultCaps()
-	// set our own FileSource that is connected to the Bundle's FileFunc
-	caps.FileSource = rcap.DefaultFileSource(rcap.FileConfig{Enabled: true, FileFunc: c.App.File})
-	// set our own auth provider based on the Directive
-	if authConfig != nil {
-		caps.Auth = rcap.DefaultAuthProvider(*authConfig)
-	}
-
 	// mount all of the Wasm Runnables into the Reactr instance
 	// pass 'false' for registerSimpleName since we'll only ever call
 	// functions by their FQFNs
-	if err := load.Runnables(c.reactr, c.App.Runnables(), caps, false); err != nil {
+	if err := load.Runnables(c.reactr, c.App.Runnables(), false); err != nil {
 		c.log.Error(errors.Wrap(err, "failed to load.Runnables"))
 	}
 

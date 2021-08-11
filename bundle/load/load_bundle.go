@@ -8,7 +8,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/suborbital/atmo/bundle"
 	"github.com/suborbital/atmo/directive"
-	"github.com/suborbital/reactr/rcap"
 	"github.com/suborbital/reactr/rt"
 	"github.com/suborbital/reactr/rwasm"
 )
@@ -37,21 +36,7 @@ func Bundle(r *rt.Reactr, bundle *bundle.Bundle) error {
 		return errors.Wrap(err, "failed to Validate bundle directive")
 	}
 
-	var authConfig *rcap.AuthConfig
-	if bundle.Directive.Authentication != nil && bundle.Directive.Authentication.Domains != nil {
-		authConfig = &rcap.AuthConfig{Enabled: true, Headers: bundle.Directive.Authentication.Domains}
-	}
-
-	// take the default capabilites from the Reactr instance
-	caps := r.DefaultCaps()
-	// set our own FileSource that is connected to the Bundle's FileFunc
-	caps.FileSource = rcap.DefaultFileSource(rcap.FileConfig{Enabled: true, FileFunc: bundle.StaticFile})
-	// set our own auth provider based on the Directive
-	if authConfig != nil {
-		caps.Auth = rcap.DefaultAuthProvider(*authConfig)
-	}
-
-	if err := Runnables(r, bundle.Directive.Runnables, caps, true); err != nil {
+	if err := Runnables(r, bundle.Directive.Runnables, true); err != nil {
 		return errors.Wrap(err, "failed to ModuleRefsIntoInstance")
 	}
 
@@ -60,7 +45,7 @@ func Bundle(r *rt.Reactr, bundle *bundle.Bundle) error {
 
 // Runnables loads a set of WasmModuleRefs into a Reactr instance
 // if you're trying to use this directly, you probably want BundleFromPath or Bundle instead
-func Runnables(r *rt.Reactr, runnables []directive.Runnable, capabilities rt.Capabilities, registerSimpleName bool) error {
+func Runnables(r *rt.Reactr, runnables []directive.Runnable, registerSimpleName bool) error {
 	for i, runnable := range runnables {
 		if runnable.ModuleRef == nil {
 			return fmt.Errorf("missing ModuleRef for Runnable %s", runnable.Name)
@@ -80,7 +65,7 @@ func Runnables(r *rt.Reactr, runnables []directive.Runnable, capabilities rt.Cap
 		// is already registered, since over-registering can
 		// cause workers to languish in the background
 		if registerSimpleName {
-			r.RegisterWithCaps(runnable.Name, getRunner(), capabilities)
+			r.Register(runnable.Name, getRunner())
 		}
 
 		// we load the Runnable under its FQFN because
@@ -89,7 +74,7 @@ func Runnables(r *rt.Reactr, runnables []directive.Runnable, capabilities rt.Cap
 			// if a module is already registered, don't bother over-writing
 			// since FQFNs are 'guaranteed' to be unique, so there's no point
 			if !r.IsRegistered(runnable.FQFN) {
-				r.RegisterWithCaps(runnable.FQFN, getRunner(), capabilities, rt.PreWarm())
+				r.Register(runnable.FQFN, getRunner(), rt.PreWarm())
 			}
 		}
 	}
