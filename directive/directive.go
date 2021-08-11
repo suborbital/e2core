@@ -28,7 +28,7 @@ type Directive struct {
 	Headless       bool                   `yaml:"headless,omitempty" json:"headless,omitempty"`
 	Connections    *Connections           `yaml:"connections,omitempty" json:"connections,omitempty"`
 	Authentication *Authentication        `yaml:"authentication,omitempty" json:"authentication,omitempty"`
-	Capabilities   *rcap.CapabilityConfig `yaml:"capabiities,omitempty" json:"capabilities,omitempty"`
+	Capabilities   *rcap.CapabilityConfig `yaml:"capabilities,omitempty" json:"capabilities,omitempty"`
 	Handlers       []Handler              `yaml:"handlers,omitempty" json:"handlers,omitempty"`
 	Schedules      []Schedule             `yaml:"schedules,omitempty" json:"schedules,omitempty"`
 

@@ -12,6 +12,10 @@ authentication:
       headerType: bearer
       value: env(GITHUB_TOKEN)
 
+capabilities:
+  graphql:
+    enabled: false
+
 handlers:
   - type: request
     resource: /hello
