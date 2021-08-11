@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/suborbital/atmo/fqfn"
+	"github.com/suborbital/reactr/rcap"
 	"golang.org/x/mod/semver"
 	"gopkg.in/yaml.v2"
 )
@@ -102,7 +103,7 @@ type Connections struct {
 }
 
 type Authentication struct {
-	Domains map[string]DomainAuth `yaml:"domains,omitempty" json:"domains,omitempty"`
+	Domains map[string]rcap.AuthHeader `yaml:"domains,omitempty" json:"domains,omitempty"`
 }
 
 func (d *Directive) FindRunnable(name string) *Runnable {

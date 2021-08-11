@@ -10,18 +10,8 @@ func (c *Coordinator) SyncAppState() {
 	c.log.Debug("syncing AppSource state")
 
 	var authConfig *rcap.AuthConfig
-	if c.App.Authentication().Domains != nil {
-		// need to convert the Directive headers to rcap headers
-		// rcap should add yaml tags so we don't need this
-		headers := map[string]rcap.AuthHeader{}
-		for k, v := range c.App.Authentication().Domains {
-			headers[k] = rcap.AuthHeader{
-				HeaderType: v.HeaderType,
-				Value:      v.Value,
-			}
-		}
-
-		authConfig = &rcap.AuthConfig{Enabled: true, Headers: headers}
+	if domains := c.App.Authentication().Domains; domains != nil {
+		authConfig = &rcap.AuthConfig{Enabled: true, Headers: domains}
 	}
 
 	// take the default capabilites from the Reactr instance

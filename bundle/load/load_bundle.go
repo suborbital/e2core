@@ -39,17 +39,7 @@ func Bundle(r *rt.Reactr, bundle *bundle.Bundle) error {
 
 	var authConfig *rcap.AuthConfig
 	if bundle.Directive.Authentication != nil && bundle.Directive.Authentication.Domains != nil {
-		// need to convert the Directive headers to rcap headers
-		// rcap should add yaml tags so we don't need this
-		headers := map[string]rcap.AuthHeader{}
-		for k, v := range bundle.Directive.Authentication.Domains {
-			headers[k] = rcap.AuthHeader{
-				HeaderType: v.HeaderType,
-				Value:      v.Value,
-			}
-		}
-
-		authConfig = &rcap.AuthConfig{Enabled: true, Headers: headers}
+		authConfig = &rcap.AuthConfig{Enabled: true, Headers: bundle.Directive.Authentication.Domains}
 	}
 
 	// take the default capabilites from the Reactr instance
