@@ -1,6 +1,6 @@
 identifier: com.suborbital.test
 appVersion: v0.0.1
-atmoVersion: v0.2.3
+atmoVersion: v0.3.1
 
 connections:
   nats:
