@@ -47,3 +47,10 @@ func CapabilitiesFromConfig(config rcap.CapabilityConfig) Capabilities {
 
 	return caps
 }
+
+// Config returns the configuration that was used to create the Capabilities
+// the config cannot be changed, but it can be used to determine what was
+// previously set so that the orginal config (like enabled settings) can be respected
+func (c Capabilities) Config() rcap.CapabilityConfig {
+	return c.config
+}
