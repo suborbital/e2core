@@ -34,5 +34,9 @@ func (c *Ctx) Do(job Job) *Result {
 
 // UseRequest sets a CoordinatedRequest to be used by the capabilities
 func (c *Ctx) UseRequest(req *request.CoordinatedRequest) {
+	if !c.config.RequestHandler.Enabled {
+		return
+	}
+
 	c.RequestHandler = rcap.NewRequestHandler(rcap.RequestHandlerConfig{Enabled: true}, req)
 }
