@@ -9,22 +9,35 @@ import (
 	"github.com/pkg/errors"
 )
 
-// HTTPClient gives Runnables the ability to make HTTP requests
-type HTTPClient interface {
-	Do(auth AuthProvider, method, urlString string, body []byte, headers http.Header) (*http.Response, error)
+// HTTPConfig is configuration for the HTTP capability
+type HTTPConfig struct {
+	Enabled bool `json:"enabled" yaml:"enabled"`
 }
 
-type defaultHTTPClient struct{}
+// HTTPCapability gives Runnables the ability to make HTTP requests
+type HTTPCapability interface {
+	Do(auth AuthCapability, method, urlString string, body []byte, headers http.Header) (*http.Response, error)
+}
+
+type httpClient struct {
+	config HTTPConfig
+}
 
 // DefaultHTTPClient creates an HTTP client with no restrictions
-func DefaultHTTPClient() HTTPClient {
-	d := &defaultHTTPClient{}
+func DefaultHTTPClient(config HTTPConfig) HTTPCapability {
+	d := &httpClient{
+		config: config,
+	}
 
 	return d
 }
 
 // Do performs the provided request
-func (d *defaultHTTPClient) Do(auth AuthProvider, method, urlString string, body []byte, headers http.Header) (*http.Response, error) {
+func (h *httpClient) Do(auth AuthCapability, method, urlString string, body []byte, headers http.Header) (*http.Response, error) {
+	if !h.config.Enabled {
+		return nil, ErrCapabilityNotEnabled
+	}
+
 	urlObj, err := url.Parse(urlString)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to url.Parse")

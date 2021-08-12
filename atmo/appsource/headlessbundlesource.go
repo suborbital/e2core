@@ -8,6 +8,7 @@ import (
 	"github.com/suborbital/atmo/atmo/options"
 	"github.com/suborbital/atmo/directive"
 	"github.com/suborbital/atmo/fqfn"
+	"github.com/suborbital/reactr/rcap"
 )
 
 // HeadlessBundleSource is an AppSource backed by a bundle file (but headless)
@@ -110,6 +111,16 @@ func (b *HeadlessBundleSource) Authentication() directive.Authentication {
 	}
 
 	return b.bundlesource.Authentication()
+}
+
+// Capabilities returns the Capabilities for the app
+func (b *HeadlessBundleSource) Capabilities() *rcap.CapabilityConfig {
+	if b.bundlesource.bundle == nil {
+		config := rcap.DefaultCapabilityConfig()
+		return &config
+	}
+
+	return b.bundlesource.Capabilities()
 }
 
 // File returns a requested file

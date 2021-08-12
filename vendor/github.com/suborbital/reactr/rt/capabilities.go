@@ -10,28 +10,36 @@ var ErrCapabilityNotAvailable = errors.New("capability not available")
 
 // Capabilities define the capabilities available to a Runnable
 type Capabilities struct {
-	Auth          rcap.AuthProvider
-	LoggerSource  rcap.LoggerSource
-	HTTPClient    rcap.HTTPClient
-	GraphQLClient rcap.GraphQLClient
-	FileSource    rcap.FileSource
-	Cache         rcap.Cache
+	config rcap.CapabilityConfig
+
+	Auth          rcap.AuthCapability
+	LoggerSource  rcap.LoggerCapability
+	HTTPClient    rcap.HTTPCapability
+	GraphQLClient rcap.GraphQLCapability
+	FileSource    rcap.FileCapability
+	Cache         rcap.CacheCapability
 
 	// RequestHandler and doFunc are special because they are more
 	// sensitive; they could cause memory leaks or expose internal state,
 	// so they cannot be swapped out for a different implementation.
-	RequestHandler *rcap.RequestHandler
+	RequestHandler rcap.RequestHandlerCapability
 	doFunc         coreDoFunc
 }
 
-func defaultCaps(logger *vlog.Logger) Capabilities {
+// DefaultCapabilities returns the default capabilities with the provided Logger
+func DefaultCapabilities(logger *vlog.Logger) Capabilities {
+	return CapabilitiesFromConfig(rcap.DefaultConfigWithLogger(logger))
+}
+
+func CapabilitiesFromConfig(config rcap.CapabilityConfig) Capabilities {
 	caps := Capabilities{
-		Auth:          rcap.DefaultAuthProvider(nil), // no authentication config is set up by default
-		LoggerSource:  rcap.DefaultLoggerSource(logger),
-		HTTPClient:    rcap.DefaultHTTPClient(),
-		GraphQLClient: rcap.DefaultGraphQLClient(),
-		FileSource:    rcap.DefaultFileSource(nil), // set file access to nil by default, it can be set later.
-		Cache:         rcap.DefaultCache(),
+		config:        config,
+		Auth:          rcap.DefaultAuthProvider(*config.Auth), // no authentication config is set up by default
+		LoggerSource:  rcap.DefaultLoggerSource(*config.Logger),
+		HTTPClient:    rcap.DefaultHTTPClient(*config.HTTP),
+		GraphQLClient: rcap.DefaultGraphQLClient(*config.GraphQL),
+		FileSource:    rcap.DefaultFileSource(*config.File), // set file access to nil by default, it can be set later.
+		Cache:         rcap.DefaultCache(*config.Cache),
 
 		// RequestHandler and doFunc don't get set here since they are set by
 		// the rt and rwasm internals; a better solution for this should probably be found

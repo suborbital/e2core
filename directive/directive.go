@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/suborbital/atmo/fqfn"
+	"github.com/suborbital/reactr/rcap"
 	"golang.org/x/mod/semver"
 	"gopkg.in/yaml.v2"
 )
@@ -21,15 +22,18 @@ const (
 // Directive describes a set of functions and a set of handlers
 // that take an input, and compose a set of functions to handle it
 type Directive struct {
-	Identifier     string          `yaml:"identifier" json:"identifier"`
-	AppVersion     string          `yaml:"appVersion" json:"appVersion"`
-	AtmoVersion    string          `yaml:"atmoVersion" json:"atmoVersion"`
-	Headless       bool            `yaml:"headless,omitempty" json:"headless,omitempty"`
-	Runnables      []Runnable      `yaml:"runnables" json:"runnables"`
-	Connections    *Connections    `yaml:"connections,omitempty" json:"connections,omitempty"`
-	Authentication *Authentication `yaml:"authentication,omitempty" json:"authentication,omitempty"`
-	Handlers       []Handler       `yaml:"handlers,omitempty" json:"handlers,omitempty"`
-	Schedules      []Schedule      `yaml:"schedules,omitempty" json:"schedules,omitempty"`
+	Identifier     string                 `yaml:"identifier" json:"identifier"`
+	AppVersion     string                 `yaml:"appVersion" json:"appVersion"`
+	AtmoVersion    string                 `yaml:"atmoVersion" json:"atmoVersion"`
+	Headless       bool                   `yaml:"headless,omitempty" json:"headless,omitempty"`
+	Connections    *Connections           `yaml:"connections,omitempty" json:"connections,omitempty"`
+	Authentication *Authentication        `yaml:"authentication,omitempty" json:"authentication,omitempty"`
+	Capabilities   *rcap.CapabilityConfig `yaml:"capabilities,omitempty" json:"capabilities,omitempty"`
+	Handlers       []Handler              `yaml:"handlers,omitempty" json:"handlers,omitempty"`
+	Schedules      []Schedule             `yaml:"schedules,omitempty" json:"schedules,omitempty"`
+
+	// Runnables is populated by subo, never by the user
+	Runnables []Runnable `yaml:"runnables" json:"runnables"`
 }
 
 // Handler represents the mapping between an input and a composition of functions
@@ -102,7 +106,7 @@ type Connections struct {
 }
 
 type Authentication struct {
-	Domains map[string]DomainAuth `yaml:"domains,omitempty" json:"domains,omitempty"`
+	Domains map[string]rcap.AuthHeader `yaml:"domains,omitempty" json:"domains,omitempty"`
 }
 
 func (d *Directive) FindRunnable(name string) *Runnable {

@@ -210,6 +210,8 @@ github.com/suborbital/atmo v0.2.3-0.20210521151945-bc9b42cd29c6/go.mod h1:d6OMJ1
 github.com/suborbital/atmo v0.2.3-0.20210612160203-f809a67f53ea/go.mod h1:pgirs2kVjwkWK0HvrfTyOFEHy/E+XvM5x4w4ENCVWYw=
 github.com/suborbital/atmo v0.2.4-0.20210703023811-c300771a336d/go.mod h1:01soR3EqyzdWlyu+zGMsSrkZfKe0mkZCOyCKqDNf78M=
 github.com/suborbital/atmo v0.2.4-0.20210703165749-14c9326b2f7f/go.mod h1:Wt+gmDF17zxf1162QP5V9GhI2Y6x0+7spyPNWCAq63U=
+github.com/suborbital/atmo v0.3.1-0.20210810195347-325b9aa81ca7/go.mod h1:fqKzibuuvELT05PdPQhiKPdYuSkQ01ThBYRwhwS/UkQ=
+github.com/suborbital/atmo v0.3.1-0.20210811161300-cf9b7d3fbb19/go.mod h1:p8Myr6lgyUiGcGczf9XEhhW1RVFgwnCYGEtZJ+tMSIg=
 github.com/suborbital/grav v0.3.0/go.mod h1:PapJ62PtT9dPmW37WaCD+UMhoZiNPp0N9E3nUfEujC4=
 github.com/suborbital/grav v0.3.2 h1:5k3zb5kHBI8/RbD4YA+QHmMo6oovRWASta9rrNIJEUg=
 github.com/suborbital/grav v0.3.2/go.mod h1:PapJ62PtT9dPmW37WaCD+UMhoZiNPp0N9E3nUfEujC4=
@@ -237,6 +239,14 @@ github.com/suborbital/reactr v0.10.1-0.20210727154932-f316d5d35fd7 h1:1npotT/AdL
 github.com/suborbital/reactr v0.10.1-0.20210727154932-f316d5d35fd7/go.mod h1:uHsQPS5W2n+VrV7D6F1Cjogqk4iHDKK8EsrcGZDUQGQ=
 github.com/suborbital/reactr v0.11.0 h1:u8smOpJaWqnagcvjvSLtQcEfp4ke3AT+37gFMbt4wQY=
 github.com/suborbital/reactr v0.11.0/go.mod h1:ZhWGNCH5boA+jJD9Jf/rthZ7OKb7+zRqiDI7c8lU078=
+github.com/suborbital/reactr v0.11.1-0.20210806212346-26bc1d469301 h1:5yqSpZK5hvM440tbiZMYP8VNgTBLnUqZk4IX2VkoF70=
+github.com/suborbital/reactr v0.11.1-0.20210806212346-26bc1d469301/go.mod h1:ZhWGNCH5boA+jJD9Jf/rthZ7OKb7+zRqiDI7c8lU078=
+github.com/suborbital/reactr v0.11.1-0.20210811160758-b715bc22e760 h1:2dCNwtCKQ25LaYr+mb2LwMbpimsBbJ3QH0N15zzHvVc=
+github.com/suborbital/reactr v0.11.1-0.20210811160758-b715bc22e760/go.mod h1:WKIsmoKHawZoJd7X34xXH7P7i5s+33ln3gCZZIvtwAo=
+github.com/suborbital/reactr v0.11.1-0.20210811185115-8fef13b98dd7 h1:6KfPSnlJlyIOBD5yGT5+VCuXR5t//pC0ig/OjcT8h34=
+github.com/suborbital/reactr v0.11.1-0.20210811185115-8fef13b98dd7/go.mod h1:veGGwu/8ZjH0hMynCUAdtmNcfp+jUyfcRgvWXGsq4Cg=
+github.com/suborbital/reactr v0.11.1 h1:KegOybwcQI+DmHahzWXC4bfyKpZCNtdEqXd3jZ/dM7E=
+github.com/suborbital/reactr v0.11.1/go.mod h1:veGGwu/8ZjH0hMynCUAdtmNcfp+jUyfcRgvWXGsq4Cg=
 github.com/suborbital/subo v0.0.18 h1:LSZXf7qRkSZKiIFZe61sF4fV7vfwW3cAeEM7z8Ptbio=
 github.com/suborbital/subo v0.0.18/go.mod h1:bCfpNhqLwemsHK21F9r1BwCNS6A6AeIuwVAlGymSf/8=
 github.com/suborbital/vektor v0.2.2/go.mod h1:6YQE7r6t1JcVs3twpqjXDftsLUaTNUk5YorRKHcDamI=

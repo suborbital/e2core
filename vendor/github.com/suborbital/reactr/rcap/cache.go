@@ -10,8 +10,13 @@ import (
 // ErrCacheKeyNotFound is returned when a non-existent cache key is requested
 var ErrCacheKeyNotFound = errors.New("key not found")
 
-// Cache gives Runnables access to a key/value cache
-type Cache interface {
+// CacheConfig is configuration for the cache capability
+type CacheConfig struct {
+	Enabled bool `json:"enabled" yaml:"enabled"`
+}
+
+// CacheCapability gives Runnables access to a key/value cache
+type CacheCapability interface {
 	Set(key string, val []byte, ttl int) error
 	Get(key string) ([]byte, error)
 	Delete(key string) error
@@ -19,6 +24,7 @@ type Cache interface {
 
 // memoryCache is a "default" cache implementation for Reactr
 type memoryCache struct {
+	config CacheConfig
 	values map[string]*uniqueVal
 
 	lock sync.RWMutex
@@ -29,8 +35,9 @@ type uniqueVal struct {
 	val []byte
 }
 
-func DefaultCache() Cache {
+func DefaultCache(config CacheConfig) CacheCapability {
 	m := &memoryCache{
+		config: config,
 		values: make(map[string]*uniqueVal),
 		lock:   sync.RWMutex{},
 	}
@@ -39,6 +46,10 @@ func DefaultCache() Cache {
 }
 
 func (m *memoryCache) Set(key string, val []byte, ttl int) error {
+	if !m.config.Enabled {
+		return ErrCapabilityNotEnabled
+	}
+
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
@@ -66,6 +77,10 @@ func (m *memoryCache) Set(key string, val []byte, ttl int) error {
 }
 
 func (m *memoryCache) Get(key string) ([]byte, error) {
+	if !m.config.Enabled {
+		return nil, ErrCapabilityNotEnabled
+	}
+
 	m.lock.RLock()
 	defer m.lock.RUnlock()
 
@@ -78,6 +93,10 @@ func (m *memoryCache) Get(key string) ([]byte, error) {
 }
 
 func (m *memoryCache) Delete(key string) error {
+	if !m.config.Enabled {
+		return ErrCapabilityNotEnabled
+	}
+
 	m.lock.Lock()
 	defer m.lock.Unlock()
 

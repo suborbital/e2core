@@ -11,19 +11,26 @@ import (
 	"github.com/pkg/errors"
 )
 
-// GraphQLClient is a GraphQL capability for Reactr Modules
-type GraphQLClient interface {
-	Do(auth AuthProvider, endpoint, query string) (*GraphQLResponse, error)
+// GraphQLConfig is configuration for the GraphQL capability
+type GraphQLConfig struct {
+	Enabled bool `json:"enabled" yaml:"enabled"`
+}
+
+// GraphQLCapability is a GraphQL capability for Reactr Modules
+type GraphQLCapability interface {
+	Do(auth AuthCapability, endpoint, query string) (*GraphQLResponse, error)
 }
 
 // defaultGraphQLClient is the default implementation of the GraphQL capability
 type defaultGraphQLClient struct {
+	config GraphQLConfig
 	client *http.Client
 }
 
 // DefaultGraphQLClient creates a GraphQLClient object
-func DefaultGraphQLClient() GraphQLClient {
+func DefaultGraphQLClient(config GraphQLConfig) GraphQLCapability {
 	g := &defaultGraphQLClient{
+		config: config,
 		client: http.DefaultClient,
 	}
 
@@ -49,7 +56,11 @@ type GraphQLError struct {
 	Path    string `json:"path"`
 }
 
-func (g *defaultGraphQLClient) Do(auth AuthProvider, endpoint, query string) (*GraphQLResponse, error) {
+func (g *defaultGraphQLClient) Do(auth AuthCapability, endpoint, query string) (*GraphQLResponse, error) {
+	if !g.config.Enabled {
+		return nil, ErrCapabilityNotEnabled
+	}
+
 	r := &GraphQLRequest{
 		Query:     query,
 		Variables: map[string]string{},

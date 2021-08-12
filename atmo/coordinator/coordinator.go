@@ -13,6 +13,7 @@ import (
 	"github.com/suborbital/grav/grav"
 	"github.com/suborbital/grav/transport/nats"
 	"github.com/suborbital/grav/transport/websocket"
+	"github.com/suborbital/reactr/rcap"
 	"github.com/suborbital/reactr/rt"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
@@ -54,7 +55,7 @@ type requestScope struct {
 
 // New creates a coordinator
 func New(appSource appsource.AppSource, options *options.Options) *Coordinator {
-	reactr := rt.New()
+	// Reactr is configured when Start is called
 
 	gravOpts := []grav.OptionsModifier{
 		grav.UseLogger(options.Logger),
@@ -76,7 +77,6 @@ func New(appSource appsource.AppSource, options *options.Options) *Coordinator {
 		App:         appSource,
 		opts:        options,
 		log:         options.Logger,
-		reactr:      reactr,
 		grav:        g,
 		connections: map[string]*grav.Grav{},
 		handlerPods: map[string]*grav.Pod{},
@@ -92,6 +92,13 @@ func (c *Coordinator) Start() error {
 	if err := c.App.Start(*c.opts); err != nil {
 		return errors.Wrap(err, "failed to App.Start")
 	}
+
+	// we have to wait until here to initialize Reactr
+	// since the appsource needs to be fully initialized
+	caps := renderCapabilities(c.App, c.log)
+	reactr := rt.NewWithConfig(caps)
+
+	c.reactr = reactr
 
 	// do an initial sync of Runnables
 	// from the AppSource into RVG
@@ -169,6 +176,54 @@ func (c *Coordinator) SetSchedules() {
 			}))
 		}
 	}
+}
+
+// renderCapabilities "renders" capabilities by layering any user-defined
+// capabilities onto the default set, thus allowing the user to omit any
+// individual capability (or all of them) to receive the defaults
+func renderCapabilities(source appsource.AppSource, log *vlog.Logger) rcap.CapabilityConfig {
+	config := rcap.DefaultConfigWithLogger(log)
+
+	userConfig := source.Capabilities()
+	if userConfig == nil {
+		return config
+	}
+
+	if userConfig.Logger != nil {
+		config.Logger = userConfig.Logger
+	}
+
+	if userConfig.HTTP != nil {
+		config.HTTP = userConfig.HTTP
+	}
+
+	if userConfig.GraphQL != nil {
+		config.GraphQL = userConfig.GraphQL
+	}
+
+	if userConfig.Auth != nil {
+		config.Auth = userConfig.Auth
+	}
+
+	if userConfig.Cache != nil {
+		config.Cache = userConfig.Cache
+	}
+
+	if userConfig.File != nil {
+		config.File = userConfig.File
+	}
+
+	if userConfig.RequestHandler != nil {
+		config.RequestHandler = userConfig.RequestHandler
+	}
+
+	// The following are extra inputs needed to make things work
+
+	config.Logger.Logger = log
+	config.File.FileFunc = source.File
+	config.Auth.Headers = source.Authentication().Domains
+
+	return config
 }
 
 // resultFromState returns the state value for the last single function that ran in a handler

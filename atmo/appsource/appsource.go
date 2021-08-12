@@ -5,6 +5,7 @@ import (
 
 	"github.com/suborbital/atmo/atmo/options"
 	"github.com/suborbital/atmo/directive"
+	"github.com/suborbital/reactr/rcap"
 )
 
 var ErrRunnableNotFound = errors.New("failed to find requested Runnable")
@@ -33,6 +34,8 @@ type AppSource interface {
 	Connections() directive.Connections
 	// Authentication provides any auth headers or metadata for the app
 	Authentication() directive.Authentication
+	// Capabilities provides the application's configured capabilities
+	Capabilities() *rcap.CapabilityConfig
 	// File is a source of files for the Runnables
 	// TODO: refactor this into a set of capabilities / profiles
 	File(string) ([]byte, error)

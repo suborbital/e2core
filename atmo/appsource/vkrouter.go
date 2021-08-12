@@ -42,6 +42,7 @@ func (a *AppSourceVKRouter) GenerateRouter() (*vk.Router, error) {
 	router.GET("/schedules", a.SchedulesHandler())
 	router.GET("/connections", a.ConnectionsHandler())
 	router.GET("/authentication", a.AuthenticationHandler())
+	router.GET("/capabilities", a.CapabilitiesHandler())
 	router.GET("/file/:filename", a.FileHandler())
 	router.GET("/meta", a.MetaHandler())
 
@@ -105,6 +106,13 @@ func (a *AppSourceVKRouter) ConnectionsHandler() vk.HandlerFunc {
 func (a *AppSourceVKRouter) AuthenticationHandler() vk.HandlerFunc {
 	return func(r *http.Request, ctx *vk.Ctx) (interface{}, error) {
 		return a.appSource.Authentication(), nil
+	}
+}
+
+// CapabilitiesHandler is a handler to fetch Capabilities data
+func (a *AppSourceVKRouter) CapabilitiesHandler() vk.HandlerFunc {
+	return func(r *http.Request, ctx *vk.Ctx) (interface{}, error) {
+		return a.appSource.Capabilities(), nil
 	}
 }
 
