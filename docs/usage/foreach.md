@@ -22,7 +22,9 @@ To use `forEach`, you must have a JSON array of objects in state. A simple array
 In your Runnable's code, use `req::state("__elem")` to get the current array element being handled.
 {% endhint %}
 
-The example above takes the request body, saves it to the handler's state, and runs the `hello-name` Runable against each element, which changes all of the values. The result is then saved to the `greetings` key in state: Input:
+The example above takes the request body, saves it to the handler's state, and runs the `hello-name` Runable against each element, which changes all of the values. The result is then saved to the `greetings` key in state: 
+
+Input:
 
 ```javascript
 [
