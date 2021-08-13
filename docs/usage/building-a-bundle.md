@@ -5,6 +5,7 @@ To run your Atmo application, we need to create a Runnable Bundle. A Bundle is a
 ```bash
 subo build .
 ```
+**Note:** If building the example project with subo from the root of the repository, pass the directory: subo build ./example-project
 
 The end of this command should read:
 
@@ -18,7 +19,7 @@ Once you have your Runnable Bundle, you can run Atmo:
 > subo dev
 ```
 
-Atmo will start up serving on port 8080, and you will begin to see its structured logs in your terminal. Make a request to `POST localhost:8080/hello` with a request body to see it in action.
+Atmo will start up serving on port 8080, and you will begin to see its structured logs in your terminal. **Note** Check Docker to ensure only Atmo is running on the port or else the Atmo developement server will not start correctly. Make a request to `POST localhost:8080/hello` with a request body to see it in action.
 
 {% hint style="info" %}
 The version of Atmo being run by `subo dev` is dictated by the `atmoVersion` key in your Directive.
