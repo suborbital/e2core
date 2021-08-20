@@ -5,6 +5,8 @@ atmoVersion: v0.3.1
 connections:
   nats:
     serverAddress: nats://localhost:4222
+  redis:
+    serverAddress: localhost:6379
 
 authentication:
   domains:
