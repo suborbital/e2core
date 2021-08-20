@@ -34,12 +34,12 @@ func DefaultCapabilities(logger *vlog.Logger) Capabilities {
 func CapabilitiesFromConfig(config rcap.CapabilityConfig) Capabilities {
 	caps := Capabilities{
 		config:        config,
-		Auth:          rcap.DefaultAuthProvider(*config.Auth), // no authentication config is set up by default
+		Auth:          rcap.DefaultAuthProvider(*config.Auth),
 		LoggerSource:  rcap.DefaultLoggerSource(*config.Logger),
 		HTTPClient:    rcap.DefaultHTTPClient(*config.HTTP),
 		GraphQLClient: rcap.DefaultGraphQLClient(*config.GraphQL),
-		FileSource:    rcap.DefaultFileSource(*config.File), // set file access to nil by default, it can be set later.
-		Cache:         rcap.DefaultCache(*config.Cache),
+		FileSource:    rcap.DefaultFileSource(*config.File),
+		Cache:         rcap.SetupCache(*config.Cache),
 
 		// RequestHandler and doFunc don't get set here since they are set by
 		// the rt and rwasm internals; a better solution for this should probably be found

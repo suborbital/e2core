@@ -12,7 +12,8 @@ var ErrCacheKeyNotFound = errors.New("key not found")
 
 // CacheConfig is configuration for the cache capability
 type CacheConfig struct {
-	Enabled bool `json:"enabled" yaml:"enabled"`
+	Enabled     bool         `json:"enabled" yaml:"enabled"`
+	RedisConfig *RedisConfig `json:"redis,omitempty" yaml:"redis,omitetmpty"`
 }
 
 // CacheCapability gives Runnables access to a key/value cache
@@ -35,14 +36,23 @@ type uniqueVal struct {
 	val []byte
 }
 
-func DefaultCache(config CacheConfig) CacheCapability {
-	m := &memoryCache{
-		config: config,
-		values: make(map[string]*uniqueVal),
-		lock:   sync.RWMutex{},
+func SetupCache(config CacheConfig) CacheCapability {
+	var cache CacheCapability
+
+	if config.RedisConfig == nil {
+		m := &memoryCache{
+			config: config,
+			values: make(map[string]*uniqueVal),
+			lock:   sync.RWMutex{},
+		}
+
+		cache = m
+	} else {
+		r := newRedisCache(config)
+		cache = r
 	}
 
-	return m
+	return cache
 }
 
 func (m *memoryCache) Set(key string, val []byte, ttl int) error {

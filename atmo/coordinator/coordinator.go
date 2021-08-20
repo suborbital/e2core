@@ -93,6 +93,9 @@ func (c *Coordinator) Start() error {
 		return errors.Wrap(err, "failed to App.Start")
 	}
 
+	// establish connections defined by the app
+	c.createConnections()
+
 	// we have to wait until here to initialize Reactr
 	// since the appsource needs to be fully initialized
 	caps := renderCapabilities(c.App, c.log)
@@ -136,7 +139,7 @@ func (c *Coordinator) SetupHandlers() *vk.Router {
 }
 
 // CreateConnections establishes all of the connections described in the directive
-func (c *Coordinator) CreateConnections() {
+func (c *Coordinator) createConnections() {
 	connections := c.App.Connections()
 
 	if connections.NATS != nil {
@@ -189,6 +192,8 @@ func renderCapabilities(source appsource.AppSource, log *vlog.Logger) rcap.Capab
 		return config
 	}
 
+	connections := source.Connections()
+
 	if userConfig.Logger != nil {
 		config.Logger = userConfig.Logger
 	}
@@ -205,8 +210,14 @@ func renderCapabilities(source appsource.AppSource, log *vlog.Logger) rcap.Capab
 		config.Auth = userConfig.Auth
 	}
 
+	// config for the cache can come from either the capabilities
+	// and/or connections sections of the directive
 	if userConfig.Cache != nil {
 		config.Cache = userConfig.Cache
+	}
+
+	if connections.Redis != nil {
+		config.Cache.RedisConfig = connections.Redis
 	}
 
 	if userConfig.File != nil {

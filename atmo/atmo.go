@@ -62,9 +62,6 @@ func (a *Atmo) Start() error {
 		return errors.Wrap(err, "failed to coordinator.Start")
 	}
 
-	// establish connections defined by the app
-	a.coordinator.CreateConnections()
-
 	// mount and set up the app's handlers
 	router := a.coordinator.SetupHandlers()
 	a.server.SwapRouter(router)

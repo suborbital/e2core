@@ -1,6 +1,6 @@
 package wasmer
 
-// #include <wasmer_wasm.h>
+// #include <wasmer.h>
 //
 // extern wasm_trap_t* function_trampoline(
 //   void *environment,
@@ -46,12 +46,12 @@ func newFunction(pointer *C.wasm_func_t, environment *functionEnvironment, owned
 	}
 
 	if ownedBy == nil {
-		runtime.SetFinalizer(function, func(function *Function) {
-			if function.environment != nil {
-				hostFunctionStore.remove(function.environment.hostFunctionStoreIndex)
+		runtime.SetFinalizer(function, func(self *Function) {
+			if self.environment != nil {
+				hostFunctionStore.remove(self.environment.hostFunctionStoreIndex)
 			}
 
-			C.wasm_func_delete(function.inner())
+			C.wasm_func_delete(self.inner())
 		})
 	}
 

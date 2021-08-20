@@ -102,7 +102,8 @@ type ForEach struct {
 
 // Connections describes connections
 type Connections struct {
-	NATS *NATSConnection `yaml:"nats,omitempty" json:"nats,omitempty"`
+	NATS  *NATSConnection   `yaml:"nats,omitempty" json:"nats,omitempty"`
+	Redis *rcap.RedisConfig `yaml:"redis,omitempty" json:"redis,omitempty"`
 }
 
 type Authentication struct {
@@ -210,6 +211,12 @@ func (d *Directive) Validate() error {
 	if d.Connections != nil {
 		if d.Connections.NATS != nil {
 			if err := d.Connections.NATS.validate(); err != nil {
+				problems.add(err)
+			}
+		}
+
+		if d.Connections.Redis != nil {
+			if err := validateRedisConfig(d.Connections.Redis); err != nil {
 				problems.add(err)
 			}
 		}
