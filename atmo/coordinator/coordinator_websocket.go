@@ -39,7 +39,7 @@ func (c *Coordinator) websocketHandlerForDirectiveHandler(handler directive.Hand
 			ctx.Log.Info("handling message", ctx.RequestID(), "from handler", handler.Input.Resource)
 
 			//a sequence executes the handler's steps and manages its state
-			seq := newSequence(handler.Steps, c.grav.Connect, ctx)
+			seq := newSequence(handler.Steps, c.exec, ctx)
 
 			req := &request.CoordinatedRequest{
 				Method:      http.MethodGet,
@@ -52,7 +52,7 @@ func (c *Coordinator) websocketHandlerForDirectiveHandler(handler directive.Hand
 				State:       map[string][]byte{},
 			}
 
-			seqState, err := seq.exec(req)
+			seqState, err := seq.execute(req)
 			if err != nil {
 				if errors.Is(err, ErrSequenceRunErr) && seqState.err != nil {
 					if err := conn.WriteJSON(seqState.err); err != nil {

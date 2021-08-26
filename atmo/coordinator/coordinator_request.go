@@ -53,10 +53,12 @@ func (c *Coordinator) vkHandlerForDirectiveHandler(handler directive.Handler) vk
 		}
 
 		// a sequence executes the handler's steps and manages its state
-		seq := newSequence(handler.Steps, c.grav.Connect, ctx)
+		seq := newSequence(handler.Steps, c.exec, ctx)
 
-		seqState, err := seq.exec(req)
+		seqState, err := seq.execute(req)
 		if err != nil {
+			ctx.Log.Error(errors.Wrap(err, "failed to seq.exec"))
+
 			if errors.Is(err, ErrSequenceRunErr) && seqState.err != nil {
 				if seqState.err.Code < 200 || seqState.err.Code > 599 {
 					// if the Runnable returned an invalid code for HTTP, default to 500

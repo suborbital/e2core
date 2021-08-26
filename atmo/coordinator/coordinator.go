@@ -3,13 +3,12 @@ package coordinator
 import (
 	"fmt"
 	"net/http"
-	"sync"
 
 	"github.com/pkg/errors"
 	"github.com/suborbital/atmo/atmo/appsource"
+	"github.com/suborbital/atmo/atmo/coordinator/executor"
 	"github.com/suborbital/atmo/atmo/options"
 	"github.com/suborbital/atmo/directive"
-	"github.com/suborbital/grav/discovery/local"
 	"github.com/suborbital/grav/grav"
 	"github.com/suborbital/grav/transport/nats"
 	"github.com/suborbital/grav/transport/websocket"
@@ -26,6 +25,7 @@ const (
 	atmoHeadlessParamsHeader = "X-Atmo-Params"
 	atmoRequestIDHeader      = "X-Atmo-RequestID"
 	atmoMessageURI           = "/meta/message"
+	atmoMetricsURI           = "/meta/metrics"
 )
 
 type rtFunc func(rt.Job, *rt.Ctx) (interface{}, error)
@@ -38,15 +38,12 @@ type Coordinator struct {
 
 	log *vlog.Logger
 
-	reactr *rt.Reactr
+	exec *executor.Executor
 
-	grav      *grav.Grav
 	transport *websocket.Transport
 
 	connections map[string]*grav.Grav
 	handlerPods map[string]*grav.Pod
-
-	listening sync.Map
 }
 
 type requestScope struct {
@@ -55,33 +52,22 @@ type requestScope struct {
 
 // New creates a coordinator
 func New(appSource appsource.AppSource, options *options.Options) *Coordinator {
-	// Reactr is configured when Start is called
-
-	gravOpts := []grav.OptionsModifier{
-		grav.UseLogger(options.Logger),
-	}
-
 	var transport *websocket.Transport
 
 	if options.ControlPlane != "" {
 		transport = websocket.New()
-		d := local.New()
-
-		gravOpts = append(gravOpts, grav.UseTransport(transport))
-		gravOpts = append(gravOpts, grav.UseDiscovery(d))
 	}
 
-	g := grav.New(gravOpts...)
+	exec := executor.New(options.Logger, transport)
 
 	c := &Coordinator{
 		App:         appSource,
 		opts:        options,
 		log:         options.Logger,
-		grav:        g,
+		exec:        exec,
 		connections: map[string]*grav.Grav{},
 		handlerPods: map[string]*grav.Pod{},
 		transport:   transport,
-		listening:   sync.Map{},
 	}
 
 	return c
@@ -93,12 +79,10 @@ func (c *Coordinator) Start() error {
 		return errors.Wrap(err, "failed to App.Start")
 	}
 
-	// we have to wait until here to initialize Reactr
+	// we have to wait until this point to initialize the Executor
 	// since the appsource needs to be fully initialized
 	caps := renderCapabilities(c.App, c.log)
-	reactr := rt.NewWithConfig(caps)
-
-	c.reactr = reactr
+	c.exec.UseCapabilityConfig(caps)
 
 	// do an initial sync of Runnables
 	// from the AppSource into RVG
@@ -128,6 +112,8 @@ func (c *Coordinator) SetupHandlers() *vk.Router {
 		}
 	}
 
+	router.GET(atmoMetricsURI, c.metricsHandler())
+
 	if c.transport != nil {
 		router.HandleHTTP(http.MethodGet, atmoMessageURI, c.transport.HTTPHandlerFunc())
 	}
@@ -145,7 +131,7 @@ func (c *Coordinator) CreateConnections() {
 			c.log.Error(errors.Wrap(err, "failed to nats.New for NATS connection"))
 		} else {
 			g := grav.New(
-				grav.UseLogger(c.log.CreateScoped(nil)), // using a scoped logger as using it directly seems to cause issues
+				grav.UseLogger(c.log),
 				grav.UseTransport(gnats),
 			)
 
@@ -162,7 +148,7 @@ func (c *Coordinator) SetSchedules() {
 		// create basically an fqfn for this schedule (com.suborbital.appname#schedule.dojob@v0.1.0)
 		jobName := fmt.Sprintf("%s#schedule.%s@%s", c.App.Meta().Identifier, s.Name, c.App.Meta().AppVersion)
 
-		c.reactr.Register(jobName, &scheduledRunner{rtFunc})
+		c.exec.Register(jobName, &scheduledRunner{rtFunc})
 
 		seconds := s.NumberOfSeconds()
 
@@ -171,7 +157,7 @@ func (c *Coordinator) SetSchedules() {
 		if *c.opts.RunSchedules {
 			c.log.Debug("adding schedule", jobName)
 
-			c.reactr.Schedule(rt.Every(seconds, func() rt.Job {
+			c.exec.SetSchedule(rt.Every(seconds, func() rt.Job {
 				return rt.NewJob(jobName, nil)
 			}))
 		}

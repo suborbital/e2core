@@ -5,15 +5,15 @@ import (
 	"net/http"
 
 	"github.com/pkg/errors"
+	"github.com/suborbital/atmo/atmo/coordinator/executor"
 	"github.com/suborbital/atmo/directive"
-	"github.com/suborbital/grav/grav"
 	"github.com/suborbital/reactr/request"
 	"github.com/suborbital/reactr/rt"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
 )
 
-type connectFunc func() *grav.Pod
+type runFunc func(jobType string, data interface{}) *rt.Result
 
 // ErrSequenceRunErr is returned when the sequence returned due to a Runnable's RunErr
 var ErrSequenceRunErr = errors.New("sequence resulted in a RunErr")
@@ -21,7 +21,7 @@ var ErrSequenceRunErr = errors.New("sequence resulted in a RunErr")
 type sequence struct {
 	steps []directive.Executable
 
-	connectFunc connectFunc
+	exec *executor.Executor
 
 	ctx *vk.Ctx
 	log *vlog.Logger
@@ -40,20 +40,20 @@ type fnResult struct {
 	err      error      // err is an annoying workaround that allows runGroup to propogate non-RunErrs out of its loop. Should be refactored when possible.
 }
 
-func newSequence(steps []directive.Executable, connect connectFunc, ctx *vk.Ctx) *sequence {
+func newSequence(steps []directive.Executable, exec *executor.Executor, ctx *vk.Ctx) *sequence {
 	s := &sequence{
-		steps:       steps,
-		connectFunc: connect,
-		ctx:         ctx,
-		log:         ctx.Log,
+		steps: steps,
+		exec:  exec,
+		ctx:   ctx,
+		log:   ctx.Log,
 	}
 
 	return s
 }
 
-// exec will return the "final state" of a sequence. If the state's err is not nil, it means a runnable returned an error, and the Directive indicates the sequence should return.
+// execute will return the "final state" of a sequence. If the state's err is not nil, it means a runnable returned an error, and the Directive indicates the sequence should return.
 // if exec itself actually returns an error other than ErrSequenceRunErr, it means there was a problem executing the sequence as described, and should be treated as such.
-func (seq *sequence) exec(req *request.CoordinatedRequest) (*sequenceState, error) {
+func (seq *sequence) execute(req *request.CoordinatedRequest) (*sequenceState, error) {
 	for _, step := range seq.steps {
 		stateJSON, err := stateJSONForStep(req, step)
 		if err != nil {

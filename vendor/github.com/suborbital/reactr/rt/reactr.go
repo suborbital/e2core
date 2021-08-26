@@ -90,6 +90,11 @@ func (r *Reactr) RegisterWithCaps(jobType string, runner Runnable, caps Capabili
 	r.core.register(jobType, runner, caps, options...)
 }
 
+// DeRegister stops the workers for a given jobType and removes it
+func (r *Reactr) DeRegister(jobType string) error {
+	return r.core.deRegister(jobType)
+}
+
 // Listen causes Reactr to listen for messages of the given type and trigger the job of the same type.
 // The message's data is passed to the runnable as the job data.
 // The job's result is then emitted as a message. If an error occurs, it is logged and an error is sent.
@@ -161,4 +166,9 @@ func (r *Reactr) IsRegistered(jobType string) bool {
 // Job is a shorter alias for NewJob
 func (r *Reactr) Job(jobType string, data interface{}) Job {
 	return NewJob(jobType, data)
+}
+
+// Metrics returns a snapshot in time describing Reactr's internals
+func (r *Reactr) Metrics() ScalerMetrics {
+	return r.core.metrics()
 }

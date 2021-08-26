@@ -6,7 +6,6 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/suborbital/atmo/directive"
-	"github.com/suborbital/grav/grav"
 	"github.com/suborbital/reactr/request"
 	"github.com/suborbital/reactr/rt"
 )
@@ -23,44 +22,19 @@ func (seq sequence) runSingleFn(fn directive.CallableFn, reqJSON []byte) (*fnRes
 		return nil, ErrMissingFQFN
 	}
 
-	pod := seq.connectFunc()
-	defer pod.Disconnect()
-
-	// compose a message containing the serialized request state, and send it via Grav
-	// for the appropriate meshed Reactr to handle. It may be handled by self if appropriate.
-	jobMsg := grav.NewMsgWithParentID(fn.FQFN, seq.ctx.RequestID(), reqJSON)
-
 	var jobResult []byte
 	var runErr *rt.RunErr
 
-	podErr := pod.Send(jobMsg).WaitUntil(grav.Timeout(30), func(msg grav.Message) error {
-		switch msg.Type() {
-		case rt.MsgTypeReactrResult:
-			// if the Runnable returned a result
-			jobResult = msg.Data()
-		case rt.MsgTypeReactrRunErr:
-			// if the Runnable itself returned an error
-			runErr = &rt.RunErr{}
-			if err := json.Unmarshal(msg.Data(), runErr); err != nil {
-				return errors.Wrap(err, "failed to Unmarshal RunErr")
-			}
-		case rt.MsgTypeReactrJobErr:
-			// if something else caused an error while running this fn
-			return errors.New(string(msg.Data()))
-		case rt.MsgTypeReactrNilResult:
-			// if the Runnable returned nil, do nothing
+	// Do will execute the job locally if possible or find a remote peer to execute it
+	res, err := seq.exec.Do(fn.FQFN, reqJSON)
+	if err != nil {
+		if jobErr, isJobErr := err.(*rt.RunErr); isJobErr {
+			runErr = jobErr
+		} else {
+			return nil, errors.Wrap(err, "failed to doFunc")
 		}
-
-		return nil
-	})
-
-	// podErr would be something that happened whily trying to run a function, not an error returned from a function
-	if podErr != nil {
-		if podErr == grav.ErrWaitTimeout {
-			return nil, errors.Wrapf(podErr, "fn %s timed out", fn.Fn)
-		}
-
-		return nil, errors.Wrapf(podErr, "failed to execute fn %s", fn.Fn)
+	} else {
+		jobResult = res.([]byte)
 	}
 
 	// runErr would be an actual error returned from a function
@@ -71,11 +45,13 @@ func (seq sequence) runSingleFn(fn directive.CallableFn, reqJSON []byte) (*fnRes
 	}
 
 	key := key(fn)
-
 	cResponse := &request.CoordinatedResponse{}
-	if err := json.Unmarshal(jobResult, cResponse); err != nil {
-		// handle backwards-compat
-		cResponse.Output = jobResult
+
+	if jobResult != nil {
+		if err := json.Unmarshal(jobResult, cResponse); err != nil {
+			// handle backwards-compat
+			cResponse.Output = jobResult
+		}
 	}
 
 	result := &fnResult{

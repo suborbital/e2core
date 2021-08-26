@@ -19,9 +19,6 @@ func getFFIResult() *HostFn {
 }
 
 func get_ffi_result(pointer int32, identifier int32) int32 {
-	envLock.RLock()
-	defer envLock.RUnlock()
-
 	inst, err := instanceForIdentifier(identifier, false)
 	if err != nil {
 		internalLogger.Error(errors.Wrap(err, "[rwasm] failed to instanceForIdentifier"))

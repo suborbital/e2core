@@ -1,5 +1,7 @@
 package rt
 
+import "runtime"
+
 // Option is a function that modifies workerOpts
 type Option func(workerOpts) workerOpts
 
@@ -7,6 +9,18 @@ type Option func(workerOpts) workerOpts
 func PoolSize(size int) Option {
 	return func(opts workerOpts) workerOpts {
 		opts.poolSize = size
+		return opts
+	}
+}
+
+// Autoscale returns an Option that enables autoscaling and sets the max number of threads
+func Autoscale(max int) Option {
+	return func(opts workerOpts) workerOpts {
+		if max == 0 {
+			max = runtime.NumCPU()
+		}
+
+		opts.autoscaleMax = max
 		return opts
 	}
 }

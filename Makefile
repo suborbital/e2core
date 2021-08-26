@@ -29,6 +29,9 @@ example-project:
 test:
 	go test -v --count=1 -p=1 ./...
 
+loadtest:
+	go run ./testingsupport/load/load-tester.go
+
 deps:
 	go get -u -d ./...
 	go mod vendor

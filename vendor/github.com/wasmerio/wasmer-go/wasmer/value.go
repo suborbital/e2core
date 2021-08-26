@@ -1,6 +1,6 @@
 package wasmer
 
-// #include <wasmer_wasm.h>
+// #include <wasmer.h>
 //
 // int32_t to_int32(wasm_val_t *value) {
 //     return value->of.i32;
@@ -294,8 +294,7 @@ func toValueVec(list []Value, vec *C.wasm_val_vec_t) {
 	values := make([]C.wasm_val_t, numberOfValues)
 
 	for nth, item := range list {
-		value, err := fromGoValue(item.I32(), item.Kind())
-
+		value, err := fromGoValue(item.Unwrap(), item.Kind())
 		if err != nil {
 			panic(err)
 		}

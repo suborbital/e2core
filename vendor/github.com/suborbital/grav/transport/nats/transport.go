@@ -105,7 +105,6 @@ func (c *Conn) Start(pod *grav.Pod) {
 			message, err := c.sub.NextMsg(time.Duration(time.Second * 60))
 			if err != nil {
 				if err == nats.ErrTimeout {
-					c.log.Debug("[bridge-nats] NextMsg timeout")
 					continue
 				}
 

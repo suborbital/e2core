@@ -74,7 +74,7 @@ func Runnables(r *rt.Reactr, runnables []directive.Runnable, registerSimpleName 
 			// if a module is already registered, don't bother over-writing
 			// since FQFNs are 'guaranteed' to be unique, so there's no point
 			if !r.IsRegistered(runnable.FQFN) {
-				r.Register(runnable.FQFN, getRunner(), rt.PreWarm())
+				r.Register(runnable.FQFN, getRunner(), rt.PreWarm(), rt.PoolSize(2), rt.Autoscale(0))
 			}
 		}
 	}
