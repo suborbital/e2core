@@ -36,7 +36,7 @@ func Bundle(r *rt.Reactr, bundle *bundle.Bundle) error {
 		return errors.Wrap(err, "failed to Validate bundle directive")
 	}
 
-	if err := Runnables(r, bundle.Directive.Runnables, true); err != nil {
+	if err := Runnables(r, bundle.Directive.Runnables); err != nil {
 		return errors.Wrap(err, "failed to ModuleRefsIntoInstance")
 	}
 
@@ -45,7 +45,7 @@ func Bundle(r *rt.Reactr, bundle *bundle.Bundle) error {
 
 // Runnables loads a set of WasmModuleRefs into a Reactr instance
 // if you're trying to use this directly, you probably want BundleFromPath or Bundle instead
-func Runnables(r *rt.Reactr, runnables []directive.Runnable, registerSimpleName bool) error {
+func Runnables(r *rt.Reactr, runnables []directive.Runnable) error {
 	for i, runnable := range runnables {
 		if runnable.ModuleRef == nil {
 			return fmt.Errorf("missing ModuleRef for Runnable %s", runnable.Name)
@@ -60,21 +60,23 @@ func Runnables(r *rt.Reactr, runnables []directive.Runnable, registerSimpleName 
 			return rwasm.NewRunnerWithRef(runnables[i].ModuleRef)
 		}
 
-		// TODO: in the future, this should be updated to
-		// de-register a Runnable if one with the same name
-		// is already registered, since over-registering can
-		// cause workers to languish in the background
-		if registerSimpleName {
-			r.Register(runnable.Name, getRunner())
+		// if the Runnable's 'simple name' is already registered, de-register it
+		// as we don't want to 'overwrite', since that will leave resources stranded
+		if r.IsRegistered(runnable.Name) {
+			// this can error, but for now we can't really
+			// fail if this does, it would break several things
+			r.DeRegister(runnable.Name)
 		}
 
-		// we load the Runnable under its FQFN because
+		r.Register(runnable.Name, getRunner())
+
+		// load the Runnable under its FQFN as well because
 		// that's what will be called when a sequence runs
 		if runnable.FQFN != "" {
 			// if a module is already registered, don't bother over-writing
 			// since FQFNs are 'guaranteed' to be unique, so there's no point
 			if !r.IsRegistered(runnable.FQFN) {
-				r.Register(runnable.FQFN, getRunner(), rt.PreWarm(), rt.PoolSize(2), rt.Autoscale(0))
+				r.Register(runnable.FQFN, getRunner(), rt.PreWarm(), rt.Autoscale(0))
 			}
 		}
 	}

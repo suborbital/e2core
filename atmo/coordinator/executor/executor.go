@@ -116,8 +116,7 @@ func (e *Executor) Load(runnables []directive.Runnable) error {
 		e.reactr.Listen(e.grav.Connect(), fn.FQFN)
 	}
 
-	// pass 'false' for registerSimpleName since we'll only ever call functions by their FQFNs
-	return load.Runnables(e.reactr, runnables, false)
+	return load.Runnables(e.reactr, runnables)
 }
 
 // Metrics returns the executor's Reactr isntance's internal metrics
