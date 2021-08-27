@@ -28,10 +28,12 @@ func (seq sequence) runSingleFn(fn directive.CallableFn, reqJSON []byte) (*fnRes
 	// Do will execute the job locally if possible or find a remote peer to execute it
 	res, err := seq.exec.Do(fn.FQFN, reqJSON)
 	if err != nil {
-		if jobErr, isJobErr := err.(*rt.RunErr); isJobErr {
-			runErr = jobErr
+		// check if the error type is rt.RunErr, because those are handled differently
+		returnedErr := &rt.RunErr{}
+		if errors.As(err, returnedErr) {
+			runErr = returnedErr
 		} else {
-			return nil, errors.Wrap(err, "failed to doFunc")
+			return nil, errors.Wrap(err, "failed to exec.Do")
 		}
 	} else {
 		jobResult = res.([]byte)
