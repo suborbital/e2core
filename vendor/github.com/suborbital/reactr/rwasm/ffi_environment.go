@@ -108,11 +108,27 @@ func (w *wasmEnvironment) addInstance() error {
 		return errors.Wrap(err, "failed to NewInstance")
 	}
 
-	// if the module has exported an init, call it
+	// if the module has exported a WASI start, call it
+	wasiStart, err := inst.Exports.GetWasiStartFunction()
+	if err == nil && wasiStart != nil {
+		if _, err := wasiStart(); err != nil {
+			return errors.Wrap(err, "failed to wasiStart")
+		}
+	} else {
+		// if the module has exported a _start function, call it
+		_start, err := inst.Exports.GetFunction("_start")
+		if err == nil && _start != nil {
+			if _, err := _start(); err != nil {
+				return errors.Wrap(err, "failed to _start")
+			}
+		}
+	}
+
+	// if the module has exported an init function, call it
 	init, err := inst.Exports.GetFunction("init")
 	if err == nil && init != nil {
 		if _, err := init(); err != nil {
-			return errors.Wrap(err, "failed to init instance")
+			return errors.Wrap(err, "failed to init")
 		}
 	}
 

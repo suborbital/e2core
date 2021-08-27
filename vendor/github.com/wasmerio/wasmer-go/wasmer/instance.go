@@ -1,12 +1,15 @@
 package wasmer
 
-// #include <wasmer_wasm.h>
+// #include <wasmer.h>
 import "C"
 import "runtime"
 
 type Instance struct {
 	_inner  *C.wasm_instance_t
 	Exports *Exports
+
+	// without this, imported functions may be freed before execution of an exported function is complete.
+	imports *ImportObject
 }
 
 // NewInstance instantiates a new Instance.
@@ -48,10 +51,6 @@ func NewInstance(module *Module, imports *ImportObject) (*Instance, error) {
 		return nil, err2
 	}
 
-	runtime.KeepAlive(module)
-	runtime.KeepAlive(module.store)
-	runtime.KeepAlive(imports)
-
 	if traps != nil {
 		return nil, newErrorFromTrap(traps)
 	}
@@ -59,10 +58,11 @@ func NewInstance(module *Module, imports *ImportObject) (*Instance, error) {
 	self := &Instance{
 		_inner:  instance,
 		Exports: newExports(instance, module),
+		imports: imports,
 	}
 
 	runtime.SetFinalizer(self, func(self *Instance) {
-		C.wasm_instance_delete(self.inner())
+		self.Close()
 	})
 
 	return self, nil
@@ -70,4 +70,15 @@ func NewInstance(module *Module, imports *ImportObject) (*Instance, error) {
 
 func (self *Instance) inner() *C.wasm_instance_t {
 	return self._inner
+}
+
+// Force to close the Instance.
+//
+// A runtime finalizer is registered on the Instance, but it is
+// possible to force the destruction of the Instance by calling Close
+// manually.
+func (self *Instance) Close() {
+	runtime.SetFinalizer(self, nil)
+	C.wasm_instance_delete(self.inner())
+	self.Exports.Close()
 }

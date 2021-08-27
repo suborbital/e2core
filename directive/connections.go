@@ -4,6 +4,7 @@ import (
 	"net/url"
 
 	"github.com/pkg/errors"
+	"github.com/suborbital/reactr/rcap"
 )
 
 // NATSConnection describes a connection to a NATS server
@@ -17,7 +18,19 @@ func (n *NATSConnection) validate() error {
 	}
 
 	if _, err := url.Parse(n.ServerAddress); err != nil {
-		return errors.Wrap(err, "failed to parse ServerAddress as URL")
+		return errors.Wrap(err, "failed to parse serverAddress as URL")
+	}
+
+	return nil
+}
+
+func validateRedisConfig(config *rcap.RedisConfig) error {
+	if config.ServerAddress == "" {
+		return errors.New("serverAddress is empty")
+	}
+
+	if _, err := url.Parse(config.ServerAddress); err != nil {
+		return errors.Wrap(err, "failed to parse serverAddress as URL")
 	}
 
 	return nil
