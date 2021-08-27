@@ -2,11 +2,12 @@ identifier: com.suborbital.test
 appVersion: v0.0.1
 atmoVersion: v0.3.1
 
-connections:
-  nats:
-    serverAddress: nats://localhost:4222
-  redis:
-    serverAddress: localhost:6379
+# uncomment to try out connections!
+# connections:
+  # nats:
+  #   serverAddress: nats://localhost:4222
+  # redis:
+  #   serverAddress: localhost:6379
 
 authentication:
   domains:
@@ -70,12 +71,13 @@ handlers:
     steps:
       - fn: helloworld-rs
   
-  - type: stream
-    source: nats
-    resource: grav.default
-    steps:
-      - fn: helloworld-rs
-    respondTo: grav.reply
+  # uncomment to try out NATS streaming!
+  # - type: stream
+  #   source: nats
+  #   resource: grav.default
+  #   steps:
+  #     - fn: helloworld-rs
+  #   respondTo: grav.reply
 
 # uncomment to try out scheduled jobs!
 # schedules:

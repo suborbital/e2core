@@ -20,7 +20,7 @@ func main() {
 
 	r := rt.New()
 
-	r.Register("loadtest", &loadRunner{}, rt.PoolSize(10))
+	r.Register("loadtest", &loadRunner{}, rt.PoolSize(15))
 
 	group := rt.NewGroup()
 
