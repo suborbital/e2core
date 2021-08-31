@@ -1,11 +1,10 @@
 package rt
 
 import (
-	"context"
-	"fmt"
 	"sync"
-	"sync/atomic"
 	"time"
+
+	"golang.org/x/sync/singleflight"
 
 	"github.com/pkg/errors"
 )
@@ -26,185 +25,180 @@ type worker struct {
 
 	defaultCaps Capabilities
 
-	threads    []*workThread
-	threadLock sync.Mutex
+	targetThreadCount int
+	threads           []*workThread
 
-	started atomic.Value
+	lock      *sync.RWMutex
+	reconcile *singleflight.Group
+	rate      *rateTracker
 }
 
 // newWorker creates a new goWorker
 func newWorker(runner Runnable, caps Capabilities, opts workerOpts) *worker {
 	w := &worker{
-		runner:      runner,
-		workChan:    make(chan *Job, defaultChanSize),
-		options:     opts,
-		defaultCaps: caps,
-		threads:     make([]*workThread, opts.poolSize),
-		threadLock:  sync.Mutex{},
-		started:     atomic.Value{},
+		runner:            runner,
+		workChan:          make(chan *Job, defaultChanSize),
+		options:           opts,
+		defaultCaps:       caps,
+		targetThreadCount: opts.poolSize,
+		threads:           []*workThread{},
+		lock:              &sync.RWMutex{},
+		reconcile:         &singleflight.Group{},
+		rate:              newRateTracker(),
 	}
-
-	w.started.Store(false)
 
 	return w
 }
 
 func (w *worker) schedule(job *Job) {
 	if job.caps == nil {
-		// create a copy of the caps object so as to not
-		// accidentally share anything between jobs that
-		// shouldn't be shared (like the RequestHandler)
-		jobCaps := w.defaultCaps
-		job.caps = &jobCaps
+		// make a copy so internals of the Capabilites aren't shared
+		caps := w.defaultCaps
+		job.caps = &caps
 	}
 
 	go func() {
+		if err := w.reconcilePoolSize(); err != nil {
+			job.result.sendErr(errors.Wrap(err, "failed to reconcilePoolSize"))
+			return
+		}
+
 		w.workChan <- job
+		w.rate.add()
 	}()
 }
 
-func (w *worker) start(doFunc coreDoFunc) error {
-	// this should only be run once per worker, unless startup fails the first time
-	if isStarted := w.started.Load().(bool); isStarted {
-		return nil
-	}
-
-	w.started.Store(true)
-
-	started := 0
-	attempts := 0
-
-	for {
-		// fill the "pool" with workThreads
-		for i := started; i < w.options.poolSize; i++ {
-			wt := newWorkThread(w.runner, w.workChan, w.options.jobTimeoutSeconds)
-
-			// give the runner opportunity to provision resources if needed
-			if err := w.runner.OnChange(ChangeTypeStart); err != nil {
-				fmt.Println(errors.Wrapf(err, "Runnable returned OnStart error, will retry in %ds", w.options.retrySecs))
-				break
-			} else {
-				started++
-			}
-
-			wt.run()
-
-			w.threads[i] = wt
-		}
-
-		if started == w.options.poolSize {
-			break
-		} else {
-			if attempts >= w.options.numRetries {
-				if started == 0 {
-					// if no threads were able to start, ensure that
-					// the next job causes another attempt
-					w.started.Store(false)
-				}
-
-				return fmt.Errorf("attempted to start worker %d times, Runnable returned error each time", w.options.numRetries)
-			}
-
-			attempts++
-			<-time.After(time.Duration(time.Second * time.Duration(w.options.retrySecs)))
+// start ensures the worker is ready to receive jobs
+func (w *worker) start() error {
+	if w.options.preWarm {
+		if err := w.reconcilePoolSize(); err != nil {
+			return errors.Wrap(err, "failed to reconcilePoolSize")
 		}
 	}
 
 	return nil
 }
 
-func (w *worker) isStarted() bool {
-	return w.started.Load().(bool)
+func (w *worker) stop() error {
+	// set the poolsize to 0 and give the workers a chance to wind down
+	return w.setThreadCount(0)
 }
 
-type workThread struct {
-	runner         Runnable
-	workChan       chan *Job
-	timeoutSeconds int
-	context        context.Context
-	cancelFunc     context.CancelFunc
-}
+func (w *worker) setThreadCount(size int) error {
+	w.targetThreadCount = size
 
-func newWorkThread(runner Runnable, workChan chan *Job, timeoutSeconds int) *workThread {
-	ctx, cancelFunc := context.WithCancel(context.Background())
-
-	wt := &workThread{
-		runner:         runner,
-		workChan:       workChan,
-		timeoutSeconds: timeoutSeconds,
-		context:        ctx,
-		cancelFunc:     cancelFunc,
+	if err := w.reconcilePoolSize(); err != nil {
+		return errors.Wrap(err, "failed to reconcilePoolSize")
 	}
 
-	return wt
+	return nil
 }
 
-func (wt *workThread) run() {
-	go func() {
+// reconcilePoolSize starts and stops runners until `poolSize` are active
+func (w *worker) reconcilePoolSize() error {
+	attempts := 0
+
+	shouldReturn := func() bool {
+		if attempts > w.options.numRetries {
+			return true
+		} else {
+			attempts++
+			time.Sleep(time.Second * time.Duration(w.options.retrySecs))
+			return false
+		}
+	}
+
+	// this is wrapped in a singleFlight to ensure we're only attempting this
+	// once at any given time, because we don't want a sudden influx of jobs
+	// to wreak havoc on the Runnable (especially if it needs to provision resources)
+	_, err, _ := w.reconcile.Do("reconcile", func() (interface{}, error) {
 		for {
-			// die if the context has been cancelled
-			if wt.context.Err() != nil {
+			w.lock.RLock()
+			actualThreadCount := len(w.threads)
+			w.lock.RUnlock()
+
+			if actualThreadCount < w.targetThreadCount {
+				if err := w.addThread(); err != nil {
+					if shouldReturn() {
+						return nil, errors.Wrap(err, "failed to addThread more than numRetries")
+					}
+				}
+			} else if actualThreadCount > w.targetThreadCount {
+				if err := w.removeThread(); err != nil {
+					if shouldReturn() {
+						return nil, errors.Wrap(err, "failed to removeThread more than numRetries")
+					}
+				}
+			} else {
 				break
 			}
-
-			// wait for the next job
-			job := <-wt.workChan
-			var err error
-
-			// TODO: check to see if the workThread pool is sufficient, and attempt to fill it if not
-
-			ctx := newCtx(job.caps)
-
-			var result interface{}
-
-			if wt.timeoutSeconds == 0 {
-				// we pass in a dereferenced job so that the Runner cannot modify it
-				result, err = wt.runner.Run(*job, ctx)
-			} else {
-				result, err = wt.runWithTimeout(job, ctx)
-			}
-
-			if err != nil {
-				job.result.sendErr(err)
-				continue
-			}
-
-			job.result.sendResult(result)
 		}
-	}()
-}
 
-func (wt *workThread) runWithTimeout(job *Job, ctx *Ctx) (interface{}, error) {
-	resultChan := make(chan interface{})
-	errChan := make(chan error)
+		return nil, nil
+	})
 
-	go func() {
-		// we pass in a dereferenced job so that the Runner cannot modify it
-		result, err := wt.runner.Run(*job, ctx)
-		if err != nil {
-			errChan <- err
-		} else {
-			resultChan <- result
-		}
-	}()
-
-	select {
-	case result := <-resultChan:
-		return result, nil
-	case err := <-errChan:
-		return nil, err
-	case <-time.After(time.Duration(time.Second * time.Duration(wt.timeoutSeconds))):
-		return nil, ErrJobTimeout
+	if err != nil {
+		return err
 	}
+
+	return nil
 }
 
-func (wt *workThread) Stop() {
+// addThread starts a new thread and adds it to the thread pool
+func (w *worker) addThread() error {
+	w.lock.Lock()
+	defer w.lock.Unlock()
+
+	wt := newWorkThread(w.runner, w.workChan, w.options.jobTimeoutSeconds)
+
+	// give the runner opportunity to provision resources if needed
+	if err := w.runner.OnChange(ChangeTypeStart); err != nil {
+		return errors.Wrap(err, "runnable returned OnChange error")
+	}
+
+	wt.run()
+
+	w.threads = append(w.threads, wt)
+
+	return nil
+}
+
+// removeThread removes a thread and terminates it
+func (w *worker) removeThread() error {
+	w.lock.Lock()
+	defer w.lock.Unlock()
+
+	wt := w.threads[len(w.threads)-1]
 	wt.cancelFunc()
+
+	// give the runner opportunity to de-provision resources if needed
+	if err := w.runner.OnChange(ChangeTypeStop); err != nil {
+		return errors.Wrap(err, "runnable returned OnChange error")
+	}
+
+	w.threads = w.threads[:len(w.threads)-1]
+
+	return nil
+}
+
+func (w *worker) metrics() WorkerMetrics {
+	w.lock.RLock()
+	defer w.lock.RUnlock()
+
+	m := WorkerMetrics{
+		TargetThreadCount: w.targetThreadCount,
+		ThreadCount:       len(w.threads),
+		JobCount:          len(w.workChan),
+		JobRate:           w.rate.average(),
+	}
+
+	return m
 }
 
 type workerOpts struct {
 	jobType           string
 	poolSize          int
+	autoscaleMax      int
 	jobTimeoutSeconds int
 	numRetries        int
 	retrySecs         int
@@ -215,9 +209,10 @@ func defaultOpts(jobType string) workerOpts {
 	o := workerOpts{
 		jobType:           jobType,
 		poolSize:          1,
+		autoscaleMax:      1,
 		jobTimeoutSeconds: 0,
-		retrySecs:         3,
 		numRetries:        5,
+		retrySecs:         3,
 		preWarm:           false,
 	}
 

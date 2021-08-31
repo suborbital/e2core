@@ -3,6 +3,7 @@ package load
 import (
 	"fmt"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -60,22 +61,26 @@ func Runnables(r *rt.Reactr, runnables []directive.Runnable, registerSimpleName 
 			return rwasm.NewRunnerWithRef(runnables[i].ModuleRef)
 		}
 
-		// TODO: in the future, this should be updated to
-		// de-register a Runnable if one with the same name
-		// is already registered, since over-registering can
-		// cause workers to languish in the background
-		if registerSimpleName {
-			r.Register(runnable.Name, getRunner())
-		}
-
-		// we load the Runnable under its FQFN because
-		// that's what will be called when a sequence runs
+		// prefer load the Runnable under its FQFN as that's what will be called when a sequence runs
 		if runnable.FQFN != "" {
 			// if a module is already registered, don't bother over-writing
 			// since FQFNs are 'guaranteed' to be unique, so there's no point
 			if !r.IsRegistered(runnable.FQFN) {
-				r.Register(runnable.FQFN, getRunner(), rt.PreWarm())
+				// instruct Reactr to use 4 workThreads per CPU
+				autoscaleMax := runtime.NumCPU() * 4
+
+				r.Register(runnable.FQFN, getRunner(), rt.PreWarm(), rt.Autoscale(autoscaleMax))
 			}
+		}
+
+		if registerSimpleName {
+			if r.IsRegistered(runnable.Name) {
+				// this can error, but for now we can't really
+				// fail if this does, it would break several things
+				r.DeRegister(runnable.Name)
+			}
+
+			r.Register(runnable.Name, getRunner())
 		}
 	}
 

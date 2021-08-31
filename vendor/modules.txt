@@ -1,8 +1,11 @@
 # github.com/cespare/xxhash/v2 v2.1.1
+## explicit; go 1.11
 github.com/cespare/xxhash/v2
 # github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f
+## explicit
 github.com/dgryski/go-rendezvous
 # github.com/go-redis/redis/v8 v8.11.3
+## explicit; go 1.13
 github.com/go-redis/redis/v8
 github.com/go-redis/redis/v8/internal
 github.com/go-redis/redis/v8/internal/hashtag
@@ -15,54 +18,62 @@ github.com/go-redis/redis/v8/internal/util
 ## explicit
 github.com/google/uuid
 # github.com/gorilla/websocket v1.4.2
-## explicit
+## explicit; go 1.12
 github.com/gorilla/websocket
 # github.com/inconshreveable/mousetrap v1.0.0
+## explicit
 github.com/inconshreveable/mousetrap
 # github.com/julienschmidt/httprouter v1.3.0
+## explicit; go 1.7
 github.com/julienschmidt/httprouter
 # github.com/nats-io/nats.go v1.11.1-0.20210623165838-4b75fc59ae30
+## explicit; go 1.16
 github.com/nats-io/nats.go
 github.com/nats-io/nats.go/encoders/builtin
 github.com/nats-io/nats.go/util
 # github.com/nats-io/nkeys v0.3.0
+## explicit; go 1.16
 github.com/nats-io/nkeys
 # github.com/nats-io/nuid v1.0.1
+## explicit
 github.com/nats-io/nuid
 # github.com/pkg/errors v0.9.1
 ## explicit
 github.com/pkg/errors
 # github.com/schollz/peerdiscovery v1.6.1
+## explicit; go 1.13
 github.com/schollz/peerdiscovery
 # github.com/sethvargo/go-envconfig v0.3.2
-## explicit
+## explicit; go 1.14
 github.com/sethvargo/go-envconfig
 # github.com/spf13/cobra v1.1.3
-## explicit
+## explicit; go 1.12
 github.com/spf13/cobra
 # github.com/spf13/pflag v1.0.5
+## explicit; go 1.12
 github.com/spf13/pflag
-# github.com/suborbital/grav v0.4.1
-## explicit
+# github.com/suborbital/grav v0.4.2-0.20210826173646-7874eba0763f
+## explicit; go 1.14
 github.com/suborbital/grav/discovery/local
 github.com/suborbital/grav/grav
 github.com/suborbital/grav/transport/nats
 github.com/suborbital/grav/transport/websocket
-# github.com/suborbital/reactr v0.11.2-0.20210820174756-39ea98a138a7
-## explicit
+# github.com/suborbital/reactr v0.11.2-0.20210831133942-ee8abd68fe5d
+## explicit; go 1.17
 github.com/suborbital/reactr/rcap
 github.com/suborbital/reactr/request
 github.com/suborbital/reactr/rt
 github.com/suborbital/reactr/rwasm
 github.com/suborbital/reactr/rwasm/moduleref
 # github.com/suborbital/subo v0.0.18
-## explicit
+## explicit; go 1.16
 github.com/suborbital/subo/subo/input
 # github.com/suborbital/vektor v0.4.1
-## explicit
+## explicit; go 1.16
 github.com/suborbital/vektor/vk
 github.com/suborbital/vektor/vlog
 # github.com/wasmerio/wasmer-go v1.0.4
+## explicit; go 1.14
 github.com/wasmerio/wasmer-go/wasmer
 github.com/wasmerio/wasmer-go/wasmer/packaged/include
 github.com/wasmerio/wasmer-go/wasmer/packaged/lib
@@ -70,14 +81,16 @@ github.com/wasmerio/wasmer-go/wasmer/packaged/lib/darwin-amd64
 github.com/wasmerio/wasmer-go/wasmer/packaged/lib/linux-aarch64
 github.com/wasmerio/wasmer-go/wasmer/packaged/lib/linux-amd64
 # golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97
+## explicit; go 1.17
 golang.org/x/crypto/acme
 golang.org/x/crypto/acme/autocert
 golang.org/x/crypto/ed25519
 golang.org/x/crypto/ed25519/internal/edwards25519
 # golang.org/x/mod v0.4.2
-## explicit
+## explicit; go 1.12
 golang.org/x/mod/semver
 # golang.org/x/net v0.0.0-20210726213435-c6fcb2dbf985
+## explicit; go 1.17
 golang.org/x/net/bpf
 golang.org/x/net/idna
 golang.org/x/net/internal/iana
@@ -85,16 +98,20 @@ golang.org/x/net/internal/socket
 golang.org/x/net/ipv4
 golang.org/x/net/ipv6
 # golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
+## explicit
 golang.org/x/sync/errgroup
+golang.org/x/sync/singleflight
 # golang.org/x/sys v0.0.0-20210615035016-665e8c7367d1
+## explicit; go 1.17
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
 golang.org/x/sys/windows
 # golang.org/x/text v0.3.6
+## explicit; go 1.11
 golang.org/x/text/secure/bidirule
 golang.org/x/text/transform
 golang.org/x/text/unicode/bidi
 golang.org/x/text/unicode/norm
 # gopkg.in/yaml.v2 v2.4.0
-## explicit
+## explicit; go 1.15
 gopkg.in/yaml.v2

@@ -9,6 +9,7 @@ type ChangeEvent int
 // ChangeTypeStart and others represent types of changes
 const (
 	ChangeTypeStart ChangeEvent = iota
+	ChangeTypeStop  ChangeEvent = iota
 )
 
 // Runnable describes something that is runnable

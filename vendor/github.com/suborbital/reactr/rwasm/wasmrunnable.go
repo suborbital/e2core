@@ -118,9 +118,14 @@ func (w *Runner) Run(job rt.Job, ctx *rt.Ctx) (interface{}, error) {
 
 // OnChange runs when a worker starts using this Runnable
 func (w *Runner) OnChange(evt rt.ChangeEvent) error {
-	if evt == rt.ChangeTypeStart {
+	switch evt {
+	case rt.ChangeTypeStart:
 		if err := w.env.addInstance(); err != nil {
 			return errors.Wrap(err, "failed to addInstance")
+		}
+	case rt.ChangeTypeStop:
+		if err := w.env.removeInstance(); err != nil {
+			return errors.Wrap(err, "failed to removeInstance")
 		}
 	}
 

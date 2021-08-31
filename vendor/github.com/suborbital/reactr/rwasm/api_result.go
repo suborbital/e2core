@@ -21,9 +21,6 @@ func returnResult() *HostFn {
 }
 
 func return_result(pointer int32, size int32, identifier int32) {
-	envLock.RLock()
-	defer envLock.RUnlock()
-
 	inst, err := instanceForIdentifier(identifier, false)
 	if err != nil {
 		internalLogger.Error(errors.Wrap(err, "[rwasm] alert: invalid identifier used, potential malicious activity"))
@@ -51,9 +48,6 @@ func returnError() *HostFn {
 }
 
 func return_error(code int32, pointer int32, size int32, identifier int32) {
-	envLock.RLock()
-	defer envLock.RUnlock()
-
 	inst, err := instanceForIdentifier(identifier, false)
 	if err != nil {
 		internalLogger.Error(errors.Wrap(err, "[rwasm] alert: invalid identifier used, potential malicious activity"))
