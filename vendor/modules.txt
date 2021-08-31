@@ -58,8 +58,8 @@ github.com/suborbital/grav/discovery/local
 github.com/suborbital/grav/grav
 github.com/suborbital/grav/transport/nats
 github.com/suborbital/grav/transport/websocket
-# github.com/suborbital/reactr v0.11.2-0.20210826193629-84138c19fd57
-## explicit; go 1.16
+# github.com/suborbital/reactr v0.11.2-0.20210831133942-ee8abd68fe5d
+## explicit; go 1.17
 github.com/suborbital/reactr/rcap
 github.com/suborbital/reactr/request
 github.com/suborbital/reactr/rt

@@ -45,7 +45,7 @@ func newEnvironment(ref *moduleref.WasmModuleRef) *wasmEnvironment {
 	e := &wasmEnvironment{
 		UUID:               uuid.New().String(),
 		ref:                ref,
-		availableInstances: make(chan *wasmInstance, 32),
+		availableInstances: make(chan *wasmInstance, 64),
 		lock:               sync.RWMutex{},
 	}
 

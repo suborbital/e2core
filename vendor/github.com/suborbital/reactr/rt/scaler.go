@@ -61,7 +61,7 @@ func (s *scaler) startAutoscaler() {
 						} else {
 							worker.setThreadCount(worker.options.autoscaleMax)
 						}
-					} else if m.JobCount < m.ThreadCount/2 || m.JobRate < float64(m.ThreadCount*2) {
+					} else if m.JobCount < m.ThreadCount/2 && m.JobRate < float64(m.ThreadCount/2) {
 						if m.ThreadCount/2 > worker.options.poolSize {
 							worker.setThreadCount(m.ThreadCount / 2)
 						} else {
