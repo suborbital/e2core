@@ -15,6 +15,8 @@ import (
 var successCount int64 = 0
 var failCount int64 = 0
 
+var client = http.Client{Timeout: time.Duration(time.Second * 3)}
+
 func main() {
 	start := time.Now()
 
@@ -34,11 +36,12 @@ func main() {
 
 	go func() {
 		for {
-			req, _ := http.NewRequest(http.MethodGet, "http://localhost:8080/meta/metrics", nil)
+			req, _ := http.NewRequest(http.MethodGet, "http://local.suborbital.network:8080/meta/metrics", nil)
 
-			resp, err := http.DefaultClient.Do(req)
+			resp, err := client.Do(req)
 			if err != nil {
 				fmt.Println("failed to Do metrics request:", err)
+				continue
 			}
 
 			metricsJSON, _ := ioutil.ReadAll(resp.Body)
@@ -63,15 +66,16 @@ type loadRunner struct{}
 func (l *loadRunner) Run(job rt.Job, ctx *rt.Ctx) (interface{}, error) {
 	idx := job.Data().(int)
 
-	req, err := http.NewRequest(http.MethodPost, "http://localhost:8080/set/name", strings.NewReader("connor"))
+	req, err := http.NewRequest(http.MethodPost, "http://157.230.68.218/com.suborbital.acmeco/default/httpget/v1.0.0", strings.NewReader("connor"))
 	if err != nil {
 		atomic.AddInt64(&failCount, 1)
 		return nil, errors.Wrap(err, "failed to NewRequest")
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
 		atomic.AddInt64(&failCount, 1)
+		fmt.Println(err)
 		return nil, errors.Wrap(err, "failed to to Do request")
 	}
 

@@ -116,7 +116,7 @@ func (e *Executor) Load(runnables []directive.Runnable) error {
 		e.reactr.Listen(e.grav.Connect(), fn.FQFN)
 	}
 
-	return load.Runnables(e.reactr, runnables)
+	return load.Runnables(e.reactr, runnables, false)
 }
 
 // Metrics returns the executor's Reactr isntance's internal metrics
