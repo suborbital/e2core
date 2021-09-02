@@ -80,7 +80,7 @@ func (e *Executor) Do(jobType string, data interface{}, ctx *vk.Ctx) (interface{
 	if err != nil {
 		e.pod.Send(grav.NewMsgWithParentID(rt.MsgTypeReactrRunErr, ctx.RequestID(), []byte(err.Error())))
 	} else {
-		e.pod.Send(grav.NewMsgWithParentID(rt.MsgTypeReactrResult, ctx.RequestID(), []byte(result.([]byte))))
+		e.pod.Send(grav.NewMsgWithParentID(rt.MsgTypeReactrResult, ctx.RequestID(), result.([]byte)))
 	}
 
 	return result, err

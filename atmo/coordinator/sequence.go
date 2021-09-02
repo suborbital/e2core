@@ -13,8 +13,6 @@ import (
 	"github.com/suborbital/vektor/vlog"
 )
 
-type runFunc func(jobType string, data interface{}) *rt.Result
-
 // ErrSequenceRunErr is returned when the sequence returned due to a Runnable's RunErr
 var ErrSequenceRunErr = errors.New("sequence resulted in a RunErr")
 
