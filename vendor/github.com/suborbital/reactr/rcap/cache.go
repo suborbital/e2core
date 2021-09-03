@@ -14,7 +14,7 @@ var ErrCacheKeyNotFound = errors.New("key not found")
 type CacheConfig struct {
 	Enabled     bool         `json:"enabled" yaml:"enabled"`
 	Rules       CacheRules   `json:"rules" yaml:"rules"`
-	RedisConfig *RedisConfig `json:"redis,omitempty" yaml:"redis,omitetmpty"`
+	RedisConfig *RedisConfig `json:"redis,omitempty" yaml:"redis,omitempty"`
 }
 
 type CacheRules struct {
