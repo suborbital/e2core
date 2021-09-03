@@ -2,6 +2,7 @@ package executor
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 
 	"github.com/suborbital/atmo/bundle/load"
@@ -11,6 +12,7 @@ import (
 	"github.com/suborbital/grav/transport/websocket"
 	"github.com/suborbital/reactr/rcap"
 	"github.com/suborbital/reactr/rt"
+	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
 )
 
@@ -24,6 +26,8 @@ var (
 type Executor struct {
 	reactr *rt.Reactr
 	grav   *grav.Grav
+
+	pod *grav.Pod
 
 	log *vlog.Logger
 
@@ -48,6 +52,7 @@ func New(log *vlog.Logger, transport *websocket.Transport) *Executor {
 	// Reactr is configured in UseCapabiltyConfig
 	e := &Executor{
 		grav:      g,
+		pod:       g.Connect(),
 		log:       log,
 		listening: sync.Map{},
 	}
@@ -56,7 +61,7 @@ func New(log *vlog.Logger, transport *websocket.Transport) *Executor {
 }
 
 // Do executes a local or remote job
-func (e *Executor) Do(jobType string, data interface{}) (interface{}, error) {
+func (e *Executor) Do(jobType string, data interface{}, ctx *vk.Ctx) (interface{}, error) {
 	if e.reactr == nil {
 		return nil, ErrExecutorNotConfigured
 	}
@@ -67,7 +72,18 @@ func (e *Executor) Do(jobType string, data interface{}) (interface{}, error) {
 		return nil, ErrCannotHandle
 	}
 
-	return e.reactr.Do(rt.NewJob(jobType, data)).Then()
+	res := e.reactr.Do(rt.NewJob(jobType, data))
+
+	e.pod.Send(grav.NewMsgWithParentID(fmt.Sprintf("local/%s", jobType), ctx.RequestID(), nil))
+
+	result, err := res.Then()
+	if err != nil {
+		e.pod.Send(grav.NewMsgWithParentID(rt.MsgTypeReactrRunErr, ctx.RequestID(), []byte(err.Error())))
+	} else {
+		e.pod.Send(grav.NewMsgWithParentID(rt.MsgTypeReactrResult, ctx.RequestID(), result.([]byte)))
+	}
+
+	return result, err
 }
 
 // UseCapabilityConfig sets up the executor's Reactr instance using the provided capability configuration
