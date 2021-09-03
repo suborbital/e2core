@@ -13,7 +13,14 @@ var ErrCacheKeyNotFound = errors.New("key not found")
 // CacheConfig is configuration for the cache capability
 type CacheConfig struct {
 	Enabled     bool         `json:"enabled" yaml:"enabled"`
+	Rules       CacheRules   `json:"rules" yaml:"rules"`
 	RedisConfig *RedisConfig `json:"redis,omitempty" yaml:"redis,omitetmpty"`
+}
+
+type CacheRules struct {
+	AllowSet    bool `json:"allowSet" yaml:"allowSet"`
+	AllowGet    bool `json:"allowGet" yaml:"allowGet"`
+	AllowDelete bool `json:"allowDelete" yaml:"allowDelete"`
 }
 
 // CacheCapability gives Runnables access to a key/value cache
@@ -56,7 +63,7 @@ func SetupCache(config CacheConfig) CacheCapability {
 }
 
 func (m *memoryCache) Set(key string, val []byte, ttl int) error {
-	if !m.config.Enabled {
+	if !m.config.Enabled || !m.config.Rules.AllowSet {
 		return ErrCapabilityNotEnabled
 	}
 
@@ -87,7 +94,7 @@ func (m *memoryCache) Set(key string, val []byte, ttl int) error {
 }
 
 func (m *memoryCache) Get(key string) ([]byte, error) {
-	if !m.config.Enabled {
+	if !m.config.Enabled || !m.config.Rules.AllowGet {
 		return nil, ErrCapabilityNotEnabled
 	}
 
@@ -103,7 +110,7 @@ func (m *memoryCache) Get(key string) ([]byte, error) {
 }
 
 func (m *memoryCache) Delete(key string) error {
-	if !m.config.Enabled {
+	if !m.config.Enabled || !m.config.Rules.AllowDelete {
 		return ErrCapabilityNotEnabled
 	}
 
@@ -118,4 +125,14 @@ func (m *memoryCache) Delete(key string) error {
 	delete(m.values, key)
 
 	return nil
+}
+
+func defaultCacheRules() CacheRules {
+	c := CacheRules{
+		AllowSet:    true,
+		AllowGet:    true,
+		AllowDelete: true,
+	}
+
+	return c
 }

@@ -4,14 +4,13 @@ import "github.com/suborbital/vektor/vlog"
 
 // LoggerConfig is configuration for the logger capability
 type LoggerConfig struct {
-	Enabled bool `json:"enabled" yaml:"enabled"`
-
-	Logger *vlog.Logger `json:"-" yaml:"-"`
+	Enabled bool         `json:"enabled" yaml:"enabled"`
+	Logger  *vlog.Logger `json:"-" yaml:"-"`
 }
 
 // LoggerCapability provides a logger to Runnables
 type LoggerCapability interface {
-	Logger() *vlog.Logger
+	Log(level int32, msg string, scope interface{})
 }
 
 type loggerSource struct {
@@ -29,11 +28,22 @@ func DefaultLoggerSource(config LoggerConfig) LoggerCapability {
 	return l
 }
 
-// Logger returns the logger
-func (l *loggerSource) Logger() *vlog.Logger {
+// Log level int32, msg stringreturns the logger
+func (l *loggerSource) Log(level int32, msg string, scope interface{}) {
 	if !l.config.Enabled {
-		return nil
+		return
 	}
 
-	return l.log
+	scoped := l.log.CreateScoped(scope)
+
+	switch level {
+	case 1:
+		scoped.ErrorString(msg)
+	case 2:
+		scoped.Warn(msg)
+	case 4:
+		scoped.Debug(msg)
+	default:
+		scoped.Info(msg)
+	}
 }
