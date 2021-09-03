@@ -2,7 +2,7 @@
 
 Building web services should be simple. Atmo makes it easy to create a powerful server application wihout needing to worry about scalability, infrastructure, or complex networking.
 
-Atmo lets you write small self-contained functions called Runnables using a variety of languages, and define the business logic of your API by declaratively composing them. Atmo then scales out a flat network of instances to handle traffic using its meshed message bus and embedded job scheduler. Atmo can handle request-based traffic, and soon will be able to handle events sourced from various systems like Kafka or EventBridge.
+Atmo enables you to write small self-contained functions called **Runnables** using a variety of languages, and define your business logic by **declaratively composing** them. Atmo then automatically scales out a **flat network** of instances to handle traffic. Atmo is currently focused on building web services, particularly APIs, and can be used with a variety of architectures including HTTP- and stream-based environments.
 
 ## Get started
 
@@ -15,7 +15,7 @@ With Atmo, you only need to do three things:
 2. Declare how you want Atmo to handle requests by creating a "Directive"
 3. Build and deploy your Runnable bundle
 
-Atmo is not just a framework, but also a self-hosted platform that uses a bundle containing your Runnables and Directive to automatically run your application.
+Atmo is a server-side runtime and application framework. It uses a **bundle** containing your Runnables and Directive to automatically run your application.
 
 ## Background
 
@@ -26,7 +26,7 @@ Atmo is designed to embody the [SUFA design pattern](https://blog.suborbital.dev
 Please read the [contributing guide](./CONTRIBUTING.md) to learn about how you can contribute to Atmo! We welcome all types of contribution.
 
 ## Status
-Atmo is currently in **beta**, and is the flagship project in the Suborbital Development Platform.
+Atmo is currently in **beta**, and is the flagship project in the Suborbital Development Platform. Visit [the Suborbital website](https://suborbital.dev) to sign up for email updates related to new versions of Atmo.
 
 Atmo is built atop [Vektor](https://github.com/suborbital/vektor), [Grav](https://github.com/suborbital/grav), and [Reactr](https://github.com/suborbital/reactr).
 
