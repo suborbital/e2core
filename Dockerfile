@@ -1,8 +1,14 @@
-FROM golang:1.16 as builder
+FROM golang:1.17 as builder
 
 RUN mkdir -p /go/src/github.com/suborbital/atmo
 COPY . /go/src/github.com/suborbital/atmo/
 WORKDIR /go/src/github.com/suborbital/atmo/
+
+# lib dance to get things building properly on ARM
+RUN mkdir -p /tmp/wasmerio
+RUN cp -R ./vendor/github.com/wasmerio/wasmer-go/wasmer/packaged/lib/* /tmp/wasmerio/
+RUN ./scripts/copy-libs.sh
+ENV LD_LIBRARY_PATH=/usr/local/lib
 
 RUN go install
 

@@ -11,7 +11,8 @@ import (
 
 // HTTPConfig is configuration for the HTTP capability
 type HTTPConfig struct {
-	Enabled bool `json:"enabled" yaml:"enabled"`
+	Enabled bool      `json:"enabled" yaml:"enabled"`
+	Rules   HTTPRules `json:"rules" yaml:"rules"`
 }
 
 // HTTPCapability gives Runnables the ability to make HTTP requests
@@ -46,6 +47,10 @@ func (h *httpClient) Do(auth AuthCapability, method, urlString string, body []by
 	req, err := http.NewRequest(method, urlObj.String(), bytes.NewBuffer(body))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to NewRequest")
+	}
+
+	if err := h.config.Rules.requestIsAllowed(req); err != nil {
+		return nil, errors.Wrap(err, "failed to requestIsAllowed")
 	}
 
 	authHeader := auth.HeaderForDomain(urlObj.Host)

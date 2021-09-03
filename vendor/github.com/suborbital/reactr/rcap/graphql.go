@@ -13,7 +13,8 @@ import (
 
 // GraphQLConfig is configuration for the GraphQL capability
 type GraphQLConfig struct {
-	Enabled bool `json:"enabled" yaml:"enabled"`
+	Enabled bool      `json:"enabled" yaml:"enabled"`
+	Rules   HTTPRules `json:"rules" yaml:"rules"`
 }
 
 // GraphQLCapability is a GraphQL capability for Reactr Modules
@@ -79,6 +80,10 @@ func (g *defaultGraphQLClient) Do(auth AuthCapability, endpoint, query string) (
 	req, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewBuffer(reqBytes))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to NewRequest")
+	}
+
+	if err := g.config.Rules.requestIsAllowed(req); err != nil {
+		return nil, errors.Wrap(err, "failed to requestIsAllowed")
 	}
 
 	req.Header.Add("Content-Type", "application/json")

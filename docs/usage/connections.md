@@ -1,16 +1,20 @@
 # Connections
 
-In order to build a useful application, Atmo needs to be able to connect to external sources. Currently, the only connection type is [NATS](https://nats.io/), but upcoming releases will include additional types such as Redis, databases, and more.
+In order to build a useful application, Atmo needs to be able to connect to external resources. Currently, Atmo can connect to [NATS](https://nats.io/) and [Redis](https://redis.io/), and upcoming releases will include additional types such as databases and more.
 
-To create a connection, add a `connections` section to your Directive:
+To create connections, add a `connections` section to your Directive:
 
 ```yaml
 connections:
   nats:
     serverAddress: nats://localhost:4222
+  redis:
+    serverAddress: localhost:6379
 ```
 
-When Atmo starts up, it will create a connection to the NATS server and make it available as a stream source:
+When Atmo starts up, it will establish the connections you've configured, and make them available to your application in a few different ways.
+
+The NATS connection is made available as a stream source:
 
 ```yaml
   - type: stream
@@ -33,3 +37,21 @@ Streams that use an external source can also use the `respondTo` field to set wh
     respondTo: user.send-login-email
 ```
 
+The Redis connection will be made available to Runnables utilizing the `cache` capability:
+```rust
+use suborbital::runnable::*;
+use suborbital::req;
+use suborbital::cache;
+
+struct CacheGet{}
+
+impl Runnable for CacheGet {
+    fn run(&self, _: Vec<u8>) -> Result<Vec<u8>, RunErr> {
+        let key = req::url_param("key");
+
+        let val = cache::get(key.as_str()).unwrap_or_default();
+    
+        Ok(val)
+    }
+}
+```

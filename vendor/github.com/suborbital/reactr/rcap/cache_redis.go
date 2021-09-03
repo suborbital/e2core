@@ -36,7 +36,7 @@ func newRedisCache(config CacheConfig) *RedisCache {
 
 // Set sets a value in the cache
 func (r *RedisCache) Set(key string, val []byte, ttl int) error {
-	if !r.config.Enabled {
+	if !r.config.Enabled || !r.config.Rules.AllowSet {
 		return ErrCapabilityNotEnabled
 	}
 
@@ -51,7 +51,7 @@ func (r *RedisCache) Set(key string, val []byte, ttl int) error {
 
 // Get gets a value from the cache
 func (r *RedisCache) Get(key string) ([]byte, error) {
-	if !r.config.Enabled {
+	if !r.config.Enabled || !r.config.Rules.AllowGet {
 		return nil, ErrCapabilityNotEnabled
 	}
 
@@ -65,7 +65,7 @@ func (r *RedisCache) Get(key string) ([]byte, error) {
 
 // Delete deletes a key
 func (r *RedisCache) Delete(key string) error {
-	if !r.config.Enabled {
+	if !r.config.Enabled || !r.config.Rules.AllowDelete {
 		return ErrCapabilityNotEnabled
 	}
 

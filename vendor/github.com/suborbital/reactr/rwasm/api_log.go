@@ -47,16 +47,5 @@ func log_msg(pointer int32, size int32, level int32, identifier int32) {
 		}
 	}
 
-	l := inst.ctx.LoggerSource.Logger().CreateScoped(scope)
-
-	switch level {
-	case 1:
-		l.ErrorString(string(msgBytes))
-	case 2:
-		l.Warn(string(msgBytes))
-	case 4:
-		l.Debug(string(msgBytes))
-	default:
-		l.Info(string(msgBytes))
-	}
+	inst.ctx.LoggerSource.Log(level, string(msgBytes), scope)
 }
