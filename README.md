@@ -1,4 +1,4 @@
-![logo_transparent cropped](https://user-images.githubusercontent.com/5942370/97611488-a10ea580-19ec-11eb-9178-a6b17c151230.png)
+![SOS_Atmo-Long-FullColour](https://user-images.githubusercontent.com/5942370/134701827-dec2dc05-83e0-4f05-817e-a6ad81946064.png)
 
 Building web services should be simple. Atmo makes it easy to create a powerful server application wihout needing to worry about scalability, infrastructure, or complex networking.
 
@@ -26,7 +26,9 @@ Atmo is designed to embody the [SUFA design pattern](https://blog.suborbital.dev
 Please read the [contributing guide](./CONTRIBUTING.md) to learn about how you can contribute to Atmo! We welcome all types of contribution.
 
 ## Status
-Atmo is currently in **beta**, and is the flagship project in the Suborbital Development Platform. Visit [the Suborbital website](https://suborbital.dev) to sign up for email updates related to new versions of Atmo.
+Atmo is currently in **beta**
+
+Visit [the Suborbital website](https://suborbital.dev) to sign up for email updates related to new versions of Atmo.
 
 Atmo is built atop [Vektor](https://github.com/suborbital/vektor), [Grav](https://github.com/suborbital/grav), and [Reactr](https://github.com/suborbital/reactr).
 
