@@ -54,7 +54,7 @@ type requestScope struct {
 func New(appSource appsource.AppSource, options *options.Options) *Coordinator {
 	var transport *websocket.Transport
 
-	if options.ControlPlane != "" {
+	if options.ControlPlane != "" || options.Proxy {
 		transport = websocket.New()
 	}
 
@@ -75,6 +75,10 @@ func New(appSource appsource.AppSource, options *options.Options) *Coordinator {
 
 // Start allows the Coordinator to bootstrap
 func (c *Coordinator) Start() error {
+	if c.opts.Proxy {
+		c.log.Info("running in proxy mode")
+	}
+
 	if err := c.App.Start(*c.opts); err != nil {
 		return errors.Wrap(err, "failed to App.Start")
 	}

@@ -57,7 +57,7 @@ func Runnables(r *rt.Reactr, runnables []directive.Runnable, registerSimpleName 
 		// below end up getting called, we don't want
 		// to create the Runner, since that adds things
 		// to Reactr's global state, which would be a waste.
-		getRunner := func() *rwasm.Runner {
+		getRunner := func() rt.Runnable {
 			return rwasm.NewRunnerWithRef(runnables[i].ModuleRef)
 		}
 

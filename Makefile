@@ -2,6 +2,9 @@
 build:
 	go build -o .bin/atmo ./main.go
 
+build/proxy:
+	go build -o .bin/atmo-proxy -tags proxy ./main.go
+
 atmo: build
 	ATMO_HTTP_PORT=8080 .bin/atmo $(bundle)
 
