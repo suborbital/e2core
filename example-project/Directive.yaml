@@ -20,15 +20,7 @@ handlers:
     resource: /hello
     method: POST
     steps:
-      - group:
-        - fn: modify-url
-        - fn: helloworld-rs
-          as: hello
-      
-      - fn: fetch-test
-        with:
-          url: modify-url
-          logme: hello
+      - fn: helloworld-rs
 
   - type: request
     resource: /set/:key

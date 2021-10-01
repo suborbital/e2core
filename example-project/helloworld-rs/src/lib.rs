@@ -16,6 +16,6 @@ impl Runnable for HelloworldRs {
 static RUNNABLE: &HelloworldRs = &HelloworldRs{};
 
 #[no_mangle]
-pub extern fn init() {
+pub extern fn _start() {
     use_runnable(RUNNABLE);
 }

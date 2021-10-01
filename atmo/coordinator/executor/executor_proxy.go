@@ -69,7 +69,9 @@ func (e *Executor) Do(jobType string, data interface{}, ctx *vk.Ctx) (interface{
 	pod := e.grav.Connect()
 	defer pod.Disconnect()
 
-	podErr := pod.Send(grav.NewMsgWithParentID(jobType, ctx.RequestID(), nil)).WaitUntil(grav.Timeout(30), func(msg grav.Message) error {
+	e.log.Info("proxying function", jobType)
+
+	podErr := pod.Send(grav.NewMsgWithParentID(jobType, ctx.RequestID(), data.([]byte))).WaitUntil(grav.Timeout(30), func(msg grav.Message) error {
 		switch msg.Type() {
 		case rt.MsgTypeReactrResult:
 			// if the Runnable returned a result
@@ -98,7 +100,15 @@ func (e *Executor) Do(jobType string, data interface{}, ctx *vk.Ctx) (interface{
 		return nil, errors.Wrapf(podErr, "failed to execute fn %s", jobType)
 	}
 
-	return jobResult, runErr
+	// checking this explicitly because somehow Go interprets an
+	// un-instantiated literal pointer as a non-nil error interface
+	if runErr != nil {
+		return nil, runErr
+	}
+
+	e.log.Info("proxied function", jobType, "fulfilled by peer")
+
+	return jobResult, nil
 }
 
 // UseCapabilityConfig sets up the executor's Reactr instance using the provided capability configuration
