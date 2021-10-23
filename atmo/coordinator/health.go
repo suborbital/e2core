@@ -7,6 +7,6 @@ import (
 
 func (c *Coordinator) health() vk.HandlerFunc {
 	return func(request *http.Request, ctx *vk.Ctx) (interface{}, error) {
-		return map[string]string{"result": "success"}, nil
+		return map[string]bool{"healthy": true}, nil
 	}
 }
