@@ -26,6 +26,7 @@ const (
 	atmoRequestIDHeader      = "X-Atmo-RequestID"
 	atmoMessageURI           = "/meta/message"
 	atmoMetricsURI           = "/meta/metrics"
+	atmoHealthURI            = "/health"
 )
 
 type rtFunc func(rt.Job, *rt.Ctx) (interface{}, error)
@@ -116,6 +117,8 @@ func (c *Coordinator) SetupHandlers() *vk.Router {
 	}
 
 	router.GET(atmoMetricsURI, c.metricsHandler())
+
+	router.GET(atmoHealthURI, c.health())
 
 	if c.transport != nil {
 		router.HandleHTTP(http.MethodGet, atmoMessageURI, c.transport.HTTPHandlerFunc())
