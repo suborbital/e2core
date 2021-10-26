@@ -31,6 +31,7 @@ Please read the [contributing guide](./CONTRIBUTING.md) to learn about how you c
 | ------------ | ----------- | ------ |
 | [Atmo Workspace](https://gitlab.com/k33g_org/discovering-atmo/atmo-workspace) | A "freestanding workshop" to discover Atmo easily | [@k33g](https://gitlab.com/k33g) |
 | [Atmo Redis Workspace](https://gitlab.com/k33g_org/discovering-atmo/atmo-redis-workspace) | This project is a running demo of 2 Atmo Runnables using a Redis database | [@k33g](https://gitlab.com/k33g) |
+| [Atmo JSON demo Workspace](https://gitlab.com/k33g_org/discovering-atmo/atmo-json-demo-workspace)  | This project is a running demo of 2 Atmo Runnables serving JSON payloads | [@k33g](https://gitlab.com/k33g) |
 <!-- uncomment to add row | [name](link)  | Description | [@handle](link) |-->
 
 ## Status
