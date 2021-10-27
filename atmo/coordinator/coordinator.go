@@ -246,8 +246,8 @@ func resultFromState(handler directive.Handler, state map[string][]byte) []byte 
 
 	// determine what the state key is
 	key := step.Fn
-	if step.IsForEach() {
-		key = step.ForEach.As
+	if step.As != "" {
+		key = step.As
 	}
 
 	val, exists := state[key]

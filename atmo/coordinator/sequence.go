@@ -82,19 +82,6 @@ func (seq *sequence) execute(req *request.CoordinatedRequest) (*sequenceState, e
 			}
 
 			stepResults = append(stepResults, groupResults...)
-		} else if step.IsForEach() {
-			seq.log.Debug("running foreach")
-
-			// if the step is a forEach, run it and add the result to state
-			// passing in the dereferenced request, as forEach needs to add temporary
-			// state fields for each value it iterates over
-			forEachResult, err := seq.runForEach(step.ForEach, *req)
-			if err != nil {
-				return nil, err
-			} else if forEachResult != nil {
-				// in rare cases, this can be nil and so only append if not
-				stepResults = append(stepResults, *forEachResult)
-			}
 		}
 
 		for _, result := range stepResults {
@@ -102,16 +89,8 @@ func (seq *sequence) execute(req *request.CoordinatedRequest) (*sequenceState, e
 
 			// if the Runnable returned an error, handle that here
 			if result.runErr != nil {
-
-				// if the step is an Fn, use its onErr
-				// if the step is a forEach, use that
-				onErr := step.OnErr
-				if onErr == nil && step.ForEach != nil {
-					onErr = step.ForEach.OnErr
-				}
-
-				if onErr != nil {
-					if state, err := seq.shouldReturn(onErr, result); err != nil {
+				if step.OnErr != nil {
+					if state, err := seq.shouldReturn(step.OnErr, result); err != nil {
 						// shouldReturn returns ErrSequenceRunErr, so no need to wrap
 						return state, err
 					} else {

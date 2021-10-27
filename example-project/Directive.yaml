@@ -49,18 +49,6 @@ handlers:
       - fn: get-file
   
   - type: request
-    resource: /foreach
-    method: POST
-    steps:
-      - fn: set-array
-        as: array
-
-      - forEach:
-          in: array
-          fn: run-each
-          as: output
-  
-  - type: request
     resource: /github
     method: GET
     steps:

@@ -72,7 +72,7 @@ type Input struct {
 type Executable struct {
 	CallableFn `yaml:"callableFn,inline" json:"callableFn"`
 	Group      []CallableFn `yaml:"group,omitempty" json:"group,omitempty"`
-	ForEach    *ForEach     `yaml:"forEach,omitempty" json:"forEach,omitempty"`
+	ForEach    interface{}  `yaml:"forEach,omitempty"`
 }
 
 // CallableFn is a fn along with its "variable name" and "args"
@@ -330,8 +330,12 @@ func (d *Directive) validateSteps(exType executableType, name string, steps []Ex
 	for j, s := range steps {
 		fnsToAdd := []string{}
 
-		if !s.IsFn() && !s.IsGroup() && !s.IsForEach() {
-			problems.add(fmt.Errorf("step at position %d for %s %s isn't an Fn, Group, or ForEach", j, exType, name))
+		if !s.IsFn() && !s.IsGroup() {
+			if s.ForEach != nil {
+				problems.add(fmt.Errorf("step at position %d for %s %s is a 'forEach', which was removed in v0.4.0", j, exType, name))
+			} else {
+				problems.add(fmt.Errorf("step at position %d for %s %s isn't an Fn or Group", j, exType, name))
+			}
 		}
 
 		// this function is key as it compartmentalizes 'step validation', and importantly it
@@ -391,17 +395,6 @@ func (d *Directive) validateSteps(exType executableType, name string, steps []Ex
 			for p := range s.Group {
 				validateFn(&steps[j].Group[p])
 			}
-		} else if s.IsForEach() {
-			if s.ForEach.In == "" {
-				problems.add(fmt.Errorf("ForEach at position %d for %s %s is missing 'in' value", j, exType, name))
-			}
-
-			if s.ForEach.As == "" {
-				problems.add(fmt.Errorf("ForEach at position %d for %s %s is missing 'as' value", j, exType, name))
-			}
-
-			steps[j].ForEach.CallableFn = CallableFn{Fn: s.ForEach.Fn, OnErr: s.ForEach.OnErr, As: s.ForEach.As}
-			validateFn(&s.ForEach.CallableFn)
 		}
 
 		for _, newFn := range fnsToAdd {
@@ -446,17 +439,12 @@ func (s *Schedule) NumberOfSeconds() int {
 
 // IsGroup returns true if the executable is a group
 func (e *Executable) IsGroup() bool {
-	return e.Fn == "" && e.Group != nil && len(e.Group) > 0 && e.ForEach == nil
+	return e.Fn == "" && e.Group != nil && len(e.Group) > 0
 }
 
 // IsFn returns true if the executable is a group
 func (e *Executable) IsFn() bool {
-	return e.Fn != "" && e.Group == nil && e.ForEach == nil
-}
-
-// IsForEach returns true if the exectuable is a ForEach
-func (e *Executable) IsForEach() bool {
-	return e.ForEach != nil && e.Fn == "" && e.Group == nil
+	return e.Fn != "" && e.Group == nil
 }
 
 type problems []error
