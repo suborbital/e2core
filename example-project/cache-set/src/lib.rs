@@ -9,7 +9,7 @@ impl Runnable for CacheGet {
     fn run(&self, input: Vec<u8>) -> Result<Vec<u8>, RunErr> {
         let key = req::url_param("key");
 
-        log::info(format!("getting cache value {}", key).as_str());
+        log::info(format!("setting cache value {}", key).as_str());
 
         cache::set(key.as_str(), input, 0);
     
