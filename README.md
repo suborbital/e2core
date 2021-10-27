@@ -1,6 +1,6 @@
 ![SOS_Atmo-Long-FullColour](https://user-images.githubusercontent.com/5942370/134701827-dec2dc05-83e0-4f05-817e-a6ad81946064.png)
 
-Building web services should be simple. Atmo makes it easy to create a powerful server application wihout needing to worry about scalability, infrastructure, or complex networking.
+Building web services should be simple. Atmo makes it easy to create a powerful server application without needing to worry about scalability, infrastructure, or complex networking.
 
 Atmo enables you to write small self-contained functions called **Runnables** using a variety of languages, and define your business logic by **declaratively composing** them. Atmo then automatically scales out a **flat network** of instances to handle traffic. Atmo is currently focused on building web services, particularly APIs, and can be used with a variety of architectures including HTTP- and stream-based environments.
 
@@ -24,6 +24,15 @@ Atmo is designed to embody the [SUFA design pattern](https://blog.suborbital.dev
 ## Contributing
 
 Please read the [contributing guide](./CONTRIBUTING.md) to learn about how you can contribute to Atmo! We welcome all types of contribution.
+
+### External contributions
+
+| Project Name | Description | Author |
+| ------------ | ----------- | ------ |
+| [Atmo Workspace](https://gitlab.com/k33g_org/discovering-atmo/atmo-workspace) | A "freestanding workshop" to discover Atmo easily | [@k33g](https://gitlab.com/k33g) |
+| [Atmo Redis Workspace](https://gitlab.com/k33g_org/discovering-atmo/atmo-redis-workspace) | This project is a running demo of 2 Atmo Runnables using a Redis database | [@k33g](https://gitlab.com/k33g) |
+| [Atmo JSON demo Workspace](https://gitlab.com/k33g_org/discovering-atmo/atmo-json-demo-workspace)  | This project is a running demo of 2 Atmo Runnables serving JSON payloads | [@k33g](https://gitlab.com/k33g) |
+<!-- uncomment to add row | [name](link)  | Description | [@handle](link) |-->
 
 ## Status
 Atmo is currently in **beta**
