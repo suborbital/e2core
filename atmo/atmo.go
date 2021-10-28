@@ -9,7 +9,6 @@ import (
 	"github.com/suborbital/atmo/atmo/coordinator"
 	"github.com/suborbital/atmo/atmo/options"
 	"github.com/suborbital/atmo/fqfn"
-	"github.com/suborbital/reactr/rwasm"
 	"github.com/suborbital/vektor/vk"
 )
 
@@ -25,7 +24,7 @@ type Atmo struct {
 func New(opts ...options.Modifier) *Atmo {
 	atmoOpts := options.NewWithModifiers(opts...)
 
-	rwasm.UseInternalLogger(atmoOpts.Logger)
+	setupLogger(atmoOpts.Logger)
 
 	appSource := appsource.NewBundleSource(atmoOpts.BundlePath)
 	if atmoOpts.ControlPlane != "" {

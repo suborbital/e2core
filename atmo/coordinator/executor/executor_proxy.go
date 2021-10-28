@@ -1,12 +1,12 @@
-//go:build !proxy
+//go:build proxy
 
 package executor
 
 import (
-	"errors"
-	"fmt"
+	"encoding/json"
 
-	"github.com/suborbital/atmo/bundle/load"
+	"github.com/pkg/errors"
+
 	"github.com/suborbital/atmo/directive"
 	"github.com/suborbital/grav/discovery/local"
 	"github.com/suborbital/grav/grav"
@@ -25,12 +25,9 @@ var (
 // Executor is a facade over Grav and Reactr that allows executing local OR remote
 // functions with a single call, ensuring there is no difference between them to the caller
 type Executor struct {
-	reactr *rt.Reactr
-	grav   *grav.Grav
-
-	pod *grav.Pod
-
-	log *vlog.Logger
+	grav *grav.Grav
+	pod  *grav.Pod
+	log  *vlog.Logger
 }
 
 // New creates a new Executor
@@ -58,57 +55,71 @@ func New(log *vlog.Logger, transport *websocket.Transport) *Executor {
 	return e
 }
 
-// Do executes a local or remote job
+// Do executes a remote job
 func (e *Executor) Do(jobType string, data interface{}, ctx *vk.Ctx) (interface{}, error) {
-	if e.reactr == nil {
-		return nil, ErrExecutorNotConfigured
+	var jobResult []byte
+	var runErr *rt.RunErr
+
+	pod := e.grav.Connect()
+	defer pod.Disconnect()
+
+	e.log.Info("proxying function", jobType)
+
+	podErr := pod.Send(grav.NewMsgWithParentID(jobType, ctx.RequestID(), data.([]byte))).WaitUntil(grav.Timeout(30), func(msg grav.Message) error {
+		switch msg.Type() {
+		case rt.MsgTypeReactrResult:
+			// if the Runnable returned a result
+			jobResult = msg.Data()
+		case rt.MsgTypeReactrRunErr:
+			// if the Runnable itself returned an error
+			runErr = &rt.RunErr{}
+			if err := json.Unmarshal(msg.Data(), runErr); err != nil {
+				return errors.Wrap(err, "failed to Unmarshal RunErr")
+			}
+		case rt.MsgTypeReactrJobErr:
+			// if something else caused an error while running this fn
+			return errors.New(string(msg.Data()))
+		case rt.MsgTypeReactrNilResult:
+			// if the Runnable returned nil, do nothing
+		}
+
+		return nil
+	})
+
+	if podErr != nil {
+		if podErr == grav.ErrWaitTimeout {
+			return nil, errors.Wrapf(podErr, "fn %s timed out", jobType)
+		}
+
+		return nil, errors.Wrapf(podErr, "failed to execute fn %s", jobType)
 	}
 
-	if !e.reactr.IsRegistered(jobType) {
-		// TODO: handle with a remote call
-
-		return nil, ErrCannotHandle
+	// checking this explicitly because somehow Go interprets an
+	// un-instantiated literal pointer as a non-nil error interface
+	if runErr != nil {
+		return nil, runErr
 	}
 
-	res := e.reactr.Do(rt.NewJob(jobType, data))
+	e.log.Info("proxied function", jobType, "fulfilled by peer")
 
-	e.pod.Send(grav.NewMsgWithParentID(fmt.Sprintf("local/%s", jobType), ctx.RequestID(), nil))
-
-	result, err := res.Then()
-	if err != nil {
-		e.pod.Send(grav.NewMsgWithParentID(rt.MsgTypeReactrRunErr, ctx.RequestID(), []byte(err.Error())))
-	} else {
-		e.pod.Send(grav.NewMsgWithParentID(rt.MsgTypeReactrResult, ctx.RequestID(), result.([]byte)))
-	}
-
-	return result, err
+	return jobResult, nil
 }
 
 // UseCapabilityConfig sets up the executor's Reactr instance using the provided capability configuration
 func (e *Executor) UseCapabilityConfig(config rcap.CapabilityConfig) {
-	r := rt.NewWithConfig(config)
-
-	e.reactr = r
+	// nothing to do in proxy mode
 }
 
 // Register registers a Runnable
 func (e *Executor) Register(jobType string, runner rt.Runnable, opts ...rt.Option) error {
-	if e.reactr == nil {
-		return ErrExecutorNotConfigured
-	}
-
-	e.reactr.Register(jobType, runner, opts...)
+	// nothing to do in proxy mode
 
 	return nil
 }
 
 // SetSchedule adds a Schedule to the executor's Reactr instance
 func (e *Executor) SetSchedule(sched rt.Schedule) error {
-	if e.reactr == nil {
-		return ErrExecutorNotConfigured
-	}
-
-	e.reactr.Schedule(sched)
+	// nothing to do in proxy mode
 
 	return nil
 }
@@ -116,30 +127,14 @@ func (e *Executor) SetSchedule(sched rt.Schedule) error {
 // Load loads Runnables into the executor's Reactr instance
 // And connects them to the Grav instance (currently unused)
 func (e *Executor) Load(runnables []directive.Runnable) error {
-	if e.reactr == nil {
-		return ErrExecutorNotConfigured
-	}
+	// nothing to do in proxy mode
 
-	for _, fn := range runnables {
-		if fn.FQFN == "" {
-			e.log.ErrorString("fn", fn.Name, "missing calculated FQFN, will not be available")
-			continue
-		}
-
-		e.log.Debug("adding listener for", fn.FQFN)
-		e.reactr.Listen(e.grav.Connect(), fn.FQFN)
-	}
-
-	return load.Runnables(e.reactr, runnables, false)
+	return nil
 }
 
 // Metrics returns the executor's Reactr isntance's internal metrics
 func (e *Executor) Metrics() (*rt.ScalerMetrics, error) {
-	if e.reactr == nil {
-		return nil, ErrExecutorNotConfigured
-	}
+	// nothing to do in proxy mode
 
-	metrics := e.reactr.Metrics()
-
-	return &metrics, nil
+	return nil, nil
 }

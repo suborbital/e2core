@@ -18,6 +18,7 @@ type Options struct {
 	Headless     *bool        `env:"ATMO_HEADLESS,default=false"`
 	Wait         *bool        `env:"ATMO_WAIT,default=false"`
 	ControlPlane string       `env:"ATMO_CONTROL_PLANE"`
+	Proxy        bool         `env:"-"`
 }
 
 // Modifier defines options for Atmo
@@ -108,4 +109,7 @@ func (o *Options) finalize(prefix string) {
 			o.Headless = envOpts.Headless
 		}
 	}
+
+	// compile-time decision about enabling proxy mode
+	o.Proxy = proxyEnabled()
 }
