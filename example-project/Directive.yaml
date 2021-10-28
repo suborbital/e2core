@@ -4,6 +4,9 @@ atmoVersion: v0.3.2
 
 # uncomment to try out connections!
 # connections:
+#   database:
+#     dbType: pgx
+#     connectionString: env(DATABASE)
   # nats:
   #   serverAddress: nats://localhost:4222
   # redis:
@@ -45,6 +48,12 @@ handlers:
     method: GET
     steps:
       - fn: as-graphql
+
+  - type: request
+    resource: /user
+    method: GET
+    steps:
+      - fn: rs-dbtest
   
   - type: stream
     resource: /stream

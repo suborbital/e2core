@@ -158,6 +158,18 @@ func (b *BundleSource) File(filename string) ([]byte, error) {
 	return b.bundle.StaticFile(filename)
 }
 
+// Queries returns the Queries available to the app
+func (b *BundleSource) Queries() []rcap.Query {
+	b.lock.RLock()
+	defer b.lock.RUnlock()
+
+	if b.bundle == nil || b.bundle.Directive.Queries == nil {
+		return []rcap.Query{}
+	}
+
+	return b.bundle.Directive.Queries
+}
+
 func (b *BundleSource) Meta() Meta {
 	b.lock.RLock()
 	defer b.lock.RUnlock()

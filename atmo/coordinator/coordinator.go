@@ -90,7 +90,9 @@ func (c *Coordinator) Start() error {
 	// we have to wait until here to initialize Reactr
 	// since the appsource needs to be fully initialized
 	caps := renderCapabilities(c.App, c.log)
-	c.exec.UseCapabilityConfig(caps)
+	if err := c.exec.UseCapabilityConfig(caps); err != nil {
+		return errors.Wrap(err, "failed to UseCapabilityConfig")
+	}
 
 	// do an initial sync of Runnables
 	// from the AppSource into RVG
@@ -211,6 +213,19 @@ func renderCapabilities(source appsource.AppSource, log *vlog.Logger) rcap.Capab
 
 	if connections.Redis != nil {
 		config.Cache.RedisConfig = connections.Redis
+	}
+
+	if connections.Database != nil {
+		queries := source.Queries()
+
+		dbConfig := &rcap.DatabaseConfig{
+			Enabled:          true,
+			DBType:           connections.Database.DBType,
+			ConnectionString: connections.Database.ConnectionString,
+			Queries:          queries,
+		}
+
+		config.DB = dbConfig
 	}
 
 	if userConfig.File != nil {

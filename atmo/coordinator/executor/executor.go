@@ -3,8 +3,9 @@
 package executor
 
 import (
-	"errors"
 	"fmt"
+
+	"github.com/pkg/errors"
 
 	"github.com/suborbital/atmo/bundle/load"
 	"github.com/suborbital/atmo/directive"
@@ -85,10 +86,15 @@ func (e *Executor) Do(jobType string, data interface{}, ctx *vk.Ctx) (interface{
 }
 
 // UseCapabilityConfig sets up the executor's Reactr instance using the provided capability configuration
-func (e *Executor) UseCapabilityConfig(config rcap.CapabilityConfig) {
-	r := rt.NewWithConfig(config)
+func (e *Executor) UseCapabilityConfig(config rcap.CapabilityConfig) error {
+	r, err := rt.NewWithConfig(config)
+	if err != nil {
+		return errors.Wrap(err, "failed to rt.NewWithConfig")
+	}
 
 	e.reactr = r
+
+	return nil
 }
 
 // Register registers a Runnable
