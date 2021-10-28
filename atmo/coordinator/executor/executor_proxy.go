@@ -4,7 +4,6 @@ package executor
 
 import (
 	"encoding/json"
-	"sync"
 
 	"github.com/pkg/errors"
 
@@ -27,12 +26,8 @@ var (
 // functions with a single call, ensuring there is no difference between them to the caller
 type Executor struct {
 	grav *grav.Grav
-
-	pod *grav.Pod
-
-	log *vlog.Logger
-
-	listening sync.Map
+	pod  *grav.Pod
+	log  *vlog.Logger
 }
 
 // New creates a new Executor
@@ -52,10 +47,9 @@ func New(log *vlog.Logger, transport *websocket.Transport) *Executor {
 
 	// Reactr is configured in UseCapabiltyConfig
 	e := &Executor{
-		grav:      g,
-		pod:       g.Connect(),
-		log:       log,
-		listening: sync.Map{},
+		grav: g,
+		pod:  g.Connect(),
+		log:  log,
 	}
 
 	return e

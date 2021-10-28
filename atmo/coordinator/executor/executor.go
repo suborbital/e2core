@@ -5,7 +5,6 @@ package executor
 import (
 	"errors"
 	"fmt"
-	"sync"
 
 	"github.com/suborbital/atmo/bundle/load"
 	"github.com/suborbital/atmo/directive"
@@ -32,8 +31,6 @@ type Executor struct {
 	pod *grav.Pod
 
 	log *vlog.Logger
-
-	listening sync.Map
 }
 
 // New creates a new Executor
@@ -53,10 +50,9 @@ func New(log *vlog.Logger, transport *websocket.Transport) *Executor {
 
 	// Reactr is configured in UseCapabiltyConfig
 	e := &Executor{
-		grav:      g,
-		pod:       g.Connect(),
-		log:       log,
-		listening: sync.Map{},
+		grav: g,
+		pod:  g.Connect(),
+		log:  log,
 	}
 
 	return e
