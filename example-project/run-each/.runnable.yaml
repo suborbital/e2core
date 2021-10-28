@@ -1,4 +1,0 @@
-name: run-each
-namespace: default
-lang: rust
-apiVersion: 0.8.0

@@ -2,7 +2,6 @@ package coordinator
 
 import (
 	"bytes"
-	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -241,60 +240,5 @@ func TestWithSequence(t *testing.T) {
 		t.Error("modify-url state is missing")
 	} else if !bytes.Equal(val, []byte("hello /suborbital")) {
 		t.Error("unexpected modify-url state value:", string(val))
-	}
-}
-
-func TestForEachSequence(t *testing.T) {
-	steps := []directive.Executable{
-		{
-			ForEach: &directive.ForEach{
-				In: "people",
-				Fn: "run-each",
-				As: "hello-people",
-				CallableFn: directive.CallableFn{
-					Fn:   "run-each",
-					FQFN: "com.suborbital.test#default::run-each@v0.0.1",
-				},
-			},
-		},
-	}
-
-	seq := newSequence(steps, coord.exec, vk.NewCtx(coord.log, nil, nil))
-
-	req := &request.CoordinatedRequest{
-		Method: "GET",
-		URL:    "/hello/world",
-		ID:     uuid.New().String(),
-		Body:   []byte(""),
-		State: map[string][]byte{
-			"people": []byte(`[
-				{
-					"name": "Connor"
-				},
-				{
-					"name": "Jimmy"
-				},
-				{
-					"name": "Bob"
-				}
-			]`),
-		},
-	}
-
-	state, err := seq.execute(req)
-	if err != nil {
-		t.Error(err)
-	}
-
-	val, ok := state.state["hello-people"]
-	if !ok {
-		t.Error("hello-people state is missing")
-		return
-	}
-
-	stringVal := string(val)
-
-	if !strings.Contains(stringVal, "{\"name\":\"Hello Jimmy\"}") {
-		t.Error("unexpected hello-people state value:", string(val))
 	}
 }
