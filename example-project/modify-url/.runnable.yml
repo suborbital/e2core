@@ -1,4 +1,4 @@
 name: modify-url
 namespace: default
 lang: rust
-apiVersion: 0.5.0
+apiVersion: 0.12.0
