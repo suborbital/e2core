@@ -69,6 +69,7 @@ type Input struct {
 }
 
 // Executable represents an executable step in a handler
+// The 'ForEach' type has been disabled and removed as of Atmo v0.4.0
 type Executable struct {
 	CallableFn `yaml:"callableFn,inline" json:"callableFn"`
 	Group      []CallableFn `yaml:"group,omitempty" json:"group,omitempty"`
