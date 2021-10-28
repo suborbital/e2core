@@ -1,8 +1,15 @@
 FROM golang:1.17 as builder
 
 RUN mkdir -p /go/src/github.com/suborbital/atmo
-COPY . /go/src/github.com/suborbital/atmo/
 WORKDIR /go/src/github.com/suborbital/atmo/
+
+# Deps first
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Then the rest
+COPY . ./
+RUN go mod vendor
 
 RUN go install -tags proxy
 
