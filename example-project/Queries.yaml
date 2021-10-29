@@ -1,14 +1,10 @@
 queries:
-  - type: 0
-    name: "PGInsertUser"
-    varCount: 2
+  - name: "InsertUser"
     query: |-
       INSERT INTO users (uuid, email, created_at, state, identifier)
       VALUES ($1, $2, NOW(), 'A', 12345)
 
-  - type: 1
-    name: "PGSelectUserWithEmail"
-    varCount: 1
+  - name: "SelectUserWithEmail"
     query: |-
       SELECT * FROM users
       WHERE email = $1

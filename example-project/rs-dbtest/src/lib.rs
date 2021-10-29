@@ -12,7 +12,7 @@ impl Runnable for RsDbtest {
         args.push(query::QueryArg::new("uuid", Uuid::new_v4().to_string().as_str()));
         args.push(query::QueryArg::new("email", "connor@suborbital.dev"));
 
-        match db::insert("PGInsertUser", args) {
+        match db::insert("InsertUser", args) {
             Ok(_) => log::info("insert successful"),
             Err(e) => {
                 return Err(RunErr::new(500, e.message.as_str()))
@@ -22,7 +22,7 @@ impl Runnable for RsDbtest {
         let mut args2: Vec<query::QueryArg> = Vec::new();
         args2.push(query::QueryArg::new("email", "connor@suborbital.dev"));
 
-        match db::select("PGSelectUserWithEmail", args2) {
+        match db::select("SelectUserWithEmail", args2) {
             Ok(result) => Ok(result),
             Err(e) => {
                 Err(RunErr::new(500, e.message.as_str()))

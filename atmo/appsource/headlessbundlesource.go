@@ -133,9 +133,9 @@ func (h *HeadlessBundleSource) File(filename string) ([]byte, error) {
 }
 
 // Queries returns the Queries for the app
-func (b *HeadlessBundleSource) Queries() []rcap.Query {
+func (b *HeadlessBundleSource) Queries() []directive.DBQuery {
 	if b.bundlesource.bundle == nil {
-		return []rcap.Query{}
+		return []directive.DBQuery{}
 	}
 
 	return b.bundlesource.Queries()

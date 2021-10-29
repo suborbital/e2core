@@ -31,7 +31,7 @@ type Directive struct {
 	Capabilities   *rcap.CapabilityConfig `yaml:"capabilities,omitempty" json:"capabilities,omitempty"`
 	Handlers       []Handler              `yaml:"handlers,omitempty" json:"handlers,omitempty"`
 	Schedules      []Schedule             `yaml:"schedules,omitempty" json:"schedules,omitempty"`
-	Queries        []rcap.Query           `yaml:"queries,omitempty" json:"queries,omitempty"`
+	Queries        []DBQuery              `yaml:"queries,omitempty" json:"queries,omitempty"`
 
 	// Runnables is populated by subo, never by the user
 	Runnables []Runnable `yaml:"runnables" json:"runnables"`
@@ -104,9 +104,9 @@ type ForEach struct {
 
 // Connections describes connections
 type Connections struct {
-	NATS     *NATSConnection      `yaml:"nats,omitempty" json:"nats,omitempty"`
-	Redis    *rcap.RedisConfig    `yaml:"redis,omitempty" json:"redis,omitempty"`
-	Database *rcap.DatabaseConfig `yaml:"database,omitempty" json:"database,omitempty"`
+	NATS     *NATSConnection   `yaml:"nats,omitempty" json:"nats,omitempty"`
+	Database *DBConnection     `yaml:"database,omitempty" json:"database,omitempty"`
+	Redis    *rcap.RedisConfig `yaml:"redis,omitempty" json:"redis,omitempty"`
 }
 
 type Authentication struct {

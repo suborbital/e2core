@@ -35,3 +35,38 @@ func validateRedisConfig(config *rcap.RedisConfig) error {
 
 	return nil
 }
+
+type DBConnection struct {
+	Type             string `yaml:"type" json:"type"`
+	ConnectionString string `yaml:"connectionString" json:"connectionString"`
+}
+
+func (d *DBConnection) ToRCAPConfig(queries []DBQuery) (*rcap.DatabaseConfig, error) {
+	if d == nil {
+		return nil, nil
+	}
+
+	rcapType := rcap.DBTypeMySQL
+	if d.Type == "postgresql" {
+		rcapType = rcap.DBTypePostgres
+	}
+
+	rcapQueries := make([]rcap.Query, len(queries))
+	for i := range queries {
+		q, err := queries[i].toRCAPQuery(rcapType)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to toRCAPQuery for %s", queries[i].Name)
+		}
+
+		rcapQueries[i] = *q
+	}
+
+	config := &rcap.DatabaseConfig{
+		Enabled:          d.ConnectionString != "",
+		DBType:           rcapType,
+		ConnectionString: d.ConnectionString,
+		Queries:          rcapQueries,
+	}
+
+	return config, nil
+}

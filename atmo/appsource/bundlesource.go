@@ -159,12 +159,12 @@ func (b *BundleSource) File(filename string) ([]byte, error) {
 }
 
 // Queries returns the Queries available to the app
-func (b *BundleSource) Queries() []rcap.Query {
+func (b *BundleSource) Queries() []directive.DBQuery {
 	b.lock.RLock()
 	defer b.lock.RUnlock()
 
 	if b.bundle == nil || b.bundle.Directive.Queries == nil {
-		return []rcap.Query{}
+		return []directive.DBQuery{}
 	}
 
 	return b.bundle.Directive.Queries

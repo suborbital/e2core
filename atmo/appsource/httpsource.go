@@ -173,8 +173,8 @@ func (h *HTTPSource) File(filename string) ([]byte, error) {
 }
 
 // Queries returns the Queries for the app
-func (h *HTTPSource) Queries() []rcap.Query {
-	queries := []rcap.Query{}
+func (h *HTTPSource) Queries() []directive.DBQuery {
+	queries := []directive.DBQuery{}
 	if _, err := h.get("/queries", &queries); err != nil {
 		h.opts.Logger.Error(errors.Wrap(err, "failed to get /queries"))
 	}
