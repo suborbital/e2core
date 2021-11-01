@@ -1,7 +1,6 @@
 package directive
 
 import (
-	"fmt"
 	"regexp"
 	"strings"
 
@@ -50,7 +49,7 @@ func (d *DBQuery) varCount(dbType string) (int, error) {
 	var regexString string
 	switch dbType {
 	case rcap.DBTypeMySQL:
-		regexString = ` \? |\?,`
+		regexString = ` \? | \?,|\(\?|\?\)|,\?|\? `
 	case rcap.DBTypePostgres:
 		regexString = `\$\d`
 	default:
@@ -63,7 +62,6 @@ func (d *DBQuery) varCount(dbType string) (int, error) {
 	}
 
 	matches := rgx.FindAllString(d.Query, -1)
-	fmt.Println("MATCHES", matches)
 
 	return len(matches), nil
 }
