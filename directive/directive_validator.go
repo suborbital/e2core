@@ -176,6 +176,26 @@ func (d *Directive) Validate() error {
 		d.validateSteps(executableTypeSchedule, s.Name, s.Steps, initialState, problems)
 	}
 
+	for i, q := range d.Queries {
+		if q.Name == "" {
+			problems.add(fmt.Errorf("query at position %d has no name", i))
+		}
+
+		if q.Query == "" {
+			problems.add(fmt.Errorf("query at position %d has no query value", i))
+		}
+
+		if q.Type != "" {
+			if q.Type != queryTypeInsert && q.Type != queryTypeSelect {
+				problems.add(fmt.Errorf("query at position %d has invalid type %s", i, q.Type))
+			}
+		}
+
+		if q.VarCount < 0 {
+			problems.add(fmt.Errorf("query at position %d cannot have negative var count", i))
+		}
+	}
+
 	return problems.render()
 }
 

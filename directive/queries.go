@@ -13,6 +13,11 @@ var (
 	ErrDBTypeUnknown    = errors.New("unable to determine query's database type")
 )
 
+const (
+	queryTypeInsert = "insert"
+	queryTypeSelect = "select"
+)
+
 type DBQuery struct {
 	Type     string `yaml:"type,omitempty" json:"type,omitempty"`
 	Name     string `yaml:"name" json:"name"`
@@ -69,9 +74,9 @@ func (d *DBQuery) varCount(dbType string) (int, error) {
 func (d *DBQuery) queryType() (rcap.QueryType, error) {
 	if d.Type != "" {
 		switch d.Type {
-		case "insert":
+		case queryTypeInsert:
 			return rcap.QueryTypeInsert, nil
-		case "select":
+		case queryTypeSelect:
 			return rcap.QueryTypeSelect, nil
 		default:
 			return rcap.QueryType(-1), ErrQueryTypeUnknown
