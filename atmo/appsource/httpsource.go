@@ -172,6 +172,16 @@ func (h *HTTPSource) File(filename string) ([]byte, error) {
 	return file, nil
 }
 
+// Queries returns the Queries for the app
+func (h *HTTPSource) Queries() []directive.DBQuery {
+	queries := []directive.DBQuery{}
+	if _, err := h.get("/queries", &queries); err != nil {
+		h.opts.Logger.Error(errors.Wrap(err, "failed to get /queries"))
+	}
+
+	return queries
+}
+
 func (h *HTTPSource) Meta() Meta {
 	meta := Meta{}
 	if _, err := h.get("/meta", &meta); err != nil {

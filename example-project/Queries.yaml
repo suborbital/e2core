@@ -1,0 +1,10 @@
+queries:
+  - name: "InsertUser"
+    query: |-
+      INSERT INTO users (uuid, email, created_at, state, identifier)
+      VALUES ($1, $2, NOW(), 'A', 12345)
+
+  - name: "SelectUserWithEmail"
+    query: |-
+      SELECT * FROM users
+      WHERE email = $1

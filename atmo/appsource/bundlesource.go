@@ -44,12 +44,6 @@ func (b *BundleSource) Start(opts options.Options) error {
 
 // Runnables returns the Runnables for the app
 func (b *BundleSource) Runnables() []directive.Runnable {
-	// refresh the bundle since it's possible it was updated underneath you
-	// this full-locks, so we call it before the RLock
-	if err := b.findBundle(); err != nil {
-		return []directive.Runnable{}
-	}
-
 	b.lock.RLock()
 	defer b.lock.RUnlock()
 
@@ -156,6 +150,18 @@ func (b *BundleSource) File(filename string) ([]byte, error) {
 	}
 
 	return b.bundle.StaticFile(filename)
+}
+
+// Queries returns the Queries available to the app
+func (b *BundleSource) Queries() []directive.DBQuery {
+	b.lock.RLock()
+	defer b.lock.RUnlock()
+
+	if b.bundle == nil || b.bundle.Directive.Queries == nil {
+		return []directive.DBQuery{}
+	}
+
+	return b.bundle.Directive.Queries
 }
 
 func (b *BundleSource) Meta() Meta {

@@ -132,6 +132,15 @@ func (h *HeadlessBundleSource) File(filename string) ([]byte, error) {
 	return h.bundlesource.bundle.StaticFile(filename)
 }
 
+// Queries returns the Queries for the app
+func (b *HeadlessBundleSource) Queries() []directive.DBQuery {
+	if b.bundlesource.bundle == nil {
+		return []directive.DBQuery{}
+	}
+
+	return b.bundlesource.Queries()
+}
+
 func (h *HeadlessBundleSource) Meta() Meta {
 	if h.bundlesource.bundle == nil {
 		return Meta{}

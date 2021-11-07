@@ -39,6 +39,8 @@ type AppSource interface {
 	// File is a source of files for the Runnables
 	// TODO: refactor this into a set of capabilities / profiles
 	File(string) ([]byte, error)
+	// Queries returns the database queries that should be made available
+	Queries() []directive.DBQuery
 	// Meta returns metadata about the app
 	Meta() Meta
 }

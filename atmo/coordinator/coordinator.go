@@ -87,10 +87,16 @@ func (c *Coordinator) Start() error {
 	// establish connections defined by the app
 	c.createConnections()
 
+	caps, err := renderCapabilities(c.App, c.log)
+	if err != nil {
+		return errors.Wrap(err, "failed to renderCapabilities")
+	}
+
 	// we have to wait until here to initialize Reactr
 	// since the appsource needs to be fully initialized
-	caps := renderCapabilities(c.App, c.log)
-	c.exec.UseCapabilityConfig(caps)
+	if err := c.exec.UseCapabilityConfig(caps); err != nil {
+		return errors.Wrap(err, "failed to UseCapabilityConfig")
+	}
 
 	// do an initial sync of Runnables
 	// from the AppSource into RVG
@@ -136,7 +142,9 @@ func (c *Coordinator) createConnections() {
 	connections := c.App.Connections()
 
 	if connections.NATS != nil {
-		gnats, err := nats.New(connections.NATS.ServerAddress)
+		address := rcap.AugmentedValFromEnv(connections.NATS.ServerAddress)
+
+		gnats, err := nats.New(address)
 		if err != nil {
 			c.log.Error(errors.Wrap(err, "failed to nats.New for NATS connection"))
 		} else {
@@ -177,12 +185,12 @@ func (c *Coordinator) SetSchedules() {
 // renderCapabilities "renders" capabilities by layering any user-defined
 // capabilities onto the default set, thus allowing the user to omit any
 // individual capability (or all of them) to receive the defaults
-func renderCapabilities(source appsource.AppSource, log *vlog.Logger) rcap.CapabilityConfig {
+func renderCapabilities(source appsource.AppSource, log *vlog.Logger) (rcap.CapabilityConfig, error) {
 	config := rcap.DefaultConfigWithLogger(log)
 
 	userConfig := source.Capabilities()
 	if userConfig == nil {
-		return config
+		return config, nil
 	}
 
 	connections := source.Connections()
@@ -213,6 +221,17 @@ func renderCapabilities(source appsource.AppSource, log *vlog.Logger) rcap.Capab
 		config.Cache.RedisConfig = connections.Redis
 	}
 
+	if connections.Database != nil {
+		queries := source.Queries()
+
+		dbConfig, err := connections.Database.ToRCAPConfig(queries)
+		if err != nil {
+			return config, errors.Wrap(err, "failed to ToRCAPConfig")
+		}
+
+		config.DB = dbConfig
+	}
+
 	if userConfig.File != nil {
 		config.File = userConfig.File
 	}
@@ -227,7 +246,7 @@ func renderCapabilities(source appsource.AppSource, log *vlog.Logger) rcap.Capab
 	config.File.FileFunc = source.File
 	config.Auth.Headers = source.Authentication().Domains
 
-	return config
+	return config, nil
 }
 
 // resultFromState returns the state value for the last single function that ran in a handler
