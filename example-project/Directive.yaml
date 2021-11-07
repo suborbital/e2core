@@ -4,9 +4,9 @@ atmoVersion: v0.3.2
 
 # uncomment to try out connections!
 connections:
-  database:
-    type: postgresql
-    connectionString: env(DATABASE)
+  # database:
+  #   type: postgresql
+  #   connectionString: env(DATABASE)
   # nats:
   #   serverAddress: nats://localhost:4222
   # redis:
