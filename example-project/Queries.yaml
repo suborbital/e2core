@@ -4,7 +4,12 @@ queries:
       INSERT INTO users (uuid, email, created_at, state, identifier)
       VALUES ($1, $2, NOW(), 'A', 12345)
 
-  - name: "SelectUserWithEmail"
+  - name: "SelectUserWithUUID"
     query: |-
       SELECT * FROM users
-      WHERE email = $1
+      WHERE uuid = $1
+  
+  - name: "UpdateUserWithUUID"
+    query: |-
+      UPDATE users SET state='B' 
+      WHERE uuid = $1
