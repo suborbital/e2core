@@ -41,7 +41,13 @@ func Render(config rcap.CapabilityConfig, source appsource.AppSource, log *vlog.
 	}
 
 	if connections.Redis != nil {
-		config.Cache.RedisConfig = connections.Redis
+		redisConfig := &rcap.RedisConfig{
+			ServerAddress: connections.Redis.ServerAddress,
+			Username:      connections.Redis.Username,
+			Password:      connections.Redis.Password,
+		}
+
+		config.Cache.RedisConfig = redisConfig
 	}
 
 	if connections.Database != nil {

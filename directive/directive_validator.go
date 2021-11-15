@@ -72,8 +72,14 @@ func (d *Directive) Validate() error {
 			}
 		}
 
+		if d.Connections.Kafka != nil {
+			if err := d.Connections.Kafka.validate(); err != nil {
+				problems.add(err)
+			}
+		}
+
 		if d.Connections.Redis != nil {
-			if err := validateRedisConfig(d.Connections.Redis); err != nil {
+			if err := d.Connections.Redis.validate(); err != nil {
 				problems.add(err)
 			}
 		}
@@ -127,6 +133,10 @@ func (d *Directive) Validate() error {
 				}
 			} else if h.Input.Source == InputSourceNATS {
 				if d.Connections == nil || d.Connections.NATS == nil {
+					problems.add(fmt.Errorf("handler for resource %s references source %s that is not configured", h.Input.Resource, h.Input.Source))
+				}
+			} else if h.Input.Source == InputSourceKafka {
+				if d.Connections == nil || d.Connections.Kafka == nil {
 					problems.add(fmt.Errorf("handler for resource %s references source %s that is not configured", h.Input.Resource, h.Input.Source))
 				}
 			} else {
