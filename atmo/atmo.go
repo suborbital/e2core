@@ -94,7 +94,10 @@ func (a *Atmo) inspectRequest(r http.Request) {
 			return
 		}
 
-		if _, err := a.coordinator.App.FindRunnable(FQFN); err != nil {
+		// the Authorization header is passed through to the AppSource, and can be used to authenticate calls
+		auth := r.Header.Get("Authorization")
+
+		if _, err := a.coordinator.App.FindRunnable(FQFN, auth); err != nil {
 			a.options.Logger.Debug(errors.Wrapf(err, "failed to FindRunnable %s, request will proceed and fail", FQFN).Error())
 			return
 		}

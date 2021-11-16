@@ -75,15 +75,22 @@ func (h *HTTPSource) Runnables() []directive.Runnable {
 // FindRunnable returns a nil error if a Runnable with the
 // provided FQFN can be made available at the next sync,
 // otherwise ErrRunnableNotFound is returned
-func (h *HTTPSource) FindRunnable(FQFN string) (*directive.Runnable, error) {
+func (h *HTTPSource) FindRunnable(FQFN, auth string) (*directive.Runnable, error) {
 	parsedFQFN := fqfn.Parse(FQFN)
 
 	path := fmt.Sprintf("/runnable%s", parsedFQFN.HeadlessURLPath())
 
 	runnable := directive.Runnable{}
-	if _, err := h.get(path, &runnable); err != nil {
+	if _, err := h.authedGet(path, auth, &runnable); err != nil {
 		h.opts.Logger.Error(errors.Wrapf(err, "failed to get %s", path))
 		return nil, ErrRunnableNotFound
+	}
+
+	if auth != "" {
+		// if we get this far, we assume the token was used to successfully get
+		// the runnable from the control plane, and should therefore be used to
+		// authenticate further calls for this function, so we cache it
+		runnable.TokenHash = TokenHash(auth)
 	}
 
 	if *h.opts.Headless {
@@ -216,6 +223,11 @@ func (h *HTTPSource) pingServer() error {
 
 // get performs a GET request against the configured host and given path
 func (h *HTTPSource) get(path string, dest interface{}) (*http.Response, error) {
+	return h.authedGet(path, "", dest)
+}
+
+// authedGet performs a GET request against the configured host and given path with the given auth header
+func (h *HTTPSource) authedGet(path, auth string, dest interface{}) (*http.Response, error) {
 	url, err := url.Parse(fmt.Sprintf("%s%s", h.host, path))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to url.Parse")
@@ -224,6 +236,12 @@ func (h *HTTPSource) get(path string, dest interface{}) (*http.Response, error) 
 	req, err := http.NewRequest(http.MethodGet, url.String(), nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to NewRequest")
+	}
+
+	if auth != "" {
+		header := req.Header
+		header.Set("Authorization", auth)
+		req.Header = header
 	}
 
 	resp, err := http.DefaultClient.Do(req)
