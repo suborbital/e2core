@@ -17,6 +17,9 @@ atmo/docker: docker/dev
 atmo/proxy/docker: docker/dev/proxy
 	docker run -v ${PWD}/$(dir):/home/atmo -e ATMO_HTTP_PORT=8080 -p 8080:8080 --network=bridge suborbital/atmo-proxy:dev atmo-proxy
 
+atmo/proxy/docker/publish:
+	docker buildx build . -f ./Dockerfile-proxy --platform linux/amd64 -t suborbital/atmo-proxy:dev --push
+
 docker/dev:
 	docker build . -t suborbital/atmo:dev
 
