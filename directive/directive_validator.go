@@ -196,7 +196,7 @@ func (d *Directive) Validate() error {
 		}
 
 		if q.Type != "" {
-			if q.Type != queryTypeInsert && q.Type != queryTypeSelect {
+			if q.Type != queryTypeInsert && q.Type != queryTypeSelect && q.Type != queryTypeUpdate && q.Type != queryTypeDelete {
 				problems.add(fmt.Errorf("query at position %d has invalid type %s", i, q.Type))
 			}
 		}

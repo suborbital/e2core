@@ -16,6 +16,8 @@ var (
 const (
 	queryTypeInsert = "insert"
 	queryTypeSelect = "select"
+	queryTypeUpdate = "update"
+	queryTypeDelete = "delete"
 )
 
 type DBQuery struct {
@@ -78,6 +80,10 @@ func (d *DBQuery) queryType() (rcap.QueryType, error) {
 			return rcap.QueryTypeInsert, nil
 		case queryTypeSelect:
 			return rcap.QueryTypeSelect, nil
+		case queryTypeUpdate:
+			return rcap.QueryTypeUpdate, nil
+		case queryTypeDelete:
+			return rcap.QueryTypeDelete, nil
 		default:
 			return rcap.QueryType(-1), ErrQueryTypeUnknown
 		}
@@ -87,6 +93,10 @@ func (d *DBQuery) queryType() (rcap.QueryType, error) {
 		return rcap.QueryTypeInsert, nil
 	} else if strings.HasPrefix(d.Query, "select") || strings.HasPrefix(d.Query, "SELECT") {
 		return rcap.QueryTypeSelect, nil
+	} else if strings.HasPrefix(d.Query, "update") || strings.HasPrefix(d.Query, "UPDATE") {
+		return rcap.QueryTypeUpdate, nil
+	} else if strings.HasPrefix(d.Query, "delete") || strings.HasPrefix(d.Query, "DELETE") {
+		return rcap.QueryTypeDelete, nil
 	}
 
 	return rcap.QueryType(-1), ErrQueryTypeUnknown
