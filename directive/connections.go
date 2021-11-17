@@ -30,13 +30,18 @@ func (n *NATSConnection) validate() error {
 	return nil
 }
 
-func validateRedisConfig(config *rcap.RedisConfig) error {
-	if config.ServerAddress == "" {
-		return errors.New("serverAddress is empty")
+// KafkaConnection describes a connection to a Kafka broker
+type KafkaConnection struct {
+	BrokerAddress string `yaml:"brokerAddress" json:"brokerAddress"`
+}
+
+func (k *KafkaConnection) validate() error {
+	if k.BrokerAddress == "" {
+		return errors.New("brokerAddress is empty")
 	}
 
-	if _, err := url.Parse(config.ServerAddress); err != nil {
-		return errors.Wrap(err, "failed to parse serverAddress as URL")
+	if _, err := url.Parse(k.BrokerAddress); err != nil {
+		return errors.Wrap(err, "failed to parse brokerAddress as URL")
 	}
 
 	return nil
@@ -84,6 +89,25 @@ func (d *DBConnection) validate() error {
 
 	if d.ConnectionString == "" {
 		return errors.New("database connectionString is empty")
+	}
+
+	return nil
+}
+
+// RedisConnection describes a connection to a Redis cache
+type RedisConnection struct {
+	ServerAddress string `yaml:"serverAddress" json:"serverAddress"`
+	Username      string `yaml:"username" json:"username"`
+	Password      string `yaml:"password" json:"password"`
+}
+
+func (r *RedisConnection) validate() error {
+	if r.ServerAddress == "" {
+		return errors.New("serverAddress is empty")
+	}
+
+	if _, err := url.Parse(r.ServerAddress); err != nil {
+		return errors.Wrap(err, "failed to parse serverAddress as URL")
 	}
 
 	return nil

@@ -15,6 +15,7 @@ const (
 	InputTypeStream   = "stream"
 	InputSourceServer = "server"
 	InputSourceNATS   = "nats"
+	InputSourceKafka  = "kafka"
 )
 
 // Directive describes a set of functions and a set of handlers
@@ -102,9 +103,10 @@ type ForEach struct {
 
 // Connections describes connections
 type Connections struct {
-	NATS     *NATSConnection   `yaml:"nats,omitempty" json:"nats,omitempty"`
-	Database *DBConnection     `yaml:"database,omitempty" json:"database,omitempty"`
-	Redis    *rcap.RedisConfig `yaml:"redis,omitempty" json:"redis,omitempty"`
+	NATS     *NATSConnection  `yaml:"nats,omitempty" json:"nats,omitempty"`
+	Kafka    *KafkaConnection `yaml:"kafka,omitempty" json:"kafka,omitempty"`
+	Database *DBConnection    `yaml:"database,omitempty" json:"database,omitempty"`
+	Redis    *RedisConnection `yaml:"redis,omitempty" json:"redis,omitempty"`
 }
 
 type Authentication struct {
