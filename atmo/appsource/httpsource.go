@@ -258,9 +258,7 @@ func (h *HTTPSource) authedGet(path, auth string, dest interface{}) (*http.Respo
 	}
 
 	if auth != "" {
-		header := req.Header
-		header.Set("Authorization", auth)
-		req.Header = header
+		req.Header.Set("Authorization", auth)
 	}
 
 	resp, err := http.DefaultClient.Do(req)
