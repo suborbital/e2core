@@ -94,8 +94,13 @@ func (h *HTTPSource) FindRunnable(FQFN, auth string) (*directive.Runnable, error
 	path := fmt.Sprintf("/runnable%s", parsedFQFN.HeadlessURLPath())
 
 	runnable := directive.Runnable{}
-	if _, err := h.authedGet(path, auth, &runnable); err != nil {
+	if resp, err := h.authedGet(path, auth, &runnable); err != nil {
 		h.opts.Logger.Error(errors.Wrapf(err, "failed to get %s", path))
+
+		if resp.StatusCode == http.StatusUnauthorized {
+			return nil, ErrAuthenticationFailed
+		}
+
 		return nil, ErrRunnableNotFound
 	}
 
@@ -264,7 +269,7 @@ func (h *HTTPSource) authedGet(path, auth string, dest interface{}) (*http.Respo
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("response returned non-200 status: %d", resp.StatusCode)
+		return resp, fmt.Errorf("response returned non-200 status: %d", resp.StatusCode)
 	}
 
 	if dest != nil {
