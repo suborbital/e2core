@@ -8,7 +8,10 @@ import (
 	"github.com/suborbital/reactr/rcap"
 )
 
-var ErrRunnableNotFound = errors.New("failed to find requested Runnable")
+var (
+	ErrRunnableNotFound     = errors.New("failed to find requested Runnable")
+	ErrAuthenticationFailed = errors.New("failed to authenticate")
+)
 
 // Meta describes the metadata for an App
 type Meta struct {

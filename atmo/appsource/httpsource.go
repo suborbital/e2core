@@ -78,6 +78,19 @@ func (h *HTTPSource) Runnables() []directive.Runnable {
 func (h *HTTPSource) FindRunnable(FQFN, auth string) (*directive.Runnable, error) {
 	parsedFQFN := fqfn.Parse(FQFN)
 
+	// if we are in headless mode, first check to see if we've cached a runnable
+	if *h.opts.Headless {
+		h.lock.RLock()
+		r, ok := h.runnables[FQFN]
+		h.lock.RUnlock()
+
+		if ok {
+			return &r, nil
+		}
+	}
+
+	// if we need to fetch it from remote, let's do so
+
 	path := fmt.Sprintf("/runnable%s", parsedFQFN.HeadlessURLPath())
 
 	runnable := directive.Runnable{}
@@ -93,6 +106,7 @@ func (h *HTTPSource) FindRunnable(FQFN, auth string) (*directive.Runnable, error
 		runnable.TokenHash = TokenHash(auth)
 	}
 
+	// again, if we're in headless mode let's cache it for later
 	if *h.opts.Headless {
 		h.lock.Lock()
 		defer h.lock.Unlock()

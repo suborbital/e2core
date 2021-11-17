@@ -113,6 +113,11 @@ func (c *Coordinator) SetupHandlers() *vk.Router {
 	// set a middleware on the root RouteGroup
 	router.Before(scopeMiddleware)
 
+	// if in headless mode, enable runnable authentication
+	if *c.opts.Headless {
+		router.Before(c.headlessAuthMiddleware())
+	}
+
 	// mount each handler into the VK group
 	for _, h := range c.App.Handlers() {
 		switch h.Input.Type {
