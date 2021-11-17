@@ -10,4 +10,4 @@ edition = "2018"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-suborbital = '0.12.0'
+suborbital = '0.13.0'

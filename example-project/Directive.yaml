@@ -9,6 +9,8 @@ connections:
   #   connectionString: env(DATABASE)
   # nats:
   #   serverAddress: nats://localhost:4222
+  # kafka:
+  #   brokerAddress: localhost:9092
   # redis:
   #   serverAddress: localhost:6379
 
@@ -63,6 +65,14 @@ handlers:
   # uncomment to try out NATS streaming!
   # - type: stream
   #   source: nats
+  #   resource: grav.default
+  #   steps:
+  #     - fn: helloworld-rs
+  #   respondTo: grav.reply
+
+  # uncomment to try out Kafka streaming!
+  # - type: stream
+  #   source: kafka
   #   resource: grav.default
   #   steps:
   #     - fn: helloworld-rs
