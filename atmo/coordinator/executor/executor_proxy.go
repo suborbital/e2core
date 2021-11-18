@@ -106,8 +106,10 @@ func (e *Executor) Do(jobType string, data interface{}, ctx *vk.Ctx) (interface{
 }
 
 // UseCapabilityConfig sets up the executor's Reactr instance using the provided capability configuration
-func (e *Executor) UseCapabilityConfig(config rcap.CapabilityConfig) {
+func (e *Executor) UseCapabilityConfig(config rcap.CapabilityConfig) error {
 	// nothing to do in proxy mode
+
+	return nil
 }
 
 // Register registers a Runnable

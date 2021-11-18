@@ -75,17 +75,43 @@ func (h *HTTPSource) Runnables() []directive.Runnable {
 // FindRunnable returns a nil error if a Runnable with the
 // provided FQFN can be made available at the next sync,
 // otherwise ErrRunnableNotFound is returned
-func (h *HTTPSource) FindRunnable(FQFN string) (*directive.Runnable, error) {
+func (h *HTTPSource) FindRunnable(FQFN, auth string) (*directive.Runnable, error) {
 	parsedFQFN := fqfn.Parse(FQFN)
+
+	// if we are in headless mode, first check to see if we've cached a runnable
+	if *h.opts.Headless {
+		h.lock.RLock()
+		r, ok := h.runnables[FQFN]
+		h.lock.RUnlock()
+
+		if ok {
+			return &r, nil
+		}
+	}
+
+	// if we need to fetch it from remote, let's do so
 
 	path := fmt.Sprintf("/runnable%s", parsedFQFN.HeadlessURLPath())
 
 	runnable := directive.Runnable{}
-	if _, err := h.get(path, &runnable); err != nil {
+	if resp, err := h.authedGet(path, auth, &runnable); err != nil {
 		h.opts.Logger.Error(errors.Wrapf(err, "failed to get %s", path))
+
+		if resp.StatusCode == http.StatusUnauthorized {
+			return nil, ErrAuthenticationFailed
+		}
+
 		return nil, ErrRunnableNotFound
 	}
 
+	if auth != "" {
+		// if we get this far, we assume the token was used to successfully get
+		// the runnable from the control plane, and should therefore be used to
+		// authenticate further calls for this function, so we cache it
+		runnable.TokenHash = TokenHash(auth)
+	}
+
+	// again, if we're in headless mode let's cache it for later
 	if *h.opts.Headless {
 		h.lock.Lock()
 		defer h.lock.Unlock()
@@ -216,6 +242,11 @@ func (h *HTTPSource) pingServer() error {
 
 // get performs a GET request against the configured host and given path
 func (h *HTTPSource) get(path string, dest interface{}) (*http.Response, error) {
+	return h.authedGet(path, "", dest)
+}
+
+// authedGet performs a GET request against the configured host and given path with the given auth header
+func (h *HTTPSource) authedGet(path, auth string, dest interface{}) (*http.Response, error) {
 	url, err := url.Parse(fmt.Sprintf("%s%s", h.host, path))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to url.Parse")
@@ -226,13 +257,17 @@ func (h *HTTPSource) get(path string, dest interface{}) (*http.Response, error) 
 		return nil, errors.Wrap(err, "failed to NewRequest")
 	}
 
+	if auth != "" {
+		req.Header.Set("Authorization", auth)
+	}
+
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to Do request")
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("response returned non-200 status: %d", resp.StatusCode)
+		return resp, fmt.Errorf("response returned non-200 status: %d", resp.StatusCode)
 	}
 
 	if dest != nil {
