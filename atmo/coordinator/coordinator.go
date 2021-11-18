@@ -11,6 +11,7 @@ import (
 	"github.com/suborbital/atmo/atmo/options"
 	"github.com/suborbital/atmo/directive"
 	"github.com/suborbital/grav/grav"
+	"github.com/suborbital/grav/transport/kafka"
 	"github.com/suborbital/grav/transport/nats"
 	"github.com/suborbital/grav/transport/websocket"
 	"github.com/suborbital/reactr/rcap"
@@ -160,6 +161,22 @@ func (c *Coordinator) createConnections() {
 			)
 
 			c.connections[directive.InputSourceNATS] = g
+		}
+	}
+
+	if connections.Kafka != nil {
+		address := rcap.AugmentedValFromEnv(connections.Kafka.BrokerAddress)
+
+		gkafka, err := kafka.New(address)
+		if err != nil {
+			c.log.Error(errors.Wrap(err, "failed to kafka.New for Kafka connection"))
+		} else {
+			g := grav.New(
+				grav.UseLogger(c.log),
+				grav.UseTransport(gkafka),
+			)
+
+			c.connections[directive.InputSourceKafka] = g
 		}
 	}
 }
