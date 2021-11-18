@@ -93,4 +93,4 @@ pub extern fn _start() {
 }
 
 ```
-As you can see, your Runnables can execute any of the queries defined in `Queries.yaml`. The `args` they provide are inserted into the queries' variables by Atmo, and then executed. The query's results are returned to the Runnable in JSON form.
+Runnables can execute any of the queries defined in `Queries.yaml`. The `args` they provide are inserted into the queries' variables by Atmo, and then executed. The query's results are returned to the Runnable in JSON form.
