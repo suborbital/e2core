@@ -29,7 +29,7 @@ queries:
       WHERE uuid = $1
 ```
 
-As you can see, you can define any number of queries. Each query must have a name and a query value.
+You can define any number of queries. Each query must have a name and a query value.
 
 Queries can optionally have a `type` field (specifying `select | update | insert | delete`) and a `varCount` field to specify the number of variables in the query. In most circumstances, these optional fields are detected automatically by Atmo, but if for any reason they are detected incorrectly, you can set them explicitly.
 
