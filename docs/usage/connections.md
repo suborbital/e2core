@@ -2,19 +2,19 @@
 
 In order to build a useful application, Atmo needs to be able to connect to external resources. Currently, Atmo can connect to [NATS](https://nats.io/) and [Redis](https://redis.io/), and upcoming releases will include additional types such as databases and more.
 
-To create connections, add a `connections` section to your Directive:
+To create connections, add a `connections` section to your Directive. When Atmo starts up, it will establish the connections you've configured, and make them available to your application in a few different ways.
 
+## Stream sources
+There are two available stream sources (NATS and Kafka) that can be used as sources for your handlers:
 ```yaml
 connections:
   nats:
     serverAddress: nats://localhost:4222
-  redis:
-    serverAddress: localhost:6379
+  kafka:
+    brokerAddress: localhost:9092
 ```
 
-When Atmo starts up, it will establish the connections you've configured, and make them available to your application in a few different ways.
-
-The NATS connection is made available as a stream source:
+The NATS or Kafka connection is made available as a stream source:
 
 ```yaml
   - type: stream
@@ -37,7 +37,19 @@ Streams that use an external source can also use the `respondTo` field to set wh
     respondTo: user.send-login-email
 ```
 
-The Redis connection will be made available to Runnables utilizing the `cache` capability:
+## Data sources
+SQL databases and caches can be connected to Atmo to be made available to your Runnables using the Runnable API:
+```yaml
+connections:
+  database:
+    type: postgresql
+    connectionString: env(DATABASE)
+  redis:
+    serverAddress: localhost:6379
+```
+SQL database connections of type `mysql` and `postgresql` are available, and they are discussed in detail in the [next section](./using-sql-databases.md).
+
+Redis connections are made available to Runnables utilizing the `cache` capability:
 ```rust
 use suborbital::runnable::*;
 use suborbital::req;

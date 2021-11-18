@@ -7,7 +7,7 @@ Here's an example Directive:
 ```yaml
 identifier: com.suborbital.guide
 appVersion: v0.0.1
-atmoVersion: v0.3.2
+atmoVersion: v0.4.0
 
 handlers:
   - type: request
