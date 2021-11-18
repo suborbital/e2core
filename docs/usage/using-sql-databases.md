@@ -1,6 +1,6 @@
 # Using SQL databases
 
-To connect Atmo with your SQL database, you will define the connection using the connections section of the Directive, and then define queries that your Runnables can execute. Runnables are not allowed to execute arbitrary queries, instead a list of named queries are provided in a Queries.yaml file, and then your Runnables are allowed to execute them.
+To connect Atmo with your SQL database, you will define the connection using the `connections` section of the Directive, and then define queries that your Runnables can execute. Runnables are not allowed to execute arbitrary queries. Instead, a list of named queries are provided in a Queries.yaml file, and then your Runnables are allowed to execute them.
 
 If you haven't already, take a look at Connections to define the connection to your database, then come back here.
 
