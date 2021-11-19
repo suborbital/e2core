@@ -14,8 +14,8 @@ func (c *Coordinator) headlessAuthMiddleware() vk.Middleware {
 	return func(r *http.Request, ctx *vk.Ctx) error {
 		FQFN, err := fqfn.FromURL(r.URL)
 		if err != nil {
-			ctx.Log.Error(errors.Wrap(err, "failed to fqfn.FromURL"))
-			return vk.E(http.StatusBadRequest, "invalid FQFN URI")
+			ctx.Log.Debug(errors.Wrap(err, "failed to fqfn.FromURL, skipping headless auth"))
+			return nil
 		}
 
 		auth := r.Header.Get("Authorization")
