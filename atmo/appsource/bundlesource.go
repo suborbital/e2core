@@ -57,12 +57,6 @@ func (b *BundleSource) Runnables() []directive.Runnable {
 // FindRunnable searches for and returns the requested runnable
 // otherwise ErrRunnableNotFound
 func (b *BundleSource) FindRunnable(fqfn, auth string) (*directive.Runnable, error) {
-	// refresh the bundle since it's possible it was updated underneath you
-	// this full-locks, so we call it before the RLock
-	if err := b.findBundle(); err != nil {
-		return nil, ErrRunnableNotFound
-	}
-
 	b.lock.RLock()
 	defer b.lock.RUnlock()
 
