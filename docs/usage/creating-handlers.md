@@ -13,7 +13,7 @@ Each handler tells Atmo how to handle a **resource.** A resource is an input tha
 ```yaml
 identifier: com.suborbital.test
 appVersion: v0.0.1
-atmoVersion: v0.4.1
+atmoVersion: v0.4.2
 
 handlers:
   - type: request
