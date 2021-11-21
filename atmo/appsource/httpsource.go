@@ -220,19 +220,20 @@ func (h *HTTPSource) Meta() Meta {
 // pingServer loops forever until it finds a server at the configured host
 func (h *HTTPSource) pingServer() error {
 	for {
-		_, err := h.get("/meta", nil)
-		if err != nil {
-			if !*h.opts.Wait {
+		if _, err := h.get("/meta", nil); err != nil {
+
+			if h.opts.Wait == nil || !*h.opts.Wait {
 				return errors.Wrapf(err, "failed to connect to source at %s", h.host)
 			}
 
-			h.opts.Logger.Warn("failed to connect to source, will try again:", err.Error())
+			h.opts.Logger.Warn("failed to connect to remote source, will retry:", err.Error())
+
 			time.Sleep(time.Second)
 
 			continue
 		}
 
-		h.opts.Logger.Info("connected to source at", h.host)
+		h.opts.Logger.Debug("connected to remote source at", h.host)
 
 		break
 	}
