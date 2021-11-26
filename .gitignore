@@ -19,3 +19,5 @@
 target/
 *.wasm
 node_modules
+.idea
+*.iml
