@@ -6,11 +6,13 @@ struct GetFile{}
 
 impl Runnable for GetFile {
     fn run(&self, _: Vec<u8>) -> Result<Vec<u8>, RunErr> {
-        let mut filename = req::url_param("file");
-
-        if filename == "" {
-            filename = req::state("file").unwrap_or_default();
-        }
+        let filename = match req::url_param("file") {
+            v => if v.is_empty() {
+                req::state("file").unwrap_or_default()
+            } else {
+                v
+            }
+        };
 
         Ok(file::get_static(filename.as_str()).unwrap_or("failed".as_bytes().to_vec()))
     }

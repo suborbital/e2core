@@ -1,3 +1,4 @@
+use query::QueryArg;
 use suborbital::runnable::*;
 use suborbital::db;
 use suborbital::db::query;
@@ -10,9 +11,10 @@ impl Runnable for RsDbtest {
     fn run(&self, _: Vec<u8>) -> Result<Vec<u8>, RunErr> {
         let uuid = Uuid::new_v4().to_string();
 
-        let mut args: Vec<query::QueryArg> = Vec::new();
-        args.push(query::QueryArg::new("uuid", uuid.as_str()));
-        args.push(query::QueryArg::new("email", "connor@suborbital.dev"));
+        let args: Vec<QueryArg> = vec![
+            QueryArg::new("uuid", uuid.as_str()),
+            QueryArg::new("email", "connor@suborbital.dev")
+        ];
 
         match db::insert("InsertUser", args) {
             Ok(_) => log::info("insert successful"),
@@ -21,8 +23,7 @@ impl Runnable for RsDbtest {
             }
         };
         
-        let mut args2: Vec<query::QueryArg> = Vec::new();
-        args2.push(query::QueryArg::new("uuid", uuid.as_str()));
+        let args2: Vec<QueryArg> = vec![QueryArg::new("uuid", uuid.as_str())];
 
         match db::update("UpdateUserWithUUID", args2.clone()) {
             Ok(_) => log::info("update successful"),
