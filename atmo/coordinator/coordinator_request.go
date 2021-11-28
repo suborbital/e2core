@@ -1,7 +1,6 @@
 package coordinator
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"github.com/pkg/errors"
@@ -18,38 +17,9 @@ func (c *Coordinator) vkHandlerForDirectiveHandler(handler directive.Handler) vk
 			return nil, vk.E(http.StatusInternalServerError, "failed to handle request")
 		}
 
-		// this should probably be factored out into the CoordinateRequest object
+		// Pull the X-Atmo-State and X-Atmo-Params headers into the request
 		if *c.opts.Headless {
-			// fill in initial state from the state header
-			if stateJSON := r.Header.Get(atmoHeadlessStateHeader); stateJSON != "" {
-				state := map[string]string{}
-				byteState := map[string][]byte{}
-
-				if err := json.Unmarshal([]byte(stateJSON), &state); err != nil {
-					c.log.Error(errors.Wrap(err, "failed to Unmarshal X-Atmo-State header"))
-				} else {
-					// iterate over the state and convert each field to bytes
-					for k, v := range state {
-						byteState[k] = []byte(v)
-					}
-				}
-
-				req.State = byteState
-			}
-
-			// fill in the URL params from the Params header
-			if paramsJSON := r.Header.Get(atmoHeadlessParamsHeader); paramsJSON != "" {
-				params := map[string]string{}
-
-				if err := json.Unmarshal([]byte(paramsJSON), &params); err != nil {
-					c.log.Error(errors.Wrap(err, "failed to Unmarshal X-Atmo-Params header"))
-				} else {
-					req.Params = params
-				}
-			}
-
-			// add the request ID as a response header
-			ctx.RespHeaders.Add(atmoRequestIDHeader, ctx.RequestID())
+			req.UseHeadlessHeaders(r, ctx)
 		}
 
 		// a sequence executes the handler's steps and manages its state

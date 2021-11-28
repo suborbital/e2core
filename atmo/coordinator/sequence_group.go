@@ -4,12 +4,12 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/suborbital/atmo/directive"
+	"github.com/suborbital/atmo/directive/executable"
 )
 
 // runGroup runs a group of functions
 // this is all more complicated than it needs to be, Grav should be doing more of the work for us here
-func (seq *sequence) runGroup(fns []directive.CallableFn, reqJSON []byte) ([]fnResult, error) {
+func (seq *sequence) runGroup(fns []executable.CallableFn, reqJSON []byte) ([]fnResult, error) {
 	start := time.Now()
 	defer func() {
 		seq.log.Debug("group executed in", time.Since(start).Milliseconds(), "ms")

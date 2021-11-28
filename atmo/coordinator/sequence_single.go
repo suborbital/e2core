@@ -5,14 +5,14 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/suborbital/atmo/directive"
+	"github.com/suborbital/atmo/directive/executable"
 	"github.com/suborbital/reactr/request"
 	"github.com/suborbital/reactr/rt"
 )
 
 var ErrMissingFQFN = errors.New("callableFn missing FQFN")
 
-func (seq sequence) runSingleFn(fn directive.CallableFn, reqJSON []byte) (*fnResult, error) {
+func (seq sequence) runSingleFn(fn executable.CallableFn, reqJSON []byte) (*fnResult, error) {
 	start := time.Now()
 	defer func() {
 		seq.log.Debug("fn", fn.Fn, "executed in", time.Since(start).Milliseconds(), "ms")
@@ -46,7 +46,6 @@ func (seq sequence) runSingleFn(fn directive.CallableFn, reqJSON []byte) (*fnRes
 		seq.log.Debug("fn", fn.Fn, "returned a nil result")
 	}
 
-	key := key(fn)
 	cResponse := &request.CoordinatedResponse{}
 
 	if jobResult != nil {
@@ -58,20 +57,10 @@ func (seq sequence) runSingleFn(fn directive.CallableFn, reqJSON []byte) (*fnRes
 
 	result := &fnResult{
 		fqfn:     fn.FQFN,
-		key:      key,
+		key:      fn.Key(),
 		response: cResponse,
 		runErr:   runErr,
 	}
 
 	return result, nil
-}
-
-func key(fn directive.CallableFn) string {
-	key := fn.Fn
-
-	if fn.As != "" {
-		key = fn.As
-	}
-
-	return key
 }

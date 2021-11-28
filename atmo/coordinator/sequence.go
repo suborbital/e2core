@@ -6,7 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/suborbital/atmo/atmo/coordinator/executor"
-	"github.com/suborbital/atmo/directive"
+	"github.com/suborbital/atmo/directive/executable"
 	"github.com/suborbital/reactr/request"
 	"github.com/suborbital/reactr/rt"
 	"github.com/suborbital/vektor/vk"
@@ -17,7 +17,7 @@ import (
 var ErrSequenceRunErr = errors.New("sequence resulted in a RunErr")
 
 type sequence struct {
-	steps []directive.Executable
+	steps []executable.Executable
 
 	exec *executor.Executor
 
@@ -38,7 +38,7 @@ type fnResult struct {
 	err      error      // err is an annoying workaround that allows runGroup to propogate non-RunErrs out of its loop. Should be refactored when possible.
 }
 
-func newSequence(steps []directive.Executable, exec *executor.Executor, ctx *vk.Ctx) *sequence {
+func newSequence(steps []executable.Executable, exec *executor.Executor, ctx *vk.Ctx) *sequence {
 	s := &sequence{
 		steps: steps,
 		exec:  exec,
@@ -124,7 +124,7 @@ func (seq *sequence) execute(req *request.CoordinatedRequest) (*sequenceState, e
 	return state, nil
 }
 
-func (seq *sequence) shouldReturn(onErr *directive.FnOnErr, result fnResult) (*sequenceState, error) {
+func (seq *sequence) shouldReturn(onErr *executable.ErrHandler, result fnResult) (*sequenceState, error) {
 	shouldErr := true
 
 	// if the error code is listed as return, or any/other indicates a return, then create an erroring state object and return it.
@@ -152,7 +152,7 @@ func (seq *sequence) shouldReturn(onErr *directive.FnOnErr, result fnResult) (*s
 	return nil, nil
 }
 
-func stateJSONForStep(req *request.CoordinatedRequest, step directive.Executable) ([]byte, error) {
+func stateJSONForStep(req *request.CoordinatedRequest, step executable.Executable) ([]byte, error) {
 	// based on the step's `with` clause, build the state to pass into the function
 	stepState, err := desiredState(step.With, req.State)
 	if err != nil {

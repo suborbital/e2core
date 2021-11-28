@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/suborbital/atmo/directive/executable"
 	"github.com/suborbital/atmo/fqfn"
 	"github.com/suborbital/reactr/rcap"
 	"gopkg.in/yaml.v2"
@@ -38,18 +39,18 @@ type Directive struct {
 
 // Handler represents the mapping between an input and a composition of functions
 type Handler struct {
-	Input     Input        `yaml:"input,inline" json:"input"`
-	Steps     []Executable `yaml:"steps" json:"steps"`
-	Response  string       `yaml:"response,omitempty" json:"response,omitempty"`
-	RespondTo string       `yaml:"respondTo,omitempty" json:"respondTo,omitempty"`
+	Input     Input                   `yaml:"input,inline" json:"input"`
+	Steps     []executable.Executable `yaml:"steps" json:"steps"`
+	Response  string                  `yaml:"response,omitempty" json:"response,omitempty"`
+	RespondTo string                  `yaml:"respondTo,omitempty" json:"respondTo,omitempty"`
 }
 
 // Schedule represents the mapping between an input and a composition of functions
 type Schedule struct {
-	Name  string            `yaml:"name" json:"name"`
-	Every ScheduleEvery     `yaml:"every" json:"every"`
-	State map[string]string `yaml:"state,omitempty" json:"state,omitempty"`
-	Steps []Executable      `yaml:"steps" json:"steps"`
+	Name  string                  `yaml:"name" json:"name"`
+	Every ScheduleEvery           `yaml:"every" json:"every"`
+	State map[string]string       `yaml:"state,omitempty" json:"state,omitempty"`
+	Steps []executable.Executable `yaml:"steps" json:"steps"`
 }
 
 // ScheduleEvery represents the 'every' value for a schedule
@@ -66,39 +67,6 @@ type Input struct {
 	Source   string `yaml:"source,omitempty" json:"source,omitempty"`
 	Method   string `yaml:"method" json:"method"`
 	Resource string `yaml:"resource" json:"resource"`
-}
-
-// Executable represents an executable step in a handler
-// The 'ForEach' type has been disabled and removed as of Atmo v0.4.0
-type Executable struct {
-	CallableFn `yaml:"callableFn,inline" json:"callableFn"`
-	Group      []CallableFn `yaml:"group,omitempty" json:"group,omitempty"`
-	ForEach    interface{}  `yaml:"forEach,omitempty"`
-}
-
-// CallableFn is a fn along with its "variable name" and "args"
-type CallableFn struct {
-	Fn    string            `yaml:"fn,omitempty" json:"fn,omitempty"`
-	As    string            `yaml:"as,omitempty" json:"as,omitempty"`
-	With  map[string]string `yaml:"with,omitempty" json:"with,omitempty"`
-	OnErr *FnOnErr          `yaml:"onErr,omitempty" json:"onErr,omitempty"`
-	FQFN  string            `yaml:"-" json:"fqfn"` // calculated during Validate
-}
-
-// FnOnErr describes how to handle an error from a function call
-type FnOnErr struct {
-	Code  map[int]string `yaml:"code,omitempty" json:"code,omitempty"`
-	Any   string         `yaml:"any,omitempty" json:"any,omitempty"`
-	Other string         `yaml:"other,omitempty" json:"other,omitempty"`
-}
-
-// ForEach describes a forEach operator
-type ForEach struct {
-	In         string     `yaml:"in" json:"in"`
-	Fn         string     `yaml:"fn" json:"fn"`
-	As         string     `yaml:"as" json:"as"`
-	OnErr      *FnOnErr   `yaml:"onErr,omitempty" json:"onErr,omitempty"`
-	CallableFn CallableFn `yaml:"-" json:"callableFn"` // calculated during Validate
 }
 
 // Connections describes connections
@@ -185,16 +153,6 @@ func (s *Schedule) NumberOfSeconds() int {
 	days := 60 * 60 * 24 * s.Every.Days
 
 	return seconds + minutes + hours + days
-}
-
-// IsGroup returns true if the executable is a group
-func (e *Executable) IsGroup() bool {
-	return e.Fn == "" && e.Group != nil && len(e.Group) > 0
-}
-
-// IsFn returns true if the executable is a group
-func (e *Executable) IsFn() bool {
-	return e.Fn != "" && e.Group == nil
 }
 
 type problems []error

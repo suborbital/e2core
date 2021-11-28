@@ -8,7 +8,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/suborbital/atmo/atmo/appsource"
 	"github.com/suborbital/atmo/atmo/options"
-	"github.com/suborbital/atmo/directive"
+	"github.com/suborbital/atmo/directive/executable"
 	"github.com/suborbital/reactr/request"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
@@ -33,9 +33,9 @@ func init() {
 }
 
 func TestBasicSequence(t *testing.T) {
-	steps := []directive.Executable{
+	steps := []executable.Executable{
 		{
-			CallableFn: directive.CallableFn{
+			CallableFn: executable.CallableFn{
 				Fn:   "helloworld-rs",
 				FQFN: "com.suborbital.test#default::helloworld-rs@v0.0.1",
 			},
@@ -66,9 +66,9 @@ func TestBasicSequence(t *testing.T) {
 }
 
 func TestGroupSequence(t *testing.T) {
-	steps := []directive.Executable{
+	steps := []executable.Executable{
 		{
-			Group: []directive.CallableFn{
+			Group: []executable.CallableFn{
 				{
 					Fn:   "helloworld-rs",
 					FQFN: "com.suborbital.test#default::helloworld-rs@v0.0.1",
@@ -113,19 +113,19 @@ func TestGroupSequence(t *testing.T) {
 }
 
 func TestAsOnErrContinueSequence(t *testing.T) {
-	steps := []directive.Executable{
+	steps := []executable.Executable{
 		{
-			CallableFn: directive.CallableFn{
+			CallableFn: executable.CallableFn{
 				Fn:   "helloworld-rs",
 				FQFN: "com.suborbital.test#default::helloworld-rs@v0.0.1",
 				As:   "hello",
 			},
 		},
 		{
-			CallableFn: directive.CallableFn{
+			CallableFn: executable.CallableFn{
 				Fn:   "return-err",
 				FQFN: "com.suborbital.test#default::return-err@v0.0.1",
-				OnErr: &directive.FnOnErr{
+				OnErr: &executable.ErrHandler{
 					Any: "continue",
 				},
 			},
@@ -155,19 +155,19 @@ func TestAsOnErrContinueSequence(t *testing.T) {
 }
 
 func TestAsOnErrReturnSequence(t *testing.T) {
-	steps := []directive.Executable{
+	steps := []executable.Executable{
 		{
-			CallableFn: directive.CallableFn{
+			CallableFn: executable.CallableFn{
 				Fn:   "helloworld-rs",
 				FQFN: "com.suborbital.test#default::helloworld-rs@v0.0.1",
 				As:   "hello",
 			},
 		},
 		{
-			CallableFn: directive.CallableFn{
+			CallableFn: executable.CallableFn{
 				Fn:   "return-err",
 				FQFN: "com.suborbital.test#default::return-err@v0.0.1",
-				OnErr: &directive.FnOnErr{
+				OnErr: &executable.ErrHandler{
 					Any: "return",
 				},
 			},
@@ -199,15 +199,15 @@ func TestAsOnErrReturnSequence(t *testing.T) {
 }
 
 func TestWithSequence(t *testing.T) {
-	steps := []directive.Executable{
+	steps := []executable.Executable{
 		{
-			CallableFn: directive.CallableFn{
+			CallableFn: executable.CallableFn{
 				Fn:   "helloworld-rs", // the body is empty, so this will return only "hello"
 				FQFN: "com.suborbital.test#default::helloworld-rs@v0.0.1",
 			},
 		},
 		{
-			CallableFn: directive.CallableFn{
+			CallableFn: executable.CallableFn{
 				Fn:   "modify-url", // if there's no body, it'll look in state for '
 				FQFN: "com.suborbital.test#default::modify-url@v0.0.1",
 				With: map[string]string{"url": "helloworld-rs"},
