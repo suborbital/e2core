@@ -14,6 +14,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/suborbital/atmo/atmo/options"
 	"github.com/suborbital/atmo/directive"
+	"github.com/suborbital/atmo/directive/executable"
 	"github.com/suborbital/atmo/fqfn"
 	"github.com/suborbital/reactr/rcap"
 )
@@ -308,9 +309,9 @@ func (h *HTTPSource) headlessHandlers() []directive.Handler {
 				Method:   http.MethodPost,
 				Resource: fqfn.Parse(runnable.FQFN).HeadlessURLPath(),
 			},
-			Steps: []directive.Executable{
+			Steps: []executable.Executable{
 				{
-					CallableFn: directive.CallableFn{
+					CallableFn: executable.CallableFn{
 						Fn:   runnable.Name,
 						With: map[string]string{},
 						FQFN: runnable.FQFN,

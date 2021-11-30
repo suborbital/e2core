@@ -5,7 +5,9 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	"github.com/suborbital/atmo/atmo/coordinator/sequence"
 	"github.com/suborbital/atmo/directive"
+	"github.com/suborbital/atmo/directive/executable"
 	"github.com/suborbital/grav/grav"
 	"github.com/suborbital/reactr/request"
 	"github.com/suborbital/vektor/vk"
@@ -64,18 +66,18 @@ func (c *Coordinator) streamConnectionForDirectiveHandler(handler directive.Hand
 		}
 
 		// a sequence executes the handler's steps and manages its state
-		seq := newSequence(handler.Steps, c.exec, ctx)
+		seq := sequence.New(handler.Steps, c.exec, ctx)
 
-		seqState, err := seq.execute(req)
+		seqState, err := seq.Execute(req)
 		if err != nil {
-			if errors.Is(err, ErrSequenceRunErr) && seqState.err != nil {
-				c.log.Error(errors.Wrapf(seqState.err, "handler for %s returned an error", handler.Input.Resource))
+			if errors.Is(err, executable.ErrFunctionRunErr) && seqState.Err != nil {
+				c.log.Error(errors.Wrapf(seqState.Err, "handler for %s returned an error", handler.Input.Resource))
 			} else {
 				c.log.Error(errors.Wrapf(err, "schedule %s failed", handler.Input.Resource))
 			}
 		}
 
-		result := resultFromState(handler, seqState.state)
+		result := resultFromState(handler, seqState.State)
 
 		replyTopic := handler.Input.Resource
 		if handler.RespondTo != "" {

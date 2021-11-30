@@ -6,7 +6,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/pkg/errors"
+	"github.com/suborbital/atmo/atmo/coordinator/sequence"
 	"github.com/suborbital/atmo/directive"
+	"github.com/suborbital/atmo/directive/executable"
 	"github.com/suborbital/reactr/request"
 	"github.com/suborbital/vektor/vk"
 )
@@ -39,7 +41,7 @@ func (c *Coordinator) websocketHandlerForDirectiveHandler(handler directive.Hand
 			ctx.Log.Info("handling message", ctx.RequestID(), "from handler", handler.Input.Resource)
 
 			//a sequence executes the handler's steps and manages its state
-			seq := newSequence(handler.Steps, c.exec, ctx)
+			seq := sequence.New(handler.Steps, c.exec, ctx)
 
 			req := &request.CoordinatedRequest{
 				Method:      http.MethodGet,
@@ -52,10 +54,10 @@ func (c *Coordinator) websocketHandlerForDirectiveHandler(handler directive.Hand
 				State:       map[string][]byte{},
 			}
 
-			seqState, err := seq.execute(req)
+			seqState, err := seq.Execute(req)
 			if err != nil {
-				if errors.Is(err, ErrSequenceRunErr) && seqState.err != nil {
-					if err := conn.WriteJSON(seqState.err); err != nil {
+				if errors.Is(err, executable.ErrFunctionRunErr) && seqState.Err != nil {
+					if err := conn.WriteJSON(seqState.Err); err != nil {
 						breakErr = err
 						break
 					}
@@ -69,7 +71,7 @@ func (c *Coordinator) websocketHandlerForDirectiveHandler(handler directive.Hand
 				continue
 			}
 
-			result := resultFromState(handler, seqState.state)
+			result := resultFromState(handler, seqState.State)
 
 			if err := conn.WriteMessage(websocket.TextMessage, result); err != nil {
 				breakErr = err

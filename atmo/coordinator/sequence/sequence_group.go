@@ -1,4 +1,4 @@
-package coordinator
+package sequence
 
 import (
 	"time"
@@ -9,13 +9,13 @@ import (
 
 // runGroup runs a group of functions
 // this is all more complicated than it needs to be, Grav should be doing more of the work for us here
-func (seq *sequence) runGroup(fns []executable.CallableFn, reqJSON []byte) ([]fnResult, error) {
+func (seq *Sequence) RunGroup(fns []executable.CallableFn, reqJSON []byte) ([]FnResult, error) {
 	start := time.Now()
 	defer func() {
 		seq.log.Debug("group executed in", time.Since(start).Milliseconds(), "ms")
 	}()
 
-	resultChan := make(chan fnResult, len(fns))
+	resultChan := make(chan FnResult, len(fns))
 
 	// for now we'll use a bit of a kludgy means of running all of the group fns concurrently
 	// in the future, we should send out all of the messages first, then have some new Grav
@@ -25,26 +25,26 @@ func (seq *sequence) runGroup(fns []executable.CallableFn, reqJSON []byte) ([]fn
 		seq.log.Debug("running fn", fn.Fn, "from group")
 
 		go func() {
-			res, err := seq.runSingleFn(fn, reqJSON)
+			res, err := seq.RunSingleFn(fn, reqJSON)
 			if err != nil {
 				seq.log.Error(errors.Wrap(err, "failed to runSingleFn"))
-				resultChan <- fnResult{err: err}
+				resultChan <- FnResult{Err: err}
 			} else {
 				resultChan <- *res
 			}
 		}()
 	}
 
-	results := []fnResult{}
+	results := []FnResult{}
 	respCount := 0
 	timeoutChan := time.After(30 * time.Second)
 
 	for respCount < len(fns) {
 		select {
 		case result := <-resultChan:
-			if result.err != nil {
+			if result.Err != nil {
 				// if there was an error running the funciton, return that error
-				return nil, result.err
+				return nil, result.Err
 			}
 
 			results = append(results, result)

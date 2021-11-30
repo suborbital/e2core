@@ -4,7 +4,9 @@ import (
 	"net/http"
 
 	"github.com/pkg/errors"
+	"github.com/suborbital/atmo/atmo/coordinator/sequence"
 	"github.com/suborbital/atmo/directive"
+	"github.com/suborbital/atmo/directive/executable"
 	"github.com/suborbital/reactr/request"
 	"github.com/suborbital/vektor/vk"
 )
@@ -23,19 +25,19 @@ func (c *Coordinator) vkHandlerForDirectiveHandler(handler directive.Handler) vk
 		}
 
 		// a sequence executes the handler's steps and manages its state
-		seq := newSequence(handler.Steps, c.exec, ctx)
+		seq := sequence.New(handler.Steps, c.exec, ctx)
 
-		seqState, err := seq.execute(req)
+		seqState, err := seq.Execute(req)
 		if err != nil {
 			ctx.Log.Error(errors.Wrap(err, "failed to seq.exec"))
 
-			if errors.Is(err, ErrSequenceRunErr) && seqState.err != nil {
-				if seqState.err.Code < 200 || seqState.err.Code > 599 {
+			if errors.Is(err, executable.ErrFunctionRunErr) && seqState.Err != nil {
+				if seqState.Err.Code < 200 || seqState.Err.Code > 599 {
 					// if the Runnable returned an invalid code for HTTP, default to 500
-					return nil, vk.Err(http.StatusInternalServerError, seqState.err.Message)
+					return nil, vk.Err(http.StatusInternalServerError, seqState.Err.Message)
 				}
 
-				return nil, vk.Err(seqState.err.Code, seqState.err.Message)
+				return nil, vk.Err(seqState.Err.Code, seqState.Err.Message)
 			}
 
 			return nil, vk.Wrap(http.StatusInternalServerError, err)
@@ -48,6 +50,6 @@ func (c *Coordinator) vkHandlerForDirectiveHandler(handler directive.Handler) vk
 			}
 		}
 
-		return resultFromState(handler, seqState.state), nil
+		return resultFromState(handler, seqState.State), nil
 	}
 }

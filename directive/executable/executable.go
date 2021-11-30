@@ -1,10 +1,18 @@
 package executable
 
+import (
+	"errors"
+)
+
+// ErrFunctionRunErr is represents a failed function call that should result in a return
+var ErrFunctionRunErr = errors.New("function resulted in a Run Error")
+
 // Executable represents an executable step in a handler
 // The 'ForEach' type has been disabled and removed as of Atmo v0.4.0
 type Executable struct {
 	CallableFn `yaml:"callableFn,inline" json:"callableFn"`
 	Group      []CallableFn `yaml:"group,omitempty" json:"group,omitempty"`
+	Completed  bool         `yaml:"-" json:"completed"`
 	ForEach    interface{}  `yaml:"forEach,omitempty"`
 }
 
@@ -42,4 +50,32 @@ func (c *CallableFn) Key() string {
 	}
 
 	return key
+}
+
+func (c *CallableFn) ShouldReturn(code int) error {
+	// if the developer hasn't specified an erro handler,
+	// the default is to return
+	if c.OnErr == nil {
+		return ErrFunctionRunErr
+	}
+
+	shouldErr := true
+
+	// if the error code is listed as return, or any/other indicates a return, then create an erroring state object and return it.
+
+	if len(c.OnErr.Code) > 0 {
+		if val, ok := c.OnErr.Code[code]; ok && val == "continue" {
+			shouldErr = false
+		} else if !ok && c.OnErr.Other == "continue" {
+			shouldErr = false
+		}
+	} else if c.OnErr.Any == "continue" {
+		shouldErr = false
+	}
+
+	if shouldErr {
+		return ErrFunctionRunErr
+	}
+
+	return nil
 }

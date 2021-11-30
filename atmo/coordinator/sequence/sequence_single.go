@@ -1,4 +1,4 @@
-package coordinator
+package sequence
 
 import (
 	"encoding/json"
@@ -12,7 +12,7 @@ import (
 
 var ErrMissingFQFN = errors.New("callableFn missing FQFN")
 
-func (seq sequence) runSingleFn(fn executable.CallableFn, reqJSON []byte) (*fnResult, error) {
+func (seq Sequence) RunSingleFn(fn executable.CallableFn, reqJSON []byte) (*FnResult, error) {
 	start := time.Now()
 	defer func() {
 		seq.log.Debug("fn", fn.Fn, "executed in", time.Since(start).Milliseconds(), "ms")
@@ -55,11 +55,11 @@ func (seq sequence) runSingleFn(fn executable.CallableFn, reqJSON []byte) (*fnRe
 		}
 	}
 
-	result := &fnResult{
-		fqfn:     fn.FQFN,
-		key:      fn.Key(),
-		response: cResponse,
-		runErr:   runErr,
+	result := &FnResult{
+		FQFN:     fn.FQFN,
+		Key:      fn.Key(),
+		Response: cResponse,
+		RunErr:   runErr,
 	}
 
 	return result, nil
