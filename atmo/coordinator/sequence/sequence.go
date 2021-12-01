@@ -157,6 +157,10 @@ func (seq *Sequence) handleStepResults(stepResults []FnResult) {
 
 func (seq *Sequence) handleStepErrs(results []FnResult, step *executable.Executable) error {
 	for _, result := range results {
+		if result.RunErr == nil {
+			continue
+		}
+
 		if err := step.ShouldReturn(result.RunErr.Code); err != nil {
 			seq.log.Error(errors.Wrapf(err, "returning after error from %s", result.FQFN))
 
