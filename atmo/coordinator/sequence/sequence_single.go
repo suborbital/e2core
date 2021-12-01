@@ -12,7 +12,7 @@ import (
 
 var ErrMissingFQFN = errors.New("callableFn missing FQFN")
 
-func (seq Sequence) RunSingleFn(fn executable.CallableFn, reqJSON []byte) (*FnResult, error) {
+func (seq Sequence) ExecSingleFn(fn executable.CallableFn, reqJSON []byte) (*FnResult, error) {
 	start := time.Now()
 	defer func() {
 		seq.log.Debug("fn", fn.Fn, "executed in", time.Since(start).Milliseconds(), "ms")

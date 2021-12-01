@@ -139,6 +139,11 @@ func (e *Executor) Load(runnables []directive.Runnable) error {
 	return load.Runnables(e.reactr, runnables, false)
 }
 
+// UseCallback does nothing in normal executor mode
+func (e *Executor) UseCallback(callback grav.MsgFunc) {
+	// nothing to do
+}
+
 // Metrics returns the executor's Reactr isntance's internal metrics
 func (e *Executor) Metrics() (*rt.ScalerMetrics, error) {
 	if e.reactr == nil {

@@ -9,7 +9,7 @@ import (
 
 // runGroup runs a group of functions
 // this is all more complicated than it needs to be, Grav should be doing more of the work for us here
-func (seq *Sequence) RunGroup(fns []executable.CallableFn, reqJSON []byte) ([]FnResult, error) {
+func (seq *Sequence) ExecGroup(fns []executable.CallableFn, reqJSON []byte) ([]FnResult, error) {
 	start := time.Now()
 	defer func() {
 		seq.log.Debug("group executed in", time.Since(start).Milliseconds(), "ms")
@@ -25,10 +25,10 @@ func (seq *Sequence) RunGroup(fns []executable.CallableFn, reqJSON []byte) ([]Fn
 		seq.log.Debug("running fn", fn.Fn, "from group")
 
 		go func() {
-			res, err := seq.RunSingleFn(fn, reqJSON)
+			res, err := seq.ExecSingleFn(fn, reqJSON)
 			if err != nil {
 				seq.log.Error(errors.Wrap(err, "failed to runSingleFn"))
-				resultChan <- FnResult{Err: err}
+				resultChan <- FnResult{ExecErr: err}
 			} else {
 				resultChan <- *res
 			}
@@ -42,9 +42,9 @@ func (seq *Sequence) RunGroup(fns []executable.CallableFn, reqJSON []byte) ([]Fn
 	for respCount < len(fns) {
 		select {
 		case result := <-resultChan:
-			if result.Err != nil {
+			if result.ExecErr != nil {
 				// if there was an error running the funciton, return that error
-				return nil, result.Err
+				return nil, result.ExecErr
 			}
 
 			results = append(results, result)

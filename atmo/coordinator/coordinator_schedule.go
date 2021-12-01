@@ -5,7 +5,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/suborbital/atmo/atmo/coordinator/sequence"
 	"github.com/suborbital/atmo/directive"
-	"github.com/suborbital/atmo/directive/executable"
 	"github.com/suborbital/reactr/request"
 	"github.com/suborbital/reactr/rt"
 	"github.com/suborbital/vektor/vk"
@@ -45,9 +44,9 @@ func (c *Coordinator) rtFuncForDirectiveSchedule(sched directive.Schedule) rtFun
 		// a sequence executes the handler's steps and manages its state
 		seq := sequence.New(sched.Steps, c.exec, vk.NewCtx(c.log, nil, nil))
 
-		if seqState, err := seq.Execute(req); err != nil {
-			if errors.Is(err, executable.ErrFunctionRunErr) && seqState.Err != nil {
-				c.log.Error(errors.Wrapf(seqState.Err, "schedule %s returned an error", sched.Name))
+		if err := seq.Execute(req); err != nil {
+			if runErr, isRunErr := err.(*rt.RunErr); isRunErr {
+				c.log.Error(errors.Wrapf(runErr, "schedule %s returned an error", sched.Name))
 			} else {
 				c.log.Error(errors.Wrapf(err, "schedule %s failed", sched.Name))
 			}

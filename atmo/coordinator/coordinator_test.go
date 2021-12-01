@@ -11,6 +11,7 @@ import (
 	"github.com/suborbital/atmo/atmo/options"
 	"github.com/suborbital/atmo/directive/executable"
 	"github.com/suborbital/reactr/request"
+	"github.com/suborbital/reactr/rt"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
 )
@@ -53,13 +54,12 @@ func TestBasicSequence(t *testing.T) {
 		State:  map[string][]byte{},
 	}
 
-	state, err := seq.Execute(req)
-	if err != nil {
+	if err := seq.Execute(req); err != nil {
 		t.Error(err)
 		return
 	}
 
-	if val, ok := state.State["helloworld-rs"]; !ok {
+	if val, ok := req.State["helloworld-rs"]; !ok {
 		t.Error("helloworld state is missing")
 	} else if !bytes.Equal(val, []byte("hello world")) {
 		t.Error("unexpected helloworld state value:", string(val))
@@ -95,18 +95,17 @@ func TestGroupSequence(t *testing.T) {
 		},
 	}
 
-	state, err := seq.Execute(req)
-	if err != nil {
+	if err := seq.Execute(req); err != nil {
 		t.Error(err)
 	}
 
-	if val, ok := state.State["helloworld-rs"]; !ok {
+	if val, ok := req.State["helloworld-rs"]; !ok {
 		t.Error("helloworld state is missing")
 	} else if !bytes.Equal(val, []byte("hello world")) {
 		t.Error("unexpected helloworld state value:", string(val))
 	}
 
-	if val, ok := state.State["main.md"]; !ok {
+	if val, ok := req.State["main.md"]; !ok {
 		t.Error("get-file state is missing")
 	} else if !bytes.Equal(val, []byte("## hello")) {
 		t.Error("unexpected get-file state value:", string(val))
@@ -143,12 +142,11 @@ func TestAsOnErrContinueSequence(t *testing.T) {
 		State:  map[string][]byte{},
 	}
 
-	state, err := seq.Execute(req)
-	if err != nil {
+	if err := seq.Execute(req); err != nil {
 		t.Error(err)
 	}
 
-	if val, ok := state.State["hello"]; !ok {
+	if val, ok := req.State["hello"]; !ok {
 		t.Error("hello state is missing")
 	} else if !bytes.Equal(val, []byte("hello world")) {
 		t.Error("unexpected hello state value:", string(val))
@@ -185,17 +183,23 @@ func TestAsOnErrReturnSequence(t *testing.T) {
 		State:  map[string][]byte{},
 	}
 
-	state, err := seq.Execute(req)
-	if err != executable.ErrFunctionRunErr {
-		t.Error(errors.New("sequence should have returned ErrSequenceRunErr, did not"))
+	err := seq.Execute(req)
+	if err == nil {
+		t.Error(errors.New("sequence should have returned err, did not"))
+		return
 	}
 
-	if state.Err.Code != 400 {
-		t.Error("error code should be 400, is actually", state.Err.Code)
+	runErr, isRunErr := err.(*rt.RunErr)
+	if !isRunErr {
+		t.Error(errors.New("sequence should have returned RunErr, did not"))
 	}
 
-	if state.Err.Message != "job failed" {
-		t.Error("message should be 'job failed', is actually", state.Err.Message)
+	if runErr.Code != 400 {
+		t.Error("error code should be 400, is actually", runErr.Code)
+	}
+
+	if runErr.Message != "job failed" {
+		t.Error("message should be 'job failed', is actually", runErr.Message)
 	}
 }
 
@@ -226,18 +230,17 @@ func TestWithSequence(t *testing.T) {
 		State:  map[string][]byte{},
 	}
 
-	state, err := seq.Execute(req)
-	if err != nil {
+	if err := seq.Execute(req); err != nil {
 		t.Error(err)
 	}
 
-	if val, ok := state.State["helloworld-rs"]; !ok {
+	if val, ok := req.State["helloworld-rs"]; !ok {
 		t.Error("helloworld-rs state is missing")
 	} else if !bytes.Equal(val, []byte("hello ")) {
 		t.Error("unexpected helloworld-rs state value:", string(val))
 	}
 
-	if val, ok := state.State["modify-url"]; !ok {
+	if val, ok := req.State["modify-url"]; !ok {
 		t.Error("modify-url state is missing")
 	} else if !bytes.Equal(val, []byte("hello /suborbital")) {
 		t.Error("unexpected modify-url state value:", string(val))

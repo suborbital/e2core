@@ -4,8 +4,11 @@ import (
 	"errors"
 )
 
-// ErrFunctionRunErr is represents a failed function call that should result in a return
-var ErrFunctionRunErr = errors.New("function resulted in a Run Error")
+var (
+	// ErrSequenceShouldReturn is represents a failed function call that should result in a return
+	ErrSequenceShouldReturn = errors.New("function resulted in a Run Error and sequence should return")
+	ErrSequenceCompleted    = errors.New("sequence is complete, no steps to run")
+)
 
 // Executable represents an executable step in a handler
 // The 'ForEach' type has been disabled and removed as of Atmo v0.4.0
@@ -53,10 +56,10 @@ func (c *CallableFn) Key() string {
 }
 
 func (c *CallableFn) ShouldReturn(code int) error {
-	// if the developer hasn't specified an erro handler,
+	// if the developer hasn't specified an error handler,
 	// the default is to return
 	if c.OnErr == nil {
-		return ErrFunctionRunErr
+		return ErrSequenceShouldReturn
 	}
 
 	shouldErr := true
@@ -74,8 +77,13 @@ func (c *CallableFn) ShouldReturn(code int) error {
 	}
 
 	if shouldErr {
-		return ErrFunctionRunErr
+		return ErrSequenceShouldReturn
 	}
 
 	return nil
+}
+
+// SetCompleted sets the completed field on an executable
+func (e *Executable) SetCompleted(completed bool) {
+	e.Completed = completed
 }

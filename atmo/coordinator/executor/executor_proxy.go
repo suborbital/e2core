@@ -3,11 +3,10 @@
 package executor
 
 import (
-	"encoding/json"
-
 	"github.com/pkg/errors"
 
 	"github.com/suborbital/atmo/directive"
+	"github.com/suborbital/atmo/directive/executable"
 	"github.com/suborbital/grav/discovery/local"
 	"github.com/suborbital/grav/grav"
 	"github.com/suborbital/grav/transport/websocket"
@@ -15,6 +14,10 @@ import (
 	"github.com/suborbital/reactr/rt"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
+)
+
+const (
+	MsgTypeAtmoFnResult = "atmo.fnresult"
 )
 
 var (
@@ -25,9 +28,10 @@ var (
 // Executor is a facade over Grav and Reactr that allows executing local OR remote
 // functions with a single call, ensuring there is no difference between them to the caller
 type Executor struct {
-	grav *grav.Grav
-	pod  *grav.Pod
-	log  *vlog.Logger
+	grav     *grav.Grav
+	pod      *grav.Pod
+	log      *vlog.Logger
+	callback grav.MsgFunc
 }
 
 // New creates a new Executor
@@ -57,52 +61,69 @@ func New(log *vlog.Logger, transport *websocket.Transport) *Executor {
 
 // Do executes a remote job
 func (e *Executor) Do(jobType string, data interface{}, ctx *vk.Ctx) (interface{}, error) {
-	var jobResult []byte
 	var runErr *rt.RunErr
+	var cbErr error
 
 	pod := e.grav.Connect()
 	defer pod.Disconnect()
 
 	e.log.Info("proxying function", jobType)
 
-	podErr := pod.Send(grav.NewMsgWithParentID(jobType, ctx.RequestID(), data.([]byte))).WaitUntil(grav.Timeout(30), func(msg grav.Message) error {
-		switch msg.Type() {
-		case rt.MsgTypeReactrResult:
-			// if the Runnable returned a result
-			jobResult = msg.Data()
-		case rt.MsgTypeReactrRunErr:
-			// if the Runnable itself returned an error
-			runErr = &rt.RunErr{}
-			if err := json.Unmarshal(msg.Data(), runErr); err != nil {
-				return errors.Wrap(err, "failed to Unmarshal RunErr")
+	completed := make(chan bool)
+
+	// start listening to the messages produced by peers
+	// on the network, and don't stop until there's an error
+	// or the Sequence we're connected to deems that its complete
+	pod.On(func(msg grav.Message) error {
+		if msg.ParentID() != ctx.RequestID() {
+			return nil
+		} else if msg.Type() != MsgTypeAtmoFnResult {
+			return nil
+		}
+
+		// if a callback is registered, send it up the chain
+		// (probably to the Sequence object that called Do)
+		if e.callback != nil {
+			// the Sequence callback will return an error under two main conditions:
+			// - The sequence has ended: yay!
+			// - The result we just got caused an error: boo :(
+			// either way, show's over and we send on `completed`
+
+			if err := e.callback(msg); err != nil {
+				if err == executable.ErrSequenceCompleted {
+					// do nothing! that's great!
+				} else if cbRunErr, isRunErr := err.(*rt.RunErr); isRunErr {
+					// handle the runErr
+					runErr = cbRunErr
+				} else {
+					// nothing we really can do here, but let's propogate it
+					cbErr = err
+				}
+
+				completed <- true
 			}
-		case rt.MsgTypeReactrJobErr:
-			// if something else caused an error while running this fn
-			return errors.New(string(msg.Data()))
-		case rt.MsgTypeReactrNilResult:
-			// if the Runnable returned nil, do nothing
 		}
 
 		return nil
 	})
 
-	if podErr != nil {
-		if podErr == grav.ErrWaitTimeout {
-			return nil, errors.Wrapf(podErr, "fn %s timed out", jobType)
-		}
+	pod.Send(grav.NewMsgWithParentID(jobType, ctx.RequestID(), data.([]byte)))
 
-		return nil, errors.Wrapf(podErr, "failed to execute fn %s", jobType)
-	}
+	// wait until the sequence completes or errors
+	<-completed
 
 	// checking this explicitly because somehow Go interprets an
 	// un-instantiated literal pointer as a non-nil error interface
-	if runErr != nil {
+	if cbErr != nil {
+		return nil, cbErr
+	} else if runErr != nil {
 		return nil, runErr
 	}
 
-	e.log.Info("proxied function", jobType, "fulfilled by peer")
+	e.log.Info("proxied execution", jobType, "fulfilled by peer")
 
-	return jobResult, nil
+	// getting the JobResult was done by the callback, return nothing
+	return nil, nil
 }
 
 // UseCapabilityConfig sets up the executor's Reactr instance using the provided capability configuration
@@ -132,6 +153,11 @@ func (e *Executor) Load(runnables []directive.Runnable) error {
 	// nothing to do in proxy mode
 
 	return nil
+}
+
+// UseCallback sets a function to be called on receipt of a message
+func (e *Executor) UseCallback(callback grav.MsgFunc) {
+	e.callback = callback
 }
 
 // Metrics returns the executor's Reactr isntance's internal metrics

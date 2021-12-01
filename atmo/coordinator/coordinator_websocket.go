@@ -8,8 +8,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/suborbital/atmo/atmo/coordinator/sequence"
 	"github.com/suborbital/atmo/directive"
-	"github.com/suborbital/atmo/directive/executable"
 	"github.com/suborbital/reactr/request"
+	"github.com/suborbital/reactr/rt"
 	"github.com/suborbital/vektor/vk"
 )
 
@@ -54,10 +54,9 @@ func (c *Coordinator) websocketHandlerForDirectiveHandler(handler directive.Hand
 				State:       map[string][]byte{},
 			}
 
-			seqState, err := seq.Execute(req)
-			if err != nil {
-				if errors.Is(err, executable.ErrFunctionRunErr) && seqState.Err != nil {
-					if err := conn.WriteJSON(seqState.Err); err != nil {
+			if err := seq.Execute(req); err != nil {
+				if runErr, isRunErr := err.(*rt.RunErr); isRunErr {
+					if err := conn.WriteJSON(runErr); err != nil {
 						breakErr = err
 						break
 					}
@@ -71,7 +70,7 @@ func (c *Coordinator) websocketHandlerForDirectiveHandler(handler directive.Hand
 				continue
 			}
 
-			result := resultFromState(handler, seqState.State)
+			result := resultFromState(handler, req.State)
 
 			if err := conn.WriteMessage(websocket.TextMessage, result); err != nil {
 				breakErr = err
