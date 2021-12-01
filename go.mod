@@ -10,7 +10,6 @@ require (
 	github.com/spf13/cobra v1.2.1
 	github.com/suborbital/grav v0.4.2
 	github.com/suborbital/reactr v0.12.1-0.20211201225713-3f9fb5bf34cc
-	github.com/suborbital/subo v0.1.0
 	github.com/suborbital/vektor v0.5.1
 	golang.org/x/mod v0.5.1
 	gopkg.in/yaml.v2 v2.4.0
