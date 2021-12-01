@@ -15,10 +15,6 @@ import (
 	"github.com/suborbital/vektor/vlog"
 )
 
-const (
-	MsgTypeAtmoFnResult = "atmo.fnresult"
-)
-
 type Sequence struct {
 	steps []executable.Executable
 
@@ -177,9 +173,6 @@ func (seq *Sequence) handleStepErrs(results []FnResult, step *executable.Executa
 // this is called by the executor:
 // sequence -> exec.do -> handleMessage (n times) -> .do returns to sequence
 func (seq *Sequence) handleMessage(msg grav.Message) error {
-	if msg.Type() != MsgTypeAtmoFnResult {
-		return nil
-	}
 
 	result := FnResult{}
 	if err := json.Unmarshal(msg.Data(), &result); err != nil {
