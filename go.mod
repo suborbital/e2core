@@ -9,7 +9,7 @@ require (
 	github.com/sethvargo/go-envconfig v0.4.0
 	github.com/spf13/cobra v1.2.1
 	github.com/suborbital/grav v0.4.2
-	github.com/suborbital/reactr v0.12.1-0.20211201225713-3f9fb5bf34cc
+	github.com/suborbital/reactr v0.12.1-0.20211202000019-9046c35fa567
 	github.com/suborbital/vektor v0.5.1
 	golang.org/x/mod v0.5.1
 	gopkg.in/yaml.v2 v2.4.0
@@ -46,7 +46,7 @@ require (
 	github.com/twmb/go-rbtree v1.0.0 // indirect
 	github.com/wasmerio/wasmer-go v1.0.4 // indirect
 	golang.org/x/crypto v0.0.0-20211117183948-ae814b36b871 // indirect
-	golang.org/x/net v0.0.0-20211201181615-a5aa9c730af2 // indirect
+	golang.org/x/net v0.0.0-20211201190559-0a0e4e1bb54c // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
 	golang.org/x/sys v0.0.0-20211124211545-fe61309f8881 // indirect
 	golang.org/x/text v0.3.7 // indirect
