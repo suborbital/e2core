@@ -42,8 +42,10 @@ func New(steps []executable.Executable, exec *executor.Executor, ctx *vk.Ctx) *S
 		log:   ctx.Log,
 	}
 
-	// set messages received by the executor to be handled by the sequence
-	exec.UseCallback(s.handleMessage)
+	if exec != nil {
+		// set messages received by the executor to be handled by the sequence
+		exec.UseCallback(s.handleMessage)
+	}
 
 	return s
 }

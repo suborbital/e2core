@@ -52,5 +52,3 @@ require (
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/time v0.0.0-20200416051211-89c76fbcd5d1 // indirect
 )
-
-replace github.com/suborbital/reactr => /Users/cohix-14/Workspaces/suborbital/reactr
