@@ -385,6 +385,8 @@ github.com/stretchr/testify v1.7.0 h1:nwc3DEeHmmLAfoZucVR881uASk0Mfjw8xYJ99tb5Cc
 github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/suborbital/grav v0.4.2 h1:m/G1JVYe79e8JK9xzQJyWKcC7T4IF2X7tIuFsTWgZ/0=
 github.com/suborbital/grav v0.4.2/go.mod h1:9VkTNKx8im7Zo8X5JPq8JHye+j/A/DAF0bdKfROjf0Y=
+github.com/suborbital/reactr v0.12.1-0.20211202000019-9046c35fa567 h1:h3YbJQdMFGJPqUE+LUXqWw8dznVr7m2YmHLgsDBd108=
+github.com/suborbital/reactr v0.12.1-0.20211202000019-9046c35fa567/go.mod h1:meu6kC/Fvfy5UFySvLkKHjE9p4ZRIwCyu9+ceVpOBUk=
 github.com/suborbital/vektor v0.5.0/go.mod h1:iNMR6/alEK1D7fbupwIlGlK5LajngEvq/N+RGVWaqNw=
 github.com/suborbital/vektor v0.5.1 h1:IkWem2yzWFoES1duq2wgorr6T/XvqTEM43iBmNgSNjk=
 github.com/suborbital/vektor v0.5.1/go.mod h1:116rovoAiwxaOzrTf849x54mlaec41qvB1d/9UeA+xk=

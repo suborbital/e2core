@@ -35,8 +35,10 @@ func (seq Sequence) ExecSingleFn(fn executable.CallableFn, reqJSON []byte) (*FnR
 		} else {
 			return nil, errors.Wrap(err, "failed to exec.Do")
 		}
-	} else {
+	} else if res != nil {
 		jobResult = res.([]byte)
+	} else {
+		return nil, nil
 	}
 
 	// runErr would be an actual error returned from a function

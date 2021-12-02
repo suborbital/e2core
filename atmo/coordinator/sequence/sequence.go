@@ -197,7 +197,7 @@ func (seq *Sequence) handleMessage(msg grav.Message) error {
 	if step == nil {
 		return executable.ErrSequenceCompleted
 	} else if step.IsFn() {
-		seq.log.Info("handling nextStep from handleMessage")
+		seq.log.Info("handling result of", step.FQFN)
 		step.SetCompleted(true)
 	} else {
 		seq.log.Warn("cannot handle message from group step")
