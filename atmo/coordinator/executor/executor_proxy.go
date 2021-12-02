@@ -60,14 +60,14 @@ func New(log *vlog.Logger, transport *websocket.Transport) *Executor {
 }
 
 // Do executes a remote job
-func (e *Executor) Do(jobType string, data interface{}, ctx *vk.Ctx) (interface{}, error) {
+func (e *Executor) Do(jobType string, data []byte, ctx *vk.Ctx) (interface{}, error) {
 	var runErr *rt.RunErr
 	var cbErr error
 
 	pod := e.grav.Connect()
 	defer pod.Disconnect()
 
-	e.log.Info("proxying function", jobType)
+	e.log.Debug("proxying execution for", jobType)
 
 	completed := make(chan bool)
 
@@ -107,7 +107,7 @@ func (e *Executor) Do(jobType string, data interface{}, ctx *vk.Ctx) (interface{
 		return nil
 	})
 
-	pod.Send(grav.NewMsgWithParentID(jobType, ctx.RequestID(), data.([]byte)))
+	pod.Send(grav.NewMsgWithParentID(jobType, ctx.RequestID(), data))
 
 	// wait until the sequence completes or errors
 	<-completed
@@ -120,7 +120,7 @@ func (e *Executor) Do(jobType string, data interface{}, ctx *vk.Ctx) (interface{
 		return nil, runErr
 	}
 
-	e.log.Info("proxied execution", jobType, "fulfilled by peer")
+	e.log.Debug("proxied execution for", jobType, "fulfilled by peer")
 
 	// getting the JobResult was done by the callback, return nothing
 	return nil, nil

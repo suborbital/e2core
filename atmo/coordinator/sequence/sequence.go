@@ -51,6 +51,13 @@ func New(steps []executable.Executable, exec *executor.Executor, ctx *vk.Ctx) *S
 // Execute returns the "final state" of a Sequence. If the state's err is not nil, it means a runnable returned an error, and the Directive indicates the Sequence should return.
 // if exec itself actually returns an error other than ErrSequenceRunErr, it means there was a problem executing the Sequence as described, and should be treated as such.
 func (seq *Sequence) Execute(req *request.CoordinatedRequest) error {
+	stepsJSON, err := json.Marshal(seq.steps)
+	if err != nil {
+		return errors.Wrap(err, "failed to Marshal step")
+	}
+
+	req.SequenceJSON = stepsJSON
+
 	seq.req = req
 
 	for {
@@ -69,7 +76,7 @@ func (seq *Sequence) Execute(req *request.CoordinatedRequest) error {
 
 // ExecuteNext executes the "next" step (i.e. the first un-completed step) in the sequence
 func (seq *Sequence) ExecuteNext(req *request.CoordinatedRequest) error {
-	step := seq.nextStep()
+	step := seq.NextStep()
 
 	if step == nil {
 		return executable.ErrSequenceCompleted
@@ -78,8 +85,8 @@ func (seq *Sequence) ExecuteNext(req *request.CoordinatedRequest) error {
 	return seq.executeStep(step, req)
 }
 
-// nextStep returns the first un-complete step, nil if the sequence is over
-func (seq *Sequence) nextStep() *executable.Executable {
+// NextStep returns the first un-complete step, nil if the sequence is over
+func (seq *Sequence) NextStep() *executable.Executable {
 	var step *executable.Executable
 
 	for i, s := range seq.steps {
@@ -98,8 +105,7 @@ func (seq *Sequence) nextStep() *executable.Executable {
 func (seq *Sequence) executeStep(step *executable.Executable, req *request.CoordinatedRequest) error {
 	stateJSON, err := stateJSONForStep(req, *step)
 	if err != nil {
-		seq.log.Error(errors.Wrap(err, "failed to stateJSONForStep"))
-		return err
+		return errors.Wrap(err, "failed to stateJSONForStep")
 	}
 
 	stepResults := []FnResult{}
@@ -177,13 +183,12 @@ func (seq *Sequence) handleStepErrs(results []FnResult, step *executable.Executa
 // this is called by the executor:
 // sequence -> exec.do -> handleMessage (n times) -> .do returns to sequence
 func (seq *Sequence) handleMessage(msg grav.Message) error {
-
 	result := FnResult{}
 	if err := json.Unmarshal(msg.Data(), &result); err != nil {
 		return errors.Wrap(err, "failed to Unmarshal FnResult")
 	}
 
-	step := seq.nextStep()
+	step := seq.NextStep()
 	if step == nil {
 		return executable.ErrSequenceCompleted
 	} else if step.IsFn() {
@@ -205,7 +210,7 @@ func (seq *Sequence) handleMessage(msg grav.Message) error {
 	seq.handleStepResults(stepResults)
 
 	// check nextstep again
-	step = seq.nextStep()
+	step = seq.NextStep()
 	if step == nil {
 		return executable.ErrSequenceCompleted
 	}
@@ -221,13 +226,15 @@ func stateJSONForStep(req *request.CoordinatedRequest, step executable.Executabl
 	}
 
 	stepReq := request.CoordinatedRequest{
-		Method:  req.Method,
-		URL:     req.URL,
-		ID:      req.ID,
-		Body:    req.Body,
-		Headers: req.Headers,
-		Params:  req.Params,
-		State:   stepState,
+		Method:       req.Method,
+		URL:          req.URL,
+		ID:           req.ID,
+		Body:         req.Body,
+		Headers:      req.Headers,
+		RespHeaders:  req.RespHeaders,
+		Params:       req.Params,
+		State:        stepState,
+		SequenceJSON: req.SequenceJSON,
 	}
 
 	stateJSON, err := stepReq.ToJSON()

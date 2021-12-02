@@ -60,7 +60,7 @@ func New(log *vlog.Logger, transport *websocket.Transport) *Executor {
 }
 
 // Do executes a local or remote job
-func (e *Executor) Do(jobType string, data interface{}, ctx *vk.Ctx) (interface{}, error) {
+func (e *Executor) Do(jobType string, data []byte, ctx *vk.Ctx) (interface{}, error) {
 	if e.reactr == nil {
 		return nil, ErrExecutorNotConfigured
 	}
