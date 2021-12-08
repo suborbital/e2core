@@ -1,0 +1,21 @@
+name: Links
+
+on: 
+  pull_request:
+  schedule:
+    - cron: "0 12 * * 1"
+
+jobs:
+  linkChecker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Link Checker
+        id: lychee
+        uses: lycheeverse/lychee-action@v1.1.1
+        with:
+          args: --verbose --no-progress -t 5 --exclude-mail --exclude=local.suborbital.network *.md docs/**/*.md
+        env:
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+      - name: Fail if there were link errors
+        run: exit ${{ steps.lychee.outputs.exit_code }}
