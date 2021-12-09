@@ -9,7 +9,7 @@ require (
 	github.com/sethvargo/go-envconfig v0.4.0
 	github.com/spf13/cobra v1.2.1
 	github.com/suborbital/grav v0.4.2
-	github.com/suborbital/reactr v0.12.1-0.20211208164713-0e0498615366
+	github.com/suborbital/reactr v0.12.1-0.20211209205102-eb9956869f81
 	github.com/suborbital/vektor v0.5.1
 	golang.org/x/mod v0.5.1
 	gopkg.in/yaml.v2 v2.4.0

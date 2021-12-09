@@ -30,7 +30,7 @@ func (c *Coordinator) vkHandlerForDirectiveHandler(handler directive.Handler) vk
 		if err := seq.Execute(req); err != nil {
 			ctx.Log.Error(errors.Wrap(err, "failed to seq.exec"))
 
-			if runErr, isRunErr := err.(*rt.RunErr); isRunErr {
+			if runErr, isRunErr := err.(rt.RunErr); isRunErr {
 				if runErr.Code < 200 || runErr.Code > 599 {
 					// if the Runnable returned an invalid code for HTTP, default to 500
 					return nil, vk.Err(http.StatusInternalServerError, runErr.Message)

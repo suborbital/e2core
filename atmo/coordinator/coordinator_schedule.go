@@ -45,7 +45,7 @@ func (c *Coordinator) rtFuncForDirectiveSchedule(sched directive.Schedule) rtFun
 		seq := sequence.New(sched.Steps, c.exec, vk.NewCtx(c.log, nil, nil))
 
 		if err := seq.Execute(req); err != nil {
-			if runErr, isRunErr := err.(*rt.RunErr); isRunErr {
+			if runErr, isRunErr := err.(rt.RunErr); isRunErr {
 				c.log.Error(errors.Wrapf(runErr, "schedule %s returned an error", sched.Name))
 			} else {
 				c.log.Error(errors.Wrapf(err, "schedule %s failed", sched.Name))

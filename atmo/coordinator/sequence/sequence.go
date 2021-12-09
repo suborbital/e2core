@@ -2,6 +2,7 @@ package sequence
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/pkg/errors"
 	"github.com/suborbital/atmo/atmo/coordinator/executor"
@@ -28,7 +29,7 @@ type FnResult struct {
 	FQFN     string                       `json:"fqfn"`
 	Key      string                       `json:"key"`
 	Response *request.CoordinatedResponse `json:"response"`
-	RunErr   *rt.RunErr                   `json:"runErr"`  // runErr is an error returned from a Runnable
+	RunErr   rt.RunErr                    `json:"runErr"`  // runErr is an error returned from a Runnable
 	ExecErr  string                       `json:"execErr"` // err is an annoying workaround that allows runGroup to propogate non-RunErrs out of its loop. Should be refactored when possible.
 }
 
@@ -117,6 +118,7 @@ func (seq *Sequence) NextStep() *executable.Executable {
 // executeStep uses the configured Executor to run the provided handler step. The sequence state and any errors are returned.
 // State is also loaded into the object pointed to by req, and the `Completed` field is set on the Executable pointed to by step.
 func (seq *Sequence) executeStep(step *executable.Executable, req *request.CoordinatedRequest) error {
+	// in proxy mode this will return the 'real' state as the peers will handle creating desired state
 	desiredState, err := seq.exec.DesiredStepState(step, req)
 	if err != nil {
 		return errors.Wrap(err, "failed to calculate DesiredStepState")
@@ -187,7 +189,7 @@ func (seq *Sequence) handleStepResults(stepResults []FnResult) {
 
 func (seq *Sequence) handleStepErrs(results []FnResult, step *executable.Executable) error {
 	for _, result := range results {
-		if result.RunErr == nil {
+		if result.RunErr.Code == 0 && result.RunErr.Message == "" {
 			continue
 		}
 
@@ -204,7 +206,9 @@ func (seq *Sequence) handleStepErrs(results []FnResult, step *executable.Executa
 	return nil
 }
 
-// this is called by the executor:
+// handleMessage is called by the executor when in proxy mode,
+// and it is responsible for collecting the fnResults from the proxied peers:
+//
 // sequence.Execute -> exec.do -> handleMessage (n times) -> .do returns to .Execute
 func (seq *Sequence) handleMessage(msg grav.Message) error {
 	result := FnResult{}
@@ -223,10 +227,13 @@ func (seq *Sequence) handleMessage(msg grav.Message) error {
 		return nil
 	}
 
+	fmt.Println("RESULT:", result)
+
 	stepResults := []FnResult{result}
 
 	// determine if error handling results in a return
 	if err := seq.handleStepErrs(stepResults, step); err != nil {
+		fmt.Println("returning handleStepErrs!")
 		return err
 	}
 

@@ -189,7 +189,7 @@ func TestAsOnErrReturnSequence(t *testing.T) {
 		return
 	}
 
-	runErr, isRunErr := err.(*rt.RunErr)
+	runErr, isRunErr := err.(rt.RunErr)
 	if !isRunErr {
 		t.Error(errors.New("sequence should have returned RunErr, did not"))
 	}

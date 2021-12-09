@@ -55,7 +55,7 @@ func (c *Coordinator) websocketHandlerForDirectiveHandler(handler directive.Hand
 			}
 
 			if err := seq.Execute(req); err != nil {
-				if runErr, isRunErr := err.(*rt.RunErr); isRunErr {
+				if runErr, isRunErr := err.(rt.RunErr); isRunErr {
 					if err := conn.WriteJSON(runErr); err != nil {
 						breakErr = err
 						break

@@ -3,6 +3,7 @@
 package executor
 
 import (
+	"fmt"
 	"github.com/pkg/errors"
 
 	"github.com/suborbital/atmo/directive"
@@ -11,6 +12,7 @@ import (
 	"github.com/suborbital/grav/grav"
 	"github.com/suborbital/grav/transport/websocket"
 	"github.com/suborbital/reactr/rcap"
+	"github.com/suborbital/reactr/request"
 	"github.com/suborbital/reactr/rt"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
@@ -61,7 +63,7 @@ func New(log *vlog.Logger, transport *websocket.Transport) *Executor {
 
 // Do executes a remote job
 func (e *Executor) Do(jobType string, req *request.CoordinatedRequest, ctx *vk.Ctx) (interface{}, error) {
-	var runErr *rt.RunErr
+	var runErr error
 	var cbErr error
 
 	pod := e.grav.Connect()
@@ -90,12 +92,15 @@ func (e *Executor) Do(jobType string, req *request.CoordinatedRequest, ctx *vk.C
 			// either way, show's over and we send on `completed`
 
 			if err := e.callback(msg); err != nil {
+				fmt.Println("its an error!")
 				if err == executable.ErrSequenceCompleted {
 					// do nothing! that's great!
-				} else if cbRunErr, isRunErr := err.(*rt.RunErr); isRunErr {
+				} else if cbRunErr, isRunErr := err.(rt.RunErr); isRunErr {
+					fmt.Println("it's a runErr!")
 					// handle the runErr
 					runErr = cbRunErr
 				} else {
+					fmt.Println("it's a cbErr!")
 					// nothing we really can do here, but let's propogate it
 					cbErr = err
 				}
@@ -107,16 +112,26 @@ func (e *Executor) Do(jobType string, req *request.CoordinatedRequest, ctx *vk.C
 		return nil
 	})
 
+	data, err := req.ToJSON()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to req.toJSON")
+	}
+
 	pod.Send(grav.NewMsgWithParentID(jobType, ctx.RequestID(), data))
 
 	// wait until the sequence completes or errors
 	<-completed
 
-	// checking this explicitly because somehow Go interprets an
+	fmt.Println("cbErr:", cbErr)
+	fmt.Println("runErr:", runErr)
+
+	// checking these explicitly because somehow Go interprets an
 	// un-instantiated literal pointer as a non-nil error interface
 	if cbErr != nil {
 		return nil, cbErr
-	} else if runErr != nil {
+	}
+
+	if runErr != nil {
 		return nil, runErr
 	}
 

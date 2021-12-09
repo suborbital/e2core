@@ -69,7 +69,7 @@ func (c *Coordinator) streamConnectionForDirectiveHandler(handler directive.Hand
 		seq := sequence.New(handler.Steps, c.exec, ctx)
 
 		if err := seq.Execute(req); err != nil {
-			if runErr, isRunErr := err.(*rt.RunErr); isRunErr {
+			if runErr, isRunErr := err.(rt.RunErr); isRunErr {
 				c.log.Error(errors.Wrapf(runErr, "handler for %s returned an error", handler.Input.Resource))
 			} else {
 				c.log.Error(errors.Wrapf(err, "schedule %s failed", handler.Input.Resource))
