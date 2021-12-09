@@ -29,7 +29,7 @@ func (seq *Sequence) ExecGroup(fns []executable.CallableFn, req *request.Coordin
 			res, err := seq.ExecSingleFn(fn, req)
 			if err != nil {
 				seq.log.Error(errors.Wrap(err, "failed to runSingleFn"))
-				resultChan <- FnResult{ExecErr: err}
+				resultChan <- FnResult{ExecErr: err.Error()}
 			} else {
 				resultChan <- *res
 			}
@@ -43,9 +43,9 @@ func (seq *Sequence) ExecGroup(fns []executable.CallableFn, req *request.Coordin
 	for respCount < len(fns) {
 		select {
 		case result := <-resultChan:
-			if result.ExecErr != nil {
+			if result.ExecErr != "" {
 				// if there was an error running the funciton, return that error
-				return nil, result.ExecErr
+				return nil, errors.New(result.ExecErr)
 			}
 
 			results = append(results, result)

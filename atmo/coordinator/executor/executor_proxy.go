@@ -140,6 +140,11 @@ func (e *Executor) Register(jobType string, runner rt.Runnable, opts ...rt.Optio
 	return nil
 }
 
+// in proxy mode, we don't want to handle desired state ourselves, we want each peer to handle it themselves
+func (e *Executor) DesiredStepState(step *executable.Executable, req *request.CoordinatedRequest) (map[string][]byte, error) {
+	return req.State, nil
+}
+
 // SetSchedule adds a Schedule to the executor's Reactr instance
 func (e *Executor) SetSchedule(sched rt.Schedule) error {
 	// nothing to do in proxy mode

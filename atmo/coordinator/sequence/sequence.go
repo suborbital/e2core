@@ -2,7 +2,6 @@ package sequence
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/pkg/errors"
 	"github.com/suborbital/atmo/atmo/coordinator/executor"
@@ -30,7 +29,7 @@ type FnResult struct {
 	Key      string                       `json:"key"`
 	Response *request.CoordinatedResponse `json:"response"`
 	RunErr   *rt.RunErr                   `json:"runErr"`  // runErr is an error returned from a Runnable
-	ExecErr  error                        `json:"execErr"` // err is an annoying workaround that allows runGroup to propogate non-RunErrs out of its loop. Should be refactored when possible.
+	ExecErr  string                       `json:"execErr"` // err is an annoying workaround that allows runGroup to propogate non-RunErrs out of its loop. Should be refactored when possible.
 }
 
 func New(steps []executable.Executable, exec *executor.Executor, ctx *vk.Ctx) *Sequence {
@@ -107,7 +106,7 @@ func (seq *Sequence) NextStep() *executable.Executable {
 // executeStep uses the configured Executor to run the provided handler step. The sequence state and any errors are returned.
 // State is also loaded into the object pointed to by req, and the `Completed` field is set on the Executable pointed to by step.
 func (seq *Sequence) executeStep(step *executable.Executable, req *request.CoordinatedRequest) error {
-	desiredState, err := DesiredStepState(step, req)
+	desiredState, err := seq.exec.DesiredStepState(step, req)
 	if err != nil {
 		return errors.Wrap(err, "failed to calculate DesiredStepState")
 	}
@@ -230,24 +229,4 @@ func (seq *Sequence) handleMessage(msg grav.Message) error {
 	}
 
 	return nil
-}
-
-// DesiredStepState calculates the state as it should be for a particular step's 'with' clause
-func DesiredStepState(step *executable.Executable, req *request.CoordinatedRequest) (map[string][]byte, error) {
-	if len(step.With) == 0 {
-		return req.State, nil
-	}
-
-	desiredState := map[string][]byte{}
-
-	for alias, key := range step.With {
-		val, exists := req.State[key]
-		if !exists {
-			return nil, fmt.Errorf("failed to build desired state, %s does not exists in handler state", key)
-		}
-
-		desiredState[alias] = val
-	}
-
-	return desiredState, nil
 }

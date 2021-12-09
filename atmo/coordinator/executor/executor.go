@@ -9,6 +9,7 @@ import (
 
 	"github.com/suborbital/atmo/bundle/load"
 	"github.com/suborbital/atmo/directive"
+	"github.com/suborbital/atmo/directive/executable"
 	"github.com/suborbital/grav/discovery/local"
 	"github.com/suborbital/grav/grav"
 	"github.com/suborbital/grav/transport/websocket"
@@ -107,6 +108,26 @@ func (e *Executor) Register(jobType string, runner rt.Runnable, opts ...rt.Optio
 	e.reactr.Register(jobType, runner, opts...)
 
 	return nil
+}
+
+// DesiredStepState calculates the state as it should be for a particular step's 'with' clause
+func (e *Executor) DesiredStepState(step *executable.Executable, req *request.CoordinatedRequest) (map[string][]byte, error) {
+	if len(step.With) == 0 {
+		return req.State, nil
+	}
+
+	desiredState := map[string][]byte{}
+
+	for alias, key := range step.With {
+		val, exists := req.State[key]
+		if !exists {
+			return nil, fmt.Errorf("failed to build desired state, %s does not exists in handler state", key)
+		}
+
+		desiredState[alias] = val
+	}
+
+	return desiredState, nil
 }
 
 // SetSchedule adds a Schedule to the executor's Reactr instance
