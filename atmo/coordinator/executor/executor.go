@@ -51,6 +51,10 @@ func New(log *vlog.Logger, transport *websocket.Transport) *Executor {
 
 	g := grav.New(gravOpts...)
 
+	return NewWithGrav(log, g)
+}
+
+func NewWithGrav(log *vlog.Logger, g *grav.Grav) *Executor {
 	// Reactr is configured in UseCapabiltyConfig
 	e := &Executor{
 		grav: g,
