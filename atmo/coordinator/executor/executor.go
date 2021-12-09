@@ -86,13 +86,13 @@ func (e *Executor) Do(jobType string, req *request.CoordinatedRequest, ctx *vk.C
 
 	res := e.reactr.Do(rt.NewJob(jobType, req))
 
-	e.pod.Send(grav.NewMsgWithParentID(fmt.Sprintf("local/%s", jobType), ctx.RequestID(), nil))
+	e.Send(grav.NewMsgWithParentID(fmt.Sprintf("local/%s", jobType), ctx.RequestID(), nil))
 
 	result, err := res.Then()
 	if err != nil {
-		e.pod.Send(grav.NewMsgWithParentID(rt.MsgTypeReactrRunErr, ctx.RequestID(), []byte(err.Error())))
+		e.Send(grav.NewMsgWithParentID(rt.MsgTypeReactrRunErr, ctx.RequestID(), []byte(err.Error())))
 	} else {
-		e.pod.Send(grav.NewMsgWithParentID(rt.MsgTypeReactrResult, ctx.RequestID(), result.([]byte)))
+		e.Send(grav.NewMsgWithParentID(rt.MsgTypeReactrResult, ctx.RequestID(), result.([]byte)))
 	}
 
 	return result, err
@@ -108,6 +108,12 @@ func (e *Executor) UseCapabilityConfig(config rcap.CapabilityConfig) error {
 	e.reactr = r
 
 	return nil
+}
+
+// UseGrav sets a Grav instance to use (in case one was not provided initially)
+// this will NOT set the internal pod, and so internal messages will not be sent
+func (e *Executor) UseGrav(g *grav.Grav) {
+	e.grav = g
 }
 
 // Register registers a Runnable
@@ -150,6 +156,15 @@ func (e *Executor) ListenAndRun(msgType string, run func(grav.Message, interface
 	e.reactr.ListenAndRun(e.grav.Connect(), msgType, run)
 
 	return nil
+}
+
+// Send sends a message on the configured Pod
+func (e *Executor) Send(msg grav.Message) {
+	if e.pod == nil {
+		return
+	}
+
+	e.pod.Send(msg)
 }
 
 // SetSchedule adds a Schedule to the executor's Reactr instance
