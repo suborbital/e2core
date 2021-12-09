@@ -245,6 +245,11 @@ func (seq *Sequence) handleMessage(msg grav.Message) error {
 	return nil
 }
 
+// UseRequest binds a request to the sequence
+func (seq *Sequence) UseRequest(req *request.CoordinatedRequest) {
+	seq.req = req
+}
+
 // StepsJSON returns the JSON of the steps it is working on
 func (seq *Sequence) StepsJSON() ([]byte, error) {
 	return json.Marshal(seq.steps)

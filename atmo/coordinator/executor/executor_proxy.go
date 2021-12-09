@@ -3,7 +3,6 @@
 package executor
 
 import (
-	"fmt"
 	"github.com/pkg/errors"
 
 	"github.com/suborbital/atmo/directive"
