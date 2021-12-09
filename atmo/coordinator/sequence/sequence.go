@@ -3,7 +3,6 @@ package sequence
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
 
 	"github.com/pkg/errors"
 	"github.com/suborbital/atmo/atmo/coordinator/executor"
@@ -108,17 +107,24 @@ func (seq *Sequence) NextStep() *executable.Executable {
 // executeStep uses the configured Executor to run the provided handler step. The sequence state and any errors are returned.
 // State is also loaded into the object pointed to by req, and the `Completed` field is set on the Executable pointed to by step.
 func (seq *Sequence) executeStep(step *executable.Executable, req *request.CoordinatedRequest) error {
-	stateJSON, err := stateJSONForStep(req, *step)
+	desiredState, err := DesiredStepState(step, req)
 	if err != nil {
-		return errors.Wrap(err, "failed to stateJSONForStep")
+		return errors.Wrap(err, "failed to calculate DesiredStepState")
 	}
 
+	// save the request's 'real' state
+	reqState := req.State
+
+	// swap in the desired state while we execute
+	req.State = desiredState
+
+	// collect the results from all executed functions
 	stepResults := []FnResult{}
 
 	if step.IsFn() {
 		seq.log.Debug("running single fn", step.FQFN)
 
-		singleResult, err := seq.ExecSingleFn(step.CallableFn, stateJSON)
+		singleResult, err := seq.ExecSingleFn(step.CallableFn, req)
 		if err != nil {
 			return err
 		} else if singleResult != nil {
@@ -130,7 +136,7 @@ func (seq *Sequence) executeStep(step *executable.Executable, req *request.Coord
 		seq.log.Debug("running group")
 
 		// if the step is a group, run them all concurrently and collect the results
-		groupResults, err := seq.ExecGroup(step.Group, stateJSON)
+		groupResults, err := seq.ExecGroup(step.Group, req)
 		if err != nil {
 			return err
 		}
@@ -140,6 +146,9 @@ func (seq *Sequence) executeStep(step *executable.Executable, req *request.Coord
 
 	// set the completed value as the functions have been executed
 	step.Completed = true
+
+	// restore the 'real' state
+	req.State = reqState
 
 	// determine if error handling results in a return
 	if err := seq.handleStepErrs(stepResults, step); err != nil {
@@ -223,42 +232,16 @@ func (seq *Sequence) handleMessage(msg grav.Message) error {
 	return nil
 }
 
-func stateJSONForStep(req *request.CoordinatedRequest, step executable.Executable) ([]byte, error) {
-	// based on the step's `with` clause, build the state to pass into the function
-	stepState, err := desiredState(step.With, req.State)
-	if err != nil {
-		return nil, vk.Wrap(http.StatusInternalServerError, errors.Wrap(err, "failed to build desiredState"))
-	}
-
-	stepReq := request.CoordinatedRequest{
-		Method:       req.Method,
-		URL:          req.URL,
-		ID:           req.ID,
-		Body:         req.Body,
-		Headers:      req.Headers,
-		RespHeaders:  req.RespHeaders,
-		Params:       req.Params,
-		State:        stepState,
-		SequenceJSON: req.SequenceJSON,
-	}
-
-	stateJSON, err := stepReq.ToJSON()
-	if err != nil {
-		return nil, vk.Wrap(http.StatusInternalServerError, errors.Wrap(err, "failed to ToJSON Request State"))
-	}
-
-	return stateJSON, nil
-}
-
-func desiredState(desired map[string]string, state map[string][]byte) (map[string][]byte, error) {
-	if len(desired) == 0 {
-		return state, nil
+// DesiredStepState calculates the state as it should be for a particular step's 'with' clause
+func DesiredStepState(step *executable.Executable, req *request.CoordinatedRequest) (map[string][]byte, error) {
+	if len(step.With) == 0 {
+		return req.State, nil
 	}
 
 	desiredState := map[string][]byte{}
 
-	for alias, key := range desired {
-		val, exists := state[key]
+	for alias, key := range step.With {
+		val, exists := req.State[key]
 		if !exists {
 			return nil, fmt.Errorf("failed to build desired state, %s does not exists in handler state", key)
 		}

@@ -9,7 +9,7 @@ require (
 	github.com/sethvargo/go-envconfig v0.4.0
 	github.com/spf13/cobra v1.2.1
 	github.com/suborbital/grav v0.4.2
-	github.com/suborbital/reactr v0.12.1-0.20211202000019-9046c35fa567
+	github.com/suborbital/reactr v0.12.1-0.20211208164713-0e0498615366
 	github.com/suborbital/vektor v0.5.1
 	golang.org/x/mod v0.5.1
 	gopkg.in/yaml.v2 v2.4.0
@@ -40,6 +40,7 @@ require (
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/pierrec/lz4/v4 v4.1.8 // indirect
 	github.com/schollz/peerdiscovery v1.6.9 // indirect
+	github.com/second-state/WasmEdge-go v0.9.0-rc5 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/twmb/franz-go v1.2.3 // indirect
 	github.com/twmb/franz-go/pkg/kmsg v0.0.0-20211104051938-70808186d5f7 // indirect

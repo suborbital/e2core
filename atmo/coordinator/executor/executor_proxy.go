@@ -60,7 +60,7 @@ func New(log *vlog.Logger, transport *websocket.Transport) *Executor {
 }
 
 // Do executes a remote job
-func (e *Executor) Do(jobType string, data []byte, ctx *vk.Ctx) (interface{}, error) {
+func (e *Executor) Do(jobType string, req *request.CoordinatedRequest, ctx *vk.Ctx) (interface{}, error) {
 	var runErr *rt.RunErr
 	var cbErr error
 
@@ -120,7 +120,7 @@ func (e *Executor) Do(jobType string, data []byte, ctx *vk.Ctx) (interface{}, er
 		return nil, runErr
 	}
 
-	e.log.Debug("proxied execution for", jobType, "fulfilled by peer")
+	e.log.Debug("proxied execution for", jobType, "fulfilled by peers")
 
 	// getting the JobResult was done by the callback, return nothing
 	return nil, nil
