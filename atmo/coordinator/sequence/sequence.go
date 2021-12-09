@@ -32,6 +32,17 @@ type FnResult struct {
 	ExecErr  string                       `json:"execErr"` // err is an annoying workaround that allows runGroup to propogate non-RunErrs out of its loop. Should be refactored when possible.
 }
 
+// FromJSON creates a sequence from a JSON-encoded set of steps
+func FromJSON(seqJSON []byte, exec *executor.Executor, ctx *vk.Ctx) (*Sequence, error) {
+	steps := []executable.Executable{}
+	if err := json.Unmarshal(seqJSON, &steps); err != nil {
+		return nil, errors.Wrap(err, "failed to Unmarshal steps")
+	}
+
+	return New(steps, exec, ctx), nil
+}
+
+// New creates a new Sequence
 func New(steps []executable.Executable, exec *executor.Executor, ctx *vk.Ctx) *Sequence {
 	s := &Sequence{
 		steps: steps,
