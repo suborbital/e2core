@@ -130,6 +130,17 @@ func (e *Executor) DesiredStepState(step *executable.Executable, req *request.Co
 	return desiredState, nil
 }
 
+// ListenAndRun sets up the executor's Reactr instance to listen for messages and execute the associated job
+func (e *Executor) ListenAndRun(msgType string, run func(grav.Message, interface{}, error)) error {
+	if e.reactr == nil {
+		return ErrExecutorNotConfigured
+	}
+
+	e.reactr.ListenAndRun(e.grav.Connect(), msgType, run)
+
+	return nil
+}
+
 // SetSchedule adds a Schedule to the executor's Reactr instance
 func (e *Executor) SetSchedule(sched rt.Schedule) error {
 	if e.reactr == nil {

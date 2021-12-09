@@ -145,6 +145,11 @@ func (e *Executor) DesiredStepState(step *executable.Executable, req *request.Co
 	return req.State, nil
 }
 
+// this does nothing in proxy mode
+func (e *Executor) ListenAndRun(msgType string, run func(grav.Message, interface{}, error)) error {
+	return nil
+}
+
 // SetSchedule adds a Schedule to the executor's Reactr instance
 func (e *Executor) SetSchedule(sched rt.Schedule) error {
 	// nothing to do in proxy mode
