@@ -36,7 +36,7 @@ type Executor struct {
 	log *vlog.Logger
 }
 
-// New creates a new Executor
+// New creates a new Executor with the default Grav configuration
 func New(log *vlog.Logger, transport *websocket.Transport) *Executor {
 	gravOpts := []grav.OptionsModifier{
 		grav.UseLogger(log),
@@ -54,11 +54,18 @@ func New(log *vlog.Logger, transport *websocket.Transport) *Executor {
 	return NewWithGrav(log, g)
 }
 
+// NewWithGrav creates an Executor with a custom Grav instance
 func NewWithGrav(log *vlog.Logger, g *grav.Grav) *Executor {
+	var pod *grav.Pod
+
+	if g != nil {
+		pod = g.Connect()
+	}
+
 	// Reactr is configured in UseCapabiltyConfig
 	e := &Executor{
 		grav: g,
-		pod:  g.Connect(),
+		pod:  pod,
 		log:  log,
 	}
 
