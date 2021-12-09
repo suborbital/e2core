@@ -2,7 +2,6 @@ package sequence
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/pkg/errors"
 	"github.com/suborbital/atmo/atmo/coordinator/executor"
@@ -227,13 +226,10 @@ func (seq *Sequence) handleMessage(msg grav.Message) error {
 		return nil
 	}
 
-	fmt.Println("RESULT:", result)
-
 	stepResults := []FnResult{result}
 
 	// determine if error handling results in a return
 	if err := seq.handleStepErrs(stepResults, step); err != nil {
-		fmt.Println("returning handleStepErrs!")
 		return err
 	}
 

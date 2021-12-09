@@ -92,15 +92,12 @@ func (e *Executor) Do(jobType string, req *request.CoordinatedRequest, ctx *vk.C
 			// either way, show's over and we send on `completed`
 
 			if err := e.callback(msg); err != nil {
-				fmt.Println("its an error!")
 				if err == executable.ErrSequenceCompleted {
 					// do nothing! that's great!
 				} else if cbRunErr, isRunErr := err.(rt.RunErr); isRunErr {
-					fmt.Println("it's a runErr!")
 					// handle the runErr
 					runErr = cbRunErr
 				} else {
-					fmt.Println("it's a cbErr!")
 					// nothing we really can do here, but let's propogate it
 					cbErr = err
 				}
@@ -121,9 +118,6 @@ func (e *Executor) Do(jobType string, req *request.CoordinatedRequest, ctx *vk.C
 
 	// wait until the sequence completes or errors
 	<-completed
-
-	fmt.Println("cbErr:", cbErr)
-	fmt.Println("runErr:", runErr)
 
 	// checking these explicitly because somehow Go interprets an
 	// un-instantiated literal pointer as a non-nil error interface
