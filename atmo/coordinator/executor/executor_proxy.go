@@ -119,8 +119,6 @@ func (e *Executor) Do(jobType string, req *request.CoordinatedRequest, ctx *vk.C
 	// wait until the sequence completes or errors
 	<-completed
 
-	// checking these explicitly because somehow Go interprets an
-	// un-instantiated literal pointer as a non-nil error interface
 	if cbErr != nil {
 		return nil, cbErr
 	}
@@ -149,8 +147,9 @@ func (e *Executor) Register(jobType string, runner rt.Runnable, opts ...rt.Optio
 	return nil
 }
 
-// in proxy mode, we don't want to handle desired state ourselves, we want each peer to handle it themselves
+// DesiredStepState generates the desired state for the step from the 'real' state
 func (e *Executor) DesiredStepState(step *executable.Executable, req *request.CoordinatedRequest) (map[string][]byte, error) {
+	// in proxy mode, we don't want to handle desired state ourselves, we want each peer to handle it themselves
 	return req.State, nil
 }
 

@@ -162,17 +162,17 @@ func (seq *Sequence) executeStep(step *executable.Executable, req *request.Coord
 	req.State = reqState
 
 	// determine if error handling results in a return
-	if err := seq.handleStepErrs(stepResults, step); err != nil {
+	if err := seq.HandleStepErrs(stepResults, step); err != nil {
 		return err
 	}
 
 	// set correct state based on the step's results
-	seq.handleStepResults(stepResults)
+	seq.HandleStepResults(stepResults)
 
 	return nil
 }
 
-func (seq *Sequence) handleStepResults(stepResults []FnResult) {
+func (seq *Sequence) HandleStepResults(stepResults []FnResult) {
 	for _, result := range stepResults {
 
 		seq.req.State[result.Key] = result.Response.Output
@@ -186,7 +186,7 @@ func (seq *Sequence) handleStepResults(stepResults []FnResult) {
 	}
 }
 
-func (seq *Sequence) handleStepErrs(results []FnResult, step *executable.Executable) error {
+func (seq *Sequence) HandleStepErrs(results []FnResult, step *executable.Executable) error {
 	for _, result := range results {
 		if result.RunErr.Code == 0 && result.RunErr.Message == "" {
 			continue
@@ -229,12 +229,12 @@ func (seq *Sequence) handleMessage(msg grav.Message) error {
 	stepResults := []FnResult{result}
 
 	// determine if error handling results in a return
-	if err := seq.handleStepErrs(stepResults, step); err != nil {
+	if err := seq.HandleStepErrs(stepResults, step); err != nil {
 		return err
 	}
 
 	// set correct state based on the step's results
-	seq.handleStepResults(stepResults)
+	seq.HandleStepResults(stepResults)
 
 	// check nextstep again
 	step = seq.NextStep()
