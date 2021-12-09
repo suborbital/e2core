@@ -205,7 +205,7 @@ func (seq *Sequence) handleStepErrs(results []FnResult, step *executable.Executa
 }
 
 // this is called by the executor:
-// sequence -> exec.do -> handleMessage (n times) -> .do returns to sequence
+// sequence.Execute -> exec.do -> handleMessage (n times) -> .do returns to .Execute
 func (seq *Sequence) handleMessage(msg grav.Message) error {
 	result := FnResult{}
 	if err := json.Unmarshal(msg.Data(), &result); err != nil {
@@ -240,4 +240,9 @@ func (seq *Sequence) handleMessage(msg grav.Message) error {
 	}
 
 	return nil
+}
+
+// StepsJSON returns the JSON of the steps it is working on
+func (seq *Sequence) StepsJSON() ([]byte, error) {
+	return json.Marshal(seq.steps)
 }
