@@ -134,7 +134,9 @@ func (e *Executor) DesiredStepState(step *executable.Executable, req *request.Co
 	}
 
 	desiredState := map[string][]byte{}
+	aliased := map[string]bool{}
 
+	// first go through the 'with' clause and load all of the appropriate aliased values
 	for alias, key := range step.With {
 		val, exists := req.State[key]
 		if !exists {
@@ -142,6 +144,15 @@ func (e *Executor) DesiredStepState(step *executable.Executable, req *request.Co
 		}
 
 		desiredState[alias] = val
+		aliased[key] = true
+	}
+
+	// next, go through the rest of the original state and load the non-aliased values
+	for key, val := range req.State {
+		_, skip := aliased[key]
+		if !skip {
+			desiredState[key] = val
+		}
 	}
 
 	return desiredState, nil

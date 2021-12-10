@@ -2,6 +2,7 @@ package coordinator
 
 import (
 	"bytes"
+	"fmt"
 	"testing"
 
 	"github.com/google/uuid"
@@ -243,6 +244,52 @@ func TestWithSequence(t *testing.T) {
 	if val, ok := req.State["modify-url"]; !ok {
 		t.Error("modify-url state is missing")
 	} else if !bytes.Equal(val, []byte("hello /suborbital")) {
+		t.Error("unexpected modify-url state value:", string(val))
+	}
+}
+
+func TestAsSequence(t *testing.T) {
+	steps := []executable.Executable{
+		{
+			CallableFn: executable.CallableFn{
+				Fn:   "helloworld-rs",
+				FQFN: "com.suborbital.test#default::helloworld-rs@v0.0.1",
+				As:   "url",
+			},
+		},
+		{
+			CallableFn: executable.CallableFn{
+				Fn:   "modify-url",
+				FQFN: "com.suborbital.test#default::modify-url@v0.0.1",
+			},
+		},
+	}
+
+	seq := sequence.New(steps, coord.exec, vk.NewCtx(coord.log, nil, nil))
+
+	req := &request.CoordinatedRequest{
+		Method: "GET",
+		URL:    "/hello/world",
+		ID:     uuid.New().String(),
+		Body:   []byte("friend"),
+		State:  map[string][]byte{},
+	}
+
+	if err := seq.Execute(req); err != nil {
+		t.Error(err)
+	}
+
+	fmt.Println(req.State)
+
+	if val, ok := req.State["url"]; !ok {
+		t.Error("url state is missing")
+	} else if !bytes.Equal(val, []byte("hello friend")) {
+		t.Error("unexpected url state value:", string(val))
+	}
+
+	if val, ok := req.State["modify-url"]; !ok {
+		t.Error("modify-url state is missing")
+	} else if !bytes.Equal(val, []byte("hello friend/suborbital")) {
 		t.Error("unexpected modify-url state value:", string(val))
 	}
 }
