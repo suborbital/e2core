@@ -182,7 +182,6 @@ func (seq *Sequence) executeStep(step *Step, req *request.CoordinatedRequest) er
 
 func (seq *Sequence) HandleStepResults(stepResults []FnResult) {
 	for _, result := range stepResults {
-
 		seq.req.State[result.Key] = result.Response.Output
 
 		// check if the Runnable set any response headers
