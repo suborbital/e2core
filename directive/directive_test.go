@@ -3,6 +3,8 @@ package directive
 import (
 	"fmt"
 	"testing"
+
+	"github.com/suborbital/atmo/directive/executable"
 )
 
 func TestYAMLMarshalUnmarshal(t *testing.T) {
@@ -31,9 +33,9 @@ func TestYAMLMarshalUnmarshal(t *testing.T) {
 					Method:   "GET",
 					Resource: "/api/v1/user",
 				},
-				Steps: []Executable{
+				Steps: []executable.Executable{
 					{
-						Group: []CallableFn{
+						Group: []executable.CallableFn{
 							{
 								Fn: "db::getUser",
 							},
@@ -43,7 +45,7 @@ func TestYAMLMarshalUnmarshal(t *testing.T) {
 						},
 					},
 					{
-						CallableFn: CallableFn{
+						CallableFn: executable.CallableFn{
 							Fn: "api::returnUser",
 						},
 					},
@@ -105,14 +107,14 @@ func TestDirectiveValidatorGroupLast(t *testing.T) {
 					Method:   "GET",
 					Resource: "/api/v1/user",
 				},
-				Steps: []Executable{
+				Steps: []executable.Executable{
 					{
-						CallableFn: CallableFn{
+						CallableFn: executable.CallableFn{
 							Fn: "api::returnUser",
 						},
 					},
 					{
-						Group: []CallableFn{
+						Group: []executable.CallableFn{
 							{
 								Fn: "db::getUser",
 							},
@@ -159,11 +161,11 @@ func TestDirectiveValidatorInvalidOnErr(t *testing.T) {
 					Method:   "GET",
 					Resource: "/api/v1/user",
 				},
-				Steps: []Executable{
+				Steps: []executable.Executable{
 					{
-						CallableFn: CallableFn{
+						CallableFn: executable.CallableFn{
 							Fn: "api::returnUser",
-							OnErr: &FnOnErr{
+							OnErr: &executable.ErrHandler{
 								Code: map[int]string{
 									400: "continue",
 								},
@@ -172,9 +174,9 @@ func TestDirectiveValidatorInvalidOnErr(t *testing.T) {
 						},
 					},
 					{
-						CallableFn: CallableFn{
+						CallableFn: executable.CallableFn{
 							Fn: "api::returnUser",
-							OnErr: &FnOnErr{
+							OnErr: &executable.ErrHandler{
 								Other: "continue",
 							},
 						},
@@ -217,9 +219,9 @@ func TestDirectiveValidatorMissingFns(t *testing.T) {
 					Method:   "GET",
 					Resource: "/api/v1/user",
 				},
-				Steps: []Executable{
+				Steps: []executable.Executable{
 					{
-						Group: []CallableFn{
+						Group: []executable.CallableFn{
 							{
 								Fn: "getUser",
 							},
@@ -362,9 +364,9 @@ func TestDirectiveValidatorWithMissingState(t *testing.T) {
 					Method:   "GET",
 					Resource: "/api/v1/user",
 				},
-				Steps: []Executable{
+				Steps: []executable.Executable{
 					{
-						Group: []CallableFn{
+						Group: []executable.CallableFn{
 							{
 								Fn: "getUser",
 								With: map[string]string{

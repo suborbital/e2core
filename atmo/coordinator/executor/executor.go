@@ -9,10 +9,12 @@ import (
 
 	"github.com/suborbital/atmo/bundle/load"
 	"github.com/suborbital/atmo/directive"
+	"github.com/suborbital/atmo/directive/executable"
 	"github.com/suborbital/grav/discovery/local"
 	"github.com/suborbital/grav/grav"
 	"github.com/suborbital/grav/transport/websocket"
 	"github.com/suborbital/reactr/rcap"
+	"github.com/suborbital/reactr/request"
 	"github.com/suborbital/reactr/rt"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
@@ -34,7 +36,7 @@ type Executor struct {
 	log *vlog.Logger
 }
 
-// New creates a new Executor
+// New creates a new Executor with the default Grav configuration
 func New(log *vlog.Logger, transport *websocket.Transport) *Executor {
 	gravOpts := []grav.OptionsModifier{
 		grav.UseLogger(log),
@@ -49,10 +51,21 @@ func New(log *vlog.Logger, transport *websocket.Transport) *Executor {
 
 	g := grav.New(gravOpts...)
 
+	return NewWithGrav(log, g)
+}
+
+// NewWithGrav creates an Executor with a custom Grav instance
+func NewWithGrav(log *vlog.Logger, g *grav.Grav) *Executor {
+	var pod *grav.Pod
+
+	if g != nil {
+		pod = g.Connect()
+	}
+
 	// Reactr is configured in UseCapabiltyConfig
 	e := &Executor{
 		grav: g,
-		pod:  g.Connect(),
+		pod:  pod,
 		log:  log,
 	}
 
@@ -60,7 +73,7 @@ func New(log *vlog.Logger, transport *websocket.Transport) *Executor {
 }
 
 // Do executes a local or remote job
-func (e *Executor) Do(jobType string, data interface{}, ctx *vk.Ctx) (interface{}, error) {
+func (e *Executor) Do(jobType string, req *request.CoordinatedRequest, ctx *vk.Ctx) (interface{}, error) {
 	if e.reactr == nil {
 		return nil, ErrExecutorNotConfigured
 	}
@@ -71,15 +84,15 @@ func (e *Executor) Do(jobType string, data interface{}, ctx *vk.Ctx) (interface{
 		return nil, ErrCannotHandle
 	}
 
-	res := e.reactr.Do(rt.NewJob(jobType, data))
+	res := e.reactr.Do(rt.NewJob(jobType, req))
 
-	e.pod.Send(grav.NewMsgWithParentID(fmt.Sprintf("local/%s", jobType), ctx.RequestID(), nil))
+	e.Send(grav.NewMsgWithParentID(fmt.Sprintf("local/%s", jobType), ctx.RequestID(), nil))
 
 	result, err := res.Then()
 	if err != nil {
-		e.pod.Send(grav.NewMsgWithParentID(rt.MsgTypeReactrRunErr, ctx.RequestID(), []byte(err.Error())))
+		e.Send(grav.NewMsgWithParentID(rt.MsgTypeReactrRunErr, ctx.RequestID(), []byte(err.Error())))
 	} else {
-		e.pod.Send(grav.NewMsgWithParentID(rt.MsgTypeReactrResult, ctx.RequestID(), result.([]byte)))
+		e.Send(grav.NewMsgWithParentID(rt.MsgTypeReactrResult, ctx.RequestID(), result.([]byte)))
 	}
 
 	return result, err
@@ -97,6 +110,12 @@ func (e *Executor) UseCapabilityConfig(config rcap.CapabilityConfig) error {
 	return nil
 }
 
+// UseGrav sets a Grav instance to use (in case one was not provided initially)
+// this will NOT set the internal pod, and so internal messages will not be sent
+func (e *Executor) UseGrav(g *grav.Grav) {
+	e.grav = g
+}
+
 // Register registers a Runnable
 func (e *Executor) Register(jobType string, runner rt.Runnable, opts ...rt.Option) error {
 	if e.reactr == nil {
@@ -106,6 +125,57 @@ func (e *Executor) Register(jobType string, runner rt.Runnable, opts ...rt.Optio
 	e.reactr.Register(jobType, runner, opts...)
 
 	return nil
+}
+
+// DesiredStepState calculates the state as it should be for a particular step's 'with' clause
+func (e *Executor) DesiredStepState(step *executable.Executable, req *request.CoordinatedRequest) (map[string][]byte, error) {
+	if len(step.With) == 0 {
+		return req.State, nil
+	}
+
+	desiredState := map[string][]byte{}
+	aliased := map[string]bool{}
+
+	// first go through the 'with' clause and load all of the appropriate aliased values
+	for alias, key := range step.With {
+		val, exists := req.State[key]
+		if !exists {
+			return nil, fmt.Errorf("failed to build desired state, %s does not exists in handler state", key)
+		}
+
+		desiredState[alias] = val
+		aliased[key] = true
+	}
+
+	// next, go through the rest of the original state and load the non-aliased values
+	for key, val := range req.State {
+		_, skip := aliased[key]
+		if !skip {
+			desiredState[key] = val
+		}
+	}
+
+	return desiredState, nil
+}
+
+// ListenAndRun sets up the executor's Reactr instance to listen for messages and execute the associated job
+func (e *Executor) ListenAndRun(msgType string, run func(grav.Message, interface{}, error)) error {
+	if e.reactr == nil {
+		return ErrExecutorNotConfigured
+	}
+
+	e.reactr.ListenAndRun(e.grav.Connect(), msgType, run)
+
+	return nil
+}
+
+// Send sends a message on the configured Pod
+func (e *Executor) Send(msg grav.Message) {
+	if e.pod == nil {
+		return
+	}
+
+	e.pod.Send(msg)
 }
 
 // SetSchedule adds a Schedule to the executor's Reactr instance
@@ -137,6 +207,11 @@ func (e *Executor) Load(runnables []directive.Runnable) error {
 	}
 
 	return load.Runnables(e.reactr, runnables, false)
+}
+
+// UseCallback does nothing in normal executor mode
+func (e *Executor) UseCallback(callback grav.MsgFunc) {
+	// nothing to do
 }
 
 // Metrics returns the executor's Reactr isntance's internal metrics

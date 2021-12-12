@@ -28,6 +28,19 @@ handlers:
       - fn: helloworld-rs
 
   - type: request
+    resource: /fetch
+    method: POST
+    steps:
+      - fn: log-it
+        as: logme
+      
+      - fn: modify-url
+      
+      - fn: fetch-test
+        with:
+          url: modify-url
+
+  - type: request
     resource: /set/:key
     method: POST
     steps:

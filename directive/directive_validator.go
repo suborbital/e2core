@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/suborbital/atmo/directive/executable"
 	"github.com/suborbital/atmo/fqfn"
 	"golang.org/x/mod/semver"
 )
@@ -216,7 +217,7 @@ const (
 	executableTypeSchedule = executableType("schedule")
 )
 
-func (d *Directive) validateSteps(exType executableType, name string, steps []Executable, initialState map[string]bool, problems *problems) map[string]bool {
+func (d *Directive) validateSteps(exType executableType, name string, steps []executable.Executable, initialState map[string]bool, problems *problems) map[string]bool {
 	// keep track of the functions that have run so far at each step
 	fullState := initialState
 
@@ -233,7 +234,7 @@ func (d *Directive) validateSteps(exType executableType, name string, steps []Ex
 
 		// this function is key as it compartmentalizes 'step validation', and importantly it
 		// ensures that a Runnable is available to handle it and binds it by setting the FQFN field
-		validateFn := func(fn *CallableFn) {
+		validateFn := func(fn *executable.CallableFn) {
 			runnable := d.FindRunnable(fn.Fn)
 			if runnable == nil {
 				problems.add(fmt.Errorf("%s for %s lists fn at step %d that does not exist: %s (did you forget a namespace?)", exType, name, j, fn.Fn))

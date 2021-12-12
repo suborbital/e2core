@@ -3,6 +3,7 @@ package coordinator
 import (
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	"github.com/suborbital/atmo/atmo/coordinator/sequence"
 	"github.com/suborbital/atmo/directive"
 	"github.com/suborbital/reactr/request"
 	"github.com/suborbital/reactr/rt"
@@ -41,11 +42,11 @@ func (c *Coordinator) rtFuncForDirectiveSchedule(sched directive.Schedule) rtFun
 		}
 
 		// a sequence executes the handler's steps and manages its state
-		seq := newSequence(sched.Steps, c.exec, vk.NewCtx(c.log, nil, nil))
+		seq := sequence.New(sched.Steps, c.exec, vk.NewCtx(c.log, nil, nil))
 
-		if seqState, err := seq.execute(req); err != nil {
-			if errors.Is(err, ErrSequenceRunErr) && seqState.err != nil {
-				c.log.Error(errors.Wrapf(seqState.err, "schedule %s returned an error", sched.Name))
+		if err := seq.Execute(req); err != nil {
+			if runErr, isRunErr := err.(rt.RunErr); isRunErr {
+				c.log.Error(errors.Wrapf(runErr, "schedule %s returned an error", sched.Name))
 			} else {
 				c.log.Error(errors.Wrapf(err, "schedule %s failed", sched.Name))
 			}
