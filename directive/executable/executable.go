@@ -15,7 +15,6 @@ var (
 type Executable struct {
 	CallableFn `yaml:"callableFn,inline" json:"callableFn"`
 	Group      []CallableFn `yaml:"group,omitempty" json:"group,omitempty"`
-	Completed  bool         `yaml:"-" json:"completed"`
 	ForEach    interface{}  `yaml:"forEach,omitempty"`
 }
 
@@ -81,9 +80,4 @@ func (c *CallableFn) ShouldReturn(code int) error {
 	}
 
 	return nil
-}
-
-// SetCompleted sets the completed field on an executable
-func (e *Executable) SetCompleted(completed bool) {
-	e.Completed = completed
 }

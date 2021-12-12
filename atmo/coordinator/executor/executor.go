@@ -128,7 +128,7 @@ func (e *Executor) Register(jobType string, runner rt.Runnable, opts ...rt.Optio
 }
 
 // DesiredStepState calculates the state as it should be for a particular step's 'with' clause
-func (e *Executor) DesiredStepState(step *executable.Executable, req *request.CoordinatedRequest) (map[string][]byte, error) {
+func (e *Executor) DesiredStepState(step executable.Executable, req *request.CoordinatedRequest) (map[string][]byte, error) {
 	if len(step.With) == 0 {
 		return req.State, nil
 	}

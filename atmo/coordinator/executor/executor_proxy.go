@@ -147,7 +147,7 @@ func (e *Executor) Register(jobType string, runner rt.Runnable, opts ...rt.Optio
 }
 
 // DesiredStepState generates the desired state for the step from the 'real' state
-func (e *Executor) DesiredStepState(step *executable.Executable, req *request.CoordinatedRequest) (map[string][]byte, error) {
+func (e *Executor) DesiredStepState(step executable.Executable, req *request.CoordinatedRequest) (map[string][]byte, error) {
 	// in proxy mode, we don't want to handle desired state ourselves, we want each peer to handle it themselves
 	return req.State, nil
 }
