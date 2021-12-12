@@ -14,7 +14,7 @@ import (
 )
 
 type Sequence struct {
-	steps []executable.Executable
+	steps []Step
 
 	exec *executor.Executor
 
@@ -22,6 +22,12 @@ type Sequence struct {
 
 	ctx *vk.Ctx
 	log *vlog.Logger
+}
+
+// Step is a container over Executable that includes a 'Completed' field
+type Step struct {
+	Exec      executable.Executable `json:"exec"`
+	Completed bool                  `json:"completed"`
 }
 
 type FnResult struct {
@@ -34,16 +40,22 @@ type FnResult struct {
 
 // FromJSON creates a sequence from a JSON-encoded set of steps
 func FromJSON(seqJSON []byte, exec *executor.Executor, ctx *vk.Ctx) (*Sequence, error) {
-	steps := []executable.Executable{}
+	steps := []Step{}
 	if err := json.Unmarshal(seqJSON, &steps); err != nil {
 		return nil, errors.Wrap(err, "failed to Unmarshal steps")
 	}
 
-	return New(steps, exec, ctx), nil
+	return newWithSteps(steps, exec, ctx), nil
 }
 
 // New creates a new Sequence
-func New(steps []executable.Executable, exec *executor.Executor, ctx *vk.Ctx) *Sequence {
+func New(execs []executable.Executable, exec *executor.Executor, ctx *vk.Ctx) *Sequence {
+	steps := stepsFromExecutables(execs)
+
+	return newWithSteps(steps, exec, ctx)
+}
+
+func newWithSteps(steps []Step, exec *executor.Executor, ctx *vk.Ctx) *Sequence {
 	s := &Sequence{
 		steps: steps,
 		exec:  exec,
@@ -100,12 +112,12 @@ func (seq *Sequence) ExecuteNext(req *request.CoordinatedRequest) error {
 }
 
 // NextStep returns the first un-complete step, nil if the sequence is over
-func (seq *Sequence) NextStep() *executable.Executable {
-	var step *executable.Executable
+func (seq *Sequence) NextStep() *Step {
+	var step *Step
 
-	for i, s := range seq.steps {
-		// find the first "uncompleted" step
-		if !s.Completed {
+	for i := range seq.steps {
+		// find the first incomplete step
+		if !seq.steps[i].Completed {
 			step = &seq.steps[i]
 			break
 		}
@@ -116,9 +128,9 @@ func (seq *Sequence) NextStep() *executable.Executable {
 
 // executeStep uses the configured Executor to run the provided handler step. The sequence state and any errors are returned.
 // State is also loaded into the object pointed to by req, and the `Completed` field is set on the Executable pointed to by step.
-func (seq *Sequence) executeStep(step *executable.Executable, req *request.CoordinatedRequest) error {
+func (seq *Sequence) executeStep(step *Step, req *request.CoordinatedRequest) error {
 	// in proxy mode this will return the 'real' state as the peers will handle creating desired state
-	desiredState, err := seq.exec.DesiredStepState(step, req)
+	desiredState, err := seq.exec.DesiredStepState(step.Exec, req)
 	if err != nil {
 		return errors.Wrap(err, "failed to calculate DesiredStepState")
 	}
@@ -132,10 +144,10 @@ func (seq *Sequence) executeStep(step *executable.Executable, req *request.Coord
 	// collect the results from all executed functions
 	stepResults := []FnResult{}
 
-	if step.IsFn() {
-		seq.log.Debug("running single fn", step.FQFN)
+	if step.Exec.IsFn() {
+		seq.log.Debug("running single fn", step.Exec.FQFN)
 
-		singleResult, err := seq.ExecSingleFn(step.CallableFn, req)
+		singleResult, err := seq.ExecSingleFn(step.Exec.CallableFn, req)
 		if err != nil {
 			return err
 		} else if singleResult != nil {
@@ -143,11 +155,11 @@ func (seq *Sequence) executeStep(step *executable.Executable, req *request.Coord
 			stepResults = append(stepResults, *singleResult)
 		}
 
-	} else if step.IsGroup() {
+	} else if step.Exec.IsGroup() {
 		seq.log.Debug("running group")
 
 		// if the step is a group, run them all concurrently and collect the results
-		groupResults, err := seq.ExecGroup(step.Group, req)
+		groupResults, err := seq.ExecGroup(step.Exec.Group, req)
 		if err != nil {
 			return err
 		}
@@ -162,7 +174,7 @@ func (seq *Sequence) executeStep(step *executable.Executable, req *request.Coord
 	req.State = reqState
 
 	// determine if error handling results in a return
-	if err := seq.HandleStepErrs(stepResults, step); err != nil {
+	if err := seq.HandleStepErrs(stepResults, step.Exec); err != nil {
 		return err
 	}
 
@@ -174,7 +186,6 @@ func (seq *Sequence) executeStep(step *executable.Executable, req *request.Coord
 
 func (seq *Sequence) HandleStepResults(stepResults []FnResult) {
 	for _, result := range stepResults {
-
 		seq.req.State[result.Key] = result.Response.Output
 
 		// check if the Runnable set any response headers
@@ -186,7 +197,7 @@ func (seq *Sequence) HandleStepResults(stepResults []FnResult) {
 	}
 }
 
-func (seq *Sequence) HandleStepErrs(results []FnResult, step *executable.Executable) error {
+func (seq *Sequence) HandleStepErrs(results []FnResult, step executable.Executable) error {
 	for _, result := range results {
 		if result.RunErr.Code == 0 && result.RunErr.Message == "" {
 			continue
@@ -218,9 +229,9 @@ func (seq *Sequence) handleMessage(msg grav.Message) error {
 	step := seq.NextStep()
 	if step == nil {
 		return executable.ErrSequenceCompleted
-	} else if step.IsFn() {
-		seq.log.Info("handling result of", step.FQFN)
-		step.SetCompleted(true)
+	} else if step.Exec.IsFn() {
+		seq.log.Info("handling result of", step.Exec.FQFN)
+		step.Completed = true
 	} else {
 		seq.log.Warn("cannot handle message from group step")
 		return nil
@@ -229,7 +240,7 @@ func (seq *Sequence) handleMessage(msg grav.Message) error {
 	stepResults := []FnResult{result}
 
 	// determine if error handling results in a return
-	if err := seq.HandleStepErrs(stepResults, step); err != nil {
+	if err := seq.HandleStepErrs(stepResults, step.Exec); err != nil {
 		return err
 	}
 
@@ -253,4 +264,14 @@ func (seq *Sequence) UseRequest(req *request.CoordinatedRequest) {
 // StepsJSON returns the JSON of the steps it is working on
 func (seq *Sequence) StepsJSON() ([]byte, error) {
 	return json.Marshal(seq.steps)
+}
+
+func stepsFromExecutables(execs []executable.Executable) []Step {
+	steps := make([]Step, len(execs))
+
+	for i := range execs {
+		steps[i] = Step{execs[i], false}
+	}
+
+	return steps
 }

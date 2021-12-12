@@ -15,7 +15,6 @@ var (
 type Executable struct {
 	CallableFn `yaml:"callableFn,inline" json:"callableFn"`
 	Group      []CallableFn `yaml:"group,omitempty" json:"group,omitempty"`
-	Completed  bool         `yaml:"-" json:"completed"`
 	ForEach    interface{}  `yaml:"forEach,omitempty"`
 }
 
@@ -36,16 +35,16 @@ type ErrHandler struct {
 }
 
 // IsGroup returns true if the executable is a group
-func (e *Executable) IsGroup() bool {
+func (e Executable) IsGroup() bool {
 	return e.Fn == "" && e.Group != nil && len(e.Group) > 0
 }
 
 // IsFn returns true if the executable is a group
-func (e *Executable) IsFn() bool {
+func (e Executable) IsFn() bool {
 	return e.Fn != "" && e.Group == nil
 }
 
-func (c *CallableFn) Key() string {
+func (c CallableFn) Key() string {
 	key := c.Fn
 
 	if c.As != "" {
@@ -55,7 +54,7 @@ func (c *CallableFn) Key() string {
 	return key
 }
 
-func (c *CallableFn) ShouldReturn(code int) error {
+func (c CallableFn) ShouldReturn(code int) error {
 	// if the developer hasn't specified an error handler,
 	// the default is to return
 	if c.OnErr == nil {
@@ -81,9 +80,4 @@ func (c *CallableFn) ShouldReturn(code int) error {
 	}
 
 	return nil
-}
-
-// SetCompleted sets the completed field on an executable
-func (e *Executable) SetCompleted(completed bool) {
-	e.Completed = completed
 }
