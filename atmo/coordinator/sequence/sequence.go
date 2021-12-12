@@ -26,8 +26,8 @@ type Sequence struct {
 
 // Step is a container over Executable that includes a 'Completed' field
 type Step struct {
-	executable.Executable `json:"executable,inline"`
-	Completed             bool `json:"completed"`
+	Exec      executable.Executable `json:"exec"`
+	Completed bool                  `json:"completed"`
 }
 
 type FnResult struct {
@@ -40,18 +40,22 @@ type FnResult struct {
 
 // FromJSON creates a sequence from a JSON-encoded set of steps
 func FromJSON(seqJSON []byte, exec *executor.Executor, ctx *vk.Ctx) (*Sequence, error) {
-	steps := []executable.Executable{}
+	steps := []Step{}
 	if err := json.Unmarshal(seqJSON, &steps); err != nil {
 		return nil, errors.Wrap(err, "failed to Unmarshal steps")
 	}
 
-	return New(steps, exec, ctx), nil
+	return newWithSteps(steps, exec, ctx), nil
 }
 
 // New creates a new Sequence
 func New(execs []executable.Executable, exec *executor.Executor, ctx *vk.Ctx) *Sequence {
 	steps := stepsFromExecutables(execs)
 
+	return newWithSteps(steps, exec, ctx)
+}
+
+func newWithSteps(steps []Step, exec *executor.Executor, ctx *vk.Ctx) *Sequence {
 	s := &Sequence{
 		steps: steps,
 		exec:  exec,
@@ -126,7 +130,7 @@ func (seq *Sequence) NextStep() *Step {
 // State is also loaded into the object pointed to by req, and the `Completed` field is set on the Executable pointed to by step.
 func (seq *Sequence) executeStep(step *Step, req *request.CoordinatedRequest) error {
 	// in proxy mode this will return the 'real' state as the peers will handle creating desired state
-	desiredState, err := seq.exec.DesiredStepState(step.Executable, req)
+	desiredState, err := seq.exec.DesiredStepState(step.Exec, req)
 	if err != nil {
 		return errors.Wrap(err, "failed to calculate DesiredStepState")
 	}
@@ -140,10 +144,10 @@ func (seq *Sequence) executeStep(step *Step, req *request.CoordinatedRequest) er
 	// collect the results from all executed functions
 	stepResults := []FnResult{}
 
-	if step.IsFn() {
-		seq.log.Debug("running single fn", step.FQFN)
+	if step.Exec.IsFn() {
+		seq.log.Debug("running single fn", step.Exec.FQFN)
 
-		singleResult, err := seq.ExecSingleFn(step.CallableFn, req)
+		singleResult, err := seq.ExecSingleFn(step.Exec.CallableFn, req)
 		if err != nil {
 			return err
 		} else if singleResult != nil {
@@ -151,11 +155,11 @@ func (seq *Sequence) executeStep(step *Step, req *request.CoordinatedRequest) er
 			stepResults = append(stepResults, *singleResult)
 		}
 
-	} else if step.IsGroup() {
+	} else if step.Exec.IsGroup() {
 		seq.log.Debug("running group")
 
 		// if the step is a group, run them all concurrently and collect the results
-		groupResults, err := seq.ExecGroup(step.Group, req)
+		groupResults, err := seq.ExecGroup(step.Exec.Group, req)
 		if err != nil {
 			return err
 		}
@@ -170,7 +174,7 @@ func (seq *Sequence) executeStep(step *Step, req *request.CoordinatedRequest) er
 	req.State = reqState
 
 	// determine if error handling results in a return
-	if err := seq.HandleStepErrs(stepResults, step.Executable); err != nil {
+	if err := seq.HandleStepErrs(stepResults, step.Exec); err != nil {
 		return err
 	}
 
@@ -225,8 +229,8 @@ func (seq *Sequence) handleMessage(msg grav.Message) error {
 	step := seq.NextStep()
 	if step == nil {
 		return executable.ErrSequenceCompleted
-	} else if step.IsFn() {
-		seq.log.Info("handling result of", step.FQFN)
+	} else if step.Exec.IsFn() {
+		seq.log.Info("handling result of", step.Exec.FQFN)
 		step.Completed = true
 	} else {
 		seq.log.Warn("cannot handle message from group step")
@@ -236,7 +240,7 @@ func (seq *Sequence) handleMessage(msg grav.Message) error {
 	stepResults := []FnResult{result}
 
 	// determine if error handling results in a return
-	if err := seq.HandleStepErrs(stepResults, step.Executable); err != nil {
+	if err := seq.HandleStepErrs(stepResults, step.Exec); err != nil {
 		return err
 	}
 
