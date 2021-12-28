@@ -113,7 +113,8 @@ func (e *Executor) Do(jobType string, req *request.CoordinatedRequest, ctx *vk.C
 		return nil, errors.Wrap(err, "failed to req.toJSON")
 	}
 
-	pod.Send(grav.NewMsgWithParentID(jobType, ctx.RequestID(), data))
+	msg := grav.NewMsgWithParentID(jobType, ctx.RequestID(), data)
+	e.grav.Tunnel(jobType, msg)
 
 	// wait until the sequence completes or errors
 	<-completed
