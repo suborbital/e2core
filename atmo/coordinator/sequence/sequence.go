@@ -247,8 +247,11 @@ func (seq *Sequence) handleMessage(msg grav.Message) error {
 		return errors.Wrap(err, "failed to Unmarshal FnResult")
 	}
 
+	seq.log.Info("handleMessage:", msg.UUID())
+
 	step := seq.NextStep()
 	if step == nil {
+		seq.log.ErrorString("handleMessage got nil NextStep")
 		return executable.ErrSequenceCompleted
 	} else if step.Exec.IsFn() {
 		seq.log.Info("handling result of", step.Exec.FQFN)

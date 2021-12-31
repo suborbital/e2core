@@ -124,17 +124,9 @@ func (e *Executor) Do(jobType string, req *request.CoordinatedRequest, ctx *vk.C
 
 	msg := grav.NewMsgWithParentID(jobType, ctx.RequestID(), data)
 
-	go func() {
-		for i := 0; i < 10; i++ {
-			if err := e.grav.Tunnel(jobType, msg); err != nil {
-				e.log.Error(errors.Wrap(err, "failed to Tunnel, will retry"))
-			} else {
-				break
-			}
-
-			time.Sleep(time.Millisecond * 50)
-		}
-	}()
+	if err := e.grav.Tunnel(jobType, msg); err != nil {
+		return nil, errors.Wrap(err, "failed to Tunnel, will retry")
+	}
 
 	// wait until the sequence completes or errors
 	select {
