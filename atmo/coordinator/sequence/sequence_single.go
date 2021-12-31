@@ -26,7 +26,7 @@ func (seq *Sequence) ExecSingleFn(fn executable.CallableFn) (*FnResult, error) {
 	var runErr rt.RunErr
 
 	// Do will execute the job locally if possible or find a remote peer to execute it
-	res, err := seq.exec.Do(fn.FQFN, seq.req, seq.ctx)
+	res, err := seq.exec.Do(fn.FQFN, seq.req, seq.ctx, seq.handleMessage)
 	if err != nil {
 		// check if the error type is rt.RunErr, because those are handled differently
 		if returnedErr, isRunErr := err.(rt.RunErr); isRunErr {

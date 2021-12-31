@@ -74,11 +74,6 @@ func newWithSteps(steps []Step, req *request.CoordinatedRequest, exec *executor.
 		stateLock: sync.Mutex{},
 	}
 
-	if exec != nil {
-		// set messages received by the executor to be handled by the sequence
-		exec.UseCallback(s.handleMessage)
-	}
-
 	if ctx != nil {
 		s.log = ctx.Log
 	}
@@ -247,7 +242,7 @@ func (seq *Sequence) handleMessage(msg grav.Message) error {
 		return errors.Wrap(err, "failed to Unmarshal FnResult")
 	}
 
-	seq.log.Info("handleMessage:", msg.UUID())
+	seq.log.Info("handleMessage recieved", msg.UUID(), "(", msg.ParentID(), ")")
 
 	step := seq.NextStep()
 	if step == nil {

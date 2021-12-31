@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/pkg/errors"
+	"sync"
 	"time"
 
 	"github.com/suborbital/atmo/directive"
@@ -34,10 +35,11 @@ var (
 // Executor is a facade over Grav and Reactr that allows executing local OR remote
 // functions with a single call, ensuring there is no difference between them to the caller
 type Executor struct {
-	grav     *grav.Grav
-	pod      *grav.Pod
-	log      *vlog.Logger
-	callback grav.MsgFunc
+	grav      *grav.Grav
+	pod       *grav.Pod
+	log       *vlog.Logger
+	callbacks map[string]grav.MsgFunc
+	cbLock    sync.RWMutex
 }
 
 // New creates a new Executor
@@ -57,55 +59,70 @@ func New(log *vlog.Logger, transport *websocket.Transport) *Executor {
 
 	// Reactr is configured in UseCapabiltyConfig
 	e := &Executor{
-		grav: g,
-		pod:  g.Connect(),
-		log:  log,
+		grav:      g,
+		pod:       g.Connect(),
+		log:       log,
+		callbacks: map[string]grav.MsgFunc{},
+		cbLock:    sync.RWMutex{},
 	}
+
+	// funnel all result messages to their respective sequence callbacks
+	e.pod.OnType(MsgTypeAtmoFnResult, func(msg grav.Message) error {
+		log.Info("MSG:", msg.Type(), msg.UUID(), msg.ParentID())
+
+		e.cbLock.RLock()
+		defer e.cbLock.RUnlock()
+
+		cb, exists := e.callbacks[msg.ParentID()]
+		if !exists {
+			log.Info("NIL:", msg.Type(), msg.UUID(), msg.ParentID())
+			return nil
+		}
+
+		log.Info("CB:", msg.Type(), msg.UUID(), msg.ParentID())
+		cb(msg)
+
+		return nil
+	})
 
 	return e
 }
 
 // Do executes a remote job
-func (e *Executor) Do(jobType string, req *request.CoordinatedRequest, ctx *vk.Ctx) (interface{}, error) {
+func (e *Executor) Do(jobType string, req *request.CoordinatedRequest, ctx *vk.Ctx, cb grav.MsgFunc) (interface{}, error) {
 	var runErr error
 	var cbErr error
 
 	pod := e.grav.Connect()
 	defer pod.Disconnect()
 
-	e.log.Debug("proxying execution for", jobType)
+	ctx.Log.Debug("proxying execution for", jobType)
 
 	completed := make(chan bool)
 
 	// start listening to the messages produced by peers
 	// on the network, and don't stop until there's an error
 	// or the Sequence we're connected to deems that it's complete
-	pod.OnType(MsgTypeAtmoFnResult, func(msg grav.Message) error {
-		if msg.ParentID() != ctx.RequestID() {
-			return nil
-		}
+	defer e.removeCallback(ctx.RequestID())
 
-		// if a callback is registered, send it up the chain
-		// (probably to the Sequence object that called Do)
-		if e.callback != nil {
-			// the Sequence callback will return an error under two main conditions:
-			// - The sequence has ended: yay!
-			// - The result we just got caused an error: boo :(
-			// either way, show's over and we send on `completed`
+	e.addCallback(ctx.RequestID(), func(msg grav.Message) error {
+		// the Sequence callback will return an error under two main conditions:
+		// - The sequence has ended: yay!
+		// - The result we just got caused an error: boo :(
+		// either way, show's over and we send on `completed`
 
-			if err := e.callback(msg); err != nil {
-				if err == executable.ErrSequenceCompleted {
-					// do nothing! that's great!
-				} else if cbRunErr, isRunErr := err.(rt.RunErr); isRunErr {
-					// handle the runErr
-					runErr = cbRunErr
-				} else {
-					// nothing we really can do here, but let's propogate it
-					cbErr = err
-				}
-
-				completed <- true
+		if err := cb(msg); err != nil {
+			if err == executable.ErrSequenceCompleted {
+				// do nothing! that's great!
+			} else if cbRunErr, isRunErr := err.(rt.RunErr); isRunErr {
+				// handle the runErr
+				runErr = cbRunErr
+			} else {
+				// nothing we really can do here, but let's propogate it
+				cbErr = err
 			}
+
+			completed <- true
 		}
 
 		return nil
@@ -124,6 +141,7 @@ func (e *Executor) Do(jobType string, req *request.CoordinatedRequest, ctx *vk.C
 
 	msg := grav.NewMsgWithParentID(jobType, ctx.RequestID(), data)
 
+	// find an appropriate peer and tunnel the first excution to them
 	if err := e.grav.Tunnel(jobType, msg); err != nil {
 		return nil, errors.Wrap(err, "failed to Tunnel, will retry")
 	}
@@ -144,10 +162,24 @@ func (e *Executor) Do(jobType string, req *request.CoordinatedRequest, ctx *vk.C
 		return nil, runErr
 	}
 
-	e.log.Debug("proxied execution for", jobType, "fulfilled by peers")
+	ctx.Log.Debug("proxied execution for", jobType, "fulfilled by peers")
 
 	// getting the JobResult was done by the callback, return nothing
 	return nil, nil
+}
+
+func (e *Executor) addCallback(parentID string, cb grav.MsgFunc) {
+	e.cbLock.Lock()
+	defer e.cbLock.Unlock()
+
+	e.callbacks[parentID] = cb
+}
+
+func (e *Executor) removeCallback(parentID string) {
+	e.cbLock.Lock()
+	defer e.cbLock.Unlock()
+
+	delete(e.callbacks, parentID)
 }
 
 // UseCapabilityConfig sets up the executor's Reactr instance using the provided capability configuration
@@ -188,11 +220,6 @@ func (e *Executor) Load(runnables []directive.Runnable) error {
 	// nothing to do in proxy mode
 
 	return nil
-}
-
-// UseCallback sets a function to be called on receipt of a message
-func (e *Executor) UseCallback(callback grav.MsgFunc) {
-	e.callback = callback
 }
 
 // Metrics returns the executor's Reactr isntance's internal metrics

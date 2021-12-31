@@ -74,7 +74,7 @@ func NewWithGrav(log *vlog.Logger, g *grav.Grav) *Executor {
 }
 
 // Do executes a local or remote job
-func (e *Executor) Do(jobType string, req *request.CoordinatedRequest, ctx *vk.Ctx) (interface{}, error) {
+func (e *Executor) Do(jobType string, req *request.CoordinatedRequest, ctx *vk.Ctx, cb grav.MsgFunc) (interface{}, error) {
 	if e.reactr == nil {
 		return nil, ErrExecutorNotConfigured
 	}
@@ -208,11 +208,6 @@ func (e *Executor) Load(runnables []directive.Runnable) error {
 	}
 
 	return load.Runnables(e.reactr, runnables, false)
-}
-
-// UseCallback does nothing in normal executor mode
-func (e *Executor) UseCallback(callback grav.MsgFunc) {
-	// nothing to do
 }
 
 // Metrics returns the executor's Reactr isntance's internal metrics
