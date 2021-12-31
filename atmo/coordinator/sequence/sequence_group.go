@@ -5,12 +5,11 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/suborbital/atmo/directive/executable"
-	"github.com/suborbital/reactr/request"
 )
 
 // runGroup runs a group of functions
 // this is all more complicated than it needs to be, Grav should be doing more of the work for us here
-func (seq *Sequence) ExecGroup(fns []executable.CallableFn, req *request.CoordinatedRequest) ([]FnResult, error) {
+func (seq *Sequence) ExecGroup(fns []executable.CallableFn) ([]FnResult, error) {
 	start := time.Now()
 	defer func() {
 		seq.log.Debug("group executed in", time.Since(start).Milliseconds(), "ms")
@@ -26,7 +25,7 @@ func (seq *Sequence) ExecGroup(fns []executable.CallableFn, req *request.Coordin
 		seq.log.Debug("running fn", fn.Fn, "from group")
 
 		go func() {
-			res, err := seq.ExecSingleFn(fn, req)
+			res, err := seq.ExecSingleFn(fn)
 			if err != nil {
 				seq.log.Error(errors.Wrap(err, "failed to runSingleFn"))
 				resultChan <- FnResult{ExecErr: err.Error()}

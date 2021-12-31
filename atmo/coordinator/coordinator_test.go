@@ -45,8 +45,6 @@ func TestBasicSequence(t *testing.T) {
 		},
 	}
 
-	seq := sequence.New(steps, coord.exec, vk.NewCtx(coord.log, nil, nil))
-
 	req := &request.CoordinatedRequest{
 		Method: "GET",
 		URL:    "/hello/world",
@@ -55,7 +53,13 @@ func TestBasicSequence(t *testing.T) {
 		State:  map[string][]byte{},
 	}
 
-	if err := seq.Execute(req); err != nil {
+	seq, err := sequence.New(steps, req, coord.exec, vk.NewCtx(coord.log, nil, nil))
+	if err != nil {
+		t.Error(errors.Wrap(err, "failed to sequence.New"))
+		return
+	}
+
+	if err := seq.Execute(); err != nil {
 		t.Error(err)
 		return
 	}
@@ -84,8 +88,6 @@ func TestGroupSequence(t *testing.T) {
 		},
 	}
 
-	seq := sequence.New(steps, coord.exec, vk.NewCtx(coord.log, nil, nil))
-
 	req := &request.CoordinatedRequest{
 		Method: "GET",
 		URL:    "/hello/world",
@@ -96,7 +98,13 @@ func TestGroupSequence(t *testing.T) {
 		},
 	}
 
-	if err := seq.Execute(req); err != nil {
+	seq, err := sequence.New(steps, req, coord.exec, vk.NewCtx(coord.log, nil, nil))
+	if err != nil {
+		t.Error(errors.Wrap(err, "failed to sequence.New"))
+		return
+	}
+
+	if err := seq.Execute(); err != nil {
 		t.Error(err)
 	}
 
@@ -133,8 +141,6 @@ func TestAsOnErrContinueSequence(t *testing.T) {
 		},
 	}
 
-	seq := sequence.New(steps, coord.exec, vk.NewCtx(coord.log, nil, nil))
-
 	req := &request.CoordinatedRequest{
 		Method: "GET",
 		URL:    "/hello/world",
@@ -143,7 +149,13 @@ func TestAsOnErrContinueSequence(t *testing.T) {
 		State:  map[string][]byte{},
 	}
 
-	if err := seq.Execute(req); err != nil {
+	seq, err := sequence.New(steps, req, coord.exec, vk.NewCtx(coord.log, nil, nil))
+	if err != nil {
+		t.Error(errors.Wrap(err, "failed to sequence.New"))
+		return
+	}
+
+	if err := seq.Execute(); err != nil {
 		t.Error(err)
 	}
 
@@ -174,8 +186,6 @@ func TestAsOnErrReturnSequence(t *testing.T) {
 		},
 	}
 
-	seq := sequence.New(steps, coord.exec, vk.NewCtx(coord.log, nil, nil))
-
 	req := &request.CoordinatedRequest{
 		Method: "GET",
 		URL:    "/hello/world",
@@ -184,8 +194,13 @@ func TestAsOnErrReturnSequence(t *testing.T) {
 		State:  map[string][]byte{},
 	}
 
-	err := seq.Execute(req)
-	if err == nil {
+	seq, err := sequence.New(steps, req, coord.exec, vk.NewCtx(coord.log, nil, nil))
+	if err != nil {
+		t.Error(errors.Wrap(err, "failed to sequence.New"))
+		return
+	}
+
+	if err := seq.Execute(); err == nil {
 		t.Error(errors.New("sequence should have returned err, did not"))
 		return
 	}
@@ -221,8 +236,6 @@ func TestWithSequence(t *testing.T) {
 		},
 	}
 
-	seq := sequence.New(steps, coord.exec, vk.NewCtx(coord.log, nil, nil))
-
 	req := &request.CoordinatedRequest{
 		Method: "GET",
 		URL:    "/hello/world",
@@ -231,7 +244,13 @@ func TestWithSequence(t *testing.T) {
 		State:  map[string][]byte{},
 	}
 
-	if err := seq.Execute(req); err != nil {
+	seq, err := sequence.New(steps, req, coord.exec, vk.NewCtx(coord.log, nil, nil))
+	if err != nil {
+		t.Error(errors.Wrap(err, "failed to sequence.New"))
+		return
+	}
+
+	if err := seq.Execute(); err != nil {
 		t.Error(err)
 	}
 
@@ -265,8 +284,6 @@ func TestAsSequence(t *testing.T) {
 		},
 	}
 
-	seq := sequence.New(steps, coord.exec, vk.NewCtx(coord.log, nil, nil))
-
 	req := &request.CoordinatedRequest{
 		Method: "GET",
 		URL:    "/hello/world",
@@ -275,7 +292,13 @@ func TestAsSequence(t *testing.T) {
 		State:  map[string][]byte{},
 	}
 
-	if err := seq.Execute(req); err != nil {
+	seq, err := sequence.New(steps, req, coord.exec, vk.NewCtx(coord.log, nil, nil))
+	if err != nil {
+		t.Error(errors.Wrap(err, "failed to sequence.New"))
+		return
+	}
+
+	if err := seq.Execute(); err != nil {
 		t.Error(err)
 	}
 

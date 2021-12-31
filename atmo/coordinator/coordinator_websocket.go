@@ -40,9 +40,6 @@ func (c *Coordinator) websocketHandlerForDirectiveHandler(handler directive.Hand
 
 			ctx.Log.Info("handling message", ctx.RequestID(), "from handler", handler.Input.Resource)
 
-			//a sequence executes the handler's steps and manages its state
-			seq := sequence.New(handler.Steps, c.exec, ctx)
-
 			req := &request.CoordinatedRequest{
 				Method:      http.MethodGet,
 				URL:         r.URL.String(),
@@ -54,7 +51,15 @@ func (c *Coordinator) websocketHandlerForDirectiveHandler(handler directive.Hand
 				State:       map[string][]byte{},
 			}
 
-			if err := seq.Execute(req); err != nil {
+			//a sequence executes the handler's steps and manages its state
+			seq, err := sequence.New(handler.Steps, req, c.exec, ctx)
+			if err != nil {
+				ctx.Log.Error(errors.Wrap(err, "failed to sequence.New"))
+				breakErr = err
+				break
+			}
+
+			if err := seq.Execute(); err != nil {
 				if runErr, isRunErr := err.(rt.RunErr); isRunErr {
 					if err := conn.WriteJSON(runErr); err != nil {
 						breakErr = err

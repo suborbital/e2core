@@ -3,7 +3,10 @@
 package executor
 
 import (
+	"encoding/json"
+	"fmt"
 	"github.com/pkg/errors"
+	"time"
 
 	"github.com/suborbital/atmo/directive"
 	"github.com/suborbital/atmo/directive/executable"
@@ -22,8 +25,10 @@ const (
 )
 
 var (
-	ErrExecutorNotConfigured = errors.New("executor not fully configured")
-	ErrCannotHandle          = errors.New("cannot handle job")
+	ErrDesiredStateNotGenerated = errors.New("desired state was not generated")
+	ErrExecutorNotConfigured    = errors.New("executor not fully configured")
+	ErrExecutorTimeout          = errors.New("execution did not complete before the timeout")
+	ErrCannotHandle             = errors.New("cannot handle job")
 )
 
 // Executor is a facade over Grav and Reactr that allows executing local OR remote
@@ -108,16 +113,38 @@ func (e *Executor) Do(jobType string, req *request.CoordinatedRequest, ctx *vk.C
 		return nil
 	})
 
-	data, err := req.ToJSON()
+	defer func() {
+		if e := recover(); e != nil {
+			fmt.Println("RECOVERED:", e)
+		}
+	}()
+
+	data, err := json.Marshal(req)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to req.toJSON")
 	}
 
 	msg := grav.NewMsgWithParentID(jobType, ctx.RequestID(), data)
-	e.grav.Tunnel(jobType, msg)
+
+	go func() {
+		for i := 0; i < 10; i++ {
+			if err := e.grav.Tunnel(jobType, msg); err != nil {
+				e.log.Error(errors.Wrap(err, "failed to Tunnel, will retry"))
+			} else {
+				break
+			}
+
+			time.Sleep(time.Millisecond * 50)
+		}
+	}()
 
 	// wait until the sequence completes or errors
-	<-completed
+	select {
+	case <-completed:
+		// awesome, do nothing
+	case <-time.After(time.Second * 20):
+		return nil, ErrExecutorTimeout
+	}
 
 	if cbErr != nil {
 		return nil, cbErr
@@ -150,7 +177,7 @@ func (e *Executor) Register(jobType string, runner rt.Runnable, opts ...rt.Optio
 // DesiredStepState generates the desired state for the step from the 'real' state
 func (e *Executor) DesiredStepState(step executable.Executable, req *request.CoordinatedRequest) (map[string][]byte, error) {
 	// in proxy mode, we don't want to handle desired state ourselves, we want each peer to handle it themselves
-	return req.State, nil
+	return nil, ErrDesiredStateNotGenerated
 }
 
 // this does nothing in proxy mode
@@ -182,5 +209,5 @@ func (e *Executor) UseCallback(callback grav.MsgFunc) {
 func (e *Executor) Metrics() (*rt.ScalerMetrics, error) {
 	// nothing to do in proxy mode
 
-	return nil, nil
+	return &rt.ScalerMetrics{}, nil
 }

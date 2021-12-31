@@ -21,8 +21,9 @@ import (
 )
 
 var (
-	ErrExecutorNotConfigured = errors.New("executor not fully configured")
-	ErrCannotHandle          = errors.New("cannot handle job")
+	ErrExecutorNotConfigured    = errors.New("executor not fully configured")
+	ErrDesiredStateNotGenerated = errors.New("desired state was not generated")
+	ErrCannotHandle             = errors.New("cannot handle job")
 )
 
 // Executor is a facade over Grav and Reactr that allows executing local OR remote
@@ -130,7 +131,7 @@ func (e *Executor) Register(jobType string, runner rt.Runnable, opts ...rt.Optio
 // DesiredStepState calculates the state as it should be for a particular step's 'with' clause
 func (e *Executor) DesiredStepState(step executable.Executable, req *request.CoordinatedRequest) (map[string][]byte, error) {
 	if len(step.With) == 0 {
-		return req.State, nil
+		return nil, ErrDesiredStateNotGenerated
 	}
 
 	desiredState := map[string][]byte{}
