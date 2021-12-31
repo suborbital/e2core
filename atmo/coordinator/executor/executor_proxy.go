@@ -80,10 +80,8 @@ func (e *Executor) Do(jobType string, req *request.CoordinatedRequest, ctx *vk.C
 	// start listening to the messages produced by peers
 	// on the network, and don't stop until there's an error
 	// or the Sequence we're connected to deems that it's complete
-	pod.On(func(msg grav.Message) error {
+	pod.OnType(MsgTypeAtmoFnResult, func(msg grav.Message) error {
 		if msg.ParentID() != ctx.RequestID() {
-			return nil
-		} else if msg.Type() != MsgTypeAtmoFnResult {
 			return nil
 		}
 
