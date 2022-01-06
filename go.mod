@@ -8,9 +8,9 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/sethvargo/go-envconfig v0.4.0
 	github.com/spf13/cobra v1.2.1
-	github.com/suborbital/grav v0.4.3-0.20211224045646-623c17de4d02
+	github.com/suborbital/grav v0.4.3-0.20220106195727-dc42e03b7214
 	github.com/suborbital/reactr v0.12.1-0.20211209205102-eb9956869f81
-	github.com/suborbital/vektor v0.5.2-0.20211231205120-a1caebc62856
+	github.com/suborbital/vektor v0.5.2-0.20220106202116-761219308fc8
 	golang.org/x/mod v0.5.1
 	gopkg.in/yaml.v2 v2.4.0
 )

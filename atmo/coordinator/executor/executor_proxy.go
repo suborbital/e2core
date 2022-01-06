@@ -57,7 +57,6 @@ func New(log *vlog.Logger, transport *websocket.Transport) *Executor {
 
 	g := grav.New(gravOpts...)
 
-	// Reactr is configured in UseCapabiltyConfig
 	e := &Executor{
 		grav:      g,
 		pod:       g.Connect(),
