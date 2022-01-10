@@ -67,18 +67,15 @@ func New(log *vlog.Logger, transport *websocket.Transport) *Executor {
 
 	// funnel all result messages to their respective sequence callbacks
 	e.pod.OnType(MsgTypeAtmoFnResult, func(msg grav.Message) error {
-		log.Info("MSG:", msg.Type(), msg.UUID(), msg.ParentID())
-
 		e.cbLock.RLock()
 		defer e.cbLock.RUnlock()
 
 		cb, exists := e.callbacks[msg.ParentID()]
 		if !exists {
-			log.Info("NIL:", msg.Type(), msg.UUID(), msg.ParentID())
+			log.ErrorString("encountered nil callback:", msg.Type(), msg.UUID(), msg.ParentID())
 			return nil
 		}
 
-		log.Info("CB:", msg.Type(), msg.UUID(), msg.ParentID())
 		cb(msg)
 
 		return nil
@@ -145,11 +142,13 @@ func (e *Executor) Do(jobType string, req *request.CoordinatedRequest, ctx *vk.C
 		return nil, errors.Wrap(err, "failed to Tunnel, will retry")
 	}
 
+	ctx.Log.Info("proxied execution for", ctx.RequestID(), "to peer")
+
 	// wait until the sequence completes or errors
 	select {
 	case <-completed:
 		// awesome, do nothing
-	case <-time.After(time.Second * 20):
+	case <-time.After(time.Second * 10):
 		return nil, ErrExecutorTimeout
 	}
 
@@ -160,8 +159,6 @@ func (e *Executor) Do(jobType string, req *request.CoordinatedRequest, ctx *vk.C
 	if runErr != nil {
 		return nil, runErr
 	}
-
-	ctx.Log.Debug("proxied execution for", jobType, "fulfilled by peers")
 
 	// getting the JobResult was done by the callback, return nothing
 	return nil, nil
