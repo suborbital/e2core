@@ -24,7 +24,7 @@ type Sequence struct {
 	ctx *vk.Ctx
 	log *vlog.Logger
 
-	stateLock sync.Mutex // need to ensure writes to req.State are kept serial
+	lock sync.Mutex // need to ensure writes to req.State are kept serial
 }
 
 // Step is a container over Executable that includes a 'Completed' field
@@ -67,11 +67,11 @@ func newWithSteps(steps []Step, req *request.CoordinatedRequest, exec *executor.
 	req.SequenceJSON = stepsJSON
 
 	s := &Sequence{
-		steps:     steps,
-		exec:      exec,
-		req:       req,
-		ctx:       ctx,
-		stateLock: sync.Mutex{},
+		steps: steps,
+		exec:  exec,
+		req:   req,
+		ctx:   ctx,
+		lock:  sync.Mutex{},
 	}
 
 	if ctx != nil {
@@ -178,6 +178,9 @@ func (seq *Sequence) executeStep(step *Step) error {
 		seq.req.State = reqState
 	}
 
+	seq.lock.Lock()
+	defer seq.lock.Unlock()
+
 	// determine if error handling results in a return
 	if err := seq.HandleStepErrs(stepResults, step.Exec); err != nil {
 		return err
@@ -190,9 +193,6 @@ func (seq *Sequence) executeStep(step *Step) error {
 }
 
 func (seq *Sequence) HandleStepResults(stepResults []FnResult) {
-	seq.stateLock.Lock()
-	defer seq.stateLock.Unlock()
-
 	for _, result := range stepResults {
 		if result.Response == nil {
 			seq.log.ErrorString("recieved nil response for", result.Key)
@@ -211,9 +211,6 @@ func (seq *Sequence) HandleStepResults(stepResults []FnResult) {
 }
 
 func (seq *Sequence) HandleStepErrs(results []FnResult, step executable.Executable) error {
-	seq.stateLock.Lock()
-	defer seq.stateLock.Unlock()
-
 	for _, result := range results {
 		if result.RunErr.Code == 0 && result.RunErr.Message == "" {
 			continue
@@ -237,6 +234,9 @@ func (seq *Sequence) HandleStepErrs(results []FnResult, step executable.Executab
 //
 // sequence.Execute -> exec.do -> handleMessage (n times) -> .do returns to .Execute
 func (seq *Sequence) handleMessage(msg grav.Message) error {
+	seq.lock.Lock()
+	defer seq.lock.Unlock()
+
 	result := FnResult{}
 	if err := json.Unmarshal(msg.Data(), &result); err != nil {
 		return errors.Wrap(err, "failed to Unmarshal FnResult")
