@@ -3,6 +3,7 @@
 package executor
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/pkg/errors"
@@ -93,7 +94,12 @@ func (e *Executor) Do(jobType string, req *request.CoordinatedRequest, ctx *vk.C
 	if err != nil {
 		e.Send(grav.NewMsgWithParentID(rt.MsgTypeReactrRunErr, ctx.RequestID(), []byte(err.Error())))
 	} else {
-		e.Send(grav.NewMsgWithParentID(rt.MsgTypeReactrResult, ctx.RequestID(), result.([]byte)))
+		resultJSON, err := json.Marshal(result)
+		if err != nil {
+			e.log.Error(errors.Wrap(err, "failed to Marshal executor result"))
+		}
+
+		e.Send(grav.NewMsgWithParentID(rt.MsgTypeReactrResult, ctx.RequestID(), resultJSON))
 	}
 
 	return result, err

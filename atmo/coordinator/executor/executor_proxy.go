@@ -99,8 +99,6 @@ func (e *Executor) Do(jobType string, req *request.CoordinatedRequest, ctx *vk.C
 	// start listening to the messages produced by peers
 	// on the network, and don't stop until there's an error
 	// or the Sequence we're connected to deems that it's complete
-	defer e.removeCallback(ctx.RequestID())
-
 	e.addCallback(ctx.RequestID(), func(msg grav.Message) error {
 		// the Sequence callback will return an error under two main conditions:
 		// - The sequence has ended: yay!
@@ -123,6 +121,8 @@ func (e *Executor) Do(jobType string, req *request.CoordinatedRequest, ctx *vk.C
 
 		return nil
 	})
+
+	defer e.removeCallback(ctx.RequestID())
 
 	defer func() {
 		if e := recover(); e != nil {
@@ -154,9 +154,7 @@ func (e *Executor) Do(jobType string, req *request.CoordinatedRequest, ctx *vk.C
 
 	if cbErr != nil {
 		return nil, cbErr
-	}
-
-	if runErr != nil {
+	} else if runErr != nil {
 		return nil, runErr
 	}
 

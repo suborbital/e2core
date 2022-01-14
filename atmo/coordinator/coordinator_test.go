@@ -2,7 +2,6 @@ package coordinator
 
 import (
 	"bytes"
-	"fmt"
 	"testing"
 
 	"github.com/google/uuid"
@@ -200,14 +199,14 @@ func TestAsOnErrReturnSequence(t *testing.T) {
 		return
 	}
 
-	if err := seq.Execute(); err == nil {
+	if err = seq.Execute(); err == nil {
 		t.Error(errors.New("sequence should have returned err, did not"))
 		return
 	}
 
 	runErr, isRunErr := err.(rt.RunErr)
 	if !isRunErr {
-		t.Error(errors.New("sequence should have returned RunErr, did not"))
+		t.Error(errors.Wrap(err, "sequence should have returned RunErr, did not"))
 	}
 
 	if runErr.Code != 400 {
@@ -301,8 +300,6 @@ func TestAsSequence(t *testing.T) {
 	if err := seq.Execute(); err != nil {
 		t.Error(err)
 	}
-
-	fmt.Println(req.State)
 
 	if val, ok := req.State["url"]; !ok {
 		t.Error("url state is missing")

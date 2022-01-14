@@ -1,7 +1,6 @@
 package sequence
 
 import (
-	"encoding/json"
 	"time"
 
 	"github.com/pkg/errors"
@@ -22,7 +21,6 @@ func (seq *Sequence) ExecSingleFn(fn executable.CallableFn) (*FnResult, error) {
 		return nil, ErrMissingFQFN
 	}
 
-	var jobResult []byte
 	var runErr rt.RunErr
 
 	// Do will execute the job locally if possible or find a remote peer to execute it
@@ -34,9 +32,9 @@ func (seq *Sequence) ExecSingleFn(fn executable.CallableFn) (*FnResult, error) {
 		} else {
 			return nil, errors.Wrap(err, "failed to exec.Do")
 		}
-	} else if res != nil {
-		jobResult = res.([]byte)
-	} else {
+	} else if res == nil {
+		seq.log.Debug("fn", fn.Fn, "returned a nil result")
+
 		return nil, nil
 	}
 
@@ -44,17 +42,12 @@ func (seq *Sequence) ExecSingleFn(fn executable.CallableFn) (*FnResult, error) {
 	// should find a better way to determine if a RunErr is "non-nil"
 	if runErr.Code != 0 || runErr.Message != "" {
 		seq.log.Debug("fn", fn.Fn, "returned an error")
-	} else if jobResult == nil {
-		seq.log.Debug("fn", fn.Fn, "returned a nil result")
 	}
 
 	cResponse := &request.CoordinatedResponse{}
 
-	if jobResult != nil {
-		if err := json.Unmarshal(jobResult, cResponse); err != nil {
-			// handle backwards-compat
-			cResponse.Output = jobResult
-		}
+	if res != nil {
+		cResponse = res.(*request.CoordinatedResponse)
 	}
 
 	result := &FnResult{
