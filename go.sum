@@ -394,6 +394,8 @@ github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/
 github.com/suborbital/grav v0.4.1/go.mod h1:jN+zB9O6ztW2GqruEU46EMOFjvc8K2UDLyofFJWdI8o=
 github.com/suborbital/grav v0.4.3-0.20220110025656-2d33fbcb9896 h1:rUeDTt/QnxcN6NCSQnNP553bs47hLcgQoGLoqocUamk=
 github.com/suborbital/grav v0.4.3-0.20220110025656-2d33fbcb9896/go.mod h1:sRq2J6ISfc2MjsnYvcfc94mliKSnbMVmnHF76nvSbPM=
+github.com/suborbital/grav v0.4.3-0.20220117013022-d2db6eb75b03 h1:tZpiiLVhpGGje3Lb1DsWCPvfnjvhmX7DZ5of9H1bX3Q=
+github.com/suborbital/grav v0.4.3-0.20220117013022-d2db6eb75b03/go.mod h1:sRq2J6ISfc2MjsnYvcfc94mliKSnbMVmnHF76nvSbPM=
 github.com/suborbital/reactr v0.12.1-0.20220114194921-ef48b75dbd9d h1:1f4czl92jvp7k+w42jmOTwnefqcnxFkbxZgQhq4OUuo=
 github.com/suborbital/reactr v0.12.1-0.20220114194921-ef48b75dbd9d/go.mod h1:j1zFdG5hpZwJlIBLrScTlXxn9WZoq0rhWeL0ohWYjyQ=
 github.com/suborbital/vektor v0.2.2/go.mod h1:6YQE7r6t1JcVs3twpqjXDftsLUaTNUk5YorRKHcDamI=
