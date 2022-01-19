@@ -19,3 +19,7 @@
 target/
 *.wasm
 node_modules
+
+# visual code
+.vscode/
+*.code-workspace
