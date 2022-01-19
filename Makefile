@@ -5,6 +5,9 @@ atmo:
 atmo/proxy:
 	go build -o .bin/atmo-proxy -tags proxy ./main.go
 
+atmo/proxy/install:
+	go build -o $(HOME)/go/bin/atmo-proxy -tags proxy ./main.go
+
 run: atmo
 	ATMO_HTTP_PORT=8080 .bin/atmo $(bundle)
 

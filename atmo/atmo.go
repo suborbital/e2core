@@ -50,6 +50,10 @@ func New(opts ...options.Modifier) *Atmo {
 		vk.UseAppName("Atmo"),
 		vk.UseLogger(atmoOpts.Logger),
 		vk.UseInspector(a.inspectRequest),
+		vk.UseQuietRoutes(
+			coordinator.AtmoHealthURI,
+			coordinator.AtmoMetricsURI,
+		),
 	)
 
 	return a
