@@ -18,6 +18,10 @@ type Options struct {
 	Headless     *bool  `env:"ATMO_HEADLESS,default=false"`
 	Wait         *bool  `env:"ATMO_WAIT,default=false"`
 	ControlPlane string `env:"ATMO_CONTROL_PLANE"`
+	AppName      string `env:"ATMO_APP_NAME,default=Atmo"`
+	Domain       string `env:"ATMO_DOMAIN"`
+	HTTPPort     int    `env:"ATMO_HTTP_PORT,default=8080"`
+	TLSPort      int    `env:"ATMO_TLS_PORT,default=443"`
 	Proxy        bool
 }
 
@@ -70,6 +74,34 @@ func ShouldWait(wait bool) Modifier {
 	}
 }
 
+// AppName sets the app name to be used
+func AppName(name string) Modifier {
+	return func(opts *Options) {
+		opts.AppName = name
+	}
+}
+
+// Domain sets the domain to be used
+func Domain(domain string) Modifier {
+	return func(opts *Options) {
+		opts.Domain = domain
+	}
+}
+
+// HTTPPort sets the http port to be used
+func HTTPPort(port int) Modifier {
+	return func(opts *Options) {
+		opts.HTTPPort = port
+	}
+}
+
+// TLSPort sets the tls port to be used
+func TLSPort(port int) Modifier {
+	return func(opts *Options) {
+		opts.TLSPort = port
+	}
+}
+
 // finalize "locks in" the options by overriding any existing options with the version from the environment, and setting the default logger if needed
 func (o *Options) finalize(prefix string) {
 	if o.Logger == nil {
@@ -108,6 +140,26 @@ func (o *Options) finalize(prefix string) {
 		if envOpts.Headless != nil {
 			o.Headless = envOpts.Headless
 		}
+	}
+
+	// set AppName if it was not passed as a flag
+	if o.AppName == "" {
+		o.AppName = envOpts.AppName
+	}
+
+	// set Domain if it was not passed as a flag
+	if o.Domain == "" {
+		o.Domain = envOpts.Domain
+	}
+
+	// set HTTPPort if it was not passed as a flag
+	if o.HTTPPort == 0 {
+		o.HTTPPort = envOpts.HTTPPort
+	}
+
+	// set TLSPort if it was not passed as a flag
+	if o.TLSPort == 0 {
+		o.TLSPort = envOpts.TLSPort
 	}
 
 	// compile-time decision about enabling proxy mode
