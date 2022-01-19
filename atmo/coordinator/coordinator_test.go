@@ -2,14 +2,17 @@ package coordinator
 
 import (
 	"bytes"
+	"fmt"
 	"testing"
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/suborbital/atmo/atmo/appsource"
+	"github.com/suborbital/atmo/atmo/coordinator/sequence"
 	"github.com/suborbital/atmo/atmo/options"
-	"github.com/suborbital/atmo/directive"
+	"github.com/suborbital/atmo/directive/executable"
 	"github.com/suborbital/reactr/request"
+	"github.com/suborbital/reactr/rt"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
 )
@@ -33,16 +36,16 @@ func init() {
 }
 
 func TestBasicSequence(t *testing.T) {
-	steps := []directive.Executable{
+	steps := []executable.Executable{
 		{
-			CallableFn: directive.CallableFn{
+			CallableFn: executable.CallableFn{
 				Fn:   "helloworld-rs",
 				FQFN: "com.suborbital.test#default::helloworld-rs@v0.0.1",
 			},
 		},
 	}
 
-	seq := newSequence(steps, coord.exec, vk.NewCtx(coord.log, nil, nil))
+	seq := sequence.New(steps, coord.exec, vk.NewCtx(coord.log, nil, nil))
 
 	req := &request.CoordinatedRequest{
 		Method: "GET",
@@ -52,13 +55,12 @@ func TestBasicSequence(t *testing.T) {
 		State:  map[string][]byte{},
 	}
 
-	state, err := seq.execute(req)
-	if err != nil {
+	if err := seq.Execute(req); err != nil {
 		t.Error(err)
 		return
 	}
 
-	if val, ok := state.state["helloworld-rs"]; !ok {
+	if val, ok := req.State["helloworld-rs"]; !ok {
 		t.Error("helloworld state is missing")
 	} else if !bytes.Equal(val, []byte("hello world")) {
 		t.Error("unexpected helloworld state value:", string(val))
@@ -66,9 +68,9 @@ func TestBasicSequence(t *testing.T) {
 }
 
 func TestGroupSequence(t *testing.T) {
-	steps := []directive.Executable{
+	steps := []executable.Executable{
 		{
-			Group: []directive.CallableFn{
+			Group: []executable.CallableFn{
 				{
 					Fn:   "helloworld-rs",
 					FQFN: "com.suborbital.test#default::helloworld-rs@v0.0.1",
@@ -82,7 +84,7 @@ func TestGroupSequence(t *testing.T) {
 		},
 	}
 
-	seq := newSequence(steps, coord.exec, vk.NewCtx(coord.log, nil, nil))
+	seq := sequence.New(steps, coord.exec, vk.NewCtx(coord.log, nil, nil))
 
 	req := &request.CoordinatedRequest{
 		Method: "GET",
@@ -94,18 +96,17 @@ func TestGroupSequence(t *testing.T) {
 		},
 	}
 
-	state, err := seq.execute(req)
-	if err != nil {
+	if err := seq.Execute(req); err != nil {
 		t.Error(err)
 	}
 
-	if val, ok := state.state["helloworld-rs"]; !ok {
+	if val, ok := req.State["helloworld-rs"]; !ok {
 		t.Error("helloworld state is missing")
 	} else if !bytes.Equal(val, []byte("hello world")) {
 		t.Error("unexpected helloworld state value:", string(val))
 	}
 
-	if val, ok := state.state["main.md"]; !ok {
+	if val, ok := req.State["main.md"]; !ok {
 		t.Error("get-file state is missing")
 	} else if !bytes.Equal(val, []byte("## hello")) {
 		t.Error("unexpected get-file state value:", string(val))
@@ -113,26 +114,26 @@ func TestGroupSequence(t *testing.T) {
 }
 
 func TestAsOnErrContinueSequence(t *testing.T) {
-	steps := []directive.Executable{
+	steps := []executable.Executable{
 		{
-			CallableFn: directive.CallableFn{
+			CallableFn: executable.CallableFn{
 				Fn:   "helloworld-rs",
 				FQFN: "com.suborbital.test#default::helloworld-rs@v0.0.1",
 				As:   "hello",
 			},
 		},
 		{
-			CallableFn: directive.CallableFn{
+			CallableFn: executable.CallableFn{
 				Fn:   "return-err",
 				FQFN: "com.suborbital.test#default::return-err@v0.0.1",
-				OnErr: &directive.FnOnErr{
+				OnErr: &executable.ErrHandler{
 					Any: "continue",
 				},
 			},
 		},
 	}
 
-	seq := newSequence(steps, coord.exec, vk.NewCtx(coord.log, nil, nil))
+	seq := sequence.New(steps, coord.exec, vk.NewCtx(coord.log, nil, nil))
 
 	req := &request.CoordinatedRequest{
 		Method: "GET",
@@ -142,12 +143,11 @@ func TestAsOnErrContinueSequence(t *testing.T) {
 		State:  map[string][]byte{},
 	}
 
-	state, err := seq.execute(req)
-	if err != nil {
+	if err := seq.Execute(req); err != nil {
 		t.Error(err)
 	}
 
-	if val, ok := state.state["hello"]; !ok {
+	if val, ok := req.State["hello"]; !ok {
 		t.Error("hello state is missing")
 	} else if !bytes.Equal(val, []byte("hello world")) {
 		t.Error("unexpected hello state value:", string(val))
@@ -155,26 +155,26 @@ func TestAsOnErrContinueSequence(t *testing.T) {
 }
 
 func TestAsOnErrReturnSequence(t *testing.T) {
-	steps := []directive.Executable{
+	steps := []executable.Executable{
 		{
-			CallableFn: directive.CallableFn{
+			CallableFn: executable.CallableFn{
 				Fn:   "helloworld-rs",
 				FQFN: "com.suborbital.test#default::helloworld-rs@v0.0.1",
 				As:   "hello",
 			},
 		},
 		{
-			CallableFn: directive.CallableFn{
+			CallableFn: executable.CallableFn{
 				Fn:   "return-err",
 				FQFN: "com.suborbital.test#default::return-err@v0.0.1",
-				OnErr: &directive.FnOnErr{
+				OnErr: &executable.ErrHandler{
 					Any: "return",
 				},
 			},
 		},
 	}
 
-	seq := newSequence(steps, coord.exec, vk.NewCtx(coord.log, nil, nil))
+	seq := sequence.New(steps, coord.exec, vk.NewCtx(coord.log, nil, nil))
 
 	req := &request.CoordinatedRequest{
 		Method: "GET",
@@ -184,30 +184,36 @@ func TestAsOnErrReturnSequence(t *testing.T) {
 		State:  map[string][]byte{},
 	}
 
-	state, err := seq.execute(req)
-	if err != ErrSequenceRunErr {
-		t.Error(errors.New("sequence should have returned ErrSequenceRunErr, did not"))
+	err := seq.Execute(req)
+	if err == nil {
+		t.Error(errors.New("sequence should have returned err, did not"))
+		return
 	}
 
-	if state.err.Code != 400 {
-		t.Error("error code should be 400, is actually", state.err.Code)
+	runErr, isRunErr := err.(rt.RunErr)
+	if !isRunErr {
+		t.Error(errors.New("sequence should have returned RunErr, did not"))
 	}
 
-	if state.err.Message != "job failed" {
-		t.Error("message should be 'job failed', is actually", state.err.Message)
+	if runErr.Code != 400 {
+		t.Error("error code should be 400, is actually", runErr.Code)
+	}
+
+	if runErr.Message != "job failed" {
+		t.Error("message should be 'job failed', is actually", runErr.Message)
 	}
 }
 
 func TestWithSequence(t *testing.T) {
-	steps := []directive.Executable{
+	steps := []executable.Executable{
 		{
-			CallableFn: directive.CallableFn{
+			CallableFn: executable.CallableFn{
 				Fn:   "helloworld-rs", // the body is empty, so this will return only "hello"
 				FQFN: "com.suborbital.test#default::helloworld-rs@v0.0.1",
 			},
 		},
 		{
-			CallableFn: directive.CallableFn{
+			CallableFn: executable.CallableFn{
 				Fn:   "modify-url", // if there's no body, it'll look in state for '
 				FQFN: "com.suborbital.test#default::modify-url@v0.0.1",
 				With: map[string]string{"url": "helloworld-rs"},
@@ -215,7 +221,7 @@ func TestWithSequence(t *testing.T) {
 		},
 	}
 
-	seq := newSequence(steps, coord.exec, vk.NewCtx(coord.log, nil, nil))
+	seq := sequence.New(steps, coord.exec, vk.NewCtx(coord.log, nil, nil))
 
 	req := &request.CoordinatedRequest{
 		Method: "GET",
@@ -225,20 +231,65 @@ func TestWithSequence(t *testing.T) {
 		State:  map[string][]byte{},
 	}
 
-	state, err := seq.execute(req)
-	if err != nil {
+	if err := seq.Execute(req); err != nil {
 		t.Error(err)
 	}
 
-	if val, ok := state.state["helloworld-rs"]; !ok {
+	if val, ok := req.State["helloworld-rs"]; !ok {
 		t.Error("helloworld-rs state is missing")
 	} else if !bytes.Equal(val, []byte("hello ")) {
 		t.Error("unexpected helloworld-rs state value:", string(val))
 	}
 
-	if val, ok := state.state["modify-url"]; !ok {
+	if val, ok := req.State["modify-url"]; !ok {
 		t.Error("modify-url state is missing")
 	} else if !bytes.Equal(val, []byte("hello /suborbital")) {
+		t.Error("unexpected modify-url state value:", string(val))
+	}
+}
+
+func TestAsSequence(t *testing.T) {
+	steps := []executable.Executable{
+		{
+			CallableFn: executable.CallableFn{
+				Fn:   "helloworld-rs",
+				FQFN: "com.suborbital.test#default::helloworld-rs@v0.0.1",
+				As:   "url",
+			},
+		},
+		{
+			CallableFn: executable.CallableFn{
+				Fn:   "modify-url",
+				FQFN: "com.suborbital.test#default::modify-url@v0.0.1",
+			},
+		},
+	}
+
+	seq := sequence.New(steps, coord.exec, vk.NewCtx(coord.log, nil, nil))
+
+	req := &request.CoordinatedRequest{
+		Method: "GET",
+		URL:    "/hello/world",
+		ID:     uuid.New().String(),
+		Body:   []byte("friend"),
+		State:  map[string][]byte{},
+	}
+
+	if err := seq.Execute(req); err != nil {
+		t.Error(err)
+	}
+
+	fmt.Println(req.State)
+
+	if val, ok := req.State["url"]; !ok {
+		t.Error("url state is missing")
+	} else if !bytes.Equal(val, []byte("hello friend")) {
+		t.Error("unexpected url state value:", string(val))
+	}
+
+	if val, ok := req.State["modify-url"]; !ok {
+		t.Error("modify-url state is missing")
+	} else if !bytes.Equal(val, []byte("hello friend/suborbital")) {
 		t.Error("unexpected modify-url state value:", string(val))
 	}
 }

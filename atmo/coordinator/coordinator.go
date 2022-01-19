@@ -6,10 +6,12 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/suborbital/atmo/atmo/appsource"
+	"github.com/suborbital/atmo/atmo/coordinator/capabilities"
 	"github.com/suborbital/atmo/atmo/coordinator/executor"
 	"github.com/suborbital/atmo/atmo/options"
 	"github.com/suborbital/atmo/directive"
 	"github.com/suborbital/grav/grav"
+	"github.com/suborbital/grav/transport/kafka"
 	"github.com/suborbital/grav/transport/nats"
 	"github.com/suborbital/grav/transport/websocket"
 	"github.com/suborbital/reactr/rcap"
@@ -87,10 +89,16 @@ func (c *Coordinator) Start() error {
 	// establish connections defined by the app
 	c.createConnections()
 
+	caps, err := capabilities.Render(rcap.DefaultCapabilityConfig(), c.App, c.log)
+	if err != nil {
+		return errors.Wrap(err, "failed to renderCapabilities")
+	}
+
 	// we have to wait until here to initialize Reactr
 	// since the appsource needs to be fully initialized
-	caps := renderCapabilities(c.App, c.log)
-	c.exec.UseCapabilityConfig(caps)
+	if err := c.exec.UseCapabilityConfig(caps); err != nil {
+		return errors.Wrap(err, "failed to UseCapabilityConfig")
+	}
 
 	// do an initial sync of Runnables
 	// from the AppSource into RVG
@@ -105,6 +113,11 @@ func (c *Coordinator) SetupHandlers() *vk.Router {
 
 	// set a middleware on the root RouteGroup
 	router.Before(scopeMiddleware)
+
+	// if in headless mode, enable runnable authentication
+	if *c.opts.Headless {
+		router.Before(c.headlessAuthMiddleware())
+	}
 
 	// mount each handler into the VK group
 	for _, h := range c.App.Handlers() {
@@ -136,7 +149,9 @@ func (c *Coordinator) createConnections() {
 	connections := c.App.Connections()
 
 	if connections.NATS != nil {
-		gnats, err := nats.New(connections.NATS.ServerAddress)
+		address := rcap.AugmentedValFromEnv(connections.NATS.ServerAddress)
+
+		gnats, err := nats.New(address)
 		if err != nil {
 			c.log.Error(errors.Wrap(err, "failed to nats.New for NATS connection"))
 		} else {
@@ -146,6 +161,22 @@ func (c *Coordinator) createConnections() {
 			)
 
 			c.connections[directive.InputSourceNATS] = g
+		}
+	}
+
+	if connections.Kafka != nil {
+		address := rcap.AugmentedValFromEnv(connections.Kafka.BrokerAddress)
+
+		gkafka, err := kafka.New(address)
+		if err != nil {
+			c.log.Error(errors.Wrap(err, "failed to kafka.New for Kafka connection"))
+		} else {
+			g := grav.New(
+				grav.UseLogger(c.log),
+				grav.UseTransport(gkafka),
+			)
+
+			c.connections[directive.InputSourceKafka] = g
 		}
 	}
 }
@@ -172,62 +203,6 @@ func (c *Coordinator) SetSchedules() {
 			}))
 		}
 	}
-}
-
-// renderCapabilities "renders" capabilities by layering any user-defined
-// capabilities onto the default set, thus allowing the user to omit any
-// individual capability (or all of them) to receive the defaults
-func renderCapabilities(source appsource.AppSource, log *vlog.Logger) rcap.CapabilityConfig {
-	config := rcap.DefaultConfigWithLogger(log)
-
-	userConfig := source.Capabilities()
-	if userConfig == nil {
-		return config
-	}
-
-	connections := source.Connections()
-
-	if userConfig.Logger != nil {
-		config.Logger = userConfig.Logger
-	}
-
-	if userConfig.HTTP != nil {
-		config.HTTP = userConfig.HTTP
-	}
-
-	if userConfig.GraphQL != nil {
-		config.GraphQL = userConfig.GraphQL
-	}
-
-	if userConfig.Auth != nil {
-		config.Auth = userConfig.Auth
-	}
-
-	// config for the cache can come from either the capabilities
-	// and/or connections sections of the directive
-	if userConfig.Cache != nil {
-		config.Cache = userConfig.Cache
-	}
-
-	if connections.Redis != nil {
-		config.Cache.RedisConfig = connections.Redis
-	}
-
-	if userConfig.File != nil {
-		config.File = userConfig.File
-	}
-
-	if userConfig.RequestHandler != nil {
-		config.RequestHandler = userConfig.RequestHandler
-	}
-
-	// The following are extra inputs needed to make things work
-
-	config.Logger.Logger = log
-	config.File.FileFunc = source.File
-	config.Auth.Headers = source.Authentication().Domains
-
-	return config
 }
 
 // resultFromState returns the state value for the last single function that ran in a handler

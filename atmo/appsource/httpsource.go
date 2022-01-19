@@ -14,6 +14,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/suborbital/atmo/atmo/options"
 	"github.com/suborbital/atmo/directive"
+	"github.com/suborbital/atmo/directive/executable"
 	"github.com/suborbital/atmo/fqfn"
 	"github.com/suborbital/reactr/rcap"
 )
@@ -75,17 +76,43 @@ func (h *HTTPSource) Runnables() []directive.Runnable {
 // FindRunnable returns a nil error if a Runnable with the
 // provided FQFN can be made available at the next sync,
 // otherwise ErrRunnableNotFound is returned
-func (h *HTTPSource) FindRunnable(FQFN string) (*directive.Runnable, error) {
+func (h *HTTPSource) FindRunnable(FQFN, auth string) (*directive.Runnable, error) {
 	parsedFQFN := fqfn.Parse(FQFN)
+
+	// if we are in headless mode, first check to see if we've cached a runnable
+	if *h.opts.Headless {
+		h.lock.RLock()
+		r, ok := h.runnables[FQFN]
+		h.lock.RUnlock()
+
+		if ok {
+			return &r, nil
+		}
+	}
+
+	// if we need to fetch it from remote, let's do so
 
 	path := fmt.Sprintf("/runnable%s", parsedFQFN.HeadlessURLPath())
 
 	runnable := directive.Runnable{}
-	if _, err := h.get(path, &runnable); err != nil {
+	if resp, err := h.authedGet(path, auth, &runnable); err != nil {
 		h.opts.Logger.Error(errors.Wrapf(err, "failed to get %s", path))
+
+		if resp.StatusCode == http.StatusUnauthorized {
+			return nil, ErrAuthenticationFailed
+		}
+
 		return nil, ErrRunnableNotFound
 	}
 
+	if auth != "" {
+		// if we get this far, we assume the token was used to successfully get
+		// the runnable from the control plane, and should therefore be used to
+		// authenticate further calls for this function, so we cache it
+		runnable.TokenHash = TokenHash(auth)
+	}
+
+	// again, if we're in headless mode let's cache it for later
 	if *h.opts.Headless {
 		h.lock.Lock()
 		defer h.lock.Unlock()
@@ -172,6 +199,16 @@ func (h *HTTPSource) File(filename string) ([]byte, error) {
 	return file, nil
 }
 
+// Queries returns the Queries for the app
+func (h *HTTPSource) Queries() []directive.DBQuery {
+	queries := []directive.DBQuery{}
+	if _, err := h.get("/queries", &queries); err != nil {
+		h.opts.Logger.Error(errors.Wrap(err, "failed to get /queries"))
+	}
+
+	return queries
+}
+
 func (h *HTTPSource) Meta() Meta {
 	meta := Meta{}
 	if _, err := h.get("/meta", &meta); err != nil {
@@ -184,19 +221,20 @@ func (h *HTTPSource) Meta() Meta {
 // pingServer loops forever until it finds a server at the configured host
 func (h *HTTPSource) pingServer() error {
 	for {
-		_, err := h.get("/meta", nil)
-		if err != nil {
-			if !*h.opts.Wait {
+		if _, err := h.get("/meta", nil); err != nil {
+
+			if h.opts.Wait == nil || !*h.opts.Wait {
 				return errors.Wrapf(err, "failed to connect to source at %s", h.host)
 			}
 
-			h.opts.Logger.Warn("failed to connect to source, will try again:", err.Error())
+			h.opts.Logger.Warn("failed to connect to remote source, will retry:", err.Error())
+
 			time.Sleep(time.Second)
 
 			continue
 		}
 
-		h.opts.Logger.Info("connected to source at", h.host)
+		h.opts.Logger.Debug("connected to remote source at", h.host)
 
 		break
 	}
@@ -206,6 +244,11 @@ func (h *HTTPSource) pingServer() error {
 
 // get performs a GET request against the configured host and given path
 func (h *HTTPSource) get(path string, dest interface{}) (*http.Response, error) {
+	return h.authedGet(path, "", dest)
+}
+
+// authedGet performs a GET request against the configured host and given path with the given auth header
+func (h *HTTPSource) authedGet(path, auth string, dest interface{}) (*http.Response, error) {
 	url, err := url.Parse(fmt.Sprintf("%s%s", h.host, path))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to url.Parse")
@@ -216,13 +259,17 @@ func (h *HTTPSource) get(path string, dest interface{}) (*http.Response, error) 
 		return nil, errors.Wrap(err, "failed to NewRequest")
 	}
 
+	if auth != "" {
+		req.Header.Set("Authorization", auth)
+	}
+
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to Do request")
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("response returned non-200 status: %d", resp.StatusCode)
+		return resp, fmt.Errorf("response returned non-200 status: %d", resp.StatusCode)
 	}
 
 	if dest != nil {
@@ -262,9 +309,9 @@ func (h *HTTPSource) headlessHandlers() []directive.Handler {
 				Method:   http.MethodPost,
 				Resource: fqfn.Parse(runnable.FQFN).HeadlessURLPath(),
 			},
-			Steps: []directive.Executable{
+			Steps: []executable.Executable{
 				{
-					CallableFn: directive.CallableFn{
+					CallableFn: executable.CallableFn{
 						Fn:   runnable.Name,
 						With: map[string]string{},
 						FQFN: runnable.FQFN,

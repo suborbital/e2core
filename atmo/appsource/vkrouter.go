@@ -66,12 +66,17 @@ func (a *AppSourceVKRouter) FindRunnableHandler() vk.HandlerFunc {
 
 		fqfn := fqfn.FromParts(ident, namespace, fn, version)
 
-		runnable, err := a.appSource.FindRunnable(fqfn)
+		// auth header can be used to authenticate requests
+		auth := r.Header.Get("Authorization")
+
+		runnable, err := a.appSource.FindRunnable(fqfn, auth)
 		if err != nil {
 			ctx.Log.Error(errors.Wrap(err, "failed to FindRunnable"))
 
 			if errors.Is(err, ErrRunnableNotFound) {
-				return nil, vk.Wrap(404, fmt.Errorf("failed to find Runnable %s", fqfn))
+				return nil, vk.Wrap(http.StatusNotFound, fmt.Errorf("failed to find Runnable %s", fqfn))
+			} else if errors.Is(err, ErrAuthenticationFailed) {
+				return nil, vk.E(http.StatusUnauthorized, "unauthorized")
 			}
 
 			return nil, vk.E(http.StatusInternalServerError, "something went wrong")

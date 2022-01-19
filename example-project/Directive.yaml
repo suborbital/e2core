@@ -1,11 +1,16 @@
 identifier: com.suborbital.test
 appVersion: v0.0.1
-atmoVersion: v0.3.2
+atmoVersion: v0.4.2
 
 # uncomment to try out connections!
-# connections:
+connections:
+  # database:
+  #   type: postgresql
+  #   connectionString: env(DATABASE)
   # nats:
   #   serverAddress: nats://localhost:4222
+  # kafka:
+  #   brokerAddress: localhost:9092
   # redis:
   #   serverAddress: localhost:6379
 
@@ -21,6 +26,19 @@ handlers:
     method: POST
     steps:
       - fn: helloworld-rs
+
+  - type: request
+    resource: /fetch
+    method: POST
+    steps:
+      - fn: log-it
+        as: logme
+      
+      - fn: modify-url
+      
+      - fn: fetch-test
+        with:
+          url: modify-url
 
   - type: request
     resource: /set/:key
@@ -45,6 +63,12 @@ handlers:
     method: GET
     steps:
       - fn: as-graphql
+
+  - type: request
+    resource: /user
+    method: GET
+    steps:
+      - fn: rs-dbtest
   
   - type: stream
     resource: /stream
@@ -54,6 +78,14 @@ handlers:
   # uncomment to try out NATS streaming!
   # - type: stream
   #   source: nats
+  #   resource: grav.default
+  #   steps:
+  #     - fn: helloworld-rs
+  #   respondTo: grav.reply
+
+  # uncomment to try out Kafka streaming!
+  # - type: stream
+  #   source: kafka
   #   resource: grav.default
   #   steps:
   #     - fn: helloworld-rs

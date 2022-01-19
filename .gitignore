@@ -19,6 +19,8 @@
 target/
 *.wasm
 node_modules
+.idea
+*.iml
 
 # visual code
 .vscode/

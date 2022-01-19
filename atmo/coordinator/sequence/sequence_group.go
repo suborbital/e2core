@@ -1,21 +1,22 @@
-package coordinator
+package sequence
 
 import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/suborbital/atmo/directive"
+	"github.com/suborbital/atmo/directive/executable"
+	"github.com/suborbital/reactr/request"
 )
 
 // runGroup runs a group of functions
 // this is all more complicated than it needs to be, Grav should be doing more of the work for us here
-func (seq *sequence) runGroup(fns []directive.CallableFn, reqJSON []byte) ([]fnResult, error) {
+func (seq *Sequence) ExecGroup(fns []executable.CallableFn, req *request.CoordinatedRequest) ([]FnResult, error) {
 	start := time.Now()
 	defer func() {
 		seq.log.Debug("group executed in", time.Since(start).Milliseconds(), "ms")
 	}()
 
-	resultChan := make(chan fnResult, len(fns))
+	resultChan := make(chan FnResult, len(fns))
 
 	// for now we'll use a bit of a kludgy means of running all of the group fns concurrently
 	// in the future, we should send out all of the messages first, then have some new Grav
@@ -25,26 +26,26 @@ func (seq *sequence) runGroup(fns []directive.CallableFn, reqJSON []byte) ([]fnR
 		seq.log.Debug("running fn", fn.Fn, "from group")
 
 		go func() {
-			res, err := seq.runSingleFn(fn, reqJSON)
+			res, err := seq.ExecSingleFn(fn, req)
 			if err != nil {
 				seq.log.Error(errors.Wrap(err, "failed to runSingleFn"))
-				resultChan <- fnResult{err: err}
+				resultChan <- FnResult{ExecErr: err.Error()}
 			} else {
 				resultChan <- *res
 			}
 		}()
 	}
 
-	results := []fnResult{}
+	results := []FnResult{}
 	respCount := 0
 	timeoutChan := time.After(30 * time.Second)
 
 	for respCount < len(fns) {
 		select {
 		case result := <-resultChan:
-			if result.err != nil {
+			if result.ExecErr != "" {
 				// if there was an error running the funciton, return that error
-				return nil, result.err
+				return nil, errors.New(result.ExecErr)
 			}
 
 			results = append(results, result)

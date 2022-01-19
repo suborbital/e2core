@@ -13,7 +13,7 @@ Each handler tells Atmo how to handle a **resource.** A resource is an input tha
 ```yaml
 identifier: com.suborbital.test
 appVersion: v0.0.1
-atmoVersion: v0.3.2
+atmoVersion: v0.4.2
 
 handlers:
   - type: request
@@ -32,11 +32,9 @@ handlers:
 
 This describes the application being constructed. It declares a resource \(`HTTP POST /hello`\) and a set of `steps` to handle that request. The `steps` are a set of Runnable functions to be **composed** when handling requests to the `/hello` endpoint.
 
-There are three types of `step`. The first step is a `group`, meaning that all of the functions in that group will be executed **concurrently**.
+There are two types of `step`. The first step you see above is a `group`, meaning that all of the functions in that group will be executed **concurrently**.
 
-The second step is a single `fn` , which calls a Runnable that uses the [Runnable API](../runnable-api/introduction.md) to make an HTTP request. The API is continually evolving to include more capabilities. In addition to making HTTP requests, it includes logging abilities and more.
-
-There is a third step (not shown in the example above) called `forEach`, which is discussed [later on](foreach.md).
+The second step shown above is a single `fn` , which calls a Runnable that uses the [Runnable API](../runnable-api/introduction.md) to make an HTTP request. The API is continually evolving to include more capabilities. In addition to making HTTP requests, it includes logging, database connections, caching, and more.
 
 The output of the final function in a handler is used as the response data for the request, by default. If you wish to use the output from a different function, you can include the `response` option in your handler, listing the name of the function to use as a response. If the final step is a group, then the `response` clause must be included.
 

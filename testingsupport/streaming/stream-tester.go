@@ -3,10 +3,9 @@ package main
 import (
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/pkg/errors"
-	"github.com/suborbital/subo/subo/input"
 )
 
 func main() {
@@ -17,10 +16,13 @@ func main() {
 
 	for {
 		fmt.Print("Enter a message: ")
-		message, err := input.ReadStdinString()
-		if err != nil {
-			log.Fatal(errors.Wrap(err, "failed to ReadStdinString"))
-		}
+		message := "world"
+
+		// uncomment to make it interactive, don't want to import Subo into Atmo otherwise
+		// message, err := input.ReadStdinString()
+		// if err != nil {
+		// 	log.Fatal(errors.Wrap(err, "failed to ReadStdinString"))
+		// }
 
 		if err := conn.WriteMessage(websocket.TextMessage, []byte(message)); err != nil {
 			log.Fatal(err)
@@ -32,6 +34,8 @@ func main() {
 		}
 
 		fmt.Println(string(response))
+
+		time.Sleep(time.Second * 3)
 	}
 
 }

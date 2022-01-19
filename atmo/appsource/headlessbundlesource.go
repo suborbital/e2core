@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/suborbital/atmo/atmo/options"
 	"github.com/suborbital/atmo/directive"
+	"github.com/suborbital/atmo/directive/executable"
 	"github.com/suborbital/atmo/fqfn"
 	"github.com/suborbital/reactr/rcap"
 )
@@ -52,12 +53,12 @@ func (h *HeadlessBundleSource) Runnables() []directive.Runnable {
 // FindRunnable returns a nil error if a Runnable with the
 // provided FQFN can be made available at the next sync,
 // otherwise ErrRunnableNotFound is returned
-func (h *HeadlessBundleSource) FindRunnable(fqfn string) (*directive.Runnable, error) {
+func (h *HeadlessBundleSource) FindRunnable(fqfn, auth string) (*directive.Runnable, error) {
 	if h.bundlesource.bundle == nil {
 		return nil, ErrRunnableNotFound
 	}
 
-	return h.bundlesource.FindRunnable(fqfn)
+	return h.bundlesource.FindRunnable(fqfn, auth)
 }
 
 // Handlers returns the handlers for the app
@@ -77,9 +78,9 @@ func (h *HeadlessBundleSource) Handlers() []directive.Handler {
 				Method:   http.MethodPost,
 				Resource: fqfn.Parse(runnable.FQFN).HeadlessURLPath(),
 			},
-			Steps: []directive.Executable{
+			Steps: []executable.Executable{
 				{
-					CallableFn: directive.CallableFn{
+					CallableFn: executable.CallableFn{
 						Fn:   runnable.Name,
 						With: map[string]string{},
 						FQFN: runnable.FQFN,
@@ -130,6 +131,15 @@ func (h *HeadlessBundleSource) File(filename string) ([]byte, error) {
 	}
 
 	return h.bundlesource.bundle.StaticFile(filename)
+}
+
+// Queries returns the Queries for the app
+func (b *HeadlessBundleSource) Queries() []directive.DBQuery {
+	if b.bundlesource.bundle == nil {
+		return []directive.DBQuery{}
+	}
+
+	return b.bundlesource.Queries()
 }
 
 func (h *HeadlessBundleSource) Meta() Meta {

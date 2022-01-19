@@ -1,18 +1,18 @@
-package coordinator
+package sequence
 
 import (
 	"encoding/json"
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/suborbital/atmo/directive"
+	"github.com/suborbital/atmo/directive/executable"
 	"github.com/suborbital/reactr/request"
 	"github.com/suborbital/reactr/rt"
 )
 
 var ErrMissingFQFN = errors.New("callableFn missing FQFN")
 
-func (seq sequence) runSingleFn(fn directive.CallableFn, reqJSON []byte) (*fnResult, error) {
+func (seq Sequence) ExecSingleFn(fn executable.CallableFn, req *request.CoordinatedRequest) (*FnResult, error) {
 	start := time.Now()
 	defer func() {
 		seq.log.Debug("fn", fn.Fn, "executed in", time.Since(start).Milliseconds(), "ms")
@@ -23,30 +23,31 @@ func (seq sequence) runSingleFn(fn directive.CallableFn, reqJSON []byte) (*fnRes
 	}
 
 	var jobResult []byte
-	var runErr *rt.RunErr
+	var runErr rt.RunErr
 
 	// Do will execute the job locally if possible or find a remote peer to execute it
-	res, err := seq.exec.Do(fn.FQFN, reqJSON, seq.ctx)
+	res, err := seq.exec.Do(fn.FQFN, req, seq.ctx)
 	if err != nil {
 		// check if the error type is rt.RunErr, because those are handled differently
-		returnedErr := &rt.RunErr{}
-		if errors.As(err, returnedErr) {
+		if returnedErr, isRunErr := err.(rt.RunErr); isRunErr {
 			runErr = returnedErr
 		} else {
 			return nil, errors.Wrap(err, "failed to exec.Do")
 		}
-	} else {
+	} else if res != nil {
 		jobResult = res.([]byte)
+	} else {
+		return nil, nil
 	}
 
 	// runErr would be an actual error returned from a function
-	if runErr != nil {
+	// should find a better way to determine if a RunErr is "non-nil"
+	if runErr.Code != 0 || runErr.Message != "" {
 		seq.log.Debug("fn", fn.Fn, "returned an error")
 	} else if jobResult == nil {
 		seq.log.Debug("fn", fn.Fn, "returned a nil result")
 	}
 
-	key := key(fn)
 	cResponse := &request.CoordinatedResponse{}
 
 	if jobResult != nil {
@@ -56,22 +57,12 @@ func (seq sequence) runSingleFn(fn directive.CallableFn, reqJSON []byte) (*fnRes
 		}
 	}
 
-	result := &fnResult{
-		fqfn:     fn.FQFN,
-		key:      key,
-		response: cResponse,
-		runErr:   runErr,
+	result := &FnResult{
+		FQFN:     fn.FQFN,
+		Key:      fn.Key(),
+		Response: cResponse,
+		RunErr:   runErr,
 	}
 
 	return result, nil
-}
-
-func key(fn directive.CallableFn) string {
-	key := fn.Fn
-
-	if fn.As != "" {
-		key = fn.As
-	}
-
-	return key
 }

@@ -8,6 +8,7 @@ import (
 
 	"github.com/suborbital/atmo/bundle"
 	"github.com/suborbital/atmo/directive"
+	"github.com/suborbital/atmo/directive/executable"
 )
 
 func main() {
@@ -60,16 +61,16 @@ func main() {
 					Method:   "GET",
 					Resource: "/api/v1/user",
 				},
-				Steps: []directive.Executable{
+				Steps: []executable.Executable{
 					{
-						Group: []directive.CallableFn{
+						Group: []executable.CallableFn{
 							{
 								Fn: "fetch",
 								As: "ghData",
 							},
 							{
 								Fn: "log",
-								OnErr: &directive.FnOnErr{
+								OnErr: &executable.ErrHandler{
 									Code: map[int]string{
 										404: "continue",
 									},
@@ -79,12 +80,12 @@ func main() {
 						},
 					},
 					{
-						CallableFn: directive.CallableFn{
+						CallableFn: executable.CallableFn{
 							Fn: "hello-echo",
 							With: map[string]string{
 								"data": "ghData",
 							},
-							OnErr: &directive.FnOnErr{
+							OnErr: &executable.ErrHandler{
 								Any: "return",
 							},
 						},
@@ -99,9 +100,9 @@ func main() {
 				Every: directive.ScheduleEvery{
 					Minutes: 5,
 				},
-				Steps: []directive.Executable{
+				Steps: []executable.Executable{
 					{
-						CallableFn: directive.CallableFn{
+						CallableFn: executable.CallableFn{
 							Fn: "hello-echo",
 						},
 					},

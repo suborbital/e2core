@@ -5,14 +5,20 @@ use suborbital::util;
 struct ModifyUrl{}
 
 impl Runnable for ModifyUrl {
-    fn run(&self, input: Vec<u8>) -> Result<Vec<u8>, RunErr> {
-        let mut body_str = util::to_string(input);
+    fn run(&self, _: Vec<u8>) -> Result<Vec<u8>, RunErr> {
+        let mut url = req::body_raw();
 
-        if body_str == "" {
-            body_str = req::state("url").unwrap_or_default();
-        }
+        match req::state("url") {
+            Some(val) => {
+                if !val.is_empty() {
+                    url = util::to_vec(val)
+                }
+            }
+            None => {}
+        };
 
-        let modified = format!("{}/suborbital", body_str.as_str());
+        let modified = format!("{}/suborbital", util::to_string(url));
+
         Ok(modified.as_bytes().to_vec())
     }
 }

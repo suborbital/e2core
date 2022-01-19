@@ -11,7 +11,7 @@ A stream handler looks like this:
     - fn: handle-message
 ```
 
-By default, a stream handler allows a client to connect to Atmo using a **standard websocket**. The `resource` defines the URI that the websocket handler is available on, and it uses Atmo's built-in server to expose these endpoints. Each message sent by the client over this connection is handled by executing the `steps` in the handler.
+By default, a stream handler allows a client to connect to Atmo's webserver using a **standard websocket**. The `resource` defines the URI that the websocket handler is available on, and it uses Atmo's built-in server to expose these endpoints. Each message sent by the client over this connection is handled by executing the `steps` in the handler.
 
-Streams can also come from external sources such as NATS, which is detailed in the next section.
+Streams can also come from external sources such as NATS and Kafka, which is detailed in the next section.
 

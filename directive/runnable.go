@@ -13,4 +13,5 @@ type Runnable struct {
 	FQFN         string                   `yaml:"fqfn,omitempty" json:"fqfn,omitempty"`
 	FQFNURI      string                   `yaml:"fqfnUri" json:"fqfnURI,omitempty"`
 	ModuleRef    *moduleref.WasmModuleRef `yaml:"-" json:"moduleRef,omitempty"`
+	TokenHash    []byte                   `yaml:"-" json:"-"`
 }
