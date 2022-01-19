@@ -51,7 +51,7 @@ func (c *Coordinator) websocketHandlerForDirectiveHandler(handler directive.Hand
 				State:       map[string][]byte{},
 			}
 
-			//a sequence executes the handler's steps and manages its state
+			// a sequence executes the handler's steps and manages its state
 			seq, err := sequence.New(handler.Steps, req, c.exec, ctx)
 			if err != nil {
 				ctx.Log.Error(errors.Wrap(err, "failed to sequence.New"))
