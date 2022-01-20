@@ -27,8 +27,8 @@ const (
 	atmoHeadlessParamsHeader = "X-Atmo-Params"
 	atmoRequestIDHeader      = "X-Atmo-RequestID"
 	atmoMessageURI           = "/meta/message"
-	atmoMetricsURI           = "/meta/metrics"
-	atmoHealthURI            = "/health"
+	AtmoMetricsURI           = "/meta/metrics"
+	AtmoHealthURI            = "/health"
 )
 
 type rtFunc func(rt.Job, *rt.Ctx) (interface{}, error)
@@ -133,9 +133,9 @@ func (c *Coordinator) SetupHandlers() *vk.Router {
 		}
 	}
 
-	router.GET(atmoMetricsURI, c.metricsHandler())
+	router.GET(AtmoMetricsURI, c.metricsHandler())
 
-	router.GET(atmoHealthURI, c.health())
+	router.GET(AtmoHealthURI, c.health())
 
 	if c.transport != nil {
 		router.HandleHTTP(http.MethodGet, atmoMessageURI, c.transport.HTTPHandlerFunc())

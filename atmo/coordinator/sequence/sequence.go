@@ -2,6 +2,7 @@ package sequence
 
 import (
 	"encoding/json"
+	"sync"
 
 	"github.com/pkg/errors"
 	"github.com/suborbital/atmo/atmo/coordinator/executor"
@@ -22,6 +23,8 @@ type Sequence struct {
 
 	ctx *vk.Ctx
 	log *vlog.Logger
+
+	lock sync.Mutex // need to ensure writes to req.State are kept serial
 }
 
 // Step is a container over Executable that includes a 'Completed' field
@@ -39,56 +42,51 @@ type FnResult struct {
 }
 
 // FromJSON creates a sequence from a JSON-encoded set of steps
-func FromJSON(seqJSON []byte, exec *executor.Executor, ctx *vk.Ctx) (*Sequence, error) {
+func FromJSON(seqJSON []byte, req *request.CoordinatedRequest, exec *executor.Executor, ctx *vk.Ctx) (*Sequence, error) {
 	steps := []Step{}
 	if err := json.Unmarshal(seqJSON, &steps); err != nil {
 		return nil, errors.Wrap(err, "failed to Unmarshal steps")
 	}
 
-	return newWithSteps(steps, exec, ctx), nil
+	return newWithSteps(steps, req, exec, ctx)
 }
 
 // New creates a new Sequence
-func New(execs []executable.Executable, exec *executor.Executor, ctx *vk.Ctx) *Sequence {
+func New(execs []executable.Executable, req *request.CoordinatedRequest, exec *executor.Executor, ctx *vk.Ctx) (*Sequence, error) {
 	steps := stepsFromExecutables(execs)
 
-	return newWithSteps(steps, exec, ctx)
+	return newWithSteps(steps, req, exec, ctx)
 }
 
-func newWithSteps(steps []Step, exec *executor.Executor, ctx *vk.Ctx) *Sequence {
+func newWithSteps(steps []Step, req *request.CoordinatedRequest, exec *executor.Executor, ctx *vk.Ctx) (*Sequence, error) {
+	stepsJSON, err := json.Marshal(steps)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to Marshal step")
+	}
+
+	req.SequenceJSON = stepsJSON
+
 	s := &Sequence{
 		steps: steps,
 		exec:  exec,
+		req:   req,
 		ctx:   ctx,
-	}
-
-	if exec != nil {
-		// set messages received by the executor to be handled by the sequence
-		exec.UseCallback(s.handleMessage)
+		lock:  sync.Mutex{},
 	}
 
 	if ctx != nil {
 		s.log = ctx.Log
 	}
 
-	return s
+	return s, nil
 }
 
 // Execute returns the "final state" of a Sequence. If the state's err is not nil, it means a runnable returned an error, and the Directive indicates the Sequence should return.
 // if exec itself actually returns an error other than ErrSequenceRunErr, it means there was a problem executing the Sequence as described, and should be treated as such.
-func (seq *Sequence) Execute(req *request.CoordinatedRequest) error {
-	stepsJSON, err := json.Marshal(seq.steps)
-	if err != nil {
-		return errors.Wrap(err, "failed to Marshal step")
-	}
-
-	req.SequenceJSON = stepsJSON
-
-	seq.req = req
-
+func (seq *Sequence) Execute() error {
 	for {
 		// continue running steps until the sequence is complete
-		if err := seq.ExecuteNext(req); err != nil {
+		if err := seq.ExecuteNext(); err != nil {
 			if err == executable.ErrSequenceCompleted {
 				break
 			}
@@ -101,14 +99,14 @@ func (seq *Sequence) Execute(req *request.CoordinatedRequest) error {
 }
 
 // ExecuteNext executes the "next" step (i.e. the first un-completed step) in the sequence
-func (seq *Sequence) ExecuteNext(req *request.CoordinatedRequest) error {
+func (seq *Sequence) ExecuteNext() error {
 	step := seq.NextStep()
 
 	if step == nil {
 		return executable.ErrSequenceCompleted
 	}
 
-	return seq.executeStep(step, req)
+	return seq.executeStep(step)
 }
 
 // NextStep returns the first un-complete step, nil if the sequence is over
@@ -128,18 +126,23 @@ func (seq *Sequence) NextStep() *Step {
 
 // executeStep uses the configured Executor to run the provided handler step. The sequence state and any errors are returned.
 // State is also loaded into the object pointed to by req, and the `Completed` field is set on the Executable pointed to by step.
-func (seq *Sequence) executeStep(step *Step, req *request.CoordinatedRequest) error {
-	// in proxy mode this will return the 'real' state as the peers will handle creating desired state
-	desiredState, err := seq.exec.DesiredStepState(step.Exec, req)
+func (seq *Sequence) executeStep(step *Step) error {
+	var reqState map[string][]byte
+
+	desiredState, err := seq.exec.DesiredStepState(step.Exec, seq.req)
 	if err != nil {
-		return errors.Wrap(err, "failed to calculate DesiredStepState")
+		if err == executor.ErrDesiredStateNotGenerated {
+			// that's fine, do nothing
+		} else {
+			return errors.Wrap(err, "failed to calculate DesiredStepState")
+		}
+	} else {
+		// save the request's 'real' state
+		reqState = seq.req.State
+
+		// swap in the desired state while we execute
+		seq.req.State = desiredState
 	}
-
-	// save the request's 'real' state
-	reqState := req.State
-
-	// swap in the desired state while we execute
-	req.State = desiredState
 
 	// collect the results from all executed functions
 	stepResults := []FnResult{}
@@ -147,7 +150,7 @@ func (seq *Sequence) executeStep(step *Step, req *request.CoordinatedRequest) er
 	if step.Exec.IsFn() {
 		seq.log.Debug("running single fn", step.Exec.FQFN)
 
-		singleResult, err := seq.ExecSingleFn(step.Exec.CallableFn, req)
+		singleResult, err := seq.ExecSingleFn(step.Exec.CallableFn)
 		if err != nil {
 			return err
 		} else if singleResult != nil {
@@ -159,7 +162,7 @@ func (seq *Sequence) executeStep(step *Step, req *request.CoordinatedRequest) er
 		seq.log.Debug("running group")
 
 		// if the step is a group, run them all concurrently and collect the results
-		groupResults, err := seq.ExecGroup(step.Exec.Group, req)
+		groupResults, err := seq.ExecGroup(step.Exec.Group)
 		if err != nil {
 			return err
 		}
@@ -170,8 +173,13 @@ func (seq *Sequence) executeStep(step *Step, req *request.CoordinatedRequest) er
 	// set the completed value as the functions have been executed
 	step.Completed = true
 
-	// restore the 'real' state
-	req.State = reqState
+	if reqState != nil {
+		// restore the 'real' state
+		seq.req.State = reqState
+	}
+
+	seq.lock.Lock()
+	defer seq.lock.Unlock()
 
 	// determine if error handling results in a return
 	if err := seq.HandleStepErrs(stepResults, step.Exec); err != nil {
@@ -186,6 +194,11 @@ func (seq *Sequence) executeStep(step *Step, req *request.CoordinatedRequest) er
 
 func (seq *Sequence) HandleStepResults(stepResults []FnResult) {
 	for _, result := range stepResults {
+		if result.Response == nil {
+			seq.log.ErrorString("recieved nil response for", result.Key)
+			continue
+		}
+
 		seq.req.State[result.Key] = result.Response.Output
 
 		// check if the Runnable set any response headers
@@ -221,13 +234,19 @@ func (seq *Sequence) HandleStepErrs(results []FnResult, step executable.Executab
 //
 // sequence.Execute -> exec.do -> handleMessage (n times) -> .do returns to .Execute
 func (seq *Sequence) handleMessage(msg grav.Message) error {
+	seq.lock.Lock()
+	defer seq.lock.Unlock()
+
 	result := FnResult{}
 	if err := json.Unmarshal(msg.Data(), &result); err != nil {
 		return errors.Wrap(err, "failed to Unmarshal FnResult")
 	}
 
+	seq.log.Info("handleMessage recieved", msg.UUID(), "(", msg.ParentID(), ")")
+
 	step := seq.NextStep()
 	if step == nil {
+		seq.log.ErrorString("handleMessage got nil NextStep")
 		return executable.ErrSequenceCompleted
 	} else if step.Exec.IsFn() {
 		seq.log.Info("handling result of", step.Exec.FQFN)
@@ -254,11 +273,6 @@ func (seq *Sequence) handleMessage(msg grav.Message) error {
 	}
 
 	return nil
-}
-
-// UseRequest binds a request to the sequence
-func (seq *Sequence) UseRequest(req *request.CoordinatedRequest) {
-	seq.req = req
 }
 
 // StepsJSON returns the JSON of the steps it is working on

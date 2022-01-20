@@ -53,6 +53,10 @@ func New(opts ...options.Modifier) *Atmo {
 		vk.UseDomain(atmoOpts.Domain),
 		vk.UseHTTPPort(atmoOpts.HTTPPort),
 		vk.UseTLSPort(atmoOpts.TLSPort),
+		vk.UseQuietRoutes(
+			coordinator.AtmoHealthURI,
+			coordinator.AtmoMetricsURI,
+		),
 	)
 
 	return a

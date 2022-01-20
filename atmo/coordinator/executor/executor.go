@@ -3,6 +3,7 @@
 package executor
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/pkg/errors"
@@ -21,8 +22,9 @@ import (
 )
 
 var (
-	ErrExecutorNotConfigured = errors.New("executor not fully configured")
-	ErrCannotHandle          = errors.New("cannot handle job")
+	ErrExecutorNotConfigured    = errors.New("executor not fully configured")
+	ErrDesiredStateNotGenerated = errors.New("desired state was not generated")
+	ErrCannotHandle             = errors.New("cannot handle job")
 )
 
 // Executor is a facade over Grav and Reactr that allows executing local OR remote
@@ -73,7 +75,7 @@ func NewWithGrav(log *vlog.Logger, g *grav.Grav) *Executor {
 }
 
 // Do executes a local or remote job
-func (e *Executor) Do(jobType string, req *request.CoordinatedRequest, ctx *vk.Ctx) (interface{}, error) {
+func (e *Executor) Do(jobType string, req *request.CoordinatedRequest, ctx *vk.Ctx, cb grav.MsgFunc) (interface{}, error) {
 	if e.reactr == nil {
 		return nil, ErrExecutorNotConfigured
 	}
@@ -92,7 +94,12 @@ func (e *Executor) Do(jobType string, req *request.CoordinatedRequest, ctx *vk.C
 	if err != nil {
 		e.Send(grav.NewMsgWithParentID(rt.MsgTypeReactrRunErr, ctx.RequestID(), []byte(err.Error())))
 	} else {
-		e.Send(grav.NewMsgWithParentID(rt.MsgTypeReactrResult, ctx.RequestID(), result.([]byte)))
+		resultJSON, err := json.Marshal(result)
+		if err != nil {
+			e.log.Error(errors.Wrap(err, "failed to Marshal executor result"))
+		}
+
+		e.Send(grav.NewMsgWithParentID(rt.MsgTypeReactrResult, ctx.RequestID(), resultJSON))
 	}
 
 	return result, err
@@ -130,7 +137,7 @@ func (e *Executor) Register(jobType string, runner rt.Runnable, opts ...rt.Optio
 // DesiredStepState calculates the state as it should be for a particular step's 'with' clause
 func (e *Executor) DesiredStepState(step executable.Executable, req *request.CoordinatedRequest) (map[string][]byte, error) {
 	if len(step.With) == 0 {
-		return req.State, nil
+		return nil, ErrDesiredStateNotGenerated
 	}
 
 	desiredState := map[string][]byte{}
@@ -207,11 +214,6 @@ func (e *Executor) Load(runnables []directive.Runnable) error {
 	}
 
 	return load.Runnables(e.reactr, runnables, false)
-}
-
-// UseCallback does nothing in normal executor mode
-func (e *Executor) UseCallback(callback grav.MsgFunc) {
-	// nothing to do
 }
 
 // Metrics returns the executor's Reactr isntance's internal metrics
