@@ -11,6 +11,7 @@ import (
 	"github.com/suborbital/vektor/vtest"
 )
 
+//curl -d 'my friend' localhost:8080/hello
 func TestHelloEndpoint(t *testing.T) {
 	atmo := atmoForBundle("../example-project/runnables.wasm.zip")
 
@@ -22,13 +23,15 @@ func TestHelloEndpoint(t *testing.T) {
 
 	vt := vtest.New(server) //creating fake version of the server that we can send requests to and it will behave same was as if it was the real server
 
-	req, _ := http.NewRequest(http.MethodPost, "/hello", bytes.NewBuffer([]byte("my friend"))) //same way to use curl
+	req, _ := http.NewRequest(http.MethodPost, "/hello", bytes.NewBuffer([]byte("my friend")))
 
 	vt.Do(req, t).
 		AssertStatus(200).
 		AssertBodyString("hello my friend")
 }
 
+//curl -d 'nyah' localhost:8080/set/name
+//curl localhost:8080/get/name
 func TestSetAndGetKeyEndpoints(t *testing.T) {
 	atmo := atmoForBundle("../example-project/runnables.wasm.zip")
 
@@ -39,7 +42,7 @@ func TestSetAndGetKeyEndpoints(t *testing.T) {
 	}
 
 	vt := vtest.New(server)
-	req, _ := http.NewRequest(http.MethodPost, "/set/name", bytes.NewBuffer([]byte("Suborbital"))) //same way to use curl
+	req, _ := http.NewRequest(http.MethodPost, "/set/name", bytes.NewBuffer([]byte("Suborbital")))
 	newreq, _ := http.NewRequest(http.MethodGet, "/get/name", bytes.NewBuffer([]byte("Suborbital")))
 
 	vt.Do(req, t).
@@ -61,13 +64,14 @@ func TestFileMainMDEndpoint(t *testing.T) {
 	}
 
 	vt := vtest.New(server)
-	req, _ := http.NewRequest(http.MethodGet, "/file/main.md", bytes.NewBuffer([]byte(""))) //same way to use curl
+	req, _ := http.NewRequest(http.MethodGet, "/file/main.md", bytes.NewBuffer([]byte("")))
 
 	vt.Do(req, t).
 		AssertStatus(200).
 		AssertBodyString("## hello")
 }
 
+//curl localhost:8080/file/css/main.css
 func TestFileMainCSSEndpoint(t *testing.T) {
 	atmo := atmoForBundle("../example-project/runnables.wasm.zip")
 
@@ -78,7 +82,7 @@ func TestFileMainCSSEndpoint(t *testing.T) {
 	}
 
 	vt := vtest.New(server)
-	req, _ := http.NewRequest(http.MethodGet, "/file/css/main.css", bytes.NewBuffer([]byte(""))) //same way to use curl
+	req, _ := http.NewRequest(http.MethodGet, "/file/css/main.css", bytes.NewBuffer([]byte("")))
 
 	data, err := os.ReadFile("../example-project/static/css/main.css")
 	if err != nil {
@@ -90,6 +94,7 @@ func TestFileMainCSSEndpoint(t *testing.T) {
 		AssertBody(data)
 }
 
+// curl localhost:8080/file/js/app/main.js
 func TestFileMainJSEndpoint(t *testing.T) {
 	atmo := atmoForBundle("../example-project/runnables.wasm.zip")
 
@@ -100,7 +105,7 @@ func TestFileMainJSEndpoint(t *testing.T) {
 	}
 
 	vt := vtest.New(server)
-	req, _ := http.NewRequest(http.MethodGet, "/file/js/app/main.js", bytes.NewBuffer([]byte(""))) //same way to use curl
+	req, _ := http.NewRequest(http.MethodGet, "/file/js/app/main.js", bytes.NewBuffer([]byte("")))
 
 	data, err := os.ReadFile("../example-project/static/js/app/main.js")
 	if err != nil {
@@ -134,7 +139,7 @@ func TestFetchEndpoint(t *testing.T) {
 	}
 
 	t.Run("contains", func(t *testing.T) {
-		for _, s := range ar { //first v is the element of the array, and second v is array itself
+		for _, s := range ar {
 			t.Run(s, func(t *testing.T) {
 				if !strings.Contains(string(resp.Body), s) {
 					t.Errorf("Couldn't find, %s in the response", s)
