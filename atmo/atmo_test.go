@@ -3,6 +3,7 @@ package atmo
 import (
 	"bytes"
 	"net/http"
+	"os"
 	"strings"
 	"testing"
 
@@ -67,6 +68,51 @@ func TestFileMainMDEndpoint(t *testing.T) {
 	resp.AssertBodyString("## hello")
 }
 
+func TestFileMainCSSEndpoint(t *testing.T) {
+	atmo := atmoForBundle("../example-project/runnables.wasm.zip")
+
+	server, err := atmo.testServer()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	vt := vtest.New(server)
+	req, _ := http.NewRequest(http.MethodGet, "/file/css/main.css", bytes.NewBuffer([]byte(""))) //same way to use curl
+
+	resp := vt.Do(req, t)
+	resp.AssertStatus(200)
+
+	data, err := os.ReadFile("../example-project/static/css/main.css")
+	if err != nil {
+		t.Error(err)
+	}
+
+	resp.AssertBody(data)
+}
+
+func TestFileMainJSEndpoint(t *testing.T) {
+	atmo := atmoForBundle("../example-project/runnables.wasm.zip")
+
+	server, err := atmo.testServer()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	vt := vtest.New(server)
+	req, _ := http.NewRequest(http.MethodGet, "/file/js/app/main.js", bytes.NewBuffer([]byte(""))) //same way to use curl
+
+	resp := vt.Do(req, t)
+	resp.AssertStatus(200)
+	data, err := os.ReadFile("../example-project/static/js/app/main.js")
+	if err != nil {
+		t.Error(err)
+	}
+
+	resp.AssertBody(data)
+}
+
 //curl -d 'https://github.com' localhost:8080/fetch | grep "grav"
 func TestFetchEndpoint(t *testing.T) {
 	atmo := atmoForBundle("../example-project/runnables.wasm.zip")
@@ -88,13 +134,15 @@ func TestFetchEndpoint(t *testing.T) {
 		"vektor",
 	}
 
-	for _, s := range ar { //first v is the element of the array, and second v is array itself
-		t.Run("contains", func(t *testing.T) {
-			if !strings.Contains(string(resp.Body), s) {
-				t.Errorf("Couldn't find, %s in the response", s)
-			}
-		})
-	}
+	t.Run("contains", func(t *testing.T) {
+		for _, s := range ar { //first v is the element of the array, and second v is array itself
+			t.Run(s, func(t *testing.T) {
+				if !strings.Contains(string(resp.Body), s) {
+					t.Errorf("Couldn't find, %s in the response", s)
+				}
+			})
+		}
+	})
 }
 
 func atmoForBundle(filepath string) *Atmo {
