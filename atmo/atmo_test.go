@@ -30,7 +30,7 @@ func TestHelloEndpoint(t *testing.T) {
 		AssertBodyString("hello my friend")
 }
 
-//curl -d 'nyah' localhost:8080/set/name
+//curl -d 'name' localhost:8080/set/name
 //curl localhost:8080/get/name
 func TestSetAndGetKeyEndpoints(t *testing.T) {
 	atmo := atmoForBundle("../example-project/runnables.wasm.zip")
