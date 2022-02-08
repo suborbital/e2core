@@ -20,6 +20,18 @@ type Atmo struct {
 	options *options.Options
 }
 
+func (a *Atmo) testServer() (*vk.Server, error) {
+	if err := a.coordinator.Start(); err != nil {
+		return nil, errors.Wrap(err, "failed to coordinator.Start")
+	}
+
+	// mount and set up the app's handlers
+	router := a.coordinator.SetupHandlers()
+	a.server.SwapRouter(router)
+
+	return a.server, nil
+}
+
 // New creates a new Atmo instance
 func New(opts ...options.Modifier) *Atmo {
 	atmoOpts := options.NewWithModifiers(opts...)
