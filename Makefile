@@ -49,6 +49,9 @@ example-project:
 test:
 	go test -v --count=1 -p=1 ./...
 
+lint:
+	golangci-lint run ./...
+
 loadtest:
 	go run ./testingsupport/load/load-tester.go
 
@@ -62,4 +65,4 @@ mod/replace/reactr:
 mod/replace/vektor:
 	go mod edit -replace github.com/suborbital/vektor=$(HOME)/Workspaces/suborbital/vektor
 
-.PHONY: build atmo atmo/docker docker/dev docker/dev/multi docker/publish docker/builder example-project test deps
+.PHONY: build atmo atmo/docker docker/dev docker/dev/multi docker/publish docker/builder example-project test lint deps
