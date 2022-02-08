@@ -52,6 +52,9 @@ test:
 lint:
 	golangci-lint run ./...
 
+fix-imports:
+	gci write --Section Standard --Section Default --Section "Prefix(github.com/suborbital)" --Section "Prefix(github.com/suborbital/atmo)" ./**/*.go
+
 loadtest:
 	go run ./testingsupport/load/load-tester.go
 
@@ -65,4 +68,4 @@ mod/replace/reactr:
 mod/replace/vektor:
 	go mod edit -replace github.com/suborbital/vektor=$(HOME)/Workspaces/suborbital/vektor
 
-.PHONY: build atmo atmo/docker docker/dev docker/dev/multi docker/publish docker/builder example-project test lint deps
+.PHONY: build atmo atmo/docker docker/dev docker/dev/multi docker/publish docker/builder example-project test lint fix-imports deps
