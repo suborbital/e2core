@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+
 	"github.com/suborbital/atmo/atmo/options"
 	"github.com/suborbital/atmo/bundle"
 	"github.com/suborbital/atmo/directive"

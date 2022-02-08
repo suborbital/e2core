@@ -2,6 +2,7 @@ package capabilities
 
 import (
 	"github.com/pkg/errors"
+
 	"github.com/suborbital/atmo/atmo/appsource"
 	"github.com/suborbital/reactr/rcap"
 	"github.com/suborbital/vektor/vlog"

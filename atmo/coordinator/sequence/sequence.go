@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/pkg/errors"
+
 	"github.com/suborbital/atmo/atmo/coordinator/executor"
 	"github.com/suborbital/atmo/directive/executable"
 	"github.com/suborbital/grav/grav"

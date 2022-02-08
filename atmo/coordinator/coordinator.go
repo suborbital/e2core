@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/pkg/errors"
+
 	"github.com/suborbital/atmo/atmo/appsource"
 	"github.com/suborbital/atmo/atmo/coordinator/capabilities"
 	"github.com/suborbital/atmo/atmo/coordinator/executor"

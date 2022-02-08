@@ -5,6 +5,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+
 	"github.com/suborbital/atmo/atmo/coordinator/sequence"
 	"github.com/suborbital/atmo/directive"
 	"github.com/suborbital/grav/grav"

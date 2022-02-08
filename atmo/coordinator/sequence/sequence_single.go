@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+
 	"github.com/suborbital/atmo/directive/executable"
 	"github.com/suborbital/reactr/request"
 	"github.com/suborbital/reactr/rt"

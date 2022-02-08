@@ -4,10 +4,11 @@ import (
 	"errors"
 	"fmt"
 
+	"gopkg.in/yaml.v2"
+
 	"github.com/suborbital/atmo/directive/executable"
 	"github.com/suborbital/atmo/fqfn"
 	"github.com/suborbital/reactr/rcap"
-	"gopkg.in/yaml.v2"
 )
 
 // InputTypeRequest and others represent consts for Directives

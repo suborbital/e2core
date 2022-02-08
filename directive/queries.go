@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+
 	"github.com/suborbital/reactr/rcap"
 )
 

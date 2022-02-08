@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+
 	"github.com/suborbital/atmo/directive"
 	"github.com/suborbital/reactr/rwasm/moduleref"
 )

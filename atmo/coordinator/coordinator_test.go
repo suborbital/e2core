@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+
 	"github.com/suborbital/atmo/atmo/appsource"
 	"github.com/suborbital/atmo/atmo/coordinator/sequence"
 	"github.com/suborbital/atmo/atmo/options"

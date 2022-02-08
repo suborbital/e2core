@@ -5,9 +5,10 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"golang.org/x/mod/semver"
+
 	"github.com/suborbital/atmo/directive/executable"
 	"github.com/suborbital/atmo/fqfn"
-	"golang.org/x/mod/semver"
 )
 
 // Validate validates a directive
