@@ -13,25 +13,25 @@ import (
 	"github.com/suborbital/reactr/rcap"
 )
 
-// HeadlessBundleSource is an AppSource backed by a bundle file (but headless)
+// HeadlessBundleSource is an AppSource backed by a bundle file (but headless).
 type HeadlessBundleSource struct {
 	path         string
 	opts         options.Options
 	bundlesource *BundleSource
 }
 
-// NewHeadlessBundleSource creates a new HeadlessBundleSource that looks for a bundle at [path]
+// NewHeadlessBundleSource creates a new HeadlessBundleSource that looks for a bundle at [path].
 func NewHeadlessBundleSource(path string) AppSource {
 	b := &HeadlessBundleSource{
 		path: path,
-		// re-use BundleSource's Directive-finding logic etc
+		// re-use BundleSource's Directive-finding logic etc.
 		bundlesource: NewBundleSource(path).(*BundleSource),
 	}
 
 	return b
 }
 
-// Start initializes the app source
+// Start initializes the app source.
 func (h *HeadlessBundleSource) Start(opts options.Options) error {
 	h.opts = opts
 
@@ -42,7 +42,7 @@ func (h *HeadlessBundleSource) Start(opts options.Options) error {
 	return nil
 }
 
-// Runnables returns the Runnables for the app
+// Runnables returns the Runnables for the app.
 func (h *HeadlessBundleSource) Runnables() []directive.Runnable {
 	if h.bundlesource.bundle == nil {
 		return []directive.Runnable{}
@@ -53,7 +53,7 @@ func (h *HeadlessBundleSource) Runnables() []directive.Runnable {
 
 // FindRunnable returns a nil error if a Runnable with the
 // provided FQFN can be made available at the next sync,
-// otherwise ErrRunnableNotFound is returned
+// otherwise ErrRunnableNotFound is returned.
 func (h *HeadlessBundleSource) FindRunnable(fqfn, auth string) (*directive.Runnable, error) {
 	if h.bundlesource.bundle == nil {
 		return nil, ErrRunnableNotFound
@@ -62,7 +62,7 @@ func (h *HeadlessBundleSource) FindRunnable(fqfn, auth string) (*directive.Runna
 	return h.bundlesource.FindRunnable(fqfn, auth)
 }
 
-// Handlers returns the handlers for the app
+// Handlers returns the handlers for the app.
 func (h *HeadlessBundleSource) Handlers() []directive.Handler {
 	if h.bundlesource.bundle == nil {
 		return []directive.Handler{}
@@ -71,7 +71,7 @@ func (h *HeadlessBundleSource) Handlers() []directive.Handler {
 	handlers := []directive.Handler{}
 
 	// for each Runnable, construct a handler that executes it
-	// based on a POST request to its FQFN URL /identifier/namespace/fn/version
+	// based on a POST request to its FQFN URL /identifier/namespace/fn/version.
 	for _, runnable := range h.bundlesource.Runnables() {
 		handler := directive.Handler{
 			Input: directive.Input{
@@ -96,17 +96,17 @@ func (h *HeadlessBundleSource) Handlers() []directive.Handler {
 	return handlers
 }
 
-// Schedules returns the schedules for the app
+// Schedules returns the schedules for the app.
 func (h *HeadlessBundleSource) Schedules() []directive.Schedule {
 	return []directive.Schedule{}
 }
 
-// Connections returns the Connections for the app
+// Connections returns the Connections for the app.
 func (h *HeadlessBundleSource) Connections() directive.Connections {
 	return directive.Connections{}
 }
 
-// Authentication returns the Authentication for the app
+// Authentication returns the Authentication for the app.
 func (b *HeadlessBundleSource) Authentication() directive.Authentication {
 	if b.bundlesource.bundle == nil {
 		return directive.Authentication{}
@@ -115,7 +115,7 @@ func (b *HeadlessBundleSource) Authentication() directive.Authentication {
 	return b.bundlesource.Authentication()
 }
 
-// Capabilities returns the Capabilities for the app
+// Capabilities returns the Capabilities for the app.
 func (b *HeadlessBundleSource) Capabilities() *rcap.CapabilityConfig {
 	if b.bundlesource.bundle == nil {
 		config := rcap.DefaultCapabilityConfig()
@@ -125,7 +125,7 @@ func (b *HeadlessBundleSource) Capabilities() *rcap.CapabilityConfig {
 	return b.bundlesource.Capabilities()
 }
 
-// File returns a requested file
+// File returns a requested file.
 func (h *HeadlessBundleSource) File(filename string) ([]byte, error) {
 	if h.bundlesource.bundle == nil {
 		return nil, os.ErrNotExist
@@ -134,7 +134,7 @@ func (h *HeadlessBundleSource) File(filename string) ([]byte, error) {
 	return h.bundlesource.bundle.StaticFile(filename)
 }
 
-// Queries returns the Queries for the app
+// Queries returns the Queries for the app.
 func (b *HeadlessBundleSource) Queries() []directive.DBQuery {
 	if b.bundlesource.bundle == nil {
 		return []directive.DBQuery{}

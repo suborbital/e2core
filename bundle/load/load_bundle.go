@@ -14,7 +14,7 @@ import (
 	"github.com/suborbital/reactr/rwasm"
 )
 
-// BundleFromPath loads a .wasm.zip file into the rt instance
+// BundleFromPath loads a .wasm.zip file into the rt instance.
 func BundleFromPath(r *rt.Reactr, path string) error {
 	if !strings.HasSuffix(path, ".wasm.zip") {
 		return fmt.Errorf("cannot load bundle %s, does not have .wasm.zip extension", filepath.Base(path))
@@ -32,7 +32,7 @@ func BundleFromPath(r *rt.Reactr, path string) error {
 	return nil
 }
 
-// Bundle loads a .wasm.zip file into the rt instance
+// Bundle loads a .wasm.zip file into the rt instance.
 func Bundle(r *rt.Reactr, bundle *bundle.Bundle) error {
 	if err := bundle.Directive.Validate(); err != nil {
 		return errors.Wrap(err, "failed to Validate bundle directive")
@@ -46,7 +46,7 @@ func Bundle(r *rt.Reactr, bundle *bundle.Bundle) error {
 }
 
 // Runnables loads a set of WasmModuleRefs into a Reactr instance
-// if you're trying to use this directly, you probably want BundleFromPath or Bundle instead
+// if you're trying to use this directly, you probably want BundleFromPath or Bundle instead.
 func Runnables(r *rt.Reactr, runnables []directive.Runnable, registerSimpleName bool) error {
 	for i, runnable := range runnables {
 		if runnable.ModuleRef == nil {
@@ -62,12 +62,12 @@ func Runnables(r *rt.Reactr, runnables []directive.Runnable, registerSimpleName 
 			return rwasm.NewRunnerWithRef(runnables[i].ModuleRef)
 		}
 
-		// prefer load the Runnable under its FQFN as that's what will be called when a sequence runs
+		// prefer load the Runnable under its FQFN as that's what will be called when a sequence runs.
 		if runnable.FQFN != "" {
 			// if a module is already registered, don't bother over-writing
-			// since FQFNs are 'guaranteed' to be unique, so there's no point
+			// since FQFNs are 'guaranteed' to be unique, so there's no point.
 			if !r.IsRegistered(runnable.FQFN) {
-				// instruct Reactr to use 4 workThreads per CPU
+				// instruct Reactr to use 4 workThreads per CPU.
 				autoscaleMax := runtime.NumCPU() * 4
 
 				r.Register(runnable.FQFN, getRunner(), rt.PreWarm(), rt.Autoscale(autoscaleMax))
@@ -77,7 +77,7 @@ func Runnables(r *rt.Reactr, runnables []directive.Runnable, registerSimpleName 
 		if registerSimpleName {
 			if r.IsRegistered(runnable.Name) {
 				// this can error, but for now we can't really
-				// fail if this does, it would break several things
+				// fail if this does, it would break several things.
 				r.DeRegister(runnable.Name)
 			}
 

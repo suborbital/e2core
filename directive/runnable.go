@@ -2,7 +2,7 @@ package directive
 
 import "github.com/suborbital/reactr/rwasm/moduleref"
 
-// Runnable is the structure of a .runnable.yaml file
+// Runnable is the structure of a .runnable.yaml file.
 type Runnable struct {
 	Name         string                   `yaml:"name" json:"name"`
 	Namespace    string                   `yaml:"namespace" json:"namespace"`

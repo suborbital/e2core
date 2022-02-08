@@ -11,7 +11,7 @@ import (
 	"github.com/suborbital/reactr/rcap"
 )
 
-// InputTypeRequest and others represent consts for Directives
+// InputTypeRequest and others represent consts for Directives.
 const (
 	InputTypeRequest  = "request"
 	InputTypeStream   = "stream"
@@ -21,7 +21,7 @@ const (
 )
 
 // Directive describes a set of functions and a set of handlers
-// that take an input, and compose a set of functions to handle it
+// that take an input, and compose a set of functions to handle it.
 type Directive struct {
 	Identifier     string                 `yaml:"identifier" json:"identifier"`
 	AppVersion     string                 `yaml:"appVersion" json:"appVersion"`
@@ -34,11 +34,11 @@ type Directive struct {
 	Schedules      []Schedule             `yaml:"schedules,omitempty" json:"schedules,omitempty"`
 	Queries        []DBQuery              `yaml:"queries,omitempty" json:"queries,omitempty"`
 
-	// Runnables is populated by subo, never by the user
+	// Runnables is populated by subo, never by the user.
 	Runnables []Runnable `yaml:"runnables" json:"runnables"`
 }
 
-// Handler represents the mapping between an input and a composition of functions
+// Handler represents the mapping between an input and a composition of functions.
 type Handler struct {
 	Input     Input                   `yaml:"input,inline" json:"input"`
 	Steps     []executable.Executable `yaml:"steps" json:"steps"`
@@ -46,7 +46,7 @@ type Handler struct {
 	RespondTo string                  `yaml:"respondTo,omitempty" json:"respondTo,omitempty"`
 }
 
-// Schedule represents the mapping between an input and a composition of functions
+// Schedule represents the mapping between an input and a composition of functions.
 type Schedule struct {
 	Name  string                  `yaml:"name" json:"name"`
 	Every ScheduleEvery           `yaml:"every" json:"every"`
@@ -54,7 +54,7 @@ type Schedule struct {
 	Steps []executable.Executable `yaml:"steps" json:"steps"`
 }
 
-// ScheduleEvery represents the 'every' value for a schedule
+// ScheduleEvery represents the 'every' value for a schedule.
 type ScheduleEvery struct {
 	Seconds int `yaml:"seconds,omitempty" json:"seconds,omitempty"`
 	Minutes int `yaml:"minutes,omitempty" json:"minutes,omitempty"`
@@ -62,7 +62,7 @@ type ScheduleEvery struct {
 	Days    int `yaml:"days,omitempty" json:"days,omitempty"`
 }
 
-// Input represents an input source
+// Input represents an input source.
 type Input struct {
 	Type     string `yaml:"type" json:"type"`
 	Source   string `yaml:"source,omitempty" json:"source,omitempty"`
@@ -70,7 +70,7 @@ type Input struct {
 	Resource string `yaml:"resource" json:"resource"`
 }
 
-// Connections describes connections
+// Connections describes connections.
 type Connections struct {
 	NATS     *NATSConnection  `yaml:"nats,omitempty" json:"nats,omitempty"`
 	Kafka    *KafkaConnection `yaml:"kafka,omitempty" json:"kafka,omitempty"`
@@ -84,7 +84,7 @@ type Authentication struct {
 
 func (d *Directive) FindRunnable(name string) *Runnable {
 	// if this is an FQFN, parse the identifier and bail out
-	// if it doesn't match this Directive
+	// if it doesn't match this Directive.
 
 	FQFN := fqfn.Parse(name)
 
@@ -105,7 +105,7 @@ func (d *Directive) FindRunnable(name string) *Runnable {
 	return nil
 }
 
-// Marshal outputs the YAML bytes of the Directive
+// Marshal outputs the YAML bytes of the Directive.
 func (d *Directive) Marshal() ([]byte, error) {
 	d.calculateFQFNs()
 
@@ -113,7 +113,7 @@ func (d *Directive) Marshal() ([]byte, error) {
 }
 
 // Unmarshal unmarshals YAML bytes into a Directive struct
-// it also calculates a map of FQFNs for later use
+// it also calculates a map of FQFNs for later use.
 func (d *Directive) Unmarshal(in []byte) error {
 	if err := yaml.Unmarshal(in, d); err != nil {
 		return err
@@ -146,7 +146,7 @@ func (d *Directive) fqfnForFunc(namespace, fn string) string {
 	return fqfn.FromParts(d.Identifier, namespace, fn, d.AppVersion)
 }
 
-// NumberOfSeconds calculates the total time in seconds for the schedule's 'every' value
+// NumberOfSeconds calculates the total time in seconds for the schedule's 'every' value.
 func (s *Schedule) NumberOfSeconds() int {
 	seconds := s.Every.Seconds
 	minutes := 60 * s.Every.Minutes

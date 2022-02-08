@@ -13,7 +13,7 @@ import (
 	"github.com/suborbital/vektor/vk"
 )
 
-// Atmo is an Atmo server
+// Atmo is an Atmo server.
 type Atmo struct {
 	coordinator *coordinator.Coordinator
 	server      *vk.Server
@@ -26,14 +26,14 @@ func (a *Atmo) testServer() (*vk.Server, error) {
 		return nil, errors.Wrap(err, "failed to coordinator.Start")
 	}
 
-	// mount and set up the app's handlers
+	// mount and set up the app's handlers.
 	router := a.coordinator.SetupHandlers()
 	a.server.SwapRouter(router)
 
 	return a.server, nil
 }
 
-// New creates a new Atmo instance
+// New creates a new Atmo instance.
 func New(opts ...options.Modifier) *Atmo {
 	atmoOpts := options.NewWithModifiers(opts...)
 
@@ -42,11 +42,11 @@ func New(opts ...options.Modifier) *Atmo {
 	appSource := appsource.NewBundleSource(atmoOpts.BundlePath)
 	if atmoOpts.ControlPlane != "" {
 		// the HTTP appsource gets Atmo's data from a remote server
-		// which can essentially control Atmo's behaviour
+		// which can essentially control Atmo's behaviour.
 		appSource = appsource.NewHTTPSource(atmoOpts.ControlPlane)
 	} else if *atmoOpts.Headless {
 		// the headless appsource ignores the Directive and mounts
-		// each Runnable as its own route (for testing, other purposes)
+		// each Runnable as its own route (for testing, other purposes).
 		appSource = appsource.NewHeadlessBundleSource(atmoOpts.BundlePath)
 	}
 
@@ -57,7 +57,7 @@ func New(opts ...options.Modifier) *Atmo {
 
 	// set up the server so that Atmo can inspect
 	// each request to trigger Router re-generation
-	// when needed (during headless mode)
+	// when needed (during headless mode).
 	a.server = vk.New(
 		vk.UseEnvPrefix("ATMO"),
 		vk.UseAppName("Atmo"),
@@ -72,17 +72,17 @@ func New(opts ...options.Modifier) *Atmo {
 	return a
 }
 
-// Start starts the Atmo server
+// Start starts the Atmo server.
 func (a *Atmo) Start() error {
 	if err := a.coordinator.Start(); err != nil {
 		return errors.Wrap(err, "failed to coordinator.Start")
 	}
 
-	// mount and set up the app's handlers
+	// mount and set up the app's handlers.
 	router := a.coordinator.SetupHandlers()
 	a.server.SwapRouter(router)
 
-	// mount the schedules defined in the App
+	// mount the schedules defined in the App.
 	a.coordinator.SetSchedules()
 
 	if err := a.server.Start(); err != nil {
@@ -97,13 +97,13 @@ func (a *Atmo) Start() error {
 // does anything if a request is made for a function that we've never seen before. Read on to see what it does.
 func (a *Atmo) inspectRequest(r http.Request) {
 	// we only need to inspect the request
-	// if we're in headless mode
+	// if we're in headless mode.
 	if !*a.options.Headless {
 		return
 	}
 
 	// if Vektor tells us it cannot handle the headless request (i.e. we have no knowledge of the function in question)
-	// then ask the AppSource to find it, and if successful sync Runnables into Reactr and generate a new Router
+	// then ask the AppSource to find it, and if successful sync Runnables into Reactr and generate a new Router.
 	if !a.server.CanHandle(r.Method, r.URL.Path) {
 		FQFN, err := fqfn.FromURL(r.URL)
 		if err != nil {
@@ -111,7 +111,7 @@ func (a *Atmo) inspectRequest(r http.Request) {
 			return
 		}
 
-		// the Authorization header is passed through to the AppSource, and can be used to authenticate calls
+		// the Authorization header is passed through to the AppSource, and can be used to authenticate calls.
 		auth := r.Header.Get("Authorization")
 
 		if _, err := a.coordinator.App.FindRunnable(FQFN, auth); err != nil {
@@ -121,11 +121,11 @@ func (a *Atmo) inspectRequest(r http.Request) {
 
 		a.options.Logger.Debug(fmt.Sprintf("found new Runnable %s, will be available at next sync", FQFN))
 
-		// do a sync to load the new Runnable into Reactr
+		// do a sync to load the new Runnable into Reactr.
 		a.coordinator.SyncAppState()
 
 		// re-generate the Router which should now include
-		// the new function as a handler
+		// the new function as a handler.
 		newRouter := a.coordinator.SetupHandlers()
 		a.server.SwapRouter(newRouter)
 

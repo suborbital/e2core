@@ -21,7 +21,7 @@ func (c *Coordinator) headlessAuthMiddleware() vk.Middleware {
 
 		auth := r.Header.Get("Authorization")
 
-		// we call FindRunnable, which by now should have the Runnable cached, so it'll be fast
+		// we call FindRunnable, which by now should have the Runnable cached, so it'll be fast.
 		runnable, err := c.App.FindRunnable(FQFN, auth)
 		if err != nil {
 			ctx.Log.Error(errors.Wrap(err, "failed to FindRunnable"))

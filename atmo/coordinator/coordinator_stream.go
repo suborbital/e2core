@@ -66,7 +66,7 @@ func (c *Coordinator) streamConnectionForDirectiveHandler(handler directive.Hand
 			State:       map[string][]byte{},
 		}
 
-		// a sequence executes the handler's steps and manages its state
+		// a sequence executes the handler's steps and manages its state.
 		seq, err := sequence.New(handler.Steps, req, c.exec, ctx)
 		if err != nil {
 			c.log.Error(errors.Wrap(err, "failed to sequence.New"))
@@ -93,6 +93,6 @@ func (c *Coordinator) streamConnectionForDirectiveHandler(handler directive.Hand
 		return nil
 	})
 
-	// keep the pod in state so it isn't GC'd
+	// keep the pod in state so it isn't GC'd.
 	c.handlerPods[handlerIdent] = pod
 }

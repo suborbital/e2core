@@ -13,7 +13,7 @@ import (
 	"github.com/suborbital/reactr/rcap"
 )
 
-// BundleSource is an AppSource backed by a bundle file
+// BundleSource is an AppSource backed by a bundle file.
 type BundleSource struct {
 	path   string
 	opts   options.Options
@@ -22,7 +22,7 @@ type BundleSource struct {
 	lock sync.RWMutex
 }
 
-// NewBundleSource creates a new BundleSource that looks for a bundle at [path]
+// NewBundleSource creates a new BundleSource that looks for a bundle at [path].
 func NewBundleSource(path string) AppSource {
 	b := &BundleSource{
 		path: path,
@@ -32,7 +32,7 @@ func NewBundleSource(path string) AppSource {
 	return b
 }
 
-// Start initializes the app source
+// Start initializes the app source.
 func (b *BundleSource) Start(opts options.Options) error {
 	b.opts = opts
 
@@ -43,7 +43,7 @@ func (b *BundleSource) Start(opts options.Options) error {
 	return nil
 }
 
-// Runnables returns the Runnables for the app
+// Runnables returns the Runnables for the app.
 func (b *BundleSource) Runnables() []directive.Runnable {
 	b.lock.RLock()
 	defer b.lock.RUnlock()
@@ -56,7 +56,7 @@ func (b *BundleSource) Runnables() []directive.Runnable {
 }
 
 // FindRunnable searches for and returns the requested runnable
-// otherwise ErrRunnableNotFound
+// otherwise ErrRunnableNotFound.
 func (b *BundleSource) FindRunnable(fqfn, auth string) (*directive.Runnable, error) {
 	b.lock.RLock()
 	defer b.lock.RUnlock()
@@ -74,7 +74,7 @@ func (b *BundleSource) FindRunnable(fqfn, auth string) (*directive.Runnable, err
 	return nil, ErrRunnableNotFound
 }
 
-// Handlers returns the handlers for the app
+// Handlers returns the handlers for the app.
 func (b *BundleSource) Handlers() []directive.Handler {
 	b.lock.RLock()
 	defer b.lock.RUnlock()
@@ -86,7 +86,7 @@ func (b *BundleSource) Handlers() []directive.Handler {
 	return b.bundle.Directive.Handlers
 }
 
-// Schedules returns the schedules for the app
+// Schedules returns the schedules for the app.
 func (b *BundleSource) Schedules() []directive.Schedule {
 	b.lock.RLock()
 	defer b.lock.RUnlock()
@@ -98,7 +98,7 @@ func (b *BundleSource) Schedules() []directive.Schedule {
 	return b.bundle.Directive.Schedules
 }
 
-// Connections returns the Connections for the app
+// Connections returns the Connections for the app.
 func (b *BundleSource) Connections() directive.Connections {
 	b.lock.RLock()
 	defer b.lock.RUnlock()
@@ -110,7 +110,7 @@ func (b *BundleSource) Connections() directive.Connections {
 	return *b.bundle.Directive.Connections
 }
 
-// Authentication returns the Authentication for the app
+// Authentication returns the Authentication for the app.
 func (b *BundleSource) Authentication() directive.Authentication {
 	b.lock.RLock()
 	defer b.lock.RUnlock()
@@ -122,7 +122,7 @@ func (b *BundleSource) Authentication() directive.Authentication {
 	return *b.bundle.Directive.Authentication
 }
 
-// Capabilities returns the configuration for the app's capabilities
+// Capabilities returns the configuration for the app's capabilities.
 func (b *BundleSource) Capabilities() *rcap.CapabilityConfig {
 	b.lock.RLock()
 	defer b.lock.RUnlock()
@@ -135,7 +135,7 @@ func (b *BundleSource) Capabilities() *rcap.CapabilityConfig {
 	return b.bundle.Directive.Capabilities
 }
 
-// File returns a requested file
+// File returns a requested file.
 func (b *BundleSource) File(filename string) ([]byte, error) {
 	b.lock.RLock()
 	defer b.lock.RUnlock()
@@ -147,7 +147,7 @@ func (b *BundleSource) File(filename string) ([]byte, error) {
 	return b.bundle.StaticFile(filename)
 }
 
-// Queries returns the Queries available to the app
+// Queries returns the Queries available to the app.
 func (b *BundleSource) Queries() []directive.DBQuery {
 	b.lock.RLock()
 	defer b.lock.RUnlock()
@@ -175,7 +175,7 @@ func (b *BundleSource) Meta() Meta {
 	return m
 }
 
-// findBundle loops forever until it finds a bundle at the configured path
+// findBundle loops forever until it finds a bundle at the configured path.
 func (b *BundleSource) findBundle() error {
 	for {
 		bdl, err := bundle.Read(b.path)

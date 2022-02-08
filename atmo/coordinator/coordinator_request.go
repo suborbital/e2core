@@ -20,12 +20,12 @@ func (c *Coordinator) vkHandlerForDirectiveHandler(handler directive.Handler) vk
 			return nil, vk.E(http.StatusInternalServerError, "failed to handle request")
 		}
 
-		// Pull the X-Atmo-State and X-Atmo-Params headers into the request
+		// Pull the X-Atmo-State and X-Atmo-Params headers into the request.
 		if *c.opts.Headless {
 			req.UseHeadlessHeaders(r, ctx)
 		}
 
-		// a sequence executes the handler's steps and manages its state
+		// a sequence executes the handler's steps and manages its state.
 		seq, err := sequence.New(handler.Steps, req, c.exec, ctx)
 		if err != nil {
 			ctx.Log.Error(errors.Wrap(err, "failed to sequence.New"))
@@ -37,7 +37,7 @@ func (c *Coordinator) vkHandlerForDirectiveHandler(handler directive.Handler) vk
 
 			if runErr, isRunErr := err.(rt.RunErr); isRunErr {
 				if runErr.Code < 200 || runErr.Code > 599 {
-					// if the Runnable returned an invalid code for HTTP, default to 500
+					// if the Runnable returned an invalid code for HTTP, default to 500.
 					return nil, vk.Err(http.StatusInternalServerError, runErr.Message)
 				}
 
@@ -47,7 +47,7 @@ func (c *Coordinator) vkHandlerForDirectiveHandler(handler directive.Handler) vk
 			return nil, vk.Wrap(http.StatusInternalServerError, err)
 		}
 
-		// handle any response headers that were set by the Runnables
+		// handle any response headers that were set by the Runnables.
 		if req.RespHeaders != nil {
 			for head, val := range req.RespHeaders {
 				ctx.RespHeaders.Set(head, val)

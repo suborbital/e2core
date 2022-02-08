@@ -11,7 +11,7 @@ import (
 
 const atmoEnvPrefix = "ATMO"
 
-// Options defines options for Atmo
+// Options defines options for Atmo.
 type Options struct {
 	Logger       *vlog.Logger
 	BundlePath   string `env:"ATMO_BUNDLE_PATH"`
@@ -22,7 +22,7 @@ type Options struct {
 	Proxy        bool
 }
 
-// Modifier defines options for Atmo
+// Modifier defines options for Atmo.
 type Modifier func(*Options)
 
 func NewWithModifiers(mods ...Modifier) *Options {
@@ -37,41 +37,41 @@ func NewWithModifiers(mods ...Modifier) *Options {
 	return opts
 }
 
-// UseLogger sets the logger to be used
+// UseLogger sets the logger to be used.
 func UseLogger(logger *vlog.Logger) Modifier {
 	return func(opts *Options) {
 		opts.Logger = logger
 	}
 }
 
-// UseBundlePath sets the bundle path to be used
+// UseBundlePath sets the bundle path to be used.
 func UseBundlePath(path string) Modifier {
 	return func(opts *Options) {
 		opts.BundlePath = path
 	}
 }
 
-// ShouldRunHeadless sets wether Atmo should operate in 'headless' mode
+// ShouldRunHeadless sets wether Atmo should operate in 'headless' mode.
 func ShouldRunHeadless(headless bool) Modifier {
 	return func(opts *Options) {
-		// only set the pointer if the value is true
+		// only set the pointer if the value is true.
 		if headless {
 			opts.Headless = &headless
 		}
 	}
 }
 
-// ShouldWait sets wether Atmo should wait for a bundle to become available on disk
+// ShouldWait sets wether Atmo should wait for a bundle to become available on disk.
 func ShouldWait(wait bool) Modifier {
 	return func(opts *Options) {
-		// only set the pointer if the value is true
+		// only set the pointer if the value is true.
 		if wait {
 			opts.Wait = &wait
 		}
 	}
 }
 
-// finalize "locks in" the options by overriding any existing options with the version from the environment, and setting the default logger if needed
+// finalize "locks in" the options by overriding any existing options with the version from the environment, and setting the default logger if needed.
 func (o *Options) finalize(prefix string) {
 	if o.Logger == nil {
 		o.Logger = vlog.Default(vlog.EnvPrefix(prefix))
@@ -85,7 +85,7 @@ func (o *Options) finalize(prefix string) {
 
 	o.ControlPlane = envOpts.ControlPlane
 
-	// set RunSchedules if it was not passed as a flag
+	// set RunSchedules if it was not passed as a flag.
 	if o.RunSchedules == nil {
 		if envOpts.RunSchedules != nil {
 			o.RunSchedules = envOpts.RunSchedules
@@ -104,13 +104,13 @@ func (o *Options) finalize(prefix string) {
 		}
 	}
 
-	// set Headless if it was not passed as a flag
+	// set Headless if it was not passed as a flag.
 	if o.Headless == nil {
 		if envOpts.Headless != nil {
 			o.Headless = envOpts.Headless
 		}
 	}
 
-	// compile-time decision about enabling proxy mode
+	// compile-time decision about enabling proxy mode.
 	o.Proxy = proxyEnabled()
 }

@@ -223,13 +223,13 @@ func TestWithSequence(t *testing.T) {
 	steps := []executable.Executable{
 		{
 			CallableFn: executable.CallableFn{
-				Fn:   "helloworld-rs", // the body is empty, so this will return only "hello"
+				Fn:   "helloworld-rs", // the body is empty, so this will return only "hello".
 				FQFN: "com.suborbital.test#default::helloworld-rs@v0.0.1",
 			},
 		},
 		{
 			CallableFn: executable.CallableFn{
-				Fn:   "modify-url", // if there's no body, it'll look in state for '
+				Fn:   "modify-url", // if there's no body, it'll look in state for '.
 				FQFN: "com.suborbital.test#default::modify-url@v0.0.1",
 				With: map[string]string{"url": "helloworld-rs"},
 			},

@@ -11,7 +11,7 @@ import (
 	"github.com/suborbital/vektor/vk"
 )
 
-// scheduledRunner is a runner that will run a schedule on a.... schedule
+// scheduledRunner is a runner that will run a schedule on a.... schedule.
 type scheduledRunner struct {
 	RunFunc rtFunc
 }
@@ -26,7 +26,7 @@ func (c *Coordinator) rtFuncForDirectiveSchedule(sched directive.Schedule) rtFun
 	return func(job rt.Job, ctx *rt.Ctx) (interface{}, error) {
 		c.log.Info("executing schedule", sched.Name)
 
-		// read the "initial" state from the Directive
+		// read the "initial" state from the Directive.
 		state := map[string][]byte{}
 		for k, v := range sched.State {
 			state[k] = []byte(v)
@@ -42,7 +42,7 @@ func (c *Coordinator) rtFuncForDirectiveSchedule(sched directive.Schedule) rtFun
 			State:   state,
 		}
 
-		// a sequence executes the handler's steps and manages its state
+		// a sequence executes the handler's steps and manages its state.
 		seq, err := sequence.New(sched.Steps, req, c.exec, vk.NewCtx(c.log, nil, nil))
 		if err != nil {
 			c.log.Error(errors.Wrap(err, "failed to sequence.New"))

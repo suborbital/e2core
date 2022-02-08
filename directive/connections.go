@@ -14,7 +14,7 @@ const (
 	dbTypePostgres = "postgresql"
 )
 
-// NATSConnection describes a connection to a NATS server
+// NATSConnection describes a connection to a NATS server.
 type NATSConnection struct {
 	ServerAddress string `yaml:"serverAddress" json:"serverAddress"`
 }
@@ -31,7 +31,7 @@ func (n *NATSConnection) validate() error {
 	return nil
 }
 
-// KafkaConnection describes a connection to a Kafka broker
+// KafkaConnection describes a connection to a Kafka broker.
 type KafkaConnection struct {
 	BrokerAddress string `yaml:"brokerAddress" json:"brokerAddress"`
 }
@@ -95,7 +95,7 @@ func (d *DBConnection) validate() error {
 	return nil
 }
 
-// RedisConnection describes a connection to a Redis cache
+// RedisConnection describes a connection to a Redis cache.
 type RedisConnection struct {
 	ServerAddress string `yaml:"serverAddress" json:"serverAddress"`
 	Username      string `yaml:"username" json:"username"`

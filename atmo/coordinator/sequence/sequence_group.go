@@ -9,7 +9,7 @@ import (
 )
 
 // runGroup runs a group of functions
-// this is all more complicated than it needs to be, Grav should be doing more of the work for us here
+// this is all more complicated than it needs to be, Grav should be doing more of the work for us here.
 func (seq *Sequence) ExecGroup(fns []executable.CallableFn) ([]FnResult, error) {
 	start := time.Now()
 	defer func() {
@@ -44,7 +44,7 @@ func (seq *Sequence) ExecGroup(fns []executable.CallableFn) ([]FnResult, error) 
 		select {
 		case result := <-resultChan:
 			if result.ExecErr != "" {
-				// if there was an error running the funciton, return that error
+				// if there was an error running the funciton, return that error.
 				return nil, errors.New(result.ExecErr)
 			}
 

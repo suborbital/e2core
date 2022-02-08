@@ -36,7 +36,7 @@ func Render(config rcap.CapabilityConfig, source appsource.AppSource, log *vlog.
 	}
 
 	// config for the cache can come from either the capabilities
-	// and/or connections sections of the directive
+	// and/or connections sections of the directive.
 	if userConfig.Cache != nil {
 		config.Cache = userConfig.Cache
 	}
@@ -70,7 +70,7 @@ func Render(config rcap.CapabilityConfig, source appsource.AppSource, log *vlog.
 		config.RequestHandler = userConfig.RequestHandler
 	}
 
-	// The following are extra inputs needed to make things work
+	// The following are extra inputs needed to make things work.
 
 	config.Logger.Logger = log
 	config.File.FileFunc = source.File

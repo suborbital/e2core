@@ -28,7 +28,7 @@ var (
 )
 
 // Executor is a facade over Grav and Reactr that allows executing local OR remote
-// functions with a single call, ensuring there is no difference between them to the caller
+// functions with a single call, ensuring there is no difference between them to the caller.
 type Executor struct {
 	reactr *rt.Reactr
 	grav   *grav.Grav
@@ -38,7 +38,7 @@ type Executor struct {
 	log *vlog.Logger
 }
 
-// New creates a new Executor with the default Grav configuration
+// New creates a new Executor with the default Grav configuration.
 func New(log *vlog.Logger, transport *websocket.Transport) *Executor {
 	gravOpts := []grav.OptionsModifier{
 		grav.UseLogger(log),
@@ -56,7 +56,7 @@ func New(log *vlog.Logger, transport *websocket.Transport) *Executor {
 	return NewWithGrav(log, g)
 }
 
-// NewWithGrav creates an Executor with a custom Grav instance
+// NewWithGrav creates an Executor with a custom Grav instance.
 func NewWithGrav(log *vlog.Logger, g *grav.Grav) *Executor {
 	var pod *grav.Pod
 
@@ -64,7 +64,7 @@ func NewWithGrav(log *vlog.Logger, g *grav.Grav) *Executor {
 		pod = g.Connect()
 	}
 
-	// Reactr is configured in UseCapabiltyConfig
+	// Reactr is configured in UseCapabiltyConfig.
 	e := &Executor{
 		grav: g,
 		pod:  pod,
@@ -74,14 +74,14 @@ func NewWithGrav(log *vlog.Logger, g *grav.Grav) *Executor {
 	return e
 }
 
-// Do executes a local or remote job
+// Do executes a local or remote job.
 func (e *Executor) Do(jobType string, req *request.CoordinatedRequest, ctx *vk.Ctx, cb grav.MsgFunc) (interface{}, error) {
 	if e.reactr == nil {
 		return nil, ErrExecutorNotConfigured
 	}
 
 	if !e.reactr.IsRegistered(jobType) {
-		// TODO: handle with a remote call
+		// TODO: handle with a remote call.
 
 		return nil, ErrCannotHandle
 	}
@@ -105,7 +105,7 @@ func (e *Executor) Do(jobType string, req *request.CoordinatedRequest, ctx *vk.C
 	return result, err
 }
 
-// UseCapabilityConfig sets up the executor's Reactr instance using the provided capability configuration
+// UseCapabilityConfig sets up the executor's Reactr instance using the provided capability configuration.
 func (e *Executor) UseCapabilityConfig(config rcap.CapabilityConfig) error {
 	r, err := rt.NewWithConfig(config)
 	if err != nil {
@@ -118,12 +118,12 @@ func (e *Executor) UseCapabilityConfig(config rcap.CapabilityConfig) error {
 }
 
 // UseGrav sets a Grav instance to use (in case one was not provided initially)
-// this will NOT set the internal pod, and so internal messages will not be sent
+// this will NOT set the internal pod, and so internal messages will not be sent.
 func (e *Executor) UseGrav(g *grav.Grav) {
 	e.grav = g
 }
 
-// Register registers a Runnable
+// Register registers a Runnable.
 func (e *Executor) Register(jobType string, runner rt.Runnable, opts ...rt.Option) error {
 	if e.reactr == nil {
 		return ErrExecutorNotConfigured
@@ -134,7 +134,7 @@ func (e *Executor) Register(jobType string, runner rt.Runnable, opts ...rt.Optio
 	return nil
 }
 
-// DesiredStepState calculates the state as it should be for a particular step's 'with' clause
+// DesiredStepState calculates the state as it should be for a particular step's 'with' clause.
 func (e *Executor) DesiredStepState(step executable.Executable, req *request.CoordinatedRequest) (map[string][]byte, error) {
 	if len(step.With) == 0 {
 		return nil, ErrDesiredStateNotGenerated
@@ -143,7 +143,7 @@ func (e *Executor) DesiredStepState(step executable.Executable, req *request.Coo
 	desiredState := map[string][]byte{}
 	aliased := map[string]bool{}
 
-	// first go through the 'with' clause and load all of the appropriate aliased values
+	// first go through the 'with' clause and load all of the appropriate aliased values.
 	for alias, key := range step.With {
 		val, exists := req.State[key]
 		if !exists {
@@ -154,7 +154,7 @@ func (e *Executor) DesiredStepState(step executable.Executable, req *request.Coo
 		aliased[key] = true
 	}
 
-	// next, go through the rest of the original state and load the non-aliased values
+	// next, go through the rest of the original state and load the non-aliased values.
 	for key, val := range req.State {
 		_, skip := aliased[key]
 		if !skip {
@@ -165,7 +165,7 @@ func (e *Executor) DesiredStepState(step executable.Executable, req *request.Coo
 	return desiredState, nil
 }
 
-// ListenAndRun sets up the executor's Reactr instance to listen for messages and execute the associated job
+// ListenAndRun sets up the executor's Reactr instance to listen for messages and execute the associated job.
 func (e *Executor) ListenAndRun(msgType string, run func(grav.Message, interface{}, error)) error {
 	if e.reactr == nil {
 		return ErrExecutorNotConfigured
@@ -176,7 +176,7 @@ func (e *Executor) ListenAndRun(msgType string, run func(grav.Message, interface
 	return nil
 }
 
-// Send sends a message on the configured Pod
+// Send sends a message on the configured Pod.
 func (e *Executor) Send(msg grav.Message) {
 	if e.pod == nil {
 		return
@@ -185,7 +185,7 @@ func (e *Executor) Send(msg grav.Message) {
 	e.pod.Send(msg)
 }
 
-// SetSchedule adds a Schedule to the executor's Reactr instance
+// SetSchedule adds a Schedule to the executor's Reactr instance.
 func (e *Executor) SetSchedule(sched rt.Schedule) error {
 	if e.reactr == nil {
 		return ErrExecutorNotConfigured
@@ -197,7 +197,7 @@ func (e *Executor) SetSchedule(sched rt.Schedule) error {
 }
 
 // Load loads Runnables into the executor's Reactr instance
-// And connects them to the Grav instance (currently unused)
+// And connects them to the Grav instance (currently unused).
 func (e *Executor) Load(runnables []directive.Runnable) error {
 	if e.reactr == nil {
 		return ErrExecutorNotConfigured
@@ -216,7 +216,7 @@ func (e *Executor) Load(runnables []directive.Runnable) error {
 	return load.Runnables(e.reactr, runnables, false)
 }
 
-// Metrics returns the executor's Reactr isntance's internal metrics
+// Metrics returns the executor's Reactr isntance's internal metrics.
 func (e *Executor) Metrics() (*rt.ScalerMetrics, error) {
 	if e.reactr == nil {
 		return nil, ErrExecutorNotConfigured
