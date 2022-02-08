@@ -17,16 +17,14 @@ func TestHelloEndpoint(t *testing.T) {
 
 	server, err := atmo.testServer()
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 
 	vt := vtest.New(server) //creating fake version of the server that we can send requests to and it will behave same was as if it was the real server
 
 	req, err := http.NewRequest(http.MethodPost, "/hello", bytes.NewBuffer([]byte("my friend")))
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 
 	vt.Do(req, t).
@@ -41,20 +39,17 @@ func TestSetAndGetKeyEndpoints(t *testing.T) {
 
 	server, err := atmo.testServer()
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 
 	vt := vtest.New(server)
 	req, err := http.NewRequest(http.MethodPost, "/set/name", bytes.NewBuffer([]byte("Suborbital")))
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 	newreq, err := http.NewRequest(http.MethodGet, "/get/name", bytes.NewBuffer([]byte{}))
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 
 	vt.Do(req, t).
@@ -71,15 +66,13 @@ func TestFileMainMDEndpoint(t *testing.T) {
 
 	server, err := atmo.testServer()
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 
 	vt := vtest.New(server)
 	req, err := http.NewRequest(http.MethodGet, "/file/main.md", bytes.NewBuffer([]byte{}))
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 
 	vt.Do(req, t).
@@ -93,20 +86,17 @@ func TestFileMainCSSEndpoint(t *testing.T) {
 
 	server, err := atmo.testServer()
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 
 	vt := vtest.New(server)
 	req, err := http.NewRequest(http.MethodGet, "/file/css/main.css", bytes.NewBuffer([]byte{}))
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 	data, err := os.ReadFile("../example-project/static/css/main.css")
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 
 	vt.Do(req, t).
@@ -120,21 +110,18 @@ func TestFileMainJSEndpoint(t *testing.T) {
 
 	server, err := atmo.testServer()
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 
 	vt := vtest.New(server)
 	req, err := http.NewRequest(http.MethodGet, "/file/js/app/main.js", bytes.NewBuffer([]byte{})) //change to struct initializer format byte{}
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 
 	data, err := os.ReadFile("../example-project/static/js/app/main.js")
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 	t.Log(string(data))
 
@@ -149,15 +136,13 @@ func TestFetchEndpoint(t *testing.T) {
 
 	server, err := atmo.testServer()
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 
 	vt := vtest.New(server)
 	req, err := http.NewRequest(http.MethodPost, "/fetch", bytes.NewBuffer([]byte("https://github.com")))
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 	resp := vt.Do(req, t)
 
