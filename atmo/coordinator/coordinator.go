@@ -34,7 +34,7 @@ const (
 
 type rtFunc func(rt.Job, *rt.Ctx) (interface{}, error)
 
-// Coordinator is a type that is responsible for covnerting the directive into
+// Coordinator is a type that is responsible for converting the directive into
 // usable Vektor handles by coordinating Reactr jobs and meshing when needed.
 type Coordinator struct {
 	App  appsource.AppSource
