@@ -32,6 +32,13 @@ func NewBundleSource(path string) AppSource {
 	return b
 }
 
+// checkIdentifierVersion checks whether the passed in identifier and version are for the current app running in the
+// bundle or not. Returns true only if both match.
+func (b *BundleSource) checkIdentifierVersion(identifier, version string) bool {
+	return b.bundle.Directive.Identifier == identifier &&
+		b.bundle.Directive.AppVersion == version
+}
+
 // Start initializes the app source.
 func (b *BundleSource) Start(opts options.Options) error {
 	b.opts = opts
@@ -44,12 +51,16 @@ func (b *BundleSource) Start(opts options.Options) error {
 }
 
 // Runnables returns the Runnables for the app.
-func (b *BundleSource) Runnables() []directive.Runnable {
+func (b *BundleSource) Runnables(identifier, version string) []directive.Runnable {
+	if !b.checkIdentifierVersion(identifier, version) {
+		return nil
+	}
+
 	b.lock.RLock()
 	defer b.lock.RUnlock()
 
 	if b.bundle == nil {
-		return []directive.Runnable{}
+		return nil
 	}
 
 	return b.bundle.Directive.Runnables
@@ -57,7 +68,11 @@ func (b *BundleSource) Runnables() []directive.Runnable {
 
 // FindRunnable searches for and returns the requested runnable
 // otherwise ErrRunnableNotFound.
-func (b *BundleSource) FindRunnable(fqfn, auth string) (*directive.Runnable, error) {
+func (b *BundleSource) FindRunnable(identifier, version, fqfn, _ string) (*directive.Runnable, error) {
+	if !b.checkIdentifierVersion(identifier, version) {
+		return nil, ErrRunnableNotFound
+	}
+
 	b.lock.RLock()
 	defer b.lock.RUnlock()
 
@@ -75,7 +90,11 @@ func (b *BundleSource) FindRunnable(fqfn, auth string) (*directive.Runnable, err
 }
 
 // Handlers returns the handlers for the app.
-func (b *BundleSource) Handlers() []directive.Handler {
+func (b *BundleSource) Handlers(identifier, version string) []directive.Handler {
+	if !b.checkIdentifierVersion(identifier, version) {
+		return nil
+	}
+
 	b.lock.RLock()
 	defer b.lock.RUnlock()
 
@@ -87,7 +106,11 @@ func (b *BundleSource) Handlers() []directive.Handler {
 }
 
 // Schedules returns the schedules for the app.
-func (b *BundleSource) Schedules() []directive.Schedule {
+func (b *BundleSource) Schedules(identifier, version string) []directive.Schedule {
+	if !b.checkIdentifierVersion(identifier, version) {
+		return nil
+	}
+
 	b.lock.RLock()
 	defer b.lock.RUnlock()
 
@@ -99,7 +122,11 @@ func (b *BundleSource) Schedules() []directive.Schedule {
 }
 
 // Connections returns the Connections for the app.
-func (b *BundleSource) Connections() directive.Connections {
+func (b *BundleSource) Connections(identifier, version string) directive.Connections {
+	if !b.checkIdentifierVersion(identifier, version) {
+		return directive.Connections{}
+	}
+
 	b.lock.RLock()
 	defer b.lock.RUnlock()
 
@@ -111,7 +138,11 @@ func (b *BundleSource) Connections() directive.Connections {
 }
 
 // Authentication returns the Authentication for the app.
-func (b *BundleSource) Authentication() directive.Authentication {
+func (b *BundleSource) Authentication(identifier, version string) directive.Authentication {
+	if !b.checkIdentifierVersion(identifier, version) {
+		return directive.Authentication{}
+	}
+
 	b.lock.RLock()
 	defer b.lock.RUnlock()
 
@@ -123,20 +154,29 @@ func (b *BundleSource) Authentication() directive.Authentication {
 }
 
 // Capabilities returns the configuration for the app's capabilities.
-func (b *BundleSource) Capabilities() *rcap.CapabilityConfig {
+func (b *BundleSource) Capabilities(identifier, version string) *rcap.CapabilityConfig {
+	defaultConfig := rcap.DefaultCapabilityConfig()
+
+	if !b.checkIdentifierVersion(identifier, version) {
+		return &defaultConfig
+	}
+
 	b.lock.RLock()
 	defer b.lock.RUnlock()
 
 	if b.bundle == nil || b.bundle.Directive.Capabilities == nil {
-		config := rcap.DefaultCapabilityConfig()
-		return &config
+		return &defaultConfig
 	}
 
 	return b.bundle.Directive.Capabilities
 }
 
 // File returns a requested file.
-func (b *BundleSource) File(filename string) ([]byte, error) {
+func (b *BundleSource) File(identifier, version, filename string) ([]byte, error) {
+	if !b.checkIdentifierVersion(identifier, version) {
+		return nil, os.ErrNotExist
+	}
+
 	b.lock.RLock()
 	defer b.lock.RUnlock()
 
@@ -148,31 +188,35 @@ func (b *BundleSource) File(filename string) ([]byte, error) {
 }
 
 // Queries returns the Queries available to the app.
-func (b *BundleSource) Queries() []directive.DBQuery {
+func (b *BundleSource) Queries(identifier, version string) []directive.DBQuery {
+	if !b.checkIdentifierVersion(identifier, version) {
+		return nil
+	}
+
 	b.lock.RLock()
 	defer b.lock.RUnlock()
 
 	if b.bundle == nil || b.bundle.Directive.Queries == nil {
-		return []directive.DBQuery{}
+		return nil
 	}
 
 	return b.bundle.Directive.Queries
 }
 
-func (b *BundleSource) Meta() Meta {
+func (b *BundleSource) Applications() []Meta {
 	b.lock.RLock()
 	defer b.lock.RUnlock()
 
 	if b.bundle == nil {
-		return Meta{}
+		return nil
 	}
 
-	m := Meta{
-		Identifier: b.bundle.Directive.Identifier,
-		AppVersion: b.bundle.Directive.AppVersion,
+	return []Meta{
+		{
+			Identifier: b.bundle.Directive.Identifier,
+			AppVersion: b.bundle.Directive.AppVersion,
+		},
 	}
-
-	return m
 }
 
 // findBundle loops forever until it finds a bundle at the configured path.
