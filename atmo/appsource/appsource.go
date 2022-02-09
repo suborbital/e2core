@@ -23,28 +23,38 @@ type Meta struct {
 type AppSource interface {
 	// Start indicates to the AppSource that it should prepare for app startup.
 	Start(options.Options) error
+
 	// Runnables returns all of the available Runnables.
-	Runnables() []directive.Runnable
+	Runnables(string, string) []directive.Runnable
+
 	// FindRunnable directs the AppSource to attempt to find
 	// a particular Runnable and make it available at next
 	// AppSource state sync via a call to Runnables().
 	// ErrRunnableNotFound should be returned if the Runnable cannot be found.
-	FindRunnable(fqfn, authHeader string) (*directive.Runnable, error)
+	FindRunnable(identifier, version, fqfn, authHeader string) (*directive.Runnable, error)
+
 	// Handlers returns the handlers for the app.
-	Handlers() []directive.Handler
+	Handlers(string, string) []directive.Handler
+
 	// Schedules returns the requested schedules for the app.
-	Schedules() []directive.Schedule
+	Schedules(string, string) []directive.Schedule
+
 	// Connections returns the connections needed for the app.
-	Connections() directive.Connections
+	Connections(string, string) directive.Connections
+
 	// Authentication provides any auth headers or metadata for the app.
-	Authentication() directive.Authentication
+	Authentication(string, string) directive.Authentication
+
 	// Capabilities provides the application's configured capabilities.
-	Capabilities() *rcap.CapabilityConfig
+	Capabilities(string, string) *rcap.CapabilityConfig
+
 	// File is a source of files for the Runnables
 	// TODO: refactor this into a set of capabilities / profiles.
-	File(string) ([]byte, error)
+	File(identifier, version, path string) ([]byte, error)
+
 	// Queries returns the database queries that should be made available.
-	Queries() []directive.DBQuery
+	Queries(string, string) []directive.DBQuery
+
 	// Applications returns a slice of Meta, metadata about the apps in that app source.
 	Applications() []Meta
 }
