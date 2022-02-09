@@ -179,7 +179,7 @@ func Read(path string) (*Bundle, error) {
 		return nil, errors.New("bundle is missing Directive.yaml")
 	}
 
-	// Iterate through the files in the archive,.
+	// Iterate through the files in the archive.
 	for _, f := range r.File {
 		if f.Name == "Directive.yaml" {
 			// we already have a Directive by now.
