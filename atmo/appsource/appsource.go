@@ -17,6 +17,7 @@ var (
 type Meta struct {
 	Identifier string `json:"identifier"`
 	AppVersion string `json:"appVersion"`
+	Domain     string `json:"domain"`
 }
 
 type AppSource interface {
