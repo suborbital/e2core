@@ -45,6 +45,6 @@ type AppSource interface {
 	File(string) ([]byte, error)
 	// Queries returns the database queries that should be made available.
 	Queries() []directive.DBQuery
-	// Meta returns metadata about the app.
-	Meta() Meta
+	// Applications returns a slice of Meta, metadata about the apps in that app source.
+	Applications() []Meta
 }
