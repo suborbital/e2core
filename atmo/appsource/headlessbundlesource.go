@@ -2,7 +2,6 @@ package appsource
 
 import (
 	"net/http"
-	"os"
 
 	"github.com/pkg/errors"
 
@@ -43,36 +42,28 @@ func (h *HeadlessBundleSource) Start(opts options.Options) error {
 }
 
 // Runnables returns the Runnables for the app.
-func (h *HeadlessBundleSource) Runnables() []directive.Runnable {
-	if h.bundleSource.bundle == nil {
-		return []directive.Runnable{}
-	}
-
-	return h.bundleSource.Runnables()
+func (h *HeadlessBundleSource) Runnables(identifier, version string) []directive.Runnable {
+	return h.bundleSource.Runnables(identifier, version)
 }
 
 // FindRunnable returns a nil error if a Runnable with the
 // provided FQFN can be made available at the next sync,
 // otherwise ErrRunnableNotFound is returned.
-func (h *HeadlessBundleSource) FindRunnable(fqfn, auth string) (*directive.Runnable, error) {
-	if h.bundleSource.bundle == nil {
-		return nil, ErrRunnableNotFound
-	}
-
-	return h.bundleSource.FindRunnable(fqfn, auth)
+func (h *HeadlessBundleSource) FindRunnable(identifier, version, fqfn, auth string) (*directive.Runnable, error) {
+	return h.bundleSource.FindRunnable(identifier, version, fqfn, auth)
 }
 
 // Handlers returns the handlers for the app.
-func (h *HeadlessBundleSource) Handlers() []directive.Handler {
+func (h *HeadlessBundleSource) Handlers(identifier, version string) []directive.Handler {
 	if h.bundleSource.bundle == nil {
 		return []directive.Handler{}
 	}
 
-	handlers := []directive.Handler{}
+	handlers := make([]directive.Handler, 0)
 
 	// for each Runnable, construct a handler that executes it
 	// based on a POST request to its FQFN URL /identifier/namespace/fn/version.
-	for _, runnable := range h.bundleSource.Runnables() {
+	for _, runnable := range h.bundleSource.Runnables(identifier, version) {
 		handler := directive.Handler{
 			Input: directive.Input{
 				Type:     directive.InputTypeRequest,
@@ -97,61 +88,36 @@ func (h *HeadlessBundleSource) Handlers() []directive.Handler {
 }
 
 // Schedules returns the schedules for the app.
-func (h *HeadlessBundleSource) Schedules() []directive.Schedule {
-	return []directive.Schedule{}
+func (h *HeadlessBundleSource) Schedules(_, _ string) []directive.Schedule {
+	return nil
 }
 
 // Connections returns the Connections for the app.
-func (h *HeadlessBundleSource) Connections() directive.Connections {
+func (h *HeadlessBundleSource) Connections(_, _ string) directive.Connections {
 	return directive.Connections{}
 }
 
 // Authentication returns the Authentication for the app.
-func (b *HeadlessBundleSource) Authentication() directive.Authentication {
-	if b.bundleSource.bundle == nil {
-		return directive.Authentication{}
-	}
-
-	return b.bundleSource.Authentication()
+func (h *HeadlessBundleSource) Authentication(identifier, version string) directive.Authentication {
+	return h.bundleSource.Authentication(identifier, version)
 }
 
 // Capabilities returns the Capabilities for the app.
-func (b *HeadlessBundleSource) Capabilities() *rcap.CapabilityConfig {
-	if b.bundleSource.bundle == nil {
-		config := rcap.DefaultCapabilityConfig()
-		return &config
-	}
-
-	return b.bundleSource.Capabilities()
+func (h *HeadlessBundleSource) Capabilities(identifier, version string) *rcap.CapabilityConfig {
+	return h.bundleSource.Capabilities(identifier, version)
 }
 
 // File returns a requested file.
-func (h *HeadlessBundleSource) File(filename string) ([]byte, error) {
-	if h.bundleSource.bundle == nil {
-		return nil, os.ErrNotExist
-	}
-
-	return h.bundleSource.bundle.StaticFile(filename)
+func (h *HeadlessBundleSource) File(identifier, version, filename string) ([]byte, error) {
+	return h.bundleSource.File(identifier, version, filename)
 }
 
 // Queries returns the Queries for the app.
-func (b *HeadlessBundleSource) Queries() []directive.DBQuery {
-	if b.bundleSource.bundle == nil {
-		return []directive.DBQuery{}
-	}
-
-	return b.bundleSource.Queries()
+func (h *HeadlessBundleSource) Queries(identifier, version string) []directive.DBQuery {
+	return h.bundleSource.Queries(identifier, version)
 }
 
-func (h *HeadlessBundleSource) Meta() Meta {
-	if h.bundleSource.bundle == nil {
-		return Meta{}
-	}
-
-	m := Meta{
-		Identifier: h.bundleSource.bundle.Directive.Identifier,
-		AppVersion: h.bundleSource.bundle.Directive.AppVersion,
-	}
-
-	return m
+// Applications returns the slice of Meta for the app.
+func (h *HeadlessBundleSource) Applications() []Meta {
+	return h.bundleSource.Applications()
 }
