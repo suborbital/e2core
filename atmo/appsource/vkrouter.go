@@ -8,7 +8,9 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/suborbital/atmo/atmo/options"
+	"github.com/suborbital/atmo/directive"
 	"github.com/suborbital/atmo/fqfn"
+	"github.com/suborbital/reactr/rcap"
 	"github.com/suborbital/vektor/vk"
 )
 
@@ -44,6 +46,8 @@ func (a *AppSourceVKRouter) GenerateRouter() (*vk.Router, error) {
 	router.GET("/connections", a.ConnectionsHandler())
 	router.GET("/authentication", a.AuthenticationHandler())
 	router.GET("/capabilities", a.CapabilitiesHandler())
+
+	// this is undefined right now. I'm not sure how to fetch one file without explicit ident / version info.
 	router.GET("/file/:filename", a.FileHandler())
 	router.GET("/meta", a.MetaHandler())
 
@@ -53,7 +57,13 @@ func (a *AppSourceVKRouter) GenerateRouter() (*vk.Router, error) {
 // RunnablesHandler is a handler to fetch Runnables.
 func (a *AppSourceVKRouter) RunnablesHandler() vk.HandlerFunc {
 	return func(r *http.Request, ctx *vk.Ctx) (interface{}, error) {
-		return a.appSource.Runnables(), nil
+		runnables := make([]directive.Runnable, 0)
+
+		for _, app := range a.appSource.Applications() {
+			runnables = append(runnables, a.appSource.Runnables(app.Identifier, app.AppVersion)...)
+		}
+
+		return runnables, nil
 	}
 }
 
@@ -70,7 +80,7 @@ func (a *AppSourceVKRouter) FindRunnableHandler() vk.HandlerFunc {
 		// auth header can be used to authenticate requests.
 		auth := r.Header.Get("Authorization")
 
-		runnable, err := a.appSource.FindRunnable(fqfn, auth)
+		runnable, err := a.appSource.FindRunnable(ident, version, fqfn, auth)
 		if err != nil {
 			ctx.Log.Error(errors.Wrap(err, "failed to FindRunnable"))
 
@@ -90,35 +100,65 @@ func (a *AppSourceVKRouter) FindRunnableHandler() vk.HandlerFunc {
 // HandlersHandler is a handler to fetch Handlers.
 func (a *AppSourceVKRouter) HandlersHandler() vk.HandlerFunc {
 	return func(r *http.Request, ctx *vk.Ctx) (interface{}, error) {
-		return a.appSource.Handlers(), nil
+		handlers := make([]directive.Handler, 0)
+
+		for _, app := range a.appSource.Applications() {
+			handlers = append(handlers, a.appSource.Handlers(app.Identifier, app.AppVersion)...)
+		}
+
+		return handlers, nil
 	}
 }
 
 // SchedulesHandler is a handler to fetch Schedules.
 func (a *AppSourceVKRouter) SchedulesHandler() vk.HandlerFunc {
 	return func(r *http.Request, ctx *vk.Ctx) (interface{}, error) {
-		return a.appSource.Schedules(), nil
+		schedules := make([]directive.Schedule, 0)
+
+		for _, app := range a.appSource.Applications() {
+			schedules = append(schedules, a.appSource.Schedules(app.Identifier, app.AppVersion)...)
+		}
+
+		return schedules, nil
 	}
 }
 
 // ConnectionsHandler is a handler to fetch Connection data.
 func (a *AppSourceVKRouter) ConnectionsHandler() vk.HandlerFunc {
 	return func(r *http.Request, ctx *vk.Ctx) (interface{}, error) {
-		return a.appSource.Connections(), nil
+		connections := make([]directive.Connections, 0)
+
+		for _, app := range a.appSource.Applications() {
+			connections = append(connections, a.appSource.Connections(app.Identifier, app.AppVersion))
+		}
+
+		return connections, nil
 	}
 }
 
 // AuthenticationHandler is a handler to fetch Authentication data.
 func (a *AppSourceVKRouter) AuthenticationHandler() vk.HandlerFunc {
 	return func(r *http.Request, ctx *vk.Ctx) (interface{}, error) {
-		return a.appSource.Authentication(), nil
+		authentications := make([]directive.Authentication, 0)
+
+		for _, app := range a.appSource.Applications() {
+			authentications = append(authentications, a.appSource.Authentication(app.Identifier, app.AppVersion))
+		}
+
+		return authentications, nil
 	}
 }
 
 // CapabilitiesHandler is a handler to fetch Capabilities data.
 func (a *AppSourceVKRouter) CapabilitiesHandler() vk.HandlerFunc {
 	return func(r *http.Request, ctx *vk.Ctx) (interface{}, error) {
-		return a.appSource.Capabilities(), nil
+		capabilities := make([]*rcap.CapabilityConfig, 0)
+
+		for _, app := range a.appSource.Applications() {
+			capabilities = append(capabilities, a.appSource.Capabilities(app.Identifier, app.AppVersion))
+		}
+
+		return capabilities, nil
 	}
 }
 
@@ -127,7 +167,7 @@ func (a *AppSourceVKRouter) FileHandler() vk.HandlerFunc {
 	return func(r *http.Request, ctx *vk.Ctx) (interface{}, error) {
 		filename := ctx.Params.ByName("filename")
 
-		fileBytes, err := a.appSource.File(filename)
+		fileBytes, err := a.appSource.File("", "", filename)
 		if err != nil {
 			if errors.Is(err, os.ErrNotExist) {
 				return nil, vk.E(http.StatusNotFound, "not found")
@@ -143,6 +183,6 @@ func (a *AppSourceVKRouter) FileHandler() vk.HandlerFunc {
 // MetaHandler is a handler to fetch Metadata.
 func (a *AppSourceVKRouter) MetaHandler() vk.HandlerFunc {
 	return func(r *http.Request, ctx *vk.Ctx) (interface{}, error) {
-		return a.appSource.Meta(), nil
+		return a.appSource.Applications(), nil
 	}
 }
