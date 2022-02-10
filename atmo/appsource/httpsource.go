@@ -56,7 +56,7 @@ func (h *HTTPSource) Start(opts options.Options) error {
 }
 
 // Runnables returns the Runnables for the app.
-func (h *HTTPSource) Runnables() []directive.Runnable {
+func (h *HTTPSource) Runnables(_, _ string) []directive.Runnable {
 	// if we're in headless mode, only return the Runnables we've cached
 	// from calls to FindRunnable (we don't want to load EVERY Runnable).
 	if *h.opts.Headless {
@@ -66,7 +66,8 @@ func (h *HTTPSource) Runnables() []directive.Runnable {
 		return h.headlessRunnableList()
 	}
 
-	runnables := []directive.Runnable{}
+	runnables := make([]directive.Runnable, 0)
+	// @TODO issue-117: not sure how to get runnables for a given identifier / version.
 	if _, err := h.get("/runnables", &runnables); err != nil {
 		h.opts.Logger.Error(errors.Wrap(err, "failed to get /runnables"))
 	}
@@ -77,7 +78,7 @@ func (h *HTTPSource) Runnables() []directive.Runnable {
 // FindRunnable returns a nil error if a Runnable with the
 // provided FQFN can be made available at the next sync,
 // otherwise ErrRunnableNotFound is returned.
-func (h *HTTPSource) FindRunnable(FQFN, auth string) (*directive.Runnable, error) {
+func (h *HTTPSource) FindRunnable(_, _, FQFN, auth string) (*directive.Runnable, error) {
 	parsedFQFN := fqfn.Parse(FQFN)
 
 	// if we are in headless mode, first check to see if we've cached a runnable.
@@ -125,7 +126,7 @@ func (h *HTTPSource) FindRunnable(FQFN, auth string) (*directive.Runnable, error
 }
 
 // Handlers returns the handlers for the app.
-func (h *HTTPSource) Handlers() []directive.Handler {
+func (h *HTTPSource) Handlers(_, _ string) []directive.Handler {
 	if *h.opts.Headless {
 		h.lock.RLock()
 		defer h.lock.RUnlock()
@@ -133,7 +134,8 @@ func (h *HTTPSource) Handlers() []directive.Handler {
 		return h.headlessHandlers()
 	}
 
-	handlers := []directive.Handler{}
+	handlers := make([]directive.Handler, 0)
+	// @TODO issue-117: how to get handlers for a given identifier / version pair.
 	if _, err := h.get("/handlers", &handlers); err != nil {
 		h.opts.Logger.Error(errors.Wrap(err, "failed to get /handlers"))
 	}
@@ -142,8 +144,9 @@ func (h *HTTPSource) Handlers() []directive.Handler {
 }
 
 // Schedules returns the schedules for the app.
-func (h *HTTPSource) Schedules() []directive.Schedule {
-	schedules := []directive.Schedule{}
+func (h *HTTPSource) Schedules(_, _ string) []directive.Schedule {
+	schedules := make([]directive.Schedule, 0)
+	// @TODO issue-117: how to get schedules for a given identifier / version pair.
 	if _, err := h.get("/schedules", &schedules); err != nil {
 		h.opts.Logger.Error(errors.Wrap(err, "failed to get /schedules"))
 	}
@@ -152,8 +155,9 @@ func (h *HTTPSource) Schedules() []directive.Schedule {
 }
 
 // Connections returns the Connections for the app.
-func (h *HTTPSource) Connections() directive.Connections {
+func (h *HTTPSource) Connections(_, _ string) directive.Connections {
 	connections := directive.Connections{}
+	// @TODO issue-117: how to get connections for a given identifier / version.
 	if _, err := h.get("/connections", &connections); err != nil {
 		h.opts.Logger.Error(errors.Wrap(err, "failed to get /connections"))
 	}
@@ -162,8 +166,9 @@ func (h *HTTPSource) Connections() directive.Connections {
 }
 
 // Authentication returns the Authentication for the app.
-func (h *HTTPSource) Authentication() directive.Authentication {
+func (h *HTTPSource) Authentication(_, _ string) directive.Authentication {
 	authentication := directive.Authentication{}
+	// @TODO issue-117: how to get authentication for a given identifier / version.
 	if _, err := h.get("/authentication", &authentication); err != nil {
 		h.opts.Logger.Error(errors.Wrap(err, "failed to get /authentication"))
 	}
@@ -172,8 +177,9 @@ func (h *HTTPSource) Authentication() directive.Authentication {
 }
 
 // Capabilities returns the Capabilities for the app.
-func (h *HTTPSource) Capabilities() *rcap.CapabilityConfig {
+func (h *HTTPSource) Capabilities(_, _ string) *rcap.CapabilityConfig {
 	capabilities := rcap.CapabilityConfig{}
+	// @TODO issue-117: how to get capabilities for a given pair here.
 	if _, err := h.get("/capabilities", &capabilities); err != nil {
 		h.opts.Logger.Error(errors.Wrap(err, "failed to get /authentication"))
 	}
@@ -182,9 +188,10 @@ func (h *HTTPSource) Capabilities() *rcap.CapabilityConfig {
 }
 
 // File returns a requested file.
-func (h *HTTPSource) File(filename string) ([]byte, error) {
+func (h *HTTPSource) File(_, _, filename string) ([]byte, error) {
 	path := fmt.Sprintf("/file/%s", filename)
 
+	// @TODO issue-117: how to get a file for a given identifier / version.
 	resp, err := h.get(path, nil)
 	if err != nil {
 		h.opts.Logger.Error(errors.Wrapf(err, "failed to get %s", path))
@@ -201,8 +208,9 @@ func (h *HTTPSource) File(filename string) ([]byte, error) {
 }
 
 // Queries returns the Queries for the app.
-func (h *HTTPSource) Queries() []directive.DBQuery {
-	queries := []directive.DBQuery{}
+func (h *HTTPSource) Queries(_, _ string) []directive.DBQuery {
+	queries := make([]directive.DBQuery, 0)
+	// @TODO issue-117: how to get queries for identifier / version.
 	if _, err := h.get("/queries", &queries); err != nil {
 		h.opts.Logger.Error(errors.Wrap(err, "failed to get /queries"))
 	}
@@ -210,13 +218,13 @@ func (h *HTTPSource) Queries() []directive.DBQuery {
 	return queries
 }
 
-func (h *HTTPSource) Meta() Meta {
-	meta := Meta{}
-	if _, err := h.get("/meta", &meta); err != nil {
+func (h *HTTPSource) Applications() []Meta {
+	metas := make([]Meta, 0)
+	if _, err := h.get("/meta", &metas); err != nil {
 		h.opts.Logger.Error(errors.Wrap(err, "failed to get /meta"))
 	}
 
-	return meta
+	return metas
 }
 
 // pingServer loops forever until it finds a server at the configured host.
@@ -289,7 +297,7 @@ func (h *HTTPSource) authedGet(path, auth string, dest interface{}) (*http.Respo
 }
 
 func (h *HTTPSource) headlessRunnableList() []directive.Runnable {
-	runnables := []directive.Runnable{}
+	runnables := make([]directive.Runnable, 0)
 
 	for _, r := range h.runnables {
 		runnables = append(runnables, r)
@@ -299,7 +307,7 @@ func (h *HTTPSource) headlessRunnableList() []directive.Runnable {
 }
 
 func (h *HTTPSource) headlessHandlers() []directive.Handler {
-	handlers := []directive.Handler{}
+	handlers := make([]directive.Handler, 0)
 
 	// for each Runnable, construct a handler that executes it
 	// based on a POST request to its FQFN URL /identifier/namespace/fn/version.
