@@ -75,7 +75,7 @@ func (a *AppSourceVKRouter) FindRunnableHandler() vk.HandlerFunc {
 		// auth header can be used to authenticate requests.
 		auth := r.Header.Get("Authorization")
 
-		runnable, err := a.appSource.FindRunnable(ident, version, fqfn, auth)
+		runnable, err := a.appSource.FindRunnable(fqfn, auth)
 		if err != nil {
 			ctx.Log.Error(errors.Wrap(err, "failed to FindRunnable"))
 

@@ -31,7 +31,7 @@ type AppSource interface {
 	// a particular Runnable and make it available at next
 	// AppSource state sync via a call to Runnables().
 	// ErrRunnableNotFound should be returned if the Runnable cannot be found.
-	FindRunnable(identifier, version, fqfn, authHeader string) (*directive.Runnable, error)
+	FindRunnable(fqfn, authHeader string) (*directive.Runnable, error)
 
 	// Handlers returns the handlers for the app.
 	Handlers(string, string) []directive.Handler

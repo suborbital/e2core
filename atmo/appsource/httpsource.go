@@ -79,7 +79,7 @@ func (h *HTTPSource) Runnables(_, _ string) []directive.Runnable {
 // FindRunnable returns a nil error if a Runnable with the
 // provided FQFN can be made available at the next sync,
 // otherwise ErrRunnableNotFound is returned.
-func (h *HTTPSource) FindRunnable(_, _, FQFN, auth string) (*directive.Runnable, error) {
+func (h *HTTPSource) FindRunnable(FQFN, auth string) (*directive.Runnable, error) {
 	parsedFQFN := fqfn.Parse(FQFN)
 
 	// if we are in headless mode, first check to see if we've cached a runnable.
