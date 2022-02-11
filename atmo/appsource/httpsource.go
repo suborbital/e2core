@@ -57,7 +57,7 @@ func (h *HTTPSource) Start(opts options.Options) error {
 }
 
 // Runnables returns the Runnables for the app.
-func (h *HTTPSource) Runnables(_, _ string) []directive.Runnable {
+func (h *HTTPSource) Runnables(ident, version string) []directive.Runnable {
 	// if we're in headless mode, only return the Runnables we've cached
 	// from calls to FindRunnable (we don't want to load EVERY Runnable).
 	if *h.opts.Headless {
@@ -68,8 +68,8 @@ func (h *HTTPSource) Runnables(_, _ string) []directive.Runnable {
 	}
 
 	runnables := make([]directive.Runnable, 0)
-	// @TODO issue-117: not sure how to get runnables for a given identifier / version.
-	if _, err := h.get("/runnables", &runnables); err != nil {
+
+	if _, err := h.get(fmt.Sprintf("/runnables/%s/%s", ident, version), &runnables); err != nil {
 		h.opts.Logger.Error(errors.Wrap(err, "failed to get /runnables"))
 	}
 
@@ -127,7 +127,7 @@ func (h *HTTPSource) FindRunnable(FQFN, auth string) (*directive.Runnable, error
 }
 
 // Handlers returns the handlers for the app.
-func (h *HTTPSource) Handlers(_, _ string) []directive.Handler {
+func (h *HTTPSource) Handlers(ident, version string) []directive.Handler {
 	if *h.opts.Headless {
 		h.lock.RLock()
 		defer h.lock.RUnlock()
@@ -136,8 +136,8 @@ func (h *HTTPSource) Handlers(_, _ string) []directive.Handler {
 	}
 
 	handlers := make([]directive.Handler, 0)
-	// @TODO issue-117: how to get handlers for a given identifier / version pair.
-	if _, err := h.get("/handlers", &handlers); err != nil {
+
+	if _, err := h.get(fmt.Sprintf("/handlers/%s/%s", ident, version), &handlers); err != nil {
 		h.opts.Logger.Error(errors.Wrap(err, "failed to get /handlers"))
 	}
 
@@ -145,10 +145,10 @@ func (h *HTTPSource) Handlers(_, _ string) []directive.Handler {
 }
 
 // Schedules returns the schedules for the app.
-func (h *HTTPSource) Schedules(_, _ string) []directive.Schedule {
+func (h *HTTPSource) Schedules(ident, version string) []directive.Schedule {
 	schedules := make([]directive.Schedule, 0)
-	// @TODO issue-117: how to get schedules for a given identifier / version pair.
-	if _, err := h.get("/schedules", &schedules); err != nil {
+
+	if _, err := h.get(fmt.Sprintf("/schedules/%s/%s", ident, version), &schedules); err != nil {
 		h.opts.Logger.Error(errors.Wrap(err, "failed to get /schedules"))
 	}
 
@@ -156,10 +156,10 @@ func (h *HTTPSource) Schedules(_, _ string) []directive.Schedule {
 }
 
 // Connections returns the Connections for the app.
-func (h *HTTPSource) Connections(_, _ string) directive.Connections {
+func (h *HTTPSource) Connections(ident, version string) directive.Connections {
 	connections := directive.Connections{}
-	// @TODO issue-117: how to get connections for a given identifier / version.
-	if _, err := h.get("/connections", &connections); err != nil {
+
+	if _, err := h.get(fmt.Sprintf("/connections/%s/%s", ident, version), &connections); err != nil {
 		h.opts.Logger.Error(errors.Wrap(err, "failed to get /connections"))
 	}
 
@@ -167,10 +167,10 @@ func (h *HTTPSource) Connections(_, _ string) directive.Connections {
 }
 
 // Authentication returns the Authentication for the app.
-func (h *HTTPSource) Authentication(_, _ string) directive.Authentication {
+func (h *HTTPSource) Authentication(ident, version string) directive.Authentication {
 	authentication := directive.Authentication{}
-	// @TODO issue-117: how to get authentication for a given identifier / version.
-	if _, err := h.get("/authentication", &authentication); err != nil {
+
+	if _, err := h.get(fmt.Sprintf("/authentication/%s/%s", ident, version), &authentication); err != nil {
 		h.opts.Logger.Error(errors.Wrap(err, "failed to get /authentication"))
 	}
 
@@ -178,10 +178,10 @@ func (h *HTTPSource) Authentication(_, _ string) directive.Authentication {
 }
 
 // Capabilities returns the Capabilities for the app.
-func (h *HTTPSource) Capabilities(_, _ string) *rcap.CapabilityConfig {
+func (h *HTTPSource) Capabilities(ident, version string) *rcap.CapabilityConfig {
 	capabilities := rcap.CapabilityConfig{}
-	// @TODO issue-117: how to get capabilities for a given pair here.
-	if _, err := h.get("/capabilities", &capabilities); err != nil {
+
+	if _, err := h.get(fmt.Sprintf("/capabilities/%s/%s", ident, version), &capabilities); err != nil {
 		h.opts.Logger.Error(errors.Wrap(err, "failed to get /authentication"))
 	}
 
@@ -189,10 +189,9 @@ func (h *HTTPSource) Capabilities(_, _ string) *rcap.CapabilityConfig {
 }
 
 // File returns a requested file.
-func (h *HTTPSource) File(_, _, filename string) ([]byte, error) {
-	path := fmt.Sprintf("/file/%s", filename)
+func (h *HTTPSource) File(ident, version, filename string) ([]byte, error) {
+	path := fmt.Sprintf("/file/%s/%s/%s", ident, version, filename)
 
-	// @TODO issue-117: how to get a file for a given identifier / version.
 	resp, err := h.get(path, nil)
 	if err != nil {
 		h.opts.Logger.Error(errors.Wrapf(err, "failed to get %s", path))
@@ -209,10 +208,10 @@ func (h *HTTPSource) File(_, _, filename string) ([]byte, error) {
 }
 
 // Queries returns the Queries for the app.
-func (h *HTTPSource) Queries(_, _ string) []directive.DBQuery {
+func (h *HTTPSource) Queries(ident, version string) []directive.DBQuery {
 	queries := make([]directive.DBQuery, 0)
-	// @TODO issue-117: how to get queries for identifier / version.
-	if _, err := h.get("/queries", &queries); err != nil {
+
+	if _, err := h.get(fmt.Sprintf("/queries/%s/%s", ident, version), &queries); err != nil {
 		h.opts.Logger.Error(errors.Wrap(err, "failed to get /queries"))
 	}
 
