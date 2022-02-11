@@ -8,9 +8,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/suborbital/atmo/atmo/options"
-	"github.com/suborbital/atmo/directive"
 	"github.com/suborbital/atmo/fqfn"
-	"github.com/suborbital/reactr/rcap"
 	"github.com/suborbital/vektor/vk"
 )
 
@@ -39,16 +37,16 @@ func (a *AppSourceVKRouter) GenerateRouter() (*vk.Router, error) {
 
 	router := vk.NewRouter(a.options.Logger)
 
-	router.GET("/runnables", a.RunnablesHandler())
+	router.GET("/runnables/:ident/:version", a.RunnablesHandler())
 	router.GET("/runnable/:ident/:namespace/:fn/:version", a.FindRunnableHandler())
-	router.GET("/handlers", a.HandlersHandler())
-	router.GET("/schedules", a.SchedulesHandler())
-	router.GET("/connections", a.ConnectionsHandler())
-	router.GET("/authentication", a.AuthenticationHandler())
-	router.GET("/capabilities", a.CapabilitiesHandler())
+	router.GET("/handlers/:ident/:version", a.HandlersHandler())
+	router.GET("/schedules/:ident/:version", a.SchedulesHandler())
+	router.GET("/connections/:ident/:version", a.ConnectionsHandler())
+	router.GET("/authentication/:ident/:version", a.AuthenticationHandler())
+	router.GET("/capabilities/:ident/:version", a.CapabilitiesHandler())
 
 	// this is undefined right now. I'm not sure how to fetch one file without explicit ident / version info.
-	router.GET("/file/:filename", a.FileHandler())
+	router.GET("/file/:ident/:version/:filename", a.FileHandler())
 	router.GET("/meta", a.MetaHandler())
 
 	return router, nil
@@ -57,13 +55,10 @@ func (a *AppSourceVKRouter) GenerateRouter() (*vk.Router, error) {
 // RunnablesHandler is a handler to fetch Runnables.
 func (a *AppSourceVKRouter) RunnablesHandler() vk.HandlerFunc {
 	return func(r *http.Request, ctx *vk.Ctx) (interface{}, error) {
-		runnables := make([]directive.Runnable, 0)
+		ident := ctx.Params.ByName("ident")
+		version := ctx.Params.ByName("version")
 
-		for _, app := range a.appSource.Applications() {
-			runnables = append(runnables, a.appSource.Runnables(app.Identifier, app.AppVersion)...)
-		}
-
-		return runnables, nil
+		return a.appSource.Runnables(ident, version), nil
 	}
 }
 
@@ -100,65 +95,50 @@ func (a *AppSourceVKRouter) FindRunnableHandler() vk.HandlerFunc {
 // HandlersHandler is a handler to fetch Handlers.
 func (a *AppSourceVKRouter) HandlersHandler() vk.HandlerFunc {
 	return func(r *http.Request, ctx *vk.Ctx) (interface{}, error) {
-		handlers := make([]directive.Handler, 0)
+		ident := ctx.Params.ByName("ident")
+		version := ctx.Params.ByName("version")
 
-		for _, app := range a.appSource.Applications() {
-			handlers = append(handlers, a.appSource.Handlers(app.Identifier, app.AppVersion)...)
-		}
-
-		return handlers, nil
+		return a.appSource.Handlers(ident, version), nil
 	}
 }
 
 // SchedulesHandler is a handler to fetch Schedules.
 func (a *AppSourceVKRouter) SchedulesHandler() vk.HandlerFunc {
 	return func(r *http.Request, ctx *vk.Ctx) (interface{}, error) {
-		schedules := make([]directive.Schedule, 0)
+		ident := ctx.Params.ByName("ident")
+		version := ctx.Params.ByName("version")
 
-		for _, app := range a.appSource.Applications() {
-			schedules = append(schedules, a.appSource.Schedules(app.Identifier, app.AppVersion)...)
-		}
-
-		return schedules, nil
+		return a.appSource.Schedules(ident, version), nil
 	}
 }
 
 // ConnectionsHandler is a handler to fetch Connection data.
 func (a *AppSourceVKRouter) ConnectionsHandler() vk.HandlerFunc {
 	return func(r *http.Request, ctx *vk.Ctx) (interface{}, error) {
-		connections := make([]directive.Connections, 0)
+		ident := ctx.Params.ByName("ident")
+		version := ctx.Params.ByName("version")
 
-		for _, app := range a.appSource.Applications() {
-			connections = append(connections, a.appSource.Connections(app.Identifier, app.AppVersion))
-		}
-
-		return connections, nil
+		return a.appSource.Connections(ident, version), nil
 	}
 }
 
 // AuthenticationHandler is a handler to fetch Authentication data.
 func (a *AppSourceVKRouter) AuthenticationHandler() vk.HandlerFunc {
 	return func(r *http.Request, ctx *vk.Ctx) (interface{}, error) {
-		authentications := make([]directive.Authentication, 0)
+		ident := ctx.Params.ByName("ident")
+		version := ctx.Params.ByName("version")
 
-		for _, app := range a.appSource.Applications() {
-			authentications = append(authentications, a.appSource.Authentication(app.Identifier, app.AppVersion))
-		}
-
-		return authentications, nil
+		return a.appSource.Authentication(ident, version), nil
 	}
 }
 
 // CapabilitiesHandler is a handler to fetch Capabilities data.
 func (a *AppSourceVKRouter) CapabilitiesHandler() vk.HandlerFunc {
 	return func(r *http.Request, ctx *vk.Ctx) (interface{}, error) {
-		capabilities := make([]*rcap.CapabilityConfig, 0)
+		ident := ctx.Params.ByName("ident")
+		version := ctx.Params.ByName("version")
 
-		for _, app := range a.appSource.Applications() {
-			capabilities = append(capabilities, a.appSource.Capabilities(app.Identifier, app.AppVersion))
-		}
-
-		return capabilities, nil
+		return a.appSource.Capabilities(ident, version), nil
 	}
 }
 
@@ -166,8 +146,10 @@ func (a *AppSourceVKRouter) CapabilitiesHandler() vk.HandlerFunc {
 func (a *AppSourceVKRouter) FileHandler() vk.HandlerFunc {
 	return func(r *http.Request, ctx *vk.Ctx) (interface{}, error) {
 		filename := ctx.Params.ByName("filename")
+		ident := ctx.Params.ByName("ident")
+		version := ctx.Params.ByName("version")
 
-		fileBytes, err := a.appSource.File("", "", filename)
+		fileBytes, err := a.appSource.File(ident, version, filename)
 		if err != nil {
 			if errors.Is(err, os.ErrNotExist) {
 				return nil, vk.E(http.StatusNotFound, "not found")
