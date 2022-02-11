@@ -25,6 +25,7 @@ type HTTPSource struct {
 	host string
 	opts options.Options
 
+	// key is fqfn.
 	runnables map[string]directive.Runnable
 	lock      sync.RWMutex
 }
