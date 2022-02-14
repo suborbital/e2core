@@ -43,7 +43,7 @@ func (a *AppSourceVKRouter) GenerateRouter() (*vk.Router, error) {
 	router.GET("/schedules/:ident/:version", a.SchedulesHandler())
 	router.GET("/connections/:ident/:version", a.ConnectionsHandler())
 	router.GET("/authentication/:ident/:version", a.AuthenticationHandler())
-	router.GET("/capabilities/:ident/:version", a.CapabilitiesHandler())
+	router.GET("/capabilities/:ident/:namespace/:version", a.CapabilitiesHandler())
 
 	// this is undefined right now. I'm not sure how to fetch one file without explicit ident / version info.
 	router.GET("/file/:ident/:version/:filename", a.FileHandler())
@@ -136,9 +136,10 @@ func (a *AppSourceVKRouter) AuthenticationHandler() vk.HandlerFunc {
 func (a *AppSourceVKRouter) CapabilitiesHandler() vk.HandlerFunc {
 	return func(r *http.Request, ctx *vk.Ctx) (interface{}, error) {
 		ident := ctx.Params.ByName("ident")
+		namespace := ctx.Params.ByName("namespace")
 		version := ctx.Params.ByName("version")
 
-		return a.appSource.Capabilities(ident, version), nil
+		return a.appSource.Capabilities(ident, namespace, version), nil
 	}
 }
 

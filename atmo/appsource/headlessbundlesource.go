@@ -103,8 +103,8 @@ func (h *HeadlessBundleSource) Authentication(identifier, version string) direct
 }
 
 // Capabilities returns the Capabilities for the app.
-func (h *HeadlessBundleSource) Capabilities(identifier, version string) *rcap.CapabilityConfig {
-	return h.bundleSource.Capabilities(identifier, version)
+func (h *HeadlessBundleSource) Capabilities(identifier, namespace, version string) *rcap.CapabilityConfig {
+	return h.bundleSource.Capabilities(identifier, namespace, version)
 }
 
 // File returns a requested file.

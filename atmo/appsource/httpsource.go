@@ -178,10 +178,10 @@ func (h *HTTPSource) Authentication(ident, version string) directive.Authenticat
 }
 
 // Capabilities returns the Capabilities for the app.
-func (h *HTTPSource) Capabilities(ident, version string) *rcap.CapabilityConfig {
+func (h *HTTPSource) Capabilities(ident, namespace, version string) *rcap.CapabilityConfig {
 	capabilities := rcap.CapabilityConfig{}
 
-	if _, err := h.get(fmt.Sprintf("/capabilities/%s/%s", ident, version), &capabilities); err != nil {
+	if _, err := h.get(fmt.Sprintf("/capabilities/%s/%s/%s", ident, namespace, version), &capabilities); err != nil {
 		h.opts.Logger.Error(errors.Wrap(err, "failed to get /authentication"))
 	}
 
