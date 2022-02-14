@@ -7,7 +7,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/suborbital/atmo/atmo/appsource"
-	"github.com/suborbital/atmo/atmo/coordinator/capabilities"
 	"github.com/suborbital/atmo/atmo/coordinator/executor"
 	"github.com/suborbital/atmo/atmo/options"
 	"github.com/suborbital/atmo/directive"
@@ -89,17 +88,6 @@ func (c *Coordinator) Start() error {
 
 	// establish connections defined by the app.
 	c.createConnections()
-
-	caps, err := capabilities.Render(rcap.DefaultCapabilityConfig(), c.App, c.log)
-	if err != nil {
-		return errors.Wrap(err, "failed to renderCapabilities")
-	}
-
-	// we have to wait until here to initialize Reactr
-	// since the appsource needs to be fully initialized.
-	if err := c.exec.UseCapabilityConfig(caps); err != nil {
-		return errors.Wrap(err, "failed to UseCapabilityConfig")
-	}
 
 	// do an initial sync of Runnables
 	// from the AppSource into RVG.

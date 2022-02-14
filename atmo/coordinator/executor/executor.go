@@ -8,8 +8,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/atmo/bundle/load"
-	"github.com/suborbital/atmo/directive"
+	"github.com/suborbital/atmo/atmo/appsource"
+	"github.com/suborbital/atmo/atmo/coordinator/capabilities"
 	"github.com/suborbital/atmo/directive/executable"
 	"github.com/suborbital/grav/discovery/local"
 	"github.com/suborbital/grav/grav"
@@ -17,6 +17,7 @@ import (
 	"github.com/suborbital/reactr/rcap"
 	"github.com/suborbital/reactr/request"
 	"github.com/suborbital/reactr/rt"
+	"github.com/suborbital/reactr/rwasm"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
 )
@@ -196,24 +197,42 @@ func (e *Executor) SetSchedule(sched rt.Schedule) error {
 	return nil
 }
 
+// @todo pass in the whole appsource
+//
 // Load loads Runnables into the executor's Reactr instance
 // And connects them to the Grav instance (currently unused).
-func (e *Executor) Load(runnables []directive.Runnable) error {
+//func (e *Executor) Load(runnables []directive.Runnable) error {
+
+func (e *Executor) Load(source appsource.AppSource) error {
 	if e.reactr == nil {
 		return ErrExecutorNotConfigured
 	}
 
-	for _, fn := range runnables {
-		if fn.FQFN == "" {
-			e.log.ErrorString("fn", fn.Name, "missing calculated FQFN, will not be available")
-			continue
-		}
+	for _, app := range source.Applications() {
+		for _, fn := range source.Runnables(app.Identifier, app.AppVersion) {
+			if fn.FQFN == "" {
+				e.log.ErrorString("fn", fn.Name, "missing calculated FQFN, will not be available")
+				continue
+			}
 
-		e.log.Debug("adding listener for", fn.FQFN)
-		e.reactr.Listen(e.grav.Connect(), fn.FQFN)
+			renderedCap, err := capabilities.ResolveFromSource(source, app.Identifier, fn.Namespace, app.AppVersion, e.log)
+			if err != nil {
+				return errors.Wrap(err, "capabilities.ResolveFromSource")
+			}
+
+			capObject, err := rt.CapabilitiesFromConfig(renderedCap)
+			if err != nil {
+				return errors.Wrap(err, "rt.CapabilitiesFromConfig")
+			}
+
+			e.reactr.RegisterWithCaps("something", rwasm.NewRunnerWithRef(fn.ModuleRef), *capObject)
+
+			e.log.Debug("adding listener for", fn.FQFN)
+			e.reactr.Listen(e.grav.Connect(), fn.FQFN)
+		}
 	}
 
-	return load.Runnables(e.reactr, runnables, false)
+	return nil
 }
 
 // Metrics returns the executor's Reactr isntance's internal metrics.
