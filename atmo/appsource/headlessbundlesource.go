@@ -49,8 +49,8 @@ func (h *HeadlessBundleSource) Runnables(identifier, version string) []directive
 // FindRunnable returns a nil error if a Runnable with the
 // provided FQFN can be made available at the next sync,
 // otherwise ErrRunnableNotFound is returned.
-func (h *HeadlessBundleSource) FindRunnable(identifier, version, fqfn, auth string) (*directive.Runnable, error) {
-	return h.bundleSource.FindRunnable(identifier, version, fqfn, auth)
+func (h *HeadlessBundleSource) FindRunnable(fqfn, auth string) (*directive.Runnable, error) {
+	return h.bundleSource.FindRunnable(fqfn, auth)
 }
 
 // Handlers returns the handlers for the app.

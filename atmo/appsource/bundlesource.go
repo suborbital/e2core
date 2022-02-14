@@ -68,11 +68,7 @@ func (b *BundleSource) Runnables(identifier, version string) []directive.Runnabl
 
 // FindRunnable searches for and returns the requested runnable
 // otherwise ErrRunnableNotFound.
-func (b *BundleSource) FindRunnable(identifier, version, fqfn, _ string) (*directive.Runnable, error) {
-	if !b.checkIdentifierVersion(identifier, version) {
-		return nil, ErrRunnableNotFound
-	}
-
+func (b *BundleSource) FindRunnable(fqfn, _ string) (*directive.Runnable, error) {
 	b.lock.RLock()
 	defer b.lock.RUnlock()
 
@@ -154,7 +150,8 @@ func (b *BundleSource) Authentication(identifier, version string) directive.Auth
 }
 
 // Capabilities returns the configuration for the app's capabilities.
-func (b *BundleSource) Capabilities(identifier, version string) *rcap.CapabilityConfig {
+
+func (b *BundleSource) Capabilities(identifier, namespace, version string) *rcap.CapabilityConfig {
 	defaultConfig := rcap.DefaultCapabilityConfig()
 
 	if !b.checkIdentifierVersion(identifier, version) {

@@ -46,7 +46,7 @@ type AppSource interface {
 	Authentication(string, string) directive.Authentication
 
 	// Capabilities provides the application's configured capabilities.
-	Capabilities(string, string) *rcap.CapabilityConfig
+	Capabilities(ident, namespace, version string) *rcap.CapabilityConfig
 
 	// File is a source of files for the Runnables
 	// TODO: refactor this into a set of capabilities / profiles.
