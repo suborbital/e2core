@@ -123,7 +123,6 @@ func TestFileMainJSEndpoint(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Log(string(data))
 
 	vt.Do(req, t).
 		AssertStatus(200).
@@ -162,7 +161,6 @@ func TestFetchEndpoint(t *testing.T) {
 			})
 		}
 	})
-	t.Log(string(resp.Body))
 }
 
 func atmoForBundle(filepath string) *Atmo {
