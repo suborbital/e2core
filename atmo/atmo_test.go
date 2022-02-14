@@ -146,18 +146,18 @@ func TestFetchEndpoint(t *testing.T) {
 	}
 	resp := vt.Do(req, t)
 
-	//check the response for these "atmo", "grav" and "vektor" keywords to ensure that the correct HTML has been loaded
+	//check the response for these "Repositories", "People" and "Sponsoring" keywords to ensure that the correct HTML has been loaded
 	ar := []string{
-		"atmo",
-		"grav",
-		"vektor",
+		"Repositories",
+		"People",
+		"Sponsoring",
 	}
 
 	t.Run("contains", func(t *testing.T) {
 		for _, s := range ar {
 			t.Run(s, func(t *testing.T) {
 				if !strings.Contains(string(resp.Body), s) {
-					t.Errorf("Couldn't find, %s in the response", s)
+					t.Errorf("Couldn't find %s in the response", s)
 				}
 			})
 		}
