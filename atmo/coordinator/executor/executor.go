@@ -14,7 +14,6 @@ import (
 	"github.com/suborbital/grav/discovery/local"
 	"github.com/suborbital/grav/grav"
 	"github.com/suborbital/grav/transport/websocket"
-	"github.com/suborbital/reactr/rcap"
 	"github.com/suborbital/reactr/request"
 	"github.com/suborbital/reactr/rt"
 	"github.com/suborbital/reactr/rwasm"
@@ -31,8 +30,9 @@ var (
 // Executor is a facade over Grav and Reactr that allows executing local OR remote
 // functions with a single call, ensuring there is no difference between them to the caller.
 type Executor struct {
-	reactr *rt.Reactr
-	grav   *grav.Grav
+	reactr   *rt.Reactr
+	grav     *grav.Grav
+	capCache map[string]*rt.Capabilities
 
 	pod *grav.Pod
 
@@ -65,11 +65,12 @@ func NewWithGrav(log *vlog.Logger, g *grav.Grav) *Executor {
 		pod = g.Connect()
 	}
 
-	// Reactr is configured in UseCapabiltyConfig.
 	e := &Executor{
-		grav: g,
-		pod:  pod,
-		log:  log,
+		grav:     g,
+		pod:      pod,
+		log:      log,
+		reactr:   rt.New(),
+		capCache: make(map[string]*rt.Capabilities),
 	}
 
 	return e
@@ -104,18 +105,6 @@ func (e *Executor) Do(jobType string, req *request.CoordinatedRequest, ctx *vk.C
 	}
 
 	return result, err
-}
-
-// UseCapabilityConfig sets up the executor's Reactr instance using the provided capability configuration.
-func (e *Executor) UseCapabilityConfig(config rcap.CapabilityConfig) error {
-	r, err := rt.NewWithConfig(config)
-	if err != nil {
-		return errors.Wrap(err, "failed to rt.NewWithConfig")
-	}
-
-	e.reactr = r
-
-	return nil
 }
 
 // UseGrav sets a Grav instance to use (in case one was not provided initially)
@@ -215,17 +204,13 @@ func (e *Executor) Load(source appsource.AppSource) error {
 				continue
 			}
 
-			renderedCap, err := capabilities.ResolveFromSource(source, app.Identifier, fn.Namespace, app.AppVersion, e.log)
+			capObject, err := e.resolveCap(app.Identifier, fn.Namespace, app.AppVersion, source, e.log)
 			if err != nil {
-				return errors.Wrap(err, "capabilities.ResolveFromSource")
+				e.log.ErrorString("e.resolveCap", err.Error(), app.Identifier, fn.Namespace, app.AppVersion)
+				continue
 			}
 
-			capObject, err := rt.CapabilitiesFromConfig(renderedCap)
-			if err != nil {
-				return errors.Wrap(err, "rt.CapabilitiesFromConfig")
-			}
-
-			e.reactr.RegisterWithCaps("something", rwasm.NewRunnerWithRef(fn.ModuleRef), *capObject)
+			e.reactr.RegisterWithCaps(fn.FQFN, rwasm.NewRunnerWithRef(fn.ModuleRef), *capObject)
 
 			e.log.Debug("adding listener for", fn.FQFN)
 			e.reactr.Listen(e.grav.Connect(), fn.FQFN)
@@ -233,6 +218,30 @@ func (e *Executor) Load(source appsource.AppSource) error {
 	}
 
 	return nil
+}
+
+// resolveCap stores the cap if it doesn't exist yet, or returns it if it does.
+func (e *Executor) resolveCap(ident, namespace, version string, source appsource.AppSource, log *vlog.Logger) (*rt.Capabilities, error) {
+	cacheKey := fmt.Sprintf("%s/%s/%s", ident, namespace, version)
+
+	foundCap, ok := e.capCache[cacheKey]
+	if ok {
+		return foundCap, nil
+	}
+
+	renderedCap, err := capabilities.ResolveFromSource(source, ident, namespace, version, e.log)
+	if err != nil {
+		return nil, errors.Wrap(err, "capabilities.ResolveFromSource")
+	}
+
+	capObject, err := rt.CapabilitiesFromConfig(renderedCap)
+	if err != nil {
+		return nil, errors.Wrap(err, "rt.CapabilitiesFromConfig")
+	}
+
+	e.capCache[cacheKey] = capObject
+
+	return capObject, nil
 }
 
 // Metrics returns the executor's Reactr isntance's internal metrics.
