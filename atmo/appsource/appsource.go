@@ -22,10 +22,10 @@ type Meta struct {
 
 type AppSource interface {
 	// Start indicates to the AppSource that it should prepare for app startup.
-	Start(options.Options) error
+	Start(opts options.Options) error
 
 	// Runnables returns all of the available Runnables.
-	Runnables(string, string) []directive.Runnable
+	Runnables(ident, version string) []directive.Runnable
 
 	// FindRunnable directs the AppSource to attempt to find
 	// a particular Runnable and make it available at next
@@ -34,16 +34,16 @@ type AppSource interface {
 	FindRunnable(fqfn, authHeader string) (*directive.Runnable, error)
 
 	// Handlers returns the handlers for the app.
-	Handlers(string, string) []directive.Handler
+	Handlers(ident, version string) []directive.Handler
 
 	// Schedules returns the requested schedules for the app.
-	Schedules(string, string) []directive.Schedule
+	Schedules(ident, version string) []directive.Schedule
 
 	// Connections returns the connections needed for the app.
-	Connections(string, string) directive.Connections
+	Connections(ident, version string) directive.Connections
 
 	// Authentication provides any auth headers or metadata for the app.
-	Authentication(string, string) directive.Authentication
+	Authentication(ident, version string) directive.Authentication
 
 	// Capabilities provides the application's configured capabilities.
 	Capabilities(ident, namespace, version string) *rcap.CapabilityConfig
@@ -53,7 +53,7 @@ type AppSource interface {
 	File(identifier, version, path string) ([]byte, error)
 
 	// Queries returns the database queries that should be made available.
-	Queries(string, string) []directive.DBQuery
+	Queries(ident, version string) []directive.DBQuery
 
 	// Applications returns a slice of Meta, metadata about the apps in that app source.
 	Applications() []Meta
