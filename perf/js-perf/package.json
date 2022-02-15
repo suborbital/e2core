@@ -1,0 +1,17 @@
+{
+  "name": "js-perf",
+  "description": "",
+  "version": "",
+  "dependencies": {
+    "@suborbital/runnable": "^0.14.0",
+    "fastestsmallesttextencoderdecoder-encodeinto": "^1.0.22"
+  },
+  "devDependencies": {
+    "webpack": "^5.38.1",
+    "webpack-cli": "^4.7.2"
+  },
+  "scripts": {
+    "prebuild": "webpack",
+    "build": "javy build/index.js -o js-perf.wasm"
+  }
+}
