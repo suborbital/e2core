@@ -21,10 +21,10 @@ const (
 
 // FQFN is a parsed fqfn
 type FQFN struct {
-	Identifier string
-	Namespace  string
-	Fn         string
-	Version    string
+	Identifier string `json:"identifier"`
+	Namespace  string `json:"namespace"`
+	Fn         string `json:"fn"`
+	Version    string `json:"version"`
 }
 
 func Parse(name string) FQFN {
