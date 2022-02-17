@@ -32,13 +32,6 @@ func NewBundleSource(path string) AppSource {
 	return b
 }
 
-// checkIdentifierVersion checks whether the passed in identifier and version are for the current app running in the
-// bundle or not. Returns true only if both match.
-func (b *BundleSource) checkIdentifierVersion(identifier, version string) bool {
-	return b.bundle.Directive.Identifier == identifier &&
-		b.bundle.Directive.AppVersion == version
-}
-
 // Start initializes the app source.
 func (b *BundleSource) Start(opts options.Options) error {
 	b.opts = opts
@@ -246,4 +239,11 @@ func (b *BundleSource) findBundle() error {
 	}
 
 	return nil
+}
+
+// checkIdentifierVersion checks whether the passed in identifier and version are for the current app running in the
+// bundle or not. Returns true only if both match.
+func (b *BundleSource) checkIdentifierVersion(identifier, version string) bool {
+	return b.bundle.Directive.Identifier == identifier &&
+		b.bundle.Directive.AppVersion == version
 }
