@@ -29,6 +29,7 @@ const (
 	atmoMessageURI           = "/meta/message"
 	AtmoMetricsURI           = "/meta/metrics"
 	AtmoHealthURI            = "/health"
+	connectionKeyFormat      = "%s.%s.%s"
 )
 
 type rtFunc func(rt.Job, *rt.Ctx) (interface{}, error)
@@ -118,7 +119,7 @@ func (c *Coordinator) SetupHandlers() *vk.Router {
 				if h.Input.Source == "" || h.Input.Source == directive.InputSourceServer {
 					router.HandleHTTP(http.MethodGet, h.Input.Resource, c.websocketHandlerForDirectiveHandler(h))
 				} else {
-					c.streamConnectionForDirectiveHandler(h)
+					c.streamConnectionForDirectiveHandler(h, application)
 				}
 			}
 		}
@@ -140,6 +141,9 @@ func (c *Coordinator) createConnections() {
 	for _, application := range c.App.Applications() {
 		connections := c.App.Connections(application.Identifier, application.AppVersion)
 
+		natsKey := fmt.Sprintf(connectionKeyFormat, application.Identifier, application.AppVersion, directive.InputSourceNATS)
+		kafkaKey := fmt.Sprintf(connectionKeyFormat, application.Identifier, application.AppVersion, directive.InputSourceKafka)
+
 		if connections.NATS != nil {
 			address := rcap.AugmentedValFromEnv(connections.NATS.ServerAddress)
 
@@ -152,7 +156,7 @@ func (c *Coordinator) createConnections() {
 					grav.UseTransport(gnats),
 				)
 
-				c.connections[directive.InputSourceNATS] = g
+				c.connections[natsKey] = g
 			}
 		}
 
@@ -168,7 +172,7 @@ func (c *Coordinator) createConnections() {
 					grav.UseTransport(gkafka),
 				)
 
-				c.connections[directive.InputSourceKafka] = g
+				c.connections[kafkaKey] = g
 			}
 		}
 	}

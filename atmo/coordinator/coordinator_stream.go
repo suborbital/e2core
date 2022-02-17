@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 
+	"github.com/suborbital/atmo/atmo/appsource"
 	"github.com/suborbital/atmo/atmo/coordinator/sequence"
 	"github.com/suborbital/atmo/directive"
 	"github.com/suborbital/grav/grav"
@@ -18,12 +19,14 @@ type messageScope struct {
 	MessageUUID string `json:"messageUUID"`
 }
 
-func (c *Coordinator) streamConnectionForDirectiveHandler(handler directive.Handler) {
+func (c *Coordinator) streamConnectionForDirectiveHandler(handler directive.Handler, appInfo appsource.Meta) {
 	handlerIdent := fmt.Sprintf("%s:%s", handler.Input.Source, handler.Input.Resource)
 
 	c.log.Debug("setting up stream connection for", handlerIdent)
 
-	connection, exists := c.connections[handler.Input.Source]
+	connectionKey := fmt.Sprintf(connectionKeyFormat, appInfo.Identifier, appInfo.AppVersion, handler.Input.Source)
+
+	connection, exists := c.connections[connectionKey]
 	if !exists {
 		c.log.ErrorString("connection to", handler.Input.Source, "not configured, handler will not be mounted")
 		return
