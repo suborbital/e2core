@@ -200,7 +200,7 @@ func (e *Executor) Load(source appsource.AppSource) error {
 				continue
 			}
 
-			capObject, err := e.resolveCap(app.Identifier, fn.Namespace, app.AppVersion, source, e.log)
+			capObject, err := e.resolveCap(app.Identifier, fn.Namespace, app.AppVersion, source)
 			if err != nil {
 				e.log.ErrorString("e.resolveCap", err.Error(), app.Identifier, fn.Namespace, app.AppVersion)
 				continue
@@ -217,7 +217,7 @@ func (e *Executor) Load(source appsource.AppSource) error {
 }
 
 // resolveCap stores the cap if it doesn't exist yet, or returns it if it does.
-func (e *Executor) resolveCap(ident, namespace, version string, source appsource.AppSource, log *vlog.Logger) (*rt.Capabilities, error) {
+func (e *Executor) resolveCap(ident, namespace, version string, source appsource.AppSource) (*rt.Capabilities, error) {
 	cacheKey := fmt.Sprintf("%s/%s/%s", ident, namespace, version)
 
 	foundCap, ok := e.capCache[cacheKey]
