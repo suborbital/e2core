@@ -55,9 +55,6 @@ lint:
 lint/fix:
 	golangci-lint run --fix ./...
 
-fix-imports:
-	gci write --Section Standard --Section Default --Section "Prefix(github.com/suborbital)" --Section "Prefix(github.com/suborbital/atmo)" ./**/*.go
-
 loadtest:
 	go run ./testingsupport/load/load-tester.go
 
