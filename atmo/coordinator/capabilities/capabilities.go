@@ -8,6 +8,8 @@ import (
 	"github.com/suborbital/vektor/vlog"
 )
 
+// ResolveFromSource takes the ident, namespace, and version, and looks up the capabilities for that trio from the
+// AppSource applying the user overrides over the default configurations.
 func ResolveFromSource(source appsource.AppSource, ident, namespace, version string, log *vlog.Logger) (rcap.CapabilityConfig, error) {
 	defaultConfig := rcap.DefaultCapabilityConfig()
 
