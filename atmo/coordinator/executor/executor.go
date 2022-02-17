@@ -186,12 +186,8 @@ func (e *Executor) SetSchedule(sched rt.Schedule) error {
 	return nil
 }
 
-// @todo pass in the whole appsource
-//
 // Load loads Runnables into the executor's Reactr instance
-// And connects them to the Grav instance (currently unused).
-//func (e *Executor) Load(runnables []directive.Runnable) error {
-
+// And connects them to the Grav instance.
 func (e *Executor) Load(source appsource.AppSource) error {
 	if e.reactr == nil {
 		return ErrExecutorNotConfigured
