@@ -5,8 +5,8 @@ import (
 	"net/http"
 
 	"github.com/pkg/errors"
+
 	"github.com/suborbital/atmo/atmo/appsource"
-	"github.com/suborbital/atmo/atmo/coordinator/capabilities"
 	"github.com/suborbital/atmo/atmo/coordinator/executor"
 	"github.com/suborbital/atmo/atmo/options"
 	"github.com/suborbital/atmo/directive"
@@ -29,11 +29,12 @@ const (
 	atmoMessageURI           = "/meta/message"
 	AtmoMetricsURI           = "/meta/metrics"
 	AtmoHealthURI            = "/health"
+	connectionKeyFormat      = "%s.%s.%s"
 )
 
 type rtFunc func(rt.Job, *rt.Ctx) (interface{}, error)
 
-// Coordinator is a type that is responsible for covnerting the directive into
+// Coordinator is a type that is responsible for converting the directive into
 // usable Vektor handles by coordinating Reactr jobs and meshing when needed.
 type Coordinator struct {
 	App  appsource.AppSource
@@ -53,7 +54,7 @@ type requestScope struct {
 	RequestID string `json:"request_id"`
 }
 
-// New creates a coordinator
+// New creates a coordinator.
 func New(appSource appsource.AppSource, options *options.Options) *Coordinator {
 	var transport *websocket.Transport
 
@@ -76,7 +77,7 @@ func New(appSource appsource.AppSource, options *options.Options) *Coordinator {
 	return c
 }
 
-// Start allows the Coordinator to bootstrap
+// Start allows the Coordinator to bootstrap.
 func (c *Coordinator) Start() error {
 	if c.opts.Proxy {
 		c.log.Info("running in proxy mode")
@@ -86,49 +87,40 @@ func (c *Coordinator) Start() error {
 		return errors.Wrap(err, "failed to App.Start")
 	}
 
-	// establish connections defined by the app
+	// establish connections defined by the app.
 	c.createConnections()
 
-	caps, err := capabilities.Render(rcap.DefaultCapabilityConfig(), c.App, c.log)
-	if err != nil {
-		return errors.Wrap(err, "failed to renderCapabilities")
-	}
-
-	// we have to wait until here to initialize Reactr
-	// since the appsource needs to be fully initialized
-	if err := c.exec.UseCapabilityConfig(caps); err != nil {
-		return errors.Wrap(err, "failed to UseCapabilityConfig")
-	}
-
 	// do an initial sync of Runnables
-	// from the AppSource into RVG
+	// from the AppSource into RVG.
 	c.SyncAppState()
 
 	return nil
 }
 
-// SetupHandlers configures all of the app's handlers and generates a Vektor Router for the app
+// SetupHandlers configures all of the app's handlers and generates a Vektor Router for the app.
 func (c *Coordinator) SetupHandlers() *vk.Router {
 	router := vk.NewRouter(c.log)
 
-	// set a middleware on the root RouteGroup
+	// set a middleware on the root RouteGroup.
 	router.Before(scopeMiddleware)
 
-	// if in headless mode, enable runnable authentication
+	// if in headless mode, enable runnable authentication.
 	if *c.opts.Headless {
 		router.Before(c.headlessAuthMiddleware())
 	}
 
-	// mount each handler into the VK group
-	for _, h := range c.App.Handlers() {
-		switch h.Input.Type {
-		case directive.InputTypeRequest:
-			router.Handle(h.Input.Method, h.Input.Resource, c.vkHandlerForDirectiveHandler(h))
-		case directive.InputTypeStream:
-			if h.Input.Source == "" || h.Input.Source == directive.InputSourceServer {
-				router.HandleHTTP(http.MethodGet, h.Input.Resource, c.websocketHandlerForDirectiveHandler(h))
-			} else {
-				c.streamConnectionForDirectiveHandler(h)
+	// mount each handler into the VK group.
+	for _, application := range c.App.Applications() {
+		for _, h := range c.App.Handlers(application.Identifier, application.AppVersion) {
+			switch h.Input.Type {
+			case directive.InputTypeRequest:
+				router.Handle(h.Input.Method, h.Input.Resource, c.vkHandlerForDirectiveHandler(h))
+			case directive.InputTypeStream:
+				if h.Input.Source == "" || h.Input.Source == directive.InputSourceServer {
+					router.HandleHTTP(http.MethodGet, h.Input.Resource, c.websocketHandlerForDirectiveHandler(h))
+				} else {
+					c.streamConnectionForDirectiveHandler(h, application)
+				}
 			}
 		}
 	}
@@ -144,70 +136,78 @@ func (c *Coordinator) SetupHandlers() *vk.Router {
 	return router
 }
 
-// CreateConnections establishes all of the connections described in the directive
+// CreateConnections establishes all of the connections described in the directive.
 func (c *Coordinator) createConnections() {
-	connections := c.App.Connections()
+	for _, application := range c.App.Applications() {
+		connections := c.App.Connections(application.Identifier, application.AppVersion)
 
-	if connections.NATS != nil {
-		address := rcap.AugmentedValFromEnv(connections.NATS.ServerAddress)
+		natsKey := fmt.Sprintf(connectionKeyFormat, application.Identifier, application.AppVersion, directive.InputSourceNATS)
+		kafkaKey := fmt.Sprintf(connectionKeyFormat, application.Identifier, application.AppVersion, directive.InputSourceKafka)
 
-		gnats, err := nats.New(address)
-		if err != nil {
-			c.log.Error(errors.Wrap(err, "failed to nats.New for NATS connection"))
-		} else {
-			g := grav.New(
-				grav.UseLogger(c.log),
-				grav.UseTransport(gnats),
-			)
+		if connections.NATS != nil {
+			address := rcap.AugmentedValFromEnv(connections.NATS.ServerAddress)
 
-			c.connections[directive.InputSourceNATS] = g
+			gnats, err := nats.New(address)
+			if err != nil {
+				c.log.Error(errors.Wrap(err, "failed to nats.New for NATS connection"))
+			} else {
+				g := grav.New(
+					grav.UseLogger(c.log),
+					grav.UseTransport(gnats),
+				)
+
+				c.connections[natsKey] = g
+			}
 		}
-	}
 
-	if connections.Kafka != nil {
-		address := rcap.AugmentedValFromEnv(connections.Kafka.BrokerAddress)
+		if connections.Kafka != nil {
+			address := rcap.AugmentedValFromEnv(connections.Kafka.BrokerAddress)
 
-		gkafka, err := kafka.New(address)
-		if err != nil {
-			c.log.Error(errors.Wrap(err, "failed to kafka.New for Kafka connection"))
-		} else {
-			g := grav.New(
-				grav.UseLogger(c.log),
-				grav.UseTransport(gkafka),
-			)
+			gkafka, err := kafka.New(address)
+			if err != nil {
+				c.log.Error(errors.Wrap(err, "failed to kafka.New for Kafka connection"))
+			} else {
+				g := grav.New(
+					grav.UseLogger(c.log),
+					grav.UseTransport(gkafka),
+				)
 
-			c.connections[directive.InputSourceKafka] = g
+				c.connections[kafkaKey] = g
+			}
 		}
 	}
 }
 
 func (c *Coordinator) SetSchedules() {
-	// mount each schedule into Reactr
-	for _, s := range c.App.Schedules() {
-		rtFunc := c.rtFuncForDirectiveSchedule(s)
+	for _, application := range c.App.Applications() {
 
-		// create basically an fqfn for this schedule (com.suborbital.appname#schedule.dojob@v0.1.0)
-		jobName := fmt.Sprintf("%s#schedule.%s@%s", c.App.Meta().Identifier, s.Name, c.App.Meta().AppVersion)
+		// mount each schedule into Reactr.
+		for _, s := range c.App.Schedules(application.Identifier, application.AppVersion) {
+			rtFunc := c.rtFuncForDirectiveSchedule(s)
 
-		c.exec.Register(jobName, &scheduledRunner{rtFunc})
+			// create basically an fqfn for this schedule (com.suborbital.appname#schedule.dojob@v0.1.0).
+			jobName := fmt.Sprintf("%s#schedule.%s@%s", application.Identifier, s.Name, application.AppVersion)
 
-		seconds := s.NumberOfSeconds()
+			c.exec.Register(jobName, &scheduledRunner{rtFunc})
 
-		// only actually schedule the job if the env var isn't set (or is set but not 'false')
-		// the job stays mounted on reactr because we could get a request to run it from grav
-		if *c.opts.RunSchedules {
-			c.log.Debug("adding schedule", jobName)
+			seconds := s.NumberOfSeconds()
 
-			c.exec.SetSchedule(rt.Every(seconds, func() rt.Job {
-				return rt.NewJob(jobName, nil)
-			}))
+			// only actually schedule the job if the env var isn't set (or is set but not 'false')
+			// the job stays mounted on reactr because we could get a request to run it from grav.
+			if *c.opts.RunSchedules {
+				c.log.Debug("adding schedule", jobName)
+
+				c.exec.SetSchedule(rt.Every(seconds, func() rt.Job {
+					return rt.NewJob(jobName, nil)
+				}))
+			}
 		}
 	}
 }
 
-// resultFromState returns the state value for the last single function that ran in a handler
+// resultFromState returns the state value for the last single function that ran in a handler.
 func resultFromState(handler directive.Handler, state map[string][]byte) []byte {
-	// if the handler defines a response explicitly, use it (return nil if there is nothing in state)
+	// if the handler defines a response explicitly, use it (return nil if there is nothing in state).
 	if handler.Response != "" {
 		resp, exists := state[handler.Response]
 		if exists {
@@ -217,13 +217,13 @@ func resultFromState(handler directive.Handler, state map[string][]byte) []byte 
 		return nil
 	}
 
-	// if not, use the last step. If last step is a group, return nil
+	// if not, use the last step. If last step is a group, return nil.
 	step := handler.Steps[len(handler.Steps)-1]
 	if step.IsGroup() {
 		return nil
 	}
 
-	// determine what the state key is
+	// determine what the state key is.
 	key := step.Fn
 	if step.As != "" {
 		key = step.As

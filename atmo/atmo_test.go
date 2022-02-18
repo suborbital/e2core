@@ -11,7 +11,7 @@ import (
 	"github.com/suborbital/vektor/vtest"
 )
 
-//curl -d 'my friend' localhost:8080/hello
+//curl -d 'my friend' localhost:8080/hello.
 func TestHelloEndpoint(t *testing.T) {
 	atmo := atmoForBundle("../example-project/runnables.wasm.zip")
 
@@ -20,7 +20,7 @@ func TestHelloEndpoint(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	vt := vtest.New(server) //creating fake version of the server that we can send requests to and it will behave same was as if it was the real server
+	vt := vtest.New(server) //creating fake version of the server that we can send requests to and it will behave same was as if it was the real server.
 
 	req, err := http.NewRequest(http.MethodPost, "/hello", bytes.NewBuffer([]byte("my friend")))
 	if err != nil {
@@ -33,7 +33,7 @@ func TestHelloEndpoint(t *testing.T) {
 }
 
 //curl -d 'name' localhost:8080/set/name
-//curl localhost:8080/get/name
+//curl localhost:8080/get/name.
 func TestSetAndGetKeyEndpoints(t *testing.T) {
 	atmo := atmoForBundle("../example-project/runnables.wasm.zip")
 
@@ -60,7 +60,7 @@ func TestSetAndGetKeyEndpoints(t *testing.T) {
 
 }
 
-//curl localhost:8080/file/main.md
+//curl localhost:8080/file/main.md.
 func TestFileMainMDEndpoint(t *testing.T) {
 	atmo := atmoForBundle("../example-project/runnables.wasm.zip")
 
@@ -80,7 +80,7 @@ func TestFileMainMDEndpoint(t *testing.T) {
 		AssertBodyString("## hello")
 }
 
-//curl localhost:8080/file/css/main.css
+//curl localhost:8080/file/css/main.css.
 func TestFileMainCSSEndpoint(t *testing.T) {
 	atmo := atmoForBundle("../example-project/runnables.wasm.zip")
 
@@ -104,7 +104,7 @@ func TestFileMainCSSEndpoint(t *testing.T) {
 		AssertBody(data)
 }
 
-// curl localhost:8080/file/js/app/main.js
+// curl localhost:8080/file/js/app/main.js.
 func TestFileMainJSEndpoint(t *testing.T) {
 	atmo := atmoForBundle("../example-project/runnables.wasm.zip")
 
@@ -114,7 +114,7 @@ func TestFileMainJSEndpoint(t *testing.T) {
 	}
 
 	vt := vtest.New(server)
-	req, err := http.NewRequest(http.MethodGet, "/file/js/app/main.js", bytes.NewBuffer([]byte{})) //change to struct initializer format byte{}
+	req, err := http.NewRequest(http.MethodGet, "/file/js/app/main.js", bytes.NewBuffer([]byte{})) //change to struct initializer format byte{}.
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -129,7 +129,7 @@ func TestFileMainJSEndpoint(t *testing.T) {
 		AssertBody(data)
 }
 
-//curl -d 'https://github.com' localhost:8080/fetch | grep "grav"
+//curl -d 'https://github.com' localhost:8080/fetch | grep "grav".
 func TestFetchEndpoint(t *testing.T) {
 	atmo := atmoForBundle("../example-project/runnables.wasm.zip")
 
@@ -145,7 +145,8 @@ func TestFetchEndpoint(t *testing.T) {
 	}
 	resp := vt.Do(req, t)
 
-	//check the response for these "Repositories", "People" and "Sponsoring" keywords to ensure that the correct HTML has been loaded
+	// Check the response for these "Repositories", "People" and "Sponsoring" keywords to ensure that the correct HTML
+	// has been loaded.
 	ar := []string{
 		"Repositories",
 		"People",
@@ -163,6 +164,7 @@ func TestFetchEndpoint(t *testing.T) {
 	})
 }
 
+// nolint
 func atmoForBundle(filepath string) *Atmo {
 	return New(options.UseBundlePath(filepath))
 }

@@ -2,42 +2,44 @@ package capabilities
 
 import (
 	"github.com/pkg/errors"
+
 	"github.com/suborbital/atmo/atmo/appsource"
 	"github.com/suborbital/reactr/rcap"
 	"github.com/suborbital/vektor/vlog"
 )
 
-// Render "renders" capabilities by layering any user-defined
-// capabilities onto the provided set, thus allowing the user to omit any
-// individual capability (or all of them) to receive the defaults.
-func Render(config rcap.CapabilityConfig, source appsource.AppSource, log *vlog.Logger) (rcap.CapabilityConfig, error) {
-	userConfig := source.Capabilities()
+// ResolveFromSource takes the ident, namespace, and version, and looks up the capabilities for that trio from the
+// AppSource applying the user overrides over the default configurations.
+func ResolveFromSource(source appsource.AppSource, ident, namespace, version string, log *vlog.Logger) (rcap.CapabilityConfig, error) {
+	defaultConfig := rcap.DefaultCapabilityConfig()
+
+	userConfig := source.Capabilities(ident, namespace, version)
 	if userConfig == nil {
-		return config, nil
+		return defaultConfig, nil
 	}
 
-	connections := source.Connections()
+	connections := source.Connections(ident, namespace)
 
 	if userConfig.Logger != nil {
-		config.Logger = userConfig.Logger
+		defaultConfig.Logger = userConfig.Logger
 	}
 
 	if userConfig.HTTP != nil {
-		config.HTTP = userConfig.HTTP
+		defaultConfig.HTTP = userConfig.HTTP
 	}
 
 	if userConfig.GraphQL != nil {
-		config.GraphQL = userConfig.GraphQL
+		defaultConfig.GraphQL = userConfig.GraphQL
 	}
 
 	if userConfig.Auth != nil {
-		config.Auth = userConfig.Auth
+		defaultConfig.Auth = userConfig.Auth
 	}
 
-	// config for the cache can come from either the capabilities
-	// and/or connections sections of the directive
+	// defaultConfig for the cache can come from either the capabilities
+	// and/or connections sections of the directive.
 	if userConfig.Cache != nil {
-		config.Cache = userConfig.Cache
+		defaultConfig.Cache = userConfig.Cache
 	}
 
 	if connections.Redis != nil {
@@ -47,33 +49,38 @@ func Render(config rcap.CapabilityConfig, source appsource.AppSource, log *vlog.
 			Password:      connections.Redis.Password,
 		}
 
-		config.Cache.RedisConfig = redisConfig
+		defaultConfig.Cache.RedisConfig = redisConfig
 	}
 
 	if connections.Database != nil {
-		queries := source.Queries()
+		queries := source.Queries(ident, version)
 
 		dbConfig, err := connections.Database.ToRCAPConfig(queries)
 		if err != nil {
-			return config, errors.Wrap(err, "failed to ToRCAPConfig")
+			return defaultConfig, errors.Wrap(err, "failed to ToRCAPConfig")
 		}
 
-		config.DB = dbConfig
+		defaultConfig.DB = dbConfig
 	}
 
 	if userConfig.File != nil {
-		config.File = userConfig.File
+		defaultConfig.File = userConfig.File
+	}
+
+	if userConfig.DB != nil {
+		defaultConfig.DB = userConfig.DB
 	}
 
 	if userConfig.RequestHandler != nil {
-		config.RequestHandler = userConfig.RequestHandler
+		defaultConfig.RequestHandler = userConfig.RequestHandler
 	}
 
-	// The following are extra inputs needed to make things work
+	f := func(pathName string) ([]byte, error) {
+		return source.File(ident, version, pathName)
+	}
 
-	config.Logger.Logger = log
-	config.File.FileFunc = source.File
-	config.Auth.Headers = source.Authentication().Domains
+	defaultConfig.Logger.Logger = log
+	defaultConfig.File.FileFunc = f
 
-	return config, nil
+	return defaultConfig, nil
 }

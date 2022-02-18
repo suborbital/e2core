@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+
 	"github.com/suborbital/atmo/directive/executable"
 	"github.com/suborbital/reactr/request"
 	"github.com/suborbital/reactr/rt"
@@ -23,10 +24,10 @@ func (seq *Sequence) ExecSingleFn(fn executable.CallableFn) (*FnResult, error) {
 
 	var runErr rt.RunErr
 
-	// Do will execute the job locally if possible or find a remote peer to execute it
+	// Do will execute the job locally if possible or find a remote peer to execute it.
 	res, err := seq.exec.Do(fn.FQFN, seq.req, seq.ctx, seq.handleMessage)
 	if err != nil {
-		// check if the error type is rt.RunErr, because those are handled differently
+		// check if the error type is rt.RunErr, because those are handled differently.
 		if returnedErr, isRunErr := err.(rt.RunErr); isRunErr {
 			runErr = returnedErr
 		} else {
@@ -39,7 +40,7 @@ func (seq *Sequence) ExecSingleFn(fn executable.CallableFn) (*FnResult, error) {
 	}
 
 	// runErr would be an actual error returned from a function
-	// should find a better way to determine if a RunErr is "non-nil"
+	// should find a better way to determine if a RunErr is "non-nil".
 	if runErr.Code != 0 || runErr.Message != "" {
 		seq.log.Debug("fn", fn.Fn, "returned an error")
 	}

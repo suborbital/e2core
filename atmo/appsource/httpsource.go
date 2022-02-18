@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+
 	"github.com/suborbital/atmo/atmo/options"
 	"github.com/suborbital/atmo/directive"
 	"github.com/suborbital/atmo/directive/executable"
@@ -19,16 +20,17 @@ import (
 	"github.com/suborbital/reactr/rcap"
 )
 
-// HTTPSource is an AppSource backed by an HTTP client connected to a remote source
+// HTTPSource is an AppSource backed by an HTTP client connected to a remote source.
 type HTTPSource struct {
 	host string
 	opts options.Options
 
+	// key is fqfn.
 	runnables map[string]directive.Runnable
 	lock      sync.RWMutex
 }
 
-// NewHTTPSource creates a new HTTPSource that looks for a bundle at [host]
+// NewHTTPSource creates a new HTTPSource that looks for a bundle at [host].
 func NewHTTPSource(host string) AppSource {
 	if !strings.HasPrefix(host, "http://") && !strings.HasPrefix(host, "https://") {
 		host = fmt.Sprintf("http://%s", host)
@@ -43,7 +45,7 @@ func NewHTTPSource(host string) AppSource {
 	return b
 }
 
-// Start initializes the app source
+// Start initializes the app source.
 func (h *HTTPSource) Start(opts options.Options) error {
 	h.opts = opts
 
@@ -54,10 +56,10 @@ func (h *HTTPSource) Start(opts options.Options) error {
 	return nil
 }
 
-// Runnables returns the Runnables for the app
-func (h *HTTPSource) Runnables() []directive.Runnable {
+// Runnables returns the Runnables for the app.
+func (h *HTTPSource) Runnables(ident, version string) []directive.Runnable {
 	// if we're in headless mode, only return the Runnables we've cached
-	// from calls to FindRunnable (we don't want to load EVERY Runnable)
+	// from calls to FindRunnable (we don't want to load EVERY Runnable).
 	if *h.opts.Headless {
 		h.lock.RLock()
 		defer h.lock.RUnlock()
@@ -65,8 +67,9 @@ func (h *HTTPSource) Runnables() []directive.Runnable {
 		return h.headlessRunnableList()
 	}
 
-	runnables := []directive.Runnable{}
-	if _, err := h.get("/runnables", &runnables); err != nil {
+	runnables := make([]directive.Runnable, 0)
+
+	if _, err := h.get(fmt.Sprintf("/runnables/%s/%s", ident, version), &runnables); err != nil {
 		h.opts.Logger.Error(errors.Wrap(err, "failed to get /runnables"))
 	}
 
@@ -75,11 +78,11 @@ func (h *HTTPSource) Runnables() []directive.Runnable {
 
 // FindRunnable returns a nil error if a Runnable with the
 // provided FQFN can be made available at the next sync,
-// otherwise ErrRunnableNotFound is returned
+// otherwise ErrRunnableNotFound is returned.
 func (h *HTTPSource) FindRunnable(FQFN, auth string) (*directive.Runnable, error) {
 	parsedFQFN := fqfn.Parse(FQFN)
 
-	// if we are in headless mode, first check to see if we've cached a runnable
+	// if we are in headless mode, first check to see if we've cached a runnable.
 	if *h.opts.Headless {
 		h.lock.RLock()
 		r, ok := h.runnables[FQFN]
@@ -90,7 +93,7 @@ func (h *HTTPSource) FindRunnable(FQFN, auth string) (*directive.Runnable, error
 		}
 	}
 
-	// if we need to fetch it from remote, let's do so
+	// if we need to fetch it from remote, let's do so.
 
 	path := fmt.Sprintf("/runnable%s", parsedFQFN.HeadlessURLPath())
 
@@ -108,11 +111,11 @@ func (h *HTTPSource) FindRunnable(FQFN, auth string) (*directive.Runnable, error
 	if auth != "" {
 		// if we get this far, we assume the token was used to successfully get
 		// the runnable from the control plane, and should therefore be used to
-		// authenticate further calls for this function, so we cache it
+		// authenticate further calls for this function, so we cache it.
 		runnable.TokenHash = TokenHash(auth)
 	}
 
-	// again, if we're in headless mode let's cache it for later
+	// again, if we're in headless mode let's cache it for later.
 	if *h.opts.Headless {
 		h.lock.Lock()
 		defer h.lock.Unlock()
@@ -123,8 +126,8 @@ func (h *HTTPSource) FindRunnable(FQFN, auth string) (*directive.Runnable, error
 	return &runnable, nil
 }
 
-// Handlers returns the handlers for the app
-func (h *HTTPSource) Handlers() []directive.Handler {
+// Handlers returns the handlers for the app.
+func (h *HTTPSource) Handlers(ident, version string) []directive.Handler {
 	if *h.opts.Headless {
 		h.lock.RLock()
 		defer h.lock.RUnlock()
@@ -132,57 +135,62 @@ func (h *HTTPSource) Handlers() []directive.Handler {
 		return h.headlessHandlers()
 	}
 
-	handlers := []directive.Handler{}
-	if _, err := h.get("/handlers", &handlers); err != nil {
+	handlers := make([]directive.Handler, 0)
+
+	if _, err := h.get(fmt.Sprintf("/handlers/%s/%s", ident, version), &handlers); err != nil {
 		h.opts.Logger.Error(errors.Wrap(err, "failed to get /handlers"))
 	}
 
 	return handlers
 }
 
-// Schedules returns the schedules for the app
-func (h *HTTPSource) Schedules() []directive.Schedule {
-	schedules := []directive.Schedule{}
-	if _, err := h.get("/schedules", &schedules); err != nil {
+// Schedules returns the schedules for the app.
+func (h *HTTPSource) Schedules(ident, version string) []directive.Schedule {
+	schedules := make([]directive.Schedule, 0)
+
+	if _, err := h.get(fmt.Sprintf("/schedules/%s/%s", ident, version), &schedules); err != nil {
 		h.opts.Logger.Error(errors.Wrap(err, "failed to get /schedules"))
 	}
 
 	return schedules
 }
 
-// Connections returns the Connections for the app
-func (h *HTTPSource) Connections() directive.Connections {
+// Connections returns the Connections for the app.
+func (h *HTTPSource) Connections(ident, version string) directive.Connections {
 	connections := directive.Connections{}
-	if _, err := h.get("/connections", &connections); err != nil {
+
+	if _, err := h.get(fmt.Sprintf("/connections/%s/%s", ident, version), &connections); err != nil {
 		h.opts.Logger.Error(errors.Wrap(err, "failed to get /connections"))
 	}
 
 	return connections
 }
 
-// Authentication returns the Authentication for the app
-func (h *HTTPSource) Authentication() directive.Authentication {
+// Authentication returns the Authentication for the app.
+func (h *HTTPSource) Authentication(ident, version string) directive.Authentication {
 	authentication := directive.Authentication{}
-	if _, err := h.get("/authentication", &authentication); err != nil {
+
+	if _, err := h.get(fmt.Sprintf("/authentication/%s/%s", ident, version), &authentication); err != nil {
 		h.opts.Logger.Error(errors.Wrap(err, "failed to get /authentication"))
 	}
 
 	return authentication
 }
 
-// Capabilities returns the Capabilities for the app
-func (h *HTTPSource) Capabilities() *rcap.CapabilityConfig {
+// Capabilities returns the Capabilities for the app.
+func (h *HTTPSource) Capabilities(ident, namespace, version string) *rcap.CapabilityConfig {
 	capabilities := rcap.CapabilityConfig{}
-	if _, err := h.get("/capabilities", &capabilities); err != nil {
+
+	if _, err := h.get(fmt.Sprintf("/capabilities/%s/%s/%s", ident, namespace, version), &capabilities); err != nil {
 		h.opts.Logger.Error(errors.Wrap(err, "failed to get /authentication"))
 	}
 
 	return &capabilities
 }
 
-// File returns a requested file
-func (h *HTTPSource) File(filename string) ([]byte, error) {
-	path := fmt.Sprintf("/file/%s", filename)
+// File returns a requested file.
+func (h *HTTPSource) File(ident, version, filename string) ([]byte, error) {
+	path := fmt.Sprintf("/file/%s/%s/%s", ident, version, filename)
 
 	resp, err := h.get(path, nil)
 	if err != nil {
@@ -199,26 +207,27 @@ func (h *HTTPSource) File(filename string) ([]byte, error) {
 	return file, nil
 }
 
-// Queries returns the Queries for the app
-func (h *HTTPSource) Queries() []directive.DBQuery {
-	queries := []directive.DBQuery{}
-	if _, err := h.get("/queries", &queries); err != nil {
+// Queries returns the Queries for the app.
+func (h *HTTPSource) Queries(ident, version string) []directive.DBQuery {
+	queries := make([]directive.DBQuery, 0)
+
+	if _, err := h.get(fmt.Sprintf("/queries/%s/%s", ident, version), &queries); err != nil {
 		h.opts.Logger.Error(errors.Wrap(err, "failed to get /queries"))
 	}
 
 	return queries
 }
 
-func (h *HTTPSource) Meta() Meta {
-	meta := Meta{}
-	if _, err := h.get("/meta", &meta); err != nil {
+func (h *HTTPSource) Applications() []Meta {
+	metas := make([]Meta, 0)
+	if _, err := h.get("/meta", &metas); err != nil {
 		h.opts.Logger.Error(errors.Wrap(err, "failed to get /meta"))
 	}
 
-	return meta
+	return metas
 }
 
-// pingServer loops forever until it finds a server at the configured host
+// pingServer loops forever until it finds a server at the configured host.
 func (h *HTTPSource) pingServer() error {
 	for {
 		if _, err := h.get("/meta", nil); err != nil {
@@ -242,12 +251,12 @@ func (h *HTTPSource) pingServer() error {
 	return nil
 }
 
-// get performs a GET request against the configured host and given path
+// get performs a GET request against the configured host and given path.
 func (h *HTTPSource) get(path string, dest interface{}) (*http.Response, error) {
 	return h.authedGet(path, "", dest)
 }
 
-// authedGet performs a GET request against the configured host and given path with the given auth header
+// authedGet performs a GET request against the configured host and given path with the given auth header.
 func (h *HTTPSource) authedGet(path, auth string, dest interface{}) (*http.Response, error) {
 	url, err := url.Parse(fmt.Sprintf("%s%s", h.host, path))
 	if err != nil {
@@ -288,7 +297,7 @@ func (h *HTTPSource) authedGet(path, auth string, dest interface{}) (*http.Respo
 }
 
 func (h *HTTPSource) headlessRunnableList() []directive.Runnable {
-	runnables := []directive.Runnable{}
+	runnables := make([]directive.Runnable, 0)
 
 	for _, r := range h.runnables {
 		runnables = append(runnables, r)
@@ -298,10 +307,10 @@ func (h *HTTPSource) headlessRunnableList() []directive.Runnable {
 }
 
 func (h *HTTPSource) headlessHandlers() []directive.Handler {
-	handlers := []directive.Handler{}
+	handlers := make([]directive.Handler, 0)
 
 	// for each Runnable, construct a handler that executes it
-	// based on a POST request to its FQFN URL /identifier/namespace/fn/version
+	// based on a POST request to its FQFN URL /identifier/namespace/fn/version.
 	for _, runnable := range h.headlessRunnableList() {
 		handler := directive.Handler{
 			Input: directive.Input{

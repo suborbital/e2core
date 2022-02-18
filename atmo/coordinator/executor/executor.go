@@ -8,15 +8,15 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/atmo/bundle/load"
-	"github.com/suborbital/atmo/directive"
+	"github.com/suborbital/atmo/atmo/appsource"
+	"github.com/suborbital/atmo/atmo/coordinator/capabilities"
 	"github.com/suborbital/atmo/directive/executable"
 	"github.com/suborbital/grav/discovery/local"
 	"github.com/suborbital/grav/grav"
 	"github.com/suborbital/grav/transport/websocket"
-	"github.com/suborbital/reactr/rcap"
 	"github.com/suborbital/reactr/request"
 	"github.com/suborbital/reactr/rt"
+	"github.com/suborbital/reactr/rwasm"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
 )
@@ -28,17 +28,18 @@ var (
 )
 
 // Executor is a facade over Grav and Reactr that allows executing local OR remote
-// functions with a single call, ensuring there is no difference between them to the caller
+// functions with a single call, ensuring there is no difference between them to the caller.
 type Executor struct {
-	reactr *rt.Reactr
-	grav   *grav.Grav
+	reactr   *rt.Reactr
+	grav     *grav.Grav
+	capCache map[string]*rt.Capabilities
 
 	pod *grav.Pod
 
 	log *vlog.Logger
 }
 
-// New creates a new Executor with the default Grav configuration
+// New creates a new Executor with the default Grav configuration.
 func New(log *vlog.Logger, transport *websocket.Transport) *Executor {
 	gravOpts := []grav.OptionsModifier{
 		grav.UseLogger(log),
@@ -56,7 +57,7 @@ func New(log *vlog.Logger, transport *websocket.Transport) *Executor {
 	return NewWithGrav(log, g)
 }
 
-// NewWithGrav creates an Executor with a custom Grav instance
+// NewWithGrav creates an Executor with a custom Grav instance.
 func NewWithGrav(log *vlog.Logger, g *grav.Grav) *Executor {
 	var pod *grav.Pod
 
@@ -64,24 +65,25 @@ func NewWithGrav(log *vlog.Logger, g *grav.Grav) *Executor {
 		pod = g.Connect()
 	}
 
-	// Reactr is configured in UseCapabiltyConfig
 	e := &Executor{
-		grav: g,
-		pod:  pod,
-		log:  log,
+		grav:     g,
+		pod:      pod,
+		log:      log,
+		reactr:   rt.New(),
+		capCache: make(map[string]*rt.Capabilities),
 	}
 
 	return e
 }
 
-// Do executes a local or remote job
+// Do executes a local or remote job.
 func (e *Executor) Do(jobType string, req *request.CoordinatedRequest, ctx *vk.Ctx, cb grav.MsgFunc) (interface{}, error) {
 	if e.reactr == nil {
 		return nil, ErrExecutorNotConfigured
 	}
 
 	if !e.reactr.IsRegistered(jobType) {
-		// TODO: handle with a remote call
+		// TODO: handle with a remote call.
 
 		return nil, ErrCannotHandle
 	}
@@ -105,25 +107,13 @@ func (e *Executor) Do(jobType string, req *request.CoordinatedRequest, ctx *vk.C
 	return result, err
 }
 
-// UseCapabilityConfig sets up the executor's Reactr instance using the provided capability configuration
-func (e *Executor) UseCapabilityConfig(config rcap.CapabilityConfig) error {
-	r, err := rt.NewWithConfig(config)
-	if err != nil {
-		return errors.Wrap(err, "failed to rt.NewWithConfig")
-	}
-
-	e.reactr = r
-
-	return nil
-}
-
 // UseGrav sets a Grav instance to use (in case one was not provided initially)
-// this will NOT set the internal pod, and so internal messages will not be sent
+// this will NOT set the internal pod, and so internal messages will not be sent.
 func (e *Executor) UseGrav(g *grav.Grav) {
 	e.grav = g
 }
 
-// Register registers a Runnable
+// Register registers a Runnable.
 func (e *Executor) Register(jobType string, runner rt.Runnable, opts ...rt.Option) error {
 	if e.reactr == nil {
 		return ErrExecutorNotConfigured
@@ -134,7 +124,7 @@ func (e *Executor) Register(jobType string, runner rt.Runnable, opts ...rt.Optio
 	return nil
 }
 
-// DesiredStepState calculates the state as it should be for a particular step's 'with' clause
+// DesiredStepState calculates the state as it should be for a particular step's 'with' clause.
 func (e *Executor) DesiredStepState(step executable.Executable, req *request.CoordinatedRequest) (map[string][]byte, error) {
 	if len(step.With) == 0 {
 		return nil, ErrDesiredStateNotGenerated
@@ -143,7 +133,7 @@ func (e *Executor) DesiredStepState(step executable.Executable, req *request.Coo
 	desiredState := map[string][]byte{}
 	aliased := map[string]bool{}
 
-	// first go through the 'with' clause and load all of the appropriate aliased values
+	// first go through the 'with' clause and load all of the appropriate aliased values.
 	for alias, key := range step.With {
 		val, exists := req.State[key]
 		if !exists {
@@ -154,7 +144,7 @@ func (e *Executor) DesiredStepState(step executable.Executable, req *request.Coo
 		aliased[key] = true
 	}
 
-	// next, go through the rest of the original state and load the non-aliased values
+	// next, go through the rest of the original state and load the non-aliased values.
 	for key, val := range req.State {
 		_, skip := aliased[key]
 		if !skip {
@@ -165,7 +155,7 @@ func (e *Executor) DesiredStepState(step executable.Executable, req *request.Coo
 	return desiredState, nil
 }
 
-// ListenAndRun sets up the executor's Reactr instance to listen for messages and execute the associated job
+// ListenAndRun sets up the executor's Reactr instance to listen for messages and execute the associated job.
 func (e *Executor) ListenAndRun(msgType string, run func(grav.Message, interface{}, error)) error {
 	if e.reactr == nil {
 		return ErrExecutorNotConfigured
@@ -176,7 +166,7 @@ func (e *Executor) ListenAndRun(msgType string, run func(grav.Message, interface
 	return nil
 }
 
-// Send sends a message on the configured Pod
+// Send sends a message on the configured Pod.
 func (e *Executor) Send(msg grav.Message) {
 	if e.pod == nil {
 		return
@@ -185,7 +175,7 @@ func (e *Executor) Send(msg grav.Message) {
 	e.pod.Send(msg)
 }
 
-// SetSchedule adds a Schedule to the executor's Reactr instance
+// SetSchedule adds a Schedule to the executor's Reactr instance.
 func (e *Executor) SetSchedule(sched rt.Schedule) error {
 	if e.reactr == nil {
 		return ErrExecutorNotConfigured
@@ -197,26 +187,60 @@ func (e *Executor) SetSchedule(sched rt.Schedule) error {
 }
 
 // Load loads Runnables into the executor's Reactr instance
-// And connects them to the Grav instance (currently unused)
-func (e *Executor) Load(runnables []directive.Runnable) error {
+// And connects them to the Grav instance.
+func (e *Executor) Load(source appsource.AppSource) error {
 	if e.reactr == nil {
 		return ErrExecutorNotConfigured
 	}
 
-	for _, fn := range runnables {
-		if fn.FQFN == "" {
-			e.log.ErrorString("fn", fn.Name, "missing calculated FQFN, will not be available")
-			continue
-		}
+	for _, app := range source.Applications() {
+		for _, fn := range source.Runnables(app.Identifier, app.AppVersion) {
+			if fn.FQFN == "" {
+				e.log.ErrorString("fn", fn.Name, "missing calculated FQFN, will not be available")
+				continue
+			}
 
-		e.log.Debug("adding listener for", fn.FQFN)
-		e.reactr.Listen(e.grav.Connect(), fn.FQFN)
+			capObject, err := e.resolveCap(app.Identifier, fn.Namespace, app.AppVersion, source)
+			if err != nil {
+				e.log.ErrorString("e.resolveCap", err.Error(), app.Identifier, fn.Namespace, app.AppVersion)
+				continue
+			}
+
+			e.reactr.RegisterWithCaps(fn.FQFN, rwasm.NewRunnerWithRef(fn.ModuleRef), *capObject)
+
+			e.log.Debug("adding listener for", fn.FQFN)
+			e.reactr.Listen(e.grav.Connect(), fn.FQFN)
+		}
 	}
 
-	return load.Runnables(e.reactr, runnables, false)
+	return nil
 }
 
-// Metrics returns the executor's Reactr isntance's internal metrics
+// resolveCap stores the cap if it doesn't exist yet, or returns it if it does.
+func (e *Executor) resolveCap(ident, namespace, version string, source appsource.AppSource) (*rt.Capabilities, error) {
+	cacheKey := fmt.Sprintf("%s/%s/%s", ident, namespace, version)
+
+	foundCap, ok := e.capCache[cacheKey]
+	if ok {
+		return foundCap, nil
+	}
+
+	renderedCap, err := capabilities.ResolveFromSource(source, ident, namespace, version, e.log)
+	if err != nil {
+		return nil, errors.Wrap(err, "capabilities.ResolveFromSource")
+	}
+
+	capObject, err := rt.CapabilitiesFromConfig(renderedCap)
+	if err != nil {
+		return nil, errors.Wrap(err, "rt.CapabilitiesFromConfig")
+	}
+
+	e.capCache[cacheKey] = capObject
+
+	return capObject, nil
+}
+
+// Metrics returns the executor's Reactr isntance's internal metrics.
 func (e *Executor) Metrics() (*rt.ScalerMetrics, error) {
 	if e.reactr == nil {
 		return nil, ErrExecutorNotConfigured

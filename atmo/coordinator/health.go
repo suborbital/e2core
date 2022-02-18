@@ -1,8 +1,9 @@
 package coordinator
 
 import (
-	"github.com/suborbital/vektor/vk"
 	"net/http"
+
+	"github.com/suborbital/vektor/vk"
 )
 
 func (c *Coordinator) health() vk.HandlerFunc {
