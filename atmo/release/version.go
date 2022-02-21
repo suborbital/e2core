@@ -1,4 +1,4 @@
 package release
 
-// AtmoDotVersion represents the dot version for atmo.
-var AtmoDotVersion = "0.4.2"
+// AtmoDotVersion represents the dot version for atmo
+var AtmoDotVersion = "0.4.3"
