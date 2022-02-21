@@ -193,7 +193,7 @@ func TestDirectiveValidatorInvalidOnErr(t *testing.T) {
 	}
 }
 
-func TestDirectiveValidatorDuplicateResourceMethod(t *testing.T) {
+func TestDirectiveValidatorDuplicateParameterizedResourceMethod(t *testing.T) {
 	dir := Directive{
 		Identifier:  "dev.suborbital.appname",
 		AppVersion:  "v0.1.1",
@@ -235,6 +235,70 @@ func TestDirectiveValidatorDuplicateResourceMethod(t *testing.T) {
 					Type:     "request",
 					Method:   "GET",
 					Resource: "/api/v1/:goodbye/moon",
+				},
+				Steps: []executable.Executable{
+					{
+						CallableFn: executable.CallableFn{
+							Fn: "api::returnUser",
+							OnErr: &executable.ErrHandler{
+								Any: "continue",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	if err := dir.Validate(); err == nil {
+		t.Error("directive validation should have failed")
+	} else {
+		fmt.Println("directive validation properly failed:", err)
+	}
+}
+
+func TestDirectiveValidatorDuplicateResourceMethod(t *testing.T) {
+	dir := Directive{
+		Identifier:  "dev.suborbital.appname",
+		AppVersion:  "v0.1.1",
+		AtmoVersion: "v0.0.6",
+		Runnables: []Runnable{
+			{
+				Name:      "getUser",
+				Namespace: "db",
+			},
+			{
+				Name:      "getUserDetails",
+				Namespace: "db",
+			},
+			{
+				Name:      "returnUser",
+				Namespace: "api",
+			},
+		},
+		Handlers: []Handler{
+			{
+				Input: Input{
+					Type:     "request",
+					Method:   "GET",
+					Resource: "/api/v1/hello",
+				},
+				Steps: []executable.Executable{
+					{
+						CallableFn: executable.CallableFn{
+							Fn: "api::returnUser",
+							OnErr: &executable.ErrHandler{
+								Any: "continue",
+							},
+						},
+					},
+				},
+			},
+			{
+				Input: Input{
+					Type:     "request",
+					Method:   "GET",
+					Resource: "/api/v1/hello",
 				},
 				Steps: []executable.Executable{
 					{
