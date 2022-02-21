@@ -397,13 +397,13 @@ github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/
 github.com/suborbital/grav v0.4.1/go.mod h1:jN+zB9O6ztW2GqruEU46EMOFjvc8K2UDLyofFJWdI8o=
 github.com/suborbital/grav v0.5.0 h1:/MxfdhsKKwRvh545uYXIAXm1kvJNPqAwxpuLZFtH/vk=
 github.com/suborbital/grav v0.5.0/go.mod h1:cul5DpYVRAmoUxaqzaKYOpoFCFb9LpzQiCrre2DP0Sg=
-github.com/suborbital/reactr v0.14.0 h1:MBf6Y6cNzmjs7nFyZWqKLcQpTuAYRfaD9T3eoAqYIh8=
-github.com/suborbital/reactr v0.14.0/go.mod h1:j1zFdG5hpZwJlIBLrScTlXxn9WZoq0rhWeL0ohWYjyQ=
+github.com/suborbital/reactr v0.15.0 h1:bPg4dOCvrSLz62HTe/nfpRwWSjMlsYyvnx4BK1Gp0gw=
+github.com/suborbital/reactr v0.15.0/go.mod h1:j1zFdG5hpZwJlIBLrScTlXxn9WZoq0rhWeL0ohWYjyQ=
 github.com/suborbital/vektor v0.2.2/go.mod h1:6YQE7r6t1JcVs3twpqjXDftsLUaTNUk5YorRKHcDamI=
 github.com/suborbital/vektor v0.5.1-0.20211112160641-0b7e68b46795/go.mod h1:116rovoAiwxaOzrTf849x54mlaec41qvB1d/9UeA+xk=
 github.com/suborbital/vektor v0.5.1/go.mod h1:116rovoAiwxaOzrTf849x54mlaec41qvB1d/9UeA+xk=
-github.com/suborbital/vektor v0.5.2-0.20220106202116-761219308fc8 h1:BCjxRFP/GKPhFkELUyFw5P/hZk4Zcb8W/OJdNcPG+uk=
-github.com/suborbital/vektor v0.5.2-0.20220106202116-761219308fc8/go.mod h1:116rovoAiwxaOzrTf849x54mlaec41qvB1d/9UeA+xk=
+github.com/suborbital/vektor v0.5.2 h1:WjzNBKfHtbpefnc+GLNlkRsXQrRblkgaTEZS34mc8VY=
+github.com/suborbital/vektor v0.5.2/go.mod h1:116rovoAiwxaOzrTf849x54mlaec41qvB1d/9UeA+xk=
 github.com/subosito/gotenv v1.2.0/go.mod h1:N0PQaV/YGNqwC0u51sEeR/aUtSLEXKX9iv69rRypqCw=
 github.com/twmb/franz-go v1.2.6 h1:WVub2Sml7LqER9VU0WxsiOTom4LBK7YMj+7jbqadE3U=
 github.com/twmb/franz-go v1.2.6/go.mod h1:P+i2DnBaec1o0z9EI8CyAM/WAjG99CHI3oCAhZDoy48=
