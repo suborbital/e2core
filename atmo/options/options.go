@@ -13,13 +13,14 @@ const atmoEnvPrefix = "ATMO"
 
 // Options defines options for Atmo.
 type Options struct {
-	Logger       *vlog.Logger
-	BundlePath   string `env:"ATMO_BUNDLE_PATH"`
-	RunSchedules *bool  `env:"ATMO_RUN_SCHEDULES,default=true"`
-	Headless     *bool  `env:"ATMO_HEADLESS,default=false"`
-	Wait         *bool  `env:"ATMO_WAIT,default=false"`
-	ControlPlane string `env:"ATMO_CONTROL_PLANE"`
-	Proxy        bool
+	Logger           *vlog.Logger
+	BundlePath       string `env:"ATMO_BUNDLE_PATH"`
+	RunSchedules     *bool  `env:"ATMO_RUN_SCHEDULES,default=true"`
+	Headless         *bool  `env:"ATMO_HEADLESS,default=false"`
+	Wait             *bool  `env:"ATMO_WAIT,default=false"`
+	ControlPlane     string `env:"ATMO_CONTROL_PLANE"`
+	EnvironmentToken string `env:"ATMO_ENV_TOKEN"`
+	Proxy            bool
 }
 
 // Modifier defines options for Atmo.
@@ -113,4 +114,11 @@ func (o *Options) finalize(prefix string) {
 
 	// compile-time decision about enabling proxy mode.
 	o.Proxy = proxyEnabled()
+
+	// only set the env token in config if we're in proxy mode
+	if o.Proxy {
+		o.EnvironmentToken = envOpts.EnvironmentToken
+	} else {
+		o.EnvironmentToken = ""
+	}
 }

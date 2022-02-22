@@ -26,6 +26,11 @@ jobs:
       run: |
         go get -v -t -d ./...
         go mod vendor
+
+    - name: Build
+      run: |
+        make atmo
+        make atmo/proxy
       
     - name: Run test
       run: |

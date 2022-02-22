@@ -184,7 +184,7 @@ func (e *Executor) UseCapabilityConfig(config rcap.CapabilityConfig) error {
 }
 
 // Register registers a Runnable
-func (e *Executor) Register(jobType string, runner rt.Runnable, opts ...rt.Option) error {
+func (e *Executor) Register(jobType string, runner rt.Runnable, capConfig *rcap.CapabilityConfig, opts ...rt.Option) error {
 	// nothing to do in proxy mode
 
 	return nil
