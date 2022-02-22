@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/suborbital/atmo/directive"
+	"github.com/suborbital/atmo/atmo/appsource"
 	"github.com/suborbital/atmo/directive/executable"
 	"github.com/suborbital/grav/discovery/local"
 	"github.com/suborbital/grav/grav"
@@ -210,7 +210,7 @@ func (e *Executor) SetSchedule(sched rt.Schedule) error {
 
 // Load loads Runnables into the executor's Reactr instance
 // And connects them to the Grav instance (currently unused)
-func (e *Executor) Load(runnables []directive.Runnable) error {
+func (e *Executor) Load(source appsource.AppSource) error {
 	// nothing to do in proxy mode
 
 	return nil
