@@ -114,6 +114,11 @@ func (a *Atmo) inspectRequest(r http.Request) {
 		// the Authorization header is passed through to the AppSource, and can be used to authenticate calls.
 		auth := r.Header.Get("Authorization")
 
+		// if in proxy mode, use the configured global env token for all requests (if available)
+		if a.options.Proxy && a.options.EnvironmentToken != "" {
+			auth = a.options.EnvironmentToken
+		}
+
 		if _, err := a.coordinator.App.FindRunnable(FQFN, auth); err != nil {
 			a.options.Logger.Debug(errors.Wrapf(err, "failed to FindRunnable %s, request will proceed and fail", FQFN).Error())
 			return

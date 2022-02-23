@@ -188,7 +188,9 @@ func (c *Coordinator) SetSchedules() {
 			// create basically an fqfn for this schedule (com.suborbital.appname#schedule.dojob@v0.1.0).
 			jobName := fmt.Sprintf("%s#schedule.%s@%s", application.Identifier, s.Name, application.AppVersion)
 
-			c.exec.Register(jobName, &scheduledRunner{rtFunc})
+			capConfig := rcap.DefaultCapabilityConfig()
+
+			c.exec.Register(jobName, &scheduledRunner{rtFunc}, &capConfig)
 
 			seconds := s.NumberOfSeconds()
 

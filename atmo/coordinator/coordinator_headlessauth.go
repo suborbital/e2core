@@ -13,6 +13,10 @@ import (
 
 func (c *Coordinator) headlessAuthMiddleware() vk.Middleware {
 	return func(r *http.Request, ctx *vk.Ctx) error {
+		if c.opts.Proxy && c.opts.EnvironmentToken != "" {
+			return nil
+		}
+
 		FQFN, err := fqfn.FromURL(r.URL)
 		if err != nil {
 			ctx.Log.Debug(errors.Wrap(err, "failed to fqfn.FromURL, skipping headless auth"))

@@ -14,6 +14,7 @@ import (
 	"github.com/suborbital/grav/discovery/local"
 	"github.com/suborbital/grav/grav"
 	"github.com/suborbital/grav/transport/websocket"
+	"github.com/suborbital/reactr/rcap"
 	"github.com/suborbital/reactr/request"
 	"github.com/suborbital/reactr/rt"
 	"github.com/suborbital/reactr/rwasm"
@@ -114,12 +115,17 @@ func (e *Executor) UseGrav(g *grav.Grav) {
 }
 
 // Register registers a Runnable.
-func (e *Executor) Register(jobType string, runner rt.Runnable, opts ...rt.Option) error {
+func (e *Executor) Register(jobType string, runner rt.Runnable, capConfig *rcap.CapabilityConfig, opts ...rt.Option) error {
 	if e.reactr == nil {
 		return ErrExecutorNotConfigured
 	}
 
-	e.reactr.Register(jobType, runner, opts...)
+	caps, err := rt.CapabilitiesFromConfig(*capConfig)
+	if err != nil {
+		return errors.Wrap(err, "failed to CapabilitiesFromConfig")
+	}
+
+	e.reactr.RegisterWithCaps(jobType, runner, *caps, opts...)
 
 	return nil
 }
