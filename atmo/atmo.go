@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/pkg/errors"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 
 	"github.com/suborbital/atmo/atmo/appsource"
 	"github.com/suborbital/atmo/atmo/coordinator"
@@ -34,10 +35,17 @@ func (a *Atmo) testServer() (*vk.Server, error) {
 }
 
 // New creates a new Atmo instance.
-func New(opts ...options.Modifier) *Atmo {
+func New(opts ...options.Modifier) (*Atmo, error) {
 	atmoOpts := options.NewWithModifiers(opts...)
 
 	setupLogger(atmoOpts.Logger)
+
+	// @todo https://github.com/suborbital/atmo/issues/144, the first return value is a function that would close the
+	// tracer in case of a shutdown. Usually that is put in a defer statement. Atmo doesn't have a graceful shutdown.
+	_, err := setupTracing(atmoOpts.TracerConfig)
+	if err != nil {
+		return nil, errors.Wrapf(err, "setupTracing(%s, %s, %f)", "atmo", "reporter_uri", 0.04)
+	}
 
 	appSource := appsource.NewBundleSource(atmoOpts.BundlePath)
 	if atmoOpts.ControlPlane != "" {
@@ -67,9 +75,12 @@ func New(opts ...options.Modifier) *Atmo {
 			coordinator.AtmoHealthURI,
 			coordinator.AtmoMetricsURI,
 		),
+		vk.UseRouterWrapper(func(inner http.Handler) http.Handler {
+			return otelhttp.NewHandler(inner, "atmo")
+		}),
 	)
 
-	return a
+	return a, nil
 }
 
 // Start starts the Atmo server.

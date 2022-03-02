@@ -21,6 +21,16 @@ type Options struct {
 	ControlPlane     string `env:"ATMO_CONTROL_PLANE"`
 	EnvironmentToken string `env:"ATMO_ENV_TOKEN"`
 	Proxy            bool
+	TracerConfig     TracerConfig
+}
+
+// TracerConfig holds values specific to setting up the tracer. It's only used in proxy mode.
+type TracerConfig struct {
+	Endpoint    string  `env:"ATMO_TRACER_ENDPOINT"`
+	ServiceName string  `env:"ATMO_TRACER_SERVICENAME,default=atmo"`
+	Probability float64 `env:"ATMO_TRACER_PROBABILITY,default=0.5"`
+	APIKey      string  `env:"ATMO_TRACER_HONEYCOMB_APIKEY"`
+	Dataset     string  `env:"ATMO_TRACER_HONEYCOMB_DATASET"`
 }
 
 // Modifier defines options for Atmo.
@@ -112,13 +122,15 @@ func (o *Options) finalize(prefix string) {
 		}
 	}
 
+	o.EnvironmentToken = ""
+	o.TracerConfig = TracerConfig{}
+
 	// compile-time decision about enabling proxy mode.
 	o.Proxy = proxyEnabled()
 
-	// only set the env token in config if we're in proxy mode
+	// only set the env token and tracer config in config if we're in proxy mode
 	if o.Proxy {
 		o.EnvironmentToken = envOpts.EnvironmentToken
-	} else {
-		o.EnvironmentToken = ""
+		o.TracerConfig = envOpts.TracerConfig
 	}
 }

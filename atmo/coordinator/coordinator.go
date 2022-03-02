@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/pkg/errors"
-	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 
 	"github.com/suborbital/atmo/atmo/appsource"
 	"github.com/suborbital/atmo/atmo/coordinator/executor"
@@ -99,7 +98,7 @@ func (c *Coordinator) Start() error {
 }
 
 // SetupHandlers configures all of the app's handlers and generates a Vektor Router for the app.
-func (c *Coordinator) SetupHandlers() http.Handler {
+func (c *Coordinator) SetupHandlers() *vk.Router {
 	router := vk.NewRouter(c.log)
 
 	// start by adding the otel handler to the stack.
@@ -137,11 +136,6 @@ func (c *Coordinator) SetupHandlers() http.Handler {
 
 	if c.transport != nil {
 		router.HandleHTTP(http.MethodGet, atmoMessageURI, c.transport.HTTPHandlerFunc())
-	}
-
-	// Wrap everything at the very end if in proxy mode.
-	if c.opts.Proxy == true {
-		return otelhttp.NewHandler(router, "request")
 	}
 
 	return router
@@ -236,7 +230,7 @@ func resultFromState(handler directive.Handler, state map[string][]byte) []byte 
 		return nil
 	}
 
-	// determine what the state key is.
+	// determine what the state traceKey is.
 	key := step.Fn
 	if step.As != "" {
 		key = step.As
