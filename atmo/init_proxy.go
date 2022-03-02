@@ -26,26 +26,43 @@ func setupLogger(_ *vlog.Logger) {
 
 // setupTracing configure open telemetry to be used with otel exporter. Returns a tracer closer func and an error.
 func setupTracing(config options.TracerConfig) (func(), error) {
-	exporter, err := newExporter(context.Background(), config)
-	if err != nil {
-		return func() {}, fmt.Errorf("creating OTLP trace exporter: %w", err)
+	traceOpts := []trace.TracerProviderOption{
+		trace.WithSampler(trace.TraceIDRatioBased(config.Probability)),
 	}
 
-	traceProvider := trace.NewTracerProvider(
-		trace.WithSampler(trace.TraceIDRatioBased(config.Probability)),
-		trace.WithBatcher(exporter,
-			trace.WithMaxExportBatchSize(trace.DefaultMaxExportBatchSize),
-			trace.WithBatchTimeout(trace.DefaultScheduleDelay*time.Millisecond),
-			trace.WithMaxExportBatchSize(trace.DefaultMaxExportBatchSize),
-		),
-		trace.WithResource(
-			resource.NewWithAttributes(
-				semconv.SchemaURL,
-				semconv.ServiceNameKey.String(config.ServiceName),
-				attribute.String("exporter", "zipkin"),
+	if config.Endpoint != "" && config.APIKey != "" {
+		exporter, err := newExporter(context.Background(), config)
+		if err != nil {
+			return func() {}, fmt.Errorf("creating OTLP trace exporter: %w", err)
+		}
+
+		traceOpts = append(traceOpts,
+			trace.WithBatcher(exporter,
+				trace.WithMaxExportBatchSize(trace.DefaultMaxExportBatchSize),
+				trace.WithBatchTimeout(trace.DefaultScheduleDelay*time.Millisecond),
+				trace.WithMaxExportBatchSize(trace.DefaultMaxExportBatchSize),
 			),
-		),
-	)
+			trace.WithResource(
+				resource.NewWithAttributes(
+					semconv.SchemaURL,
+					semconv.ServiceNameKey.String(config.ServiceName),
+					attribute.String("exporter", "honeycomb"),
+				),
+			),
+		)
+	} else {
+		traceOpts = append(traceOpts,
+			trace.WithResource(
+				resource.NewWithAttributes(
+					semconv.SchemaURL,
+					semconv.ServiceNameKey.String(config.ServiceName),
+					attribute.String("exporter", "collector"),
+				),
+			),
+		)
+	}
+
+	traceProvider := trace.NewTracerProvider(traceOpts...)
 
 	// I can only get this working properly using the singleton :(
 	otel.SetTracerProvider(traceProvider)
