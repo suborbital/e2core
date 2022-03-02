@@ -132,7 +132,10 @@ func (h *HTTPSource) Handlers(ident, version string) []directive.Handler {
 		h.lock.RLock()
 		defer h.lock.RUnlock()
 
-		return h.headlessHandlers()
+		// headless mode doesn't concern itself with versions
+		// if we've previously fetched a runnable at any version
+		// for the given ident, we should include it
+		return h.headlessHandlers(ident)
 	}
 
 	handlers := make([]directive.Handler, 0)
@@ -306,17 +309,23 @@ func (h *HTTPSource) headlessRunnableList() []directive.Runnable {
 	return runnables
 }
 
-func (h *HTTPSource) headlessHandlers() []directive.Handler {
+func (h *HTTPSource) headlessHandlers(ident string) []directive.Handler {
 	handlers := make([]directive.Handler, 0)
 
 	// for each Runnable, construct a handler that executes it
 	// based on a POST request to its FQFN URL /identifier/namespace/fn/version.
 	for _, runnable := range h.headlessRunnableList() {
+		FQFN := fqfn.Parse(runnable.FQFN)
+
+		if FQFN.Identifier != ident {
+			continue
+		}
+
 		handler := directive.Handler{
 			Input: directive.Input{
 				Type:     directive.InputTypeRequest,
 				Method:   http.MethodPost,
-				Resource: fqfn.Parse(runnable.FQFN).HeadlessURLPath(),
+				Resource: FQFN.HeadlessURLPath(),
 			},
 			Steps: []executable.Executable{
 				{
