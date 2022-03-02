@@ -11,7 +11,7 @@ require (
 	github.com/spf13/cobra v1.2.1
 	github.com/suborbital/grav v0.5.0
 	github.com/suborbital/reactr v0.15.0
-	github.com/suborbital/vektor v0.5.3-0.20220222201553-80b210187e79
+	github.com/suborbital/vektor v0.5.3-0.20220302142328-fb4fc3951eb1
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.29.0
 	go.opentelemetry.io/otel v1.4.1
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.4.1
