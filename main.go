@@ -53,7 +53,7 @@ Directive format and the powerful Runnable API using a variety of languages.`,
 			shouldWait := cmd.Flags().Changed(waitFlag)
 			shouldRunHeadless := cmd.Flags().Changed(headlessFlag)
 
-			atmo, err := atmo.New(
+			atmoService, err := atmo.New(
 				options.UseLogger(logger),
 				options.UseBundlePath(path),
 				options.ShouldRunHeadless(shouldRunHeadless),
@@ -63,7 +63,7 @@ Directive format and the powerful Runnable API using a variety of languages.`,
 				return errors.Wrap(err, "atmo.New")
 			}
 
-			return atmo.Start()
+			return atmoService.Start()
 		},
 	}
 
