@@ -42,7 +42,7 @@ func New(opts ...options.Modifier) (*Atmo, error) {
 
 	// @todo https://github.com/suborbital/atmo/issues/144, the first return value is a function that would close the
 	// tracer in case of a shutdown. Usually that is put in a defer statement. Atmo doesn't have a graceful shutdown.
-	_, err := setupTracing(atmoOpts.TracerConfig)
+	_, err := setupTracing(atmoOpts.TracerConfig, atmoOpts.Logger)
 	if err != nil {
 		return nil, errors.Wrapf(err, "setupTracing(%s, %s, %f)", "atmo", "reporter_uri", 0.04)
 	}

@@ -25,7 +25,7 @@ func setupLogger(_ *vlog.Logger) {
 }
 
 // setupTracing configure open telemetry to be used with otel exporter. Returns a tracer closer func and an error.
-func setupTracing(config options.TracerConfig) (func(), error) {
+func setupTracing(config options.TracerConfig, logger *vlog.Logger) (func(), error) {
 	traceOpts := []trace.TracerProviderOption{
 		trace.WithSampler(trace.TraceIDRatioBased(config.Probability)),
 	}
@@ -35,6 +35,8 @@ func setupTracing(config options.TracerConfig) (func(), error) {
 		if err != nil {
 			return func() {}, fmt.Errorf("creating OTLP trace exporter: %w", err)
 		}
+
+		logger.Info("created OTLP trace exporter with endpoint and apikey")
 
 		traceOpts = append(traceOpts,
 			trace.WithBatcher(exporter,
@@ -60,12 +62,15 @@ func setupTracing(config options.TracerConfig) (func(), error) {
 				),
 			),
 		)
+
+		logger.Info("created tracer configured to use a collector")
 	}
 
 	traceProvider := trace.NewTracerProvider(traceOpts...)
 
-	// I can only get this working properly using the singleton :(
 	otel.SetTracerProvider(traceProvider)
+
+	logger.Info("finished setting up tracer")
 
 	return func() {
 		_ = traceProvider.Shutdown(context.Background())
