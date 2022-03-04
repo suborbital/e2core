@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"time"
 
-	otelTrace "go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel"
 
 	"github.com/suborbital/vektor/vk"
 )
@@ -21,8 +21,9 @@ type Values struct {
 
 func (c *Coordinator) openTelemetryHandler() vk.Middleware {
 	return func(r *http.Request, ctx *vk.Ctx) error {
-		// Capture the parent request span from the context.
-		span := otelTrace.SpanFromContext(ctx.Context)
+		tracedCtx, span := otel.GetTracerProvider().Tracer("").Start(ctx.Context, "coordinator.openTelemetryHandler")
+
+		ctx.Context = tracedCtx
 
 		v := Values{
 			TraceID: span.SpanContext().TraceID().String(),
