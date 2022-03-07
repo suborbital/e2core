@@ -35,6 +35,8 @@ func setupTracing(config options.TracerConfig, logger *vlog.Logger) (func(), err
 
 	switch config.TracerType {
 	case "honeycomb":
+		logger.Info("configuring honeycomb exporter for tracing")
+
 		honeyOpts, err := honeycombExporterOptions(config.HoneycombConfig)
 		if err != nil {
 			return func() {}, errors.Wrap(err, "honeycombExporterOptions")
@@ -45,6 +47,8 @@ func setupTracing(config options.TracerConfig, logger *vlog.Logger) (func(), err
 
 		logger.Info("created honeycomb trace exporter")
 	case "collector":
+		logger.Info("configuring collector exporter for tracing")
+
 		collectorOpts, err := collectorExporterOptions(config.Collector)
 		if err != nil {
 			return func() {}, errors.Wrap(err, "collectorExporterOptions")
@@ -109,7 +113,11 @@ func collectorExporterOptions(config *options.CollectorConfig) ([]otlptracegrpc.
 	if config == nil {
 		return nil, errors.New("empty collector tracer configuration")
 	}
-	conn, err := grpc.DialContext(context.Background(), config.Endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+
+	ctx, ctxCancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer ctxCancel()
+
+	conn, err := grpc.DialContext(ctx, config.Endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	if err != nil {
 		return nil, errors.Wrap(err, "grpc.DialContext")
 	}
