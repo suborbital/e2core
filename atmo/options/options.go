@@ -21,12 +21,13 @@ type Options struct {
 	ControlPlane     string `env:"ATMO_CONTROL_PLANE"`
 	EnvironmentToken string `env:"ATMO_ENV_TOKEN"`
 	Proxy            bool
-	TracerConfig     TracerConfig `env:"prefix:ATMO_TRACER_"`
+	TracerConfig     TracerConfig `env:",prefix=ATMO_TRACER_"`
 }
 
-// TracerConfig holds values specific to setting up the tracer. It's only used in proxy mode.
+// TracerConfig holds values specific to setting up the tracer. It's only used in proxy mode. All configuration options
+// have a prefix of ATMO_TRACER_ specified in the parent Options struct.
 type TracerConfig struct {
-	TracerType      string           `env:"TYPE,default:none"`
+	TracerType      string           `env:"TYPE,default=none"`
 	ServiceName     string           `env:"SERVICENAME,default=atmo"`
 	Probability     float64          `env:"PROBABILITY,default=0.5"`
 	Collector       *CollectorConfig `env:",prefix=COLLECTOR_,noinit"`
