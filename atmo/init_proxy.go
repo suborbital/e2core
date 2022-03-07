@@ -101,7 +101,8 @@ func setupTracing(config options.TracerConfig, logger *vlog.Logger) (func(), err
 
 	otel.SetTracerProvider(traceProvider)
 
-	logger.Info("finished setting up tracer")
+	logger.Info(fmt.Sprintf("finished setting up tracer [%s] with a trace probability of [%f]",
+		exporterString, config.Probability))
 
 	return func() {
 		_ = traceProvider.Shutdown(context.Background())
