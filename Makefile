@@ -68,4 +68,5 @@ mod/replace/reactr:
 mod/replace/vektor:
 	go mod edit -replace github.com/suborbital/vektor=$(HOME)/Workspaces/suborbital/vektor
 
-.PHONY: build atmo atmo/docker docker/dev docker/dev/multi docker/publish docker/builder example-project test lint lint/fix fix-imports deps
+.PHONY: build atmo atmo/docker docker/dev docker/dev/multi docker/publish docker/builder example-project test lint \
+	lint/fix fix-imports deps
