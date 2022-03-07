@@ -21,16 +21,31 @@ type Options struct {
 	ControlPlane     string `env:"ATMO_CONTROL_PLANE"`
 	EnvironmentToken string `env:"ATMO_ENV_TOKEN"`
 	Proxy            bool
-	TracerConfig     TracerConfig
+	TracerConfig     TracerConfig `env:"prefix:ATMO_TRACER_"`
 }
 
 // TracerConfig holds values specific to setting up the tracer. It's only used in proxy mode.
 type TracerConfig struct {
-	Endpoint    string  `env:"ATMO_TRACER_ENDPOINT"`
-	ServiceName string  `env:"ATMO_TRACER_SERVICENAME,default=atmo"`
-	Probability float64 `env:"ATMO_TRACER_PROBABILITY,default=0.5"`
-	APIKey      string  `env:"ATMO_TRACER_HONEYCOMB_APIKEY"`
-	Dataset     string  `env:"ATMO_TRACER_HONEYCOMB_DATASET"`
+	TracerType      string           `env:"TYPE,default:none"`
+	ServiceName     string           `env:"SERVICENAME,default=atmo"`
+	Probability     float64          `env:"PROBABILITY,default=0.5"`
+	Collector       *CollectorConfig `env:",prefix=COLLECTOR_,noinit"`
+	HoneycombConfig *HoneycombConfig `env:",prefix=HONEYCOMB_,noinit"`
+}
+
+// CollectorConfig holds config values specific to the collector tracer exporter running locally / within your cluster.
+// All the configuration values here have a prefix of ATMO_TRACER_COLLECTOR_, specified in the top level Options struct,
+// and the parent TracerConfig struct.
+type CollectorConfig struct {
+	Endpoint string `env:"ENDPOINT"`
+}
+
+// HoneycombConfig holds config values specific to the honeycomb tracer exporter. All the configuration values here have
+// a prefix of ATMO_TRACER_HONEYCOMB_, specified in the top level Options struct, and the parent TracerConfig struct.
+type HoneycombConfig struct {
+	Endpoint string `env:"ENDPOINT"`
+	APIKey   string `env:"APIKEY"`
+	Dataset  string `env:"DATASET"`
 }
 
 // Modifier defines options for Atmo.

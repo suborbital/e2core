@@ -4,6 +4,7 @@ package atmo
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/pkg/errors"
@@ -14,6 +15,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
+	traceProviders "go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
@@ -28,26 +30,39 @@ func setupLogger(_ *vlog.Logger) {
 
 // setupTracing configure open telemetry to be used with otel exporter. Returns a tracer closer func and an error.
 func setupTracing(config options.TracerConfig, logger *vlog.Logger) (func(), error) {
-	exporterString := "collector"
+	exporterString := "none"
 	exporterOpts := make([]otlptracegrpc.Option, 0)
 
-	if config.APIKey != "" {
-		exporterString = "honeycomb"
-		honeyOpts, err := honeycombExporterOptions(config)
+	switch config.TracerType {
+	case "honeycomb":
+		honeyOpts, err := honeycombExporterOptions(config.HoneycombConfig)
 		if err != nil {
 			return func() {}, errors.Wrap(err, "honeycombExporterOptions")
 		}
+
+		exporterString = "honeycomb"
 		exporterOpts = append(exporterOpts, honeyOpts...)
 
-		logger.Info("created OTLP trace exporter with endpoint and apikey")
-	} else {
-		collectorOpts, err := collectorExporterOptions()
+		logger.Info("created honeycomb trace exporter")
+	case "collector":
+		collectorOpts, err := collectorExporterOptions(config.Collector)
 		if err != nil {
 			return func() {}, errors.Wrap(err, "collectorExporterOptions")
 		}
+
+		exporterString = "collector"
 		exporterOpts = append(exporterOpts, collectorOpts...)
 
-		logger.Info("created tracer configured to use a collector")
+		logger.Info("created collector trace exporter")
+	default:
+		logger.Warn(fmt.Sprintf("unrecognised tracer type configuration [%s]. Defaulting to no tracer", config.TracerType))
+		fallthrough
+	case "none", "":
+		otel.SetTracerProvider(traceProviders.NewNoopTracerProvider())
+
+		logger.Info("finished setting up noop tracer")
+
+		return func() {}, nil
 	}
 
 	exporter, err := otlptrace.New(context.Background(), otlptracegrpc.NewClient(exporterOpts...))
@@ -90,8 +105,11 @@ func setupTracing(config options.TracerConfig, logger *vlog.Logger) (func(), err
 
 }
 
-func collectorExporterOptions() ([]otlptracegrpc.Option, error) {
-	conn, err := grpc.DialContext(context.Background(), "localhost:4317", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+func collectorExporterOptions(config *options.CollectorConfig) ([]otlptracegrpc.Option, error) {
+	if config == nil {
+		return nil, errors.New("empty collector tracer configuration")
+	}
+	conn, err := grpc.DialContext(context.Background(), config.Endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	if err != nil {
 		return nil, errors.Wrap(err, "grpc.DialContext")
 	}
@@ -102,7 +120,11 @@ func collectorExporterOptions() ([]otlptracegrpc.Option, error) {
 	}, nil
 }
 
-func honeycombExporterOptions(config options.TracerConfig) ([]otlptracegrpc.Option, error) {
+func honeycombExporterOptions(config *options.HoneycombConfig) ([]otlptracegrpc.Option, error) {
+	if config == nil {
+		return nil, errors.New("empty honeycomb tracer configuration")
+	}
+
 	return []otlptracegrpc.Option{
 		otlptracegrpc.WithEndpoint(config.Endpoint),
 		otlptracegrpc.WithHeaders(map[string]string{
