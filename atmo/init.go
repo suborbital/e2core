@@ -14,7 +14,7 @@ func setupLogger(logger *vlog.Logger) {
 }
 
 // setupTracing in non-proxy mode will be a noop.
-func setupTracing(_ options.TracerConfig) (func(), error) {
+func setupTracing(_ options.TracerConfig, _ *vlog.Logger) (func(), error) {
 	// do nothing when we're not in proxy mode.
 	return func() {}, nil
 }
