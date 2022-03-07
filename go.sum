@@ -386,8 +386,9 @@ github.com/second-state/WasmEdge-go v0.9.0-rc5 h1:hK/dvBHYSNhEOxo8/A2+luoYyTYd/t
 github.com/second-state/WasmEdge-go v0.9.0-rc5/go.mod h1:Q3h79fwQs7GUSOm3ZzHXK+j4cKmCFP3SKpGfFNDtqD8=
 github.com/sethvargo/go-envconfig v0.3.0/go.mod h1:XZ2JRR7vhlBEO5zMmOpLgUhgYltqYqq4d4tKagtPUv0=
 github.com/sethvargo/go-envconfig v0.3.2/go.mod h1:XZ2JRR7vhlBEO5zMmOpLgUhgYltqYqq4d4tKagtPUv0=
-github.com/sethvargo/go-envconfig v0.4.0 h1:HuQJWWQ46FYqGvMyGwxfOEoDNeAxp2HErYyWMkSeNIk=
 github.com/sethvargo/go-envconfig v0.4.0/go.mod h1:XZ2JRR7vhlBEO5zMmOpLgUhgYltqYqq4d4tKagtPUv0=
+github.com/sethvargo/go-envconfig v0.5.0 h1:puRfYHj1HUe03MSPVBW8zc2BtRyn/KySgZcICXOzpVg=
+github.com/sethvargo/go-envconfig v0.5.0/go.mod h1:00S1FAhRUuTNJazWBWcJGvEHOM+NO6DhoRMAOX7FY5o=
 github.com/shopspring/decimal v0.0.0-20180709203117-cd690d0c9e24/go.mod h1:M+9NzErvs504Cn4c5DxATwIqPbtswREoFCre64PpcG4=
 github.com/shopspring/decimal v1.2.0 h1:abSATXmQEYyShuxI4/vyW3tV1MrKAJzCZ/0zLUXYbsQ=
 github.com/shopspring/decimal v1.2.0/go.mod h1:DKyhrW/HYNuLGql+MJL6WCR6knT2jwCFRcu2hWCYk4o=

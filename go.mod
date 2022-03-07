@@ -7,7 +7,7 @@ require (
 	github.com/gorilla/websocket v1.4.2
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/pkg/errors v0.9.1
-	github.com/sethvargo/go-envconfig v0.4.0
+	github.com/sethvargo/go-envconfig v0.5.0
 	github.com/spf13/cobra v1.2.1
 	github.com/suborbital/grav v0.5.0
 	github.com/suborbital/reactr v0.15.0
