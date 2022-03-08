@@ -14,9 +14,9 @@ const traceKey string = "traceValues"
 
 // Values represent state for each request.
 type Values struct {
-	TraceID    string
-	Now        time.Time
-	StatusCode int
+	TraceID   string
+	Now       time.Time
+	RequestID string
 }
 
 func (c *Coordinator) openTelemetryHandler() vk.Middleware {
@@ -26,8 +26,9 @@ func (c *Coordinator) openTelemetryHandler() vk.Middleware {
 		ctx.Context = tracedCtx
 
 		v := Values{
-			TraceID: span.SpanContext().TraceID().String(),
-			Now:     time.Now().UTC(),
+			TraceID:   span.SpanContext().TraceID().String(),
+			Now:       time.Now().UTC(),
+			RequestID: ctx.RequestID(),
 		}
 
 		ctx.Set(traceKey, v)
