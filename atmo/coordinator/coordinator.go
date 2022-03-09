@@ -101,6 +101,11 @@ func (c *Coordinator) Start() error {
 func (c *Coordinator) SetupHandlers() *vk.Router {
 	router := vk.NewRouter(c.log)
 
+	// start by adding the otel handler to the stack.
+	if c.opts.Proxy == true {
+		router.Before(c.openTelemetryHandler())
+	}
+
 	// set a middleware on the root RouteGroup.
 	router.Before(scopeMiddleware)
 
@@ -225,7 +230,7 @@ func resultFromState(handler directive.Handler, state map[string][]byte) []byte 
 		return nil
 	}
 
-	// determine what the state key is.
+	// determine what the state traceKey is.
 	key := step.Fn
 	if step.As != "" {
 		key = step.As

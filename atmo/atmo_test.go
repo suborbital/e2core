@@ -166,5 +166,6 @@ func TestFetchEndpoint(t *testing.T) {
 
 // nolint
 func atmoForBundle(filepath string) *Atmo {
-	return New(options.UseBundlePath(filepath))
+	a, _ := New(options.UseBundlePath(filepath))
+	return a
 }

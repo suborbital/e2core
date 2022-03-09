@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/suborbital/atmo/atmo"
@@ -52,14 +53,17 @@ Directive format and the powerful Runnable API using a variety of languages.`,
 			shouldWait := cmd.Flags().Changed(waitFlag)
 			shouldRunHeadless := cmd.Flags().Changed(headlessFlag)
 
-			atmo := atmo.New(
+			atmoService, err := atmo.New(
 				options.UseLogger(logger),
 				options.UseBundlePath(path),
 				options.ShouldRunHeadless(shouldRunHeadless),
 				options.ShouldWait(shouldWait),
 			)
+			if err != nil {
+				return errors.Wrap(err, "atmo.New")
+			}
 
-			return atmo.Start()
+			return atmoService.Start()
 		},
 	}
 

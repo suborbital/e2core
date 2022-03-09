@@ -21,6 +21,32 @@ type Options struct {
 	ControlPlane     string `env:"ATMO_CONTROL_PLANE"`
 	EnvironmentToken string `env:"ATMO_ENV_TOKEN"`
 	Proxy            bool
+	TracerConfig     TracerConfig `env:",prefix=ATMO_TRACER_"`
+}
+
+// TracerConfig holds values specific to setting up the tracer. It's only used in proxy mode. All configuration options
+// have a prefix of ATMO_TRACER_ specified in the parent Options struct.
+type TracerConfig struct {
+	TracerType      string           `env:"TYPE,default=none"`
+	ServiceName     string           `env:"SERVICENAME,default=atmo"`
+	Probability     float64          `env:"PROBABILITY,default=0.5"`
+	Collector       *CollectorConfig `env:",prefix=COLLECTOR_,noinit"`
+	HoneycombConfig *HoneycombConfig `env:",prefix=HONEYCOMB_,noinit"`
+}
+
+// CollectorConfig holds config values specific to the collector tracer exporter running locally / within your cluster.
+// All the configuration values here have a prefix of ATMO_TRACER_COLLECTOR_, specified in the top level Options struct,
+// and the parent TracerConfig struct.
+type CollectorConfig struct {
+	Endpoint string `env:"ENDPOINT"`
+}
+
+// HoneycombConfig holds config values specific to the honeycomb tracer exporter. All the configuration values here have
+// a prefix of ATMO_TRACER_HONEYCOMB_, specified in the top level Options struct, and the parent TracerConfig struct.
+type HoneycombConfig struct {
+	Endpoint string `env:"ENDPOINT"`
+	APIKey   string `env:"APIKEY"`
+	Dataset  string `env:"DATASET"`
 }
 
 // Modifier defines options for Atmo.
@@ -112,13 +138,15 @@ func (o *Options) finalize(prefix string) {
 		}
 	}
 
+	o.EnvironmentToken = ""
+	o.TracerConfig = TracerConfig{}
+
 	// compile-time decision about enabling proxy mode.
 	o.Proxy = proxyEnabled()
 
-	// only set the env token in config if we're in proxy mode
+	// only set the env token and tracer config in config if we're in proxy mode
 	if o.Proxy {
 		o.EnvironmentToken = envOpts.EnvironmentToken
-	} else {
-		o.EnvironmentToken = ""
+		o.TracerConfig = envOpts.TracerConfig
 	}
 }
