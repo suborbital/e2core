@@ -1,6 +1,6 @@
 builds:
   - <<: &build_defaults
-      id: atmo
+      id: atmo-amd64
       main: .
       binary: atmo
       env:
@@ -9,13 +9,30 @@ builds:
         - linux
       goarch:
         - amd64
-        - arm64
       ldflags:
         - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}
   - <<: *build_defaults
-    id: atmo-proxy
+    id: atmo-arm64
+    goarch:
+      - arm64
+    env:
+      - CGO_ENABLED=1
+      - CC=aarch64-linux-gnu-gcc
+      - CXX=aarch64-linux-gnu-g++
+  - <<: *build_defaults
+    id: atmo-proxy-amd64
     binary: atmo-proxy
     tags: proxy
+  - <<: *build_defaults
+    id: atmo-proxy-arm64
+    binary: atmo-proxy
+    tags: proxy
+    goarch:
+      - arm64
+    env:
+      - CGO_ENABLED=1
+      - CC=aarch64-linux-gnu-gcc
+      - CXX=aarch64-linux-gnu-g++
 
 changelog:
   skip: true
@@ -24,11 +41,19 @@ checksum:
   name_template: 'checksums.txt'
 
 archives:
-  - id: atmo-archive
+  - id: atmo-amd64-archive
     name_template: 'atmo-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
     builds:
-      - atmo
-  - id: atmo-proxy-archive
+      - atmo-amd64
+  - id: atmo-amd64-proxy-archive
     name_template: 'atmo-proxy-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
     builds:
-      - atmo-proxy
+      - atmo-proxy-amd64
+  - id: atmo-arm64-archive
+    name_template: 'atmo-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
+    builds:
+      - atmo-arm64
+  - id: atmo-arm64-proxy-archive
+    name_template: 'atmo-proxy-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
+    builds:
+      - atmo-proxy-arm64
