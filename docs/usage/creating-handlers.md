@@ -13,7 +13,7 @@ Each handler tells Atmo how to handle a **resource.** A resource is an input tha
 ```yaml
 identifier: com.suborbital.test
 appVersion: v0.0.1
-atmoVersion: v0.4.3
+atmoVersion: v0.4.4
 
 handlers:
   - type: request
@@ -21,9 +21,9 @@ handlers:
     method: POST
     steps:
       - group:
-        - fn: modify-url
-        - fn: helloworld-rs
-          as: hello
+          - fn: modify-url
+          - fn: helloworld-rs
+            as: hello
       - fn: fetch-test
         with:
           url: modify-url
@@ -38,13 +38,14 @@ The second step shown above is a single `fn` , which calls a Runnable that uses 
 
 The output of the final function in a handler is used as the response data for the request, by default. If you wish to use the output from a different function, you can include the `response` option in your handler, listing the name of the function to use as a response. If the final step is a group, then the `response` clause must be included.
 
-For example: 
+For example:
+
 ```yaml
 steps:
   - group:
-    - fn: modify-url
-    - fn: helloworld-rs
-      as: hello
+      - fn: modify-url
+      - fn: helloworld-rs
+        as: hello
   - fn: fetch-test
     with:
       url: modify-url
@@ -55,4 +56,3 @@ response: hello
 Your application can contain as many handlers as needed, and functions can be re-used among many handlers. Each Runnable in your project can be called by its name. The `subo` tool will validate your directive to ensure it is not calling any Runnables that don't exist in your project.
 
 The `as` and `with` clauses shown above will be discussed [next](managing-state.md).
-
