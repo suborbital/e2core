@@ -58,17 +58,17 @@ func New(log *vlog.Logger, transport *websocket.Transport, opts *options.Options
 
 	g := grav.New(gravOpts...)
 
-	go connectStaticPeers(log, g, opts)
-
-	return NewWithGrav(log, g)
+	return NewWithGrav(log, g, opts)
 }
 
 // NewWithGrav creates an Executor with a custom Grav instance.
-func NewWithGrav(log *vlog.Logger, g *grav.Grav) *Executor {
+func NewWithGrav(log *vlog.Logger, g *grav.Grav, opts *options.Options) *Executor {
 	var pod *grav.Pod
 
 	if g != nil {
 		pod = g.Connect()
+
+		go connectStaticPeers(log, g, opts)
 	}
 
 	e := &Executor{
