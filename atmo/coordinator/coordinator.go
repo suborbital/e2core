@@ -143,6 +143,11 @@ func (c *Coordinator) SetupHandlers() *vk.Router {
 
 // CreateConnections establishes all of the connections described in the directive.
 func (c *Coordinator) createConnections() {
+	if *c.opts.Headless {
+		c.log.Debug("running in headless mode, connections will not be established")
+		return
+	}
+
 	for _, application := range c.App.Applications() {
 		connections := c.App.Connections(application.Identifier, application.AppVersion)
 
@@ -184,6 +189,11 @@ func (c *Coordinator) createConnections() {
 }
 
 func (c *Coordinator) SetSchedules() {
+	if *c.opts.Headless {
+		c.log.Debug("running in headless mode, schedules will not execute")
+		return
+	}
+
 	for _, application := range c.App.Applications() {
 
 		// mount each schedule into Reactr.
