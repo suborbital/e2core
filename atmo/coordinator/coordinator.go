@@ -62,7 +62,7 @@ func New(appSource appsource.AppSource, options *options.Options) *Coordinator {
 		transport = websocket.New()
 	}
 
-	exec := executor.New(options.Logger, transport)
+	exec := executor.New(options.Logger, transport, options)
 
 	c := &Coordinator{
 		App:         appSource,
