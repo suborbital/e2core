@@ -5,11 +5,14 @@ package executor
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 
 	"github.com/suborbital/atmo/atmo/appsource"
 	"github.com/suborbital/atmo/atmo/coordinator/capabilities"
+	"github.com/suborbital/atmo/atmo/options"
 	"github.com/suborbital/atmo/directive/executable"
 	"github.com/suborbital/grav/discovery/local"
 	"github.com/suborbital/grav/grav"
@@ -41,7 +44,7 @@ type Executor struct {
 }
 
 // New creates a new Executor with the default Grav configuration.
-func New(log *vlog.Logger, transport *websocket.Transport) *Executor {
+func New(log *vlog.Logger, transport *websocket.Transport, opts *options.Options) *Executor {
 	gravOpts := []grav.OptionsModifier{
 		grav.UseLogger(log),
 	}
@@ -55,15 +58,17 @@ func New(log *vlog.Logger, transport *websocket.Transport) *Executor {
 
 	g := grav.New(gravOpts...)
 
-	return NewWithGrav(log, g)
+	return NewWithGrav(log, g, opts)
 }
 
 // NewWithGrav creates an Executor with a custom Grav instance.
-func NewWithGrav(log *vlog.Logger, g *grav.Grav) *Executor {
+func NewWithGrav(log *vlog.Logger, g *grav.Grav, opts *options.Options) *Executor {
 	var pod *grav.Pod
 
 	if g != nil {
 		pod = g.Connect()
+
+		go connectStaticPeers(log, g, opts)
 	}
 
 	e := &Executor{
@@ -255,4 +260,28 @@ func (e *Executor) Metrics() (*rt.ScalerMetrics, error) {
 	metrics := e.reactr.Metrics()
 
 	return &metrics, nil
+}
+
+func connectStaticPeers(log *vlog.Logger, g *grav.Grav, opts *options.Options) {
+	epts := strings.Split(opts.StaticPeers, ",")
+
+	for _, e := range epts {
+		log.Debug("connecting to static peer", e)
+
+		var err error
+
+		for i := 0; i < 10; i++ {
+			if err = g.ConnectEndpoint(e); err != nil {
+				log.Error(errors.Wrapf(err, "failed to ConnectEndpoint %s, will retry", e))
+
+				time.Sleep(time.Second * 3)
+			} else {
+				break
+			}
+		}
+
+		if err != nil {
+			log.Error(errors.Wrap(err, "failed to ConnectEndpoint, retries exceeded"))
+		}
+	}
 }

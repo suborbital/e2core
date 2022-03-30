@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/suborbital/atmo/atmo/appsource"
+	"github.com/suborbital/atmo/atmo/options"
 	"github.com/suborbital/atmo/directive/executable"
 	"github.com/suborbital/grav/discovery/local"
 	"github.com/suborbital/grav/grav"
@@ -43,7 +44,7 @@ type Executor struct {
 }
 
 // New creates a new Executor
-func New(log *vlog.Logger, transport *websocket.Transport) *Executor {
+func New(log *vlog.Logger, transport *websocket.Transport, _ *options.Options) *Executor {
 	gravOpts := []grav.OptionsModifier{
 		grav.UseLogger(log),
 	}

@@ -20,6 +20,7 @@ type Options struct {
 	Wait             *bool  `env:"ATMO_WAIT,default=false"`
 	ControlPlane     string `env:"ATMO_CONTROL_PLANE"`
 	EnvironmentToken string `env:"ATMO_ENV_TOKEN"`
+	StaticPeers      string `env:"ATMO_PEERS"`
 	Proxy            bool
 	TracerConfig     TracerConfig `env:",prefix=ATMO_TRACER_"`
 }
@@ -140,6 +141,7 @@ func (o *Options) finalize(prefix string) {
 
 	o.EnvironmentToken = ""
 	o.TracerConfig = TracerConfig{}
+	o.StaticPeers = envOpts.StaticPeers
 
 	// compile-time decision about enabling proxy mode.
 	o.Proxy = proxyEnabled()
