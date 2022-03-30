@@ -262,28 +262,26 @@ func (e *Executor) Metrics() (*rt.ScalerMetrics, error) {
 	return &metrics, nil
 }
 
-func connectStaticPeers(log *vlog.Logger, g *grav.Grav, opts *options.Options) error {
-	count := 0
-	var err error
-
+func connectStaticPeers(log *vlog.Logger, g *grav.Grav, opts *options.Options) {
 	epts := strings.Split(opts.StaticPeers, ",")
 
 	for _, e := range epts {
 		log.Debug("connecting to static peer", e)
 
-		for count < 10 {
+		var err error
+
+		for i := 0; i < 10; i++ {
 			if err = g.ConnectEndpoint(e); err != nil {
-				log.Error(errors.Wrap(err, "failed to ConnectEndpoint, will retry"))
-				count++
+				log.Error(errors.Wrapf(err, "failed to ConnectEndpoint %s, will retry", e))
 
 				time.Sleep(time.Second * 3)
 			} else {
 				break
 			}
 		}
+
+		if err != nil {
+			log.Error(errors.Wrap(err, "failed to ConnectEndpoint, retries exceeded"))
+		}
 	}
-
-	log.Error(errors.Wrap(err, "failed to ConnectEndpoint, retries exceeded"))
-
-	return err
 }
