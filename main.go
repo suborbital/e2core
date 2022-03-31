@@ -58,22 +58,22 @@ Directive format and the powerful Runnable API using a variety of languages.`,
 
 			appName, err := cmd.Flags().GetString(appNameFlag)
 			if err != nil {
-				return errors.Wrap(err, fmt.Sprintf("failed to GetString '%s'", appNameFlag))
+				return errors.Wrap(err, fmt.Sprintf("get string flag '%s' value", appNameFlag))
 			}
 
 			domain, err := cmd.Flags().GetString(domainFlage)
 			if err != nil {
-				return errors.Wrap(err, fmt.Sprintf("failed to GetString '%s'", domainFlage))
+				return errors.Wrap(err, fmt.Sprintf("get string flag '%s' value", domainFlage))
 			}
 
 			httpPort, err := cmd.Flags().GetInt(httpPortFlag)
 			if err != nil {
-				return errors.Wrap(err, fmt.Sprintf("failed to GetInt '%s'", httpPortFlag))
+				return errors.Wrap(err, fmt.Sprintf("get int flag '%s' value", httpPortFlag))
 			}
 
 			tlsPort, err := cmd.Flags().GetInt(tlsPortFlag)
 			if err != nil {
-				return errors.Wrap(err, fmt.Sprintf("failed to GetInt '%s'", tlsPortFlag))
+				return errors.Wrap(err, fmt.Sprintf("get int flag '%s' value", tlsPortFlag))
 			}
 
 			shouldWait := cmd.Flags().Changed(waitFlag)
