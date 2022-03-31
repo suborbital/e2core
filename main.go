@@ -101,7 +101,7 @@ Directive format and the powerful Runnable API using a variety of languages.`,
 
 	cmd.Flags().Bool(waitFlag, false, "if passed, Atmo will wait until a bundle becomes available on disk, checking once per second")
 	cmd.Flags().String(appNameFlag, "Atmo", "if passed, it'll be used as ATMO_APP_NAME, otherwise 'Atmo' will be used")
-	cmd.Flags().String(domainFlage, "", "if passed, it'll be used as ATMO_DOMAIN and HTTPS will be used, otherwise HTTP will be used")
+	cmd.Flags().String(domainFlag, "", "if passed, it'll be used as ATMO_DOMAIN and HTTPS will be used, otherwise HTTP will be used")
 	cmd.Flags().Int(httpPortFlag, 8080, "if passed, it'll be used as ATMO_HTTP_PORT, otherwise '8080' will be used")
 	cmd.Flags().Int(tlsPortFlag, 443, "if passed, it'll be used as ATMO_TLS_PORT, otherwise '443' will be used")
 
