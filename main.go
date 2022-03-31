@@ -16,7 +16,7 @@ const (
 	headlessFlag = "headless"
 	waitFlag     = "wait"
 	appNameFlag  = "appName"
-	domainFlag  = "domain"
+	domainFlag   = "domain"
 	httpPortFlag = "httpPort"
 	tlsPortFlag  = "tlsPort"
 )
@@ -61,9 +61,9 @@ Directive format and the powerful Runnable API using a variety of languages.`,
 				return errors.Wrap(err, fmt.Sprintf("get string flag '%s' value", appNameFlag))
 			}
 
-			domain, err := cmd.Flags().GetString(domainFlage)
+			domain, err := cmd.Flags().GetString(domainFlag)
 			if err != nil {
-				return errors.Wrap(err, fmt.Sprintf("get string flag '%s' value", domainFlage))
+				return errors.Wrap(err, fmt.Sprintf("get string flag '%s' value", domainFlag))
 			}
 
 			httpPort, err := cmd.Flags().GetInt(httpPortFlag)
