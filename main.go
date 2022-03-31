@@ -16,7 +16,7 @@ const (
 	headlessFlag = "headless"
 	waitFlag     = "wait"
 	appNameFlag  = "appName"
-	domainFlage  = "domain"
+	domainFlag  = "domain"
 	httpPortFlag = "httpPort"
 	tlsPortFlag  = "tlsPort"
 )
