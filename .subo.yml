@@ -1,8 +1,6 @@
 dotVersionFiles:
   - example-project/Directive.yaml
   - atmo/release/version.go
-  - docs/concepts/the-directive.md
-  - docs/usage/creating-handlers.md
 
 preMakeTargets:
   - build
