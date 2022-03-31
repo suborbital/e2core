@@ -1,6 +1,6 @@
 identifier: com.suborbital.test
 appVersion: v0.0.1
-atmoVersion: v0.4.4
+atmoVersion: v0.4.5
 
 # uncomment to try out connections!
 connections:
