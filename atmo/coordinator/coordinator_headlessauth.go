@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/pkg/errors"
+
 	"github.com/suborbital/atmo/atmo/appsource"
 	"github.com/suborbital/atmo/fqfn"
 	"github.com/suborbital/vektor/vk"
@@ -12,6 +13,10 @@ import (
 
 func (c *Coordinator) headlessAuthMiddleware() vk.Middleware {
 	return func(r *http.Request, ctx *vk.Ctx) error {
+		if c.opts.Proxy && c.opts.EnvironmentToken != "" {
+			return nil
+		}
+
 		FQFN, err := fqfn.FromURL(r.URL)
 		if err != nil {
 			ctx.Log.Debug(errors.Wrap(err, "failed to fqfn.FromURL, skipping headless auth"))
@@ -20,7 +25,7 @@ func (c *Coordinator) headlessAuthMiddleware() vk.Middleware {
 
 		auth := r.Header.Get("Authorization")
 
-		// we call FindRunnable, which by now should have the Runnable cached, so it'll be fast
+		// we call FindRunnable, which by now should have the Runnable cached, so it'll be fast.
 		runnable, err := c.App.FindRunnable(FQFN, auth)
 		if err != nil {
 			ctx.Log.Error(errors.Wrap(err, "failed to FindRunnable"))

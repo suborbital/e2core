@@ -2,9 +2,9 @@ name: Testapalooza
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
   pull_request:
-    branches: [ "*" ]
 
 jobs:
 
@@ -24,9 +24,13 @@ jobs:
 
     - name: Get dependencies
       run: |
-        go get -v -t -d ./...
-        go mod vendor
-      
+        go mod download
+
+    - name: Build
+      run: |
+        make atmo
+        make atmo/proxy
+
     - name: Run test
       run: |
         make build

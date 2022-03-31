@@ -10,20 +10,21 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+
 	"github.com/suborbital/atmo/directive"
 	"github.com/suborbital/reactr/rwasm/moduleref"
 )
 
-// Bundle represents a Runnable bundle
+// Bundle represents a Runnable bundle.
 type Bundle struct {
 	filepath    string
 	Directive   *directive.Directive
 	staticFiles map[string]bool
 }
 
-// StaticFile returns a static file from the bundle, if it exists
+// StaticFile returns a static file from the bundle, if it exists.
 func (b *Bundle) StaticFile(filePath string) ([]byte, error) {
-	// normalize in case the caller added `/` or `./` to the filename
+	// normalize in case the caller added `/` or `./` to the filename.
 	filePath = NormalizeStaticFilename(filePath)
 
 	if _, exists := b.staticFiles[filePath]; !exists {
@@ -37,7 +38,7 @@ func (b *Bundle) StaticFile(filePath string) ([]byte, error) {
 
 	defer r.Close()
 
-	// re-add the static/ prefix to ensure sandboxing to the static directory
+	// re-add the static/ prefix to ensure sandboxing to the static directory.
 	staticFilePath := ensurePrefix(filePath, "static/")
 
 	var contents []byte
@@ -85,7 +86,7 @@ func Write(directiveBytes []byte, modules []os.File, staticFiles map[string]os.F
 	// Add the Wasm modules to the archive.
 	for _, file := range modules {
 		if file.Name() == "Directive.yaml" || file.Name() == "Directive.yml" {
-			// only allow the canonical directive that's passed in
+			// only allow the canonical directive that's passed in.
 			continue
 		}
 
@@ -146,7 +147,7 @@ func writeFile(w *zip.Writer, name string, contents []byte) error {
 }
 
 // Read reads a .wasm.zip file and returns the bundle of wasm modules
-// (suitable to be loaded into a wasmer instance)
+// (suitable to be loaded into a wasmer instance).
 func Read(path string) (*Bundle, error) {
 	// Open a zip archive for reading.
 	r, err := zip.OpenReader(path)
@@ -161,7 +162,7 @@ func Read(path string) (*Bundle, error) {
 		staticFiles: map[string]bool{},
 	}
 
-	// first, find the Directive
+	// first, find the Directive.
 	for _, f := range r.File {
 		if f.Name == "Directive.yaml" {
 			directive, err := readDirective(f)
@@ -178,13 +179,13 @@ func Read(path string) (*Bundle, error) {
 		return nil, errors.New("bundle is missing Directive.yaml")
 	}
 
-	// Iterate through the files in the archive,
+	// Iterate through the files in the archive.
 	for _, f := range r.File {
 		if f.Name == "Directive.yaml" {
-			// we already have a Directive by now
+			// we already have a Directive by now.
 			continue
 		} else if strings.HasPrefix(f.Name, "static/") {
-			// build up the list of available static files in the bundle for quick reference later
+			// build up the list of available static files in the bundle for quick reference later.
 			filePath := strings.TrimPrefix(f.Name, "static/")
 			bundle.staticFiles[filePath] = true
 			continue
@@ -247,7 +248,7 @@ func ensurePrefix(val, prefix string) string {
 }
 
 // NormalizeStaticFilename will take various variations of a filename and
-// normalize it to what is listed in the staticFile name cache on the Bundle struct
+// normalize it to what is listed in the staticFile name cache on the Bundle struct.
 func NormalizeStaticFilename(fileName string) string {
 	withoutStatic := strings.TrimPrefix(fileName, "static/")
 	withoutLeadingSlash := strings.TrimPrefix(withoutStatic, "/")

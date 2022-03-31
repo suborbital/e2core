@@ -5,6 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+
 	"github.com/suborbital/atmo/atmo"
 	"github.com/suborbital/atmo/atmo/options"
 	"github.com/suborbital/atmo/atmo/release"
@@ -78,7 +79,7 @@ Directive format and the powerful Runnable API using a variety of languages.`,
 			shouldWait := cmd.Flags().Changed(waitFlag)
 			shouldRunHeadless := cmd.Flags().Changed(headlessFlag)
 
-			atmo := atmo.New(
+			atmoService, err := atmo.New(
 				options.UseLogger(logger),
 				options.UseBundlePath(path),
 				options.ShouldRunHeadless(shouldRunHeadless),
@@ -88,8 +89,11 @@ Directive format and the powerful Runnable API using a variety of languages.`,
 				options.HTTPPort(httpPort),
 				options.TLSPort(tlsPort),
 			)
+			if err != nil {
+				return errors.Wrap(err, "atmo.New")
+			}
 
-			return atmo.Start()
+			return atmoService.Start()
 		},
 	}
 

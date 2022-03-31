@@ -14,21 +14,21 @@ import (
 // i.e. identifier # namespace :: name @ version
 ////////////////////////////////////////////////////////////////////
 
-// NamespaceDefault and others represent conts for namespaces
+// NamespaceDefault and others represent conts for namespaces.
 const (
 	NamespaceDefault = "default"
 )
 
-// FQFN is a parsed fqfn
+// FQFN is a parsed fqfn.
 type FQFN struct {
-	Identifier string
-	Namespace  string
-	Fn         string
-	Version    string
+	Identifier string `json:"identifier"`
+	Namespace  string `json:"namespace"`
+	Fn         string `json:"fn"`
+	Version    string `json:"version"`
 }
 
 func Parse(name string) FQFN {
-	// if the name contains a #, parse that out as the identifier
+	// if the name contains a #, parse that out as the identifier.
 	identifier := ""
 	identParts := strings.SplitN(name, "#", 2)
 	if len(identParts) == 2 {
@@ -37,7 +37,7 @@ func Parse(name string) FQFN {
 	}
 
 	// if a Runnable is referenced with its namespace, i.e. users#getUser
-	// then we need to parse that and ensure we only match that namespace
+	// then we need to parse that and ensure we only match that namespace.
 
 	namespace := NamespaceDefault
 	namespaceParts := strings.SplitN(name, "::", 2)
@@ -46,7 +46,7 @@ func Parse(name string) FQFN {
 		name = namespaceParts[1]
 	}
 
-	// next, if the name contains an @, parse the app version
+	// next, if the name contains an @, parse the app version.
 	appVersion := ""
 	versionParts := strings.SplitN(name, "@", 2)
 	if len(versionParts) == 2 {
@@ -64,7 +64,7 @@ func Parse(name string) FQFN {
 	return fqfn
 }
 
-// HeadlessURLPath returns the headless URL path for a function
+// HeadlessURLPath returns the headless URL path for a function.
 func (f FQFN) HeadlessURLPath() string {
 	return fmt.Sprintf("/%s/%s/%s/%s", f.Identifier, f.Namespace, f.Fn, f.Version)
 }

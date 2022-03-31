@@ -2,16 +2,19 @@ package directive
 
 import (
 	"fmt"
+	"net/http"
 	"strings"
 
+	"github.com/julienschmidt/httprouter"
 	"github.com/pkg/errors"
+	"golang.org/x/mod/semver"
+
 	"github.com/suborbital/atmo/directive/executable"
 	"github.com/suborbital/atmo/fqfn"
-	"golang.org/x/mod/semver"
 )
 
 // Validate validates a directive
-func (d *Directive) Validate() error {
+func (d *Directive) Validate() (err error) {
 	problems := &problems{}
 
 	d.calculateFQFNs()
@@ -56,7 +59,7 @@ func (d *Directive) Validate() error {
 			problems.add(fmt.Errorf("function at position %d missing namespace", i))
 		}
 
-		// if the fn is in the default namespace, let it exist "naked" and namespaced
+		// if the fn is in the default namespace, let it exist "naked" and namespaced.
 		if f.Namespace == fqfn.NamespaceDefault {
 			fns[f.Name] = true
 			fns[namespaced] = true
@@ -65,7 +68,7 @@ func (d *Directive) Validate() error {
 		}
 	}
 
-	// validate connections before handlers because we want to make sure they're all correct first
+	// validate connections before handlers because we want to make sure they're all correct first.
 	if d.Connections != nil {
 		if d.Connections.NATS != nil {
 			if err := d.Connections.NATS.validate(); err != nil {
@@ -106,6 +109,16 @@ func (d *Directive) Validate() error {
 		}
 	}
 
+	// Conflicting routes will result in a panic which we catch here
+	defer func() {
+		if r := recover(); r != nil {
+			problems.add(fmt.Errorf("%s", r))
+		}
+		err = problems.render()
+	}()
+
+	// Each request route is registered with an httprouter handler to catch conflicts when verifying a directive.
+	router := httprouter.New()
 	for i, h := range d.Handlers {
 		if h.Input.Type != InputTypeRequest && h.Input.Type != InputTypeStream {
 			problems.add(fmt.Errorf("handler for resource %s has invalid type, must be 'request' or 'stream'", h.Input.Resource))
@@ -127,6 +140,9 @@ func (d *Directive) Validate() error {
 			if h.RespondTo != "" {
 				problems.add(fmt.Errorf("handler for resource %s has type 'request', but defines a 'respondTo' field, which only valid for type 'stream'", h.Input.Resource))
 			}
+
+			router.Handle(h.Input.Method, h.Input.Resource, func(http.ResponseWriter, *http.Request, httprouter.Params){})
+
 		} else if h.Input.Type == InputTypeStream {
 			if h.Input.Source == "" || h.Input.Source == InputSourceServer {
 				if !strings.HasPrefix(h.Input.Resource, "/") {
@@ -162,6 +178,8 @@ func (d *Directive) Validate() error {
 			}
 		}
 	}
+	// httprouter instance no longer needed
+	router = nil
 
 	for i, s := range d.Schedules {
 		if s.Name == "" {
@@ -218,7 +236,7 @@ const (
 )
 
 func (d *Directive) validateSteps(exType executableType, name string, steps []executable.Executable, initialState map[string]bool, problems *problems) map[string]bool {
-	// keep track of the functions that have run so far at each step
+	// keep track of the functions that have run so far at each step.
 	fullState := initialState
 
 	for j, s := range steps {
@@ -233,7 +251,7 @@ func (d *Directive) validateSteps(exType executableType, name string, steps []ex
 		}
 
 		// this function is key as it compartmentalizes 'step validation', and importantly it
-		// ensures that a Runnable is available to handle it and binds it by setting the FQFN field
+		// ensures that a Runnable is available to handle it and binds it by setting the FQFN field.
 		validateFn := func(fn *executable.CallableFn) {
 			runnable := d.FindRunnable(fn.Fn)
 			if runnable == nil {
@@ -249,7 +267,7 @@ func (d *Directive) validateSteps(exType executableType, name string, steps []ex
 			}
 
 			if fn.OnErr != nil {
-				// if codes are specificed, 'other' should be used, not 'any'
+				// if codes are specificed, 'other' should be used, not 'any'.
 				if len(fn.OnErr.Code) > 0 && fn.OnErr.Any != "" {
 					problems.add(fmt.Errorf("%s for %s has 'onErr.any' value at step %d while specific codes are specified, use 'other' instead", exType, name, j))
 				} else if fn.OnErr.Any != "" {
@@ -258,7 +276,7 @@ func (d *Directive) validateSteps(exType executableType, name string, steps []ex
 					}
 				}
 
-				// if codes are NOT specificed, 'any' should be used, not 'other'
+				// if codes are NOT specificed, 'any' should be used, not 'other'.
 				if len(fn.OnErr.Code) == 0 && fn.OnErr.Other != "" {
 					problems.add(fmt.Errorf("%s for %s has 'onErr.other' value at step %d while specific codes are not specified, use 'any' instead", exType, name, j))
 				} else if fn.OnErr.Other != "" {
@@ -282,7 +300,7 @@ func (d *Directive) validateSteps(exType executableType, name string, steps []ex
 			fnsToAdd = append(fnsToAdd, key)
 		}
 
-		// the steps below are referenced by index (j) to ensure the addition of the FQFN in validateFn 'sticks'
+		// the steps below are referenced by index (j) to ensure the addition of the FQFN in validateFn 'sticks'.
 		if s.IsFn() {
 			validateFn(&steps[j].CallableFn)
 		} else if s.IsGroup() {

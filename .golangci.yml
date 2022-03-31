@@ -1,0 +1,30 @@
+run:
+  timeout: 5m
+  skip-dirs-use-default: true
+  modules-download-mode: readonly
+  allow-parallel-runners: true
+
+output:
+  sort-results: true
+
+linters:
+  disable-all: true
+  enable:
+    - deadcode
+    - gci
+    - godot
+    - unparam
+    - unused
+#    - errcheck
+#    - gosimple
+#    - ineffassign
+#    - staticcheck
+#    - structcheck
+#    - typecheck
+#    - varcheck
+
+linters-settings:
+  gci:
+    local-prefixes: github.com/suborbital
+  godot:
+    scope: all

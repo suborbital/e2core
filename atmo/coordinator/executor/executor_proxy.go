@@ -9,7 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/suborbital/atmo/directive"
+	"github.com/suborbital/atmo/atmo/appsource"
+	"github.com/suborbital/atmo/atmo/options"
 	"github.com/suborbital/atmo/directive/executable"
 	"github.com/suborbital/grav/discovery/local"
 	"github.com/suborbital/grav/grav"
@@ -43,7 +44,7 @@ type Executor struct {
 }
 
 // New creates a new Executor
-func New(log *vlog.Logger, transport *websocket.Transport) *Executor {
+func New(log *vlog.Logger, transport *websocket.Transport, _ *options.Options) *Executor {
 	gravOpts := []grav.OptionsModifier{
 		grav.UseLogger(log),
 	}
@@ -184,7 +185,7 @@ func (e *Executor) UseCapabilityConfig(config rcap.CapabilityConfig) error {
 }
 
 // Register registers a Runnable
-func (e *Executor) Register(jobType string, runner rt.Runnable, opts ...rt.Option) error {
+func (e *Executor) Register(jobType string, runner rt.Runnable, capConfig *rcap.CapabilityConfig, opts ...rt.Option) error {
 	// nothing to do in proxy mode
 
 	return nil
@@ -210,7 +211,7 @@ func (e *Executor) SetSchedule(sched rt.Schedule) error {
 
 // Load loads Runnables into the executor's Reactr instance
 // And connects them to the Grav instance (currently unused)
-func (e *Executor) Load(runnables []directive.Runnable) error {
+func (e *Executor) Load(source appsource.AppSource) error {
 	// nothing to do in proxy mode
 
 	return nil

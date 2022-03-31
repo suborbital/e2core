@@ -1,0 +1,33 @@
+builds:
+  - <<: &build_defaults
+      id: atmo
+      main: .
+      binary: atmo
+      env:
+        - CGO_ENABLED=1
+      goos:
+        - linux
+      goarch:
+        - amd64
+      ldflags:
+        - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}
+  - <<: *build_defaults
+    id: atmo-proxy
+    binary: atmo-proxy
+    tags: proxy
+
+changelog:
+  skip: true
+
+checksum:
+  name_template: 'checksums.txt'
+
+archives:
+  - id: atmo-archive
+    name_template: 'atmo-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
+    builds:
+      - atmo
+  - id: atmo-proxy-archive
+    name_template: 'atmo-proxy-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
+    builds:
+      - atmo-proxy

@@ -2,9 +2,9 @@ package appsource
 
 import (
 	"net/http"
-	"os"
 
 	"github.com/pkg/errors"
+
 	"github.com/suborbital/atmo/atmo/options"
 	"github.com/suborbital/atmo/directive"
 	"github.com/suborbital/atmo/directive/executable"
@@ -12,66 +12,58 @@ import (
 	"github.com/suborbital/reactr/rcap"
 )
 
-// HeadlessBundleSource is an AppSource backed by a bundle file (but headless)
+// HeadlessBundleSource is an AppSource backed by a bundle file (but headless).
 type HeadlessBundleSource struct {
 	path         string
 	opts         options.Options
-	bundlesource *BundleSource
+	bundleSource *BundleSource
 }
 
-// NewHeadlessBundleSource creates a new HeadlessBundleSource that looks for a bundle at [path]
+// NewHeadlessBundleSource creates a new HeadlessBundleSource that looks for a bundle at [path].
 func NewHeadlessBundleSource(path string) AppSource {
 	b := &HeadlessBundleSource{
 		path: path,
-		// re-use BundleSource's Directive-finding logic etc
-		bundlesource: NewBundleSource(path).(*BundleSource),
+		// re-use BundleSource's Directive-finding logic etc.
+		bundleSource: NewBundleSource(path).(*BundleSource),
 	}
 
 	return b
 }
 
-// Start initializes the app source
+// Start initializes the app source.
 func (h *HeadlessBundleSource) Start(opts options.Options) error {
 	h.opts = opts
 
-	if err := h.bundlesource.Start(opts); err != nil {
-		return errors.Wrap(err, "failed to bundlesource.Start")
+	if err := h.bundleSource.Start(opts); err != nil {
+		return errors.Wrap(err, "failed to bundleSource.Start")
 	}
 
 	return nil
 }
 
-// Runnables returns the Runnables for the app
-func (h *HeadlessBundleSource) Runnables() []directive.Runnable {
-	if h.bundlesource.bundle == nil {
-		return []directive.Runnable{}
-	}
-
-	return h.bundlesource.Runnables()
+// Runnables returns the Runnables for the app.
+func (h *HeadlessBundleSource) Runnables(identifier, version string) []directive.Runnable {
+	return h.bundleSource.Runnables(identifier, version)
 }
 
 // FindRunnable returns a nil error if a Runnable with the
 // provided FQFN can be made available at the next sync,
-// otherwise ErrRunnableNotFound is returned
+// otherwise ErrRunnableNotFound is returned.
 func (h *HeadlessBundleSource) FindRunnable(fqfn, auth string) (*directive.Runnable, error) {
-	if h.bundlesource.bundle == nil {
-		return nil, ErrRunnableNotFound
-	}
-
-	return h.bundlesource.FindRunnable(fqfn, auth)
+	return h.bundleSource.FindRunnable(fqfn, auth)
 }
 
-// Handlers returns the handlers for the app
-func (h *HeadlessBundleSource) Handlers() []directive.Handler {
-	if h.bundlesource.bundle == nil {
+// Handlers returns the handlers for the app.
+func (h *HeadlessBundleSource) Handlers(identifier, version string) []directive.Handler {
+	if h.bundleSource.bundle == nil {
 		return []directive.Handler{}
 	}
 
-	handlers := []directive.Handler{}
+	handlers := make([]directive.Handler, 0)
 
 	// for each Runnable, construct a handler that executes it
-	// based on a POST request to its FQFN URL /identifier/namespace/fn/version
-	for _, runnable := range h.bundlesource.Runnables() {
+	// based on a POST request to its FQFN URL /identifier/namespace/fn/version.
+	for _, runnable := range h.bundleSource.Runnables(identifier, version) {
 		handler := directive.Handler{
 			Input: directive.Input{
 				Type:     directive.InputTypeRequest,
@@ -95,62 +87,37 @@ func (h *HeadlessBundleSource) Handlers() []directive.Handler {
 	return handlers
 }
 
-// Schedules returns the schedules for the app
-func (h *HeadlessBundleSource) Schedules() []directive.Schedule {
-	return []directive.Schedule{}
+// Schedules returns the schedules for the app.
+func (h *HeadlessBundleSource) Schedules(_, _ string) []directive.Schedule {
+	return nil
 }
 
-// Connections returns the Connections for the app
-func (h *HeadlessBundleSource) Connections() directive.Connections {
+// Connections returns the Connections for the app.
+func (h *HeadlessBundleSource) Connections(_, _ string) directive.Connections {
 	return directive.Connections{}
 }
 
-// Authentication returns the Authentication for the app
-func (b *HeadlessBundleSource) Authentication() directive.Authentication {
-	if b.bundlesource.bundle == nil {
-		return directive.Authentication{}
-	}
-
-	return b.bundlesource.Authentication()
+// Authentication returns the Authentication for the app.
+func (h *HeadlessBundleSource) Authentication(identifier, version string) directive.Authentication {
+	return h.bundleSource.Authentication(identifier, version)
 }
 
-// Capabilities returns the Capabilities for the app
-func (b *HeadlessBundleSource) Capabilities() *rcap.CapabilityConfig {
-	if b.bundlesource.bundle == nil {
-		config := rcap.DefaultCapabilityConfig()
-		return &config
-	}
-
-	return b.bundlesource.Capabilities()
+// Capabilities returns the Capabilities for the app.
+func (h *HeadlessBundleSource) Capabilities(identifier, namespace, version string) *rcap.CapabilityConfig {
+	return h.bundleSource.Capabilities(identifier, namespace, version)
 }
 
-// File returns a requested file
-func (h *HeadlessBundleSource) File(filename string) ([]byte, error) {
-	if h.bundlesource.bundle == nil {
-		return nil, os.ErrNotExist
-	}
-
-	return h.bundlesource.bundle.StaticFile(filename)
+// File returns a requested file.
+func (h *HeadlessBundleSource) File(identifier, version, filename string) ([]byte, error) {
+	return h.bundleSource.File(identifier, version, filename)
 }
 
-// Queries returns the Queries for the app
-func (b *HeadlessBundleSource) Queries() []directive.DBQuery {
-	if b.bundlesource.bundle == nil {
-		return []directive.DBQuery{}
-	}
-
-	return b.bundlesource.Queries()
+// Queries returns the Queries for the app.
+func (h *HeadlessBundleSource) Queries(identifier, version string) []directive.DBQuery {
+	return h.bundleSource.Queries(identifier, version)
 }
 
-func (h *HeadlessBundleSource) Meta() Meta {
-	if h.bundlesource.bundle == nil {
-		return Meta{}
-	}
-
-	m := Meta{
-		Identifier: h.bundlesource.bundle.Directive.Identifier,
-		AppVersion: h.bundlesource.bundle.Directive.AppVersion,
-	}
-
-	return m
+// Applications returns the slice of Meta for the app.
+func (h *HeadlessBundleSource) Applications() []Meta {
+	return h.bundleSource.Applications()
 }

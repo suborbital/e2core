@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/pkg/errors"
+
 	"github.com/suborbital/atmo/atmo/coordinator/sequence"
 	"github.com/suborbital/atmo/directive"
 	"github.com/suborbital/reactr/request"
@@ -14,7 +15,7 @@ import (
 )
 
 func (c *Coordinator) websocketHandlerForDirectiveHandler(handler directive.Handler) http.HandlerFunc {
-	upgrader := websocket.Upgrader{} // use default options
+	upgrader := websocket.Upgrader{} // use default options.
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		conn, err := upgrader.Upgrade(w, r, nil)
@@ -51,7 +52,7 @@ func (c *Coordinator) websocketHandlerForDirectiveHandler(handler directive.Hand
 				State:       map[string][]byte{},
 			}
 
-			// a sequence executes the handler's steps and manages its state
+			// a sequence executes the handler's steps and manages its state.
 			seq, err := sequence.New(handler.Steps, req, c.exec, ctx)
 			if err != nil {
 				ctx.Log.Error(errors.Wrap(err, "failed to sequence.New"))

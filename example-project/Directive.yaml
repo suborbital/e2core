@@ -1,6 +1,6 @@
 identifier: com.suborbital.test
 appVersion: v0.0.1
-atmoVersion: v0.4.2
+atmoVersion: v0.4.4
 
 # uncomment to try out connections!
 connections:
@@ -33,9 +33,9 @@ handlers:
     steps:
       - fn: log-it
         as: logme
-      
+
       - fn: modify-url
-      
+
       - fn: fetch-test
         with:
           url: modify-url
@@ -45,19 +45,19 @@ handlers:
     method: POST
     steps:
       - fn: cache-set
-  
+
   - type: request
     resource: /get/:key
     method: GET
     steps:
       - fn: cache-get
-  
+
   - type: request
     resource: /file/*file
     method: GET
     steps:
       - fn: get-file
-  
+
   - type: request
     resource: /github
     method: GET
@@ -69,12 +69,12 @@ handlers:
     method: GET
     steps:
       - fn: rs-dbtest
-  
+
   - type: stream
     resource: /stream
     steps:
       - fn: helloworld-rs
-  
+
   # uncomment to try out NATS streaming!
   # - type: stream
   #   source: nats
@@ -90,7 +90,6 @@ handlers:
   #   steps:
   #     - fn: helloworld-rs
   #   respondTo: grav.reply
-
 # uncomment to try out scheduled jobs!
 # schedules:
 #   - name: run-every-30
