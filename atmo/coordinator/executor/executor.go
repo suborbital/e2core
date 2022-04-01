@@ -263,6 +263,10 @@ func (e *Executor) Metrics() (*rt.ScalerMetrics, error) {
 }
 
 func connectStaticPeers(log *vlog.Logger, g *grav.Grav, opts *options.Options) {
+	if strings.TrimSpace(opts.StaticPeers) == "" {
+		return
+	}
+
 	epts := strings.Split(opts.StaticPeers, ",")
 
 	for _, e := range epts {
