@@ -3,7 +3,6 @@ package coordinator
 import (
 	"fmt"
 
-	"github.com/google/uuid"
 	"github.com/pkg/errors"
 
 	"github.com/suborbital/atmo/atmo/appsource"
@@ -61,7 +60,7 @@ func (c *Coordinator) streamConnectionForDirectiveHandler(handler directive.Hand
 		req := &request.CoordinatedRequest{
 			Method:      atmoMethodStream,
 			URL:         handler.Input.Resource,
-			ID:          uuid.New().String(),
+			ID:          ctx.RequestID(),
 			Body:        msg.Data(),
 			Headers:     map[string]string{},
 			RespHeaders: map[string]string{},
@@ -91,7 +90,7 @@ func (c *Coordinator) streamConnectionForDirectiveHandler(handler directive.Hand
 			replyTopic = handler.RespondTo
 		}
 
-		pod.ReplyTo(msg, grav.NewMsg(replyTopic, result))
+		pod.ReplyTo(msg, grav.NewMsgWithParentID(replyTopic, ctx.RequestID(), result))
 
 		return nil
 	})
