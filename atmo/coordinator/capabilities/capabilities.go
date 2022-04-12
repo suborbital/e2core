@@ -18,7 +18,7 @@ func ResolveFromSource(source appsource.AppSource, ident, namespace, version str
 		return defaultConfig, nil
 	}
 
-	connections := source.Connections(ident, namespace)
+	connections := source.Connections(ident, version)
 
 	if userConfig.Logger != nil {
 		defaultConfig.Logger = userConfig.Logger
@@ -67,7 +67,8 @@ func ResolveFromSource(source appsource.AppSource, ident, namespace, version str
 		defaultConfig.File = userConfig.File
 	}
 
-	if userConfig.DB != nil {
+	// Override the connections.Database struct
+	if userConfig.DB.Enabled {
 		defaultConfig.DB = userConfig.DB
 	}
 
