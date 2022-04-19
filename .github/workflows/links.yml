@@ -1,6 +1,6 @@
 name: Links
 
-on: 
+on:
   pull_request:
   schedule:
     - cron: "0 12 * * 1"
