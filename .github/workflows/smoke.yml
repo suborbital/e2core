@@ -1,10 +1,10 @@
 name: Testapalooza
 
 on:
+  pull_request:
   push:
     branches:
       - main
-  pull_request:
 
 jobs:
 
@@ -12,26 +12,28 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
+        with:
+          go-version: 1.18
 
-    - name: Set up Go 1.17
-      uses: actions/setup-go@v1
-      with:
-        go-version: 1.17
-      id: go
+      - name: Cache Go mods
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+      - run: go mod download
 
-    - name: Check out code into the Go module directory
-      uses: actions/checkout@v2
+      - name: Build
+        run: |
+          make atmo
+          make atmo/proxy
 
-    - name: Get dependencies
-      run: |
-        go mod download
-
-    - name: Build
-      run: |
-        make atmo
-        make atmo/proxy
-
-    - name: Run test
-      run: |
-        make build
-        make test
+      - name: Run test
+        run: |
+          make build
+          make test
