@@ -4,8 +4,6 @@
     "gomodTidy", // go mod tidy
     "gomodUpdateImportPaths",
   ],
+  extends: ["group:opentelemetry-goMonorepo"],
   ignorePaths: ["example-project/**"],
-  matchSourceUrlPrefixes: [
-    "https://github.com/open-telemetry/opentelemetry-go",
-  ],
 }
