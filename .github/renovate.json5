@@ -1,0 +1,7 @@
+{
+  enabledManagers: ["github-actions", "gomod"],
+  postUpdateOptions: [
+    "gomodTidy", // go mod tidy
+    "gomodUpdateImportPaths",
+  ],
+}
