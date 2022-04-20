@@ -4,4 +4,5 @@
     "gomodTidy", // go mod tidy
     "gomodUpdateImportPaths",
   ],
+  ignorePaths: ["example-project/**"],
 }
