@@ -12,12 +12,12 @@ require (
 	github.com/suborbital/grav v0.5.1-0.20220401153127-41df567a4501
 	github.com/suborbital/reactr v0.15.1
 	github.com/suborbital/vektor v0.5.3-0.20220302142328-fb4fc3951eb1
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.29.0
-	go.opentelemetry.io/otel v1.4.1
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.31.0
+	go.opentelemetry.io/otel v1.6.1
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.4.1
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.4.1
 	go.opentelemetry.io/otel/sdk v1.4.1
-	go.opentelemetry.io/otel/trace v1.4.1
+	go.opentelemetry.io/otel/trace v1.6.1
 	golang.org/x/mod v0.5.1
 	google.golang.org/grpc v1.44.0
 	gopkg.in/yaml.v2 v2.4.0
@@ -29,7 +29,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/felixge/httpsnoop v1.0.2 // indirect
-	github.com/go-logr/logr v1.2.2 // indirect
+	github.com/go-logr/logr v1.2.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-redis/redis/v8 v8.11.4 // indirect
 	github.com/go-sql-driver/mysql v1.6.0 // indirect
@@ -62,8 +62,7 @@ require (
 	github.com/twmb/go-rbtree v1.0.0 // indirect
 	github.com/wasmerio/wasmer-go v1.0.4 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/internal/retry v1.4.1 // indirect
-	go.opentelemetry.io/otel/internal/metric v0.27.0 // indirect
-	go.opentelemetry.io/otel/metric v0.27.0 // indirect
+	go.opentelemetry.io/otel/metric v0.28.0 // indirect
 	go.opentelemetry.io/proto/otlp v0.12.0 // indirect
 	golang.org/x/crypto v0.0.0-20220313003712-b769efc7c000 // indirect
 	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect
