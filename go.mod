@@ -8,7 +8,7 @@ require (
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/pkg/errors v0.9.1
 	github.com/sethvargo/go-envconfig v0.6.0
-	github.com/spf13/cobra v1.2.1
+	github.com/spf13/cobra v1.4.0
 	github.com/suborbital/grav v0.5.1-0.20220401153127-41df567a4501
 	github.com/suborbital/reactr v0.15.1
 	github.com/suborbital/vektor v0.5.3-0.20220302142328-fb4fc3951eb1
