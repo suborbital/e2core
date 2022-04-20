@@ -10,7 +10,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "assemblyscript": "^0.19"
+    "assemblyscript": "0.20.4"
   },
   "dependencies": {
     "@assemblyscript/loader": "^0.19",
