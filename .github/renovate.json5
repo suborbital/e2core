@@ -5,4 +5,7 @@
     "gomodUpdateImportPaths",
   ],
   ignorePaths: ["example-project/**"],
+  matchSourceUrlPrefixes: [
+    "https://github.com/open-telemetry/opentelemetry-go",
+  ],
 }
