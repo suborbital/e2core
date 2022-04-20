@@ -68,9 +68,12 @@ func New(opts ...options.Modifier) (*Atmo, error) {
 	// when needed (during headless mode).
 	a.server = vk.New(
 		vk.UseEnvPrefix("ATMO"),
-		vk.UseAppName("Atmo"),
+		vk.UseAppName(atmoOpts.AppName),
 		vk.UseLogger(atmoOpts.Logger),
 		vk.UseInspector(a.inspectRequest),
+		vk.UseDomain(atmoOpts.Domain),
+		vk.UseHTTPPort(atmoOpts.HTTPPort),
+		vk.UseTLSPort(atmoOpts.TLSPort),
 		vk.UseQuietRoutes(
 			coordinator.AtmoHealthURI,
 			coordinator.AtmoMetricsURI,

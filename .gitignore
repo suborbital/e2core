@@ -21,3 +21,7 @@ target/
 node_modules
 .idea
 *.iml
+
+# visual code
+.vscode/
+*.code-workspace
