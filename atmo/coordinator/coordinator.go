@@ -21,15 +21,15 @@ import (
 )
 
 const (
-	atmoMethodSchedule       = "SCHED"
-	atmoMethodStream         = "STREAM"
-	atmoHeadlessStateHeader  = "X-Atmo-State"
-	atmoHeadlessParamsHeader = "X-Atmo-Params"
-	atmoRequestIDHeader      = "X-Atmo-RequestID"
-	atmoMessageURI           = "/meta/message"
-	AtmoMetricsURI           = "/meta/metrics"
-	AtmoHealthURI            = "/health"
-	connectionKeyFormat      = "%s.%s.%s"
+	atmoMethodSchedule = "SCHED"
+	atmoMethodStream   = "STREAM"
+	// atmoHeadlessStateHeader  = "X-Atmo-State"
+	// atmoHeadlessParamsHeader = "X-Atmo-Params"
+	// atmoRequestIDHeader      = "X-Atmo-RequestID"
+	atmoMessageURI      = "/meta/message"
+	AtmoMetricsURI      = "/meta/metrics"
+	AtmoHealthURI       = "/health"
+	connectionKeyFormat = "%s.%s.%s"
 )
 
 type rtFunc func(rt.Job, *rt.Ctx) (interface{}, error)
