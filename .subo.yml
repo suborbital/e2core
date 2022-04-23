@@ -5,7 +5,3 @@ dotVersionFiles:
 preMakeTargets:
   - build
   - test
-
-postMakeTargets:
-  - docker/publish version={{ .Version }}
-  - docker/publish/latest
