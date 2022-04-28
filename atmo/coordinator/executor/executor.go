@@ -217,6 +217,11 @@ func (e *Executor) Load(source appsource.AppSource) error {
 				continue
 			}
 
+			// since a Runnable at a given version is meant to be immutable, don't try to register it again
+			if e.reactr.IsRegistered(fn.FQFN) {
+				continue
+			}
+
 			e.reactr.RegisterWithCaps(fn.FQFN, rwasm.NewRunnerWithRef(fn.ModuleRef), *capObject)
 
 			e.log.Debug("adding listener for", fn.FQFN)

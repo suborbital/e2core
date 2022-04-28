@@ -114,9 +114,19 @@ func (c *Coordinator) SetupHandlers() *vk.Router {
 		router.Before(c.headlessAuthMiddleware())
 	}
 
+	// there are certain edge cases where handlers can be duplicated, let's prevent
+	// that from causing a panic when adding HTTP handlers to the server
+	// ref: https://github.com/suborbital/scn/issues/282
+	added := map[string]bool{}
+
 	// mount each handler into the VK group.
 	for _, application := range c.App.Applications() {
 		for _, h := range c.App.Handlers(application.Identifier, application.AppVersion) {
+			key := fmt.Sprintf("%s:%s:%s:%s:%s:%s", application.Identifier, application.AppVersion, h.Input.Type, h.Input.Source, h.Input.Method, h.Input.Resource)
+			if _, exists := added[key]; exists {
+				continue
+			}
+
 			switch h.Input.Type {
 			case directive.InputTypeRequest:
 				router.Handle(h.Input.Method, h.Input.Resource, c.vkHandlerForDirectiveHandler(h))
@@ -127,6 +137,8 @@ func (c *Coordinator) SetupHandlers() *vk.Router {
 					c.streamConnectionForDirectiveHandler(h, application)
 				}
 			}
+
+			added[key] = true
 		}
 	}
 
