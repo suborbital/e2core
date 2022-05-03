@@ -68,7 +68,7 @@ func ResolveFromSource(source appsource.AppSource, ident, namespace, version str
 	}
 
 	// Override the connections.Database struct
-	if userConfig.DB.Enabled {
+	if userConfig.DB != nil && userConfig.DB.Enabled {
 		defaultConfig.DB = userConfig.DB
 	}
 
