@@ -6,7 +6,7 @@ velocity/static:
 	go build -o .bin/velocity -tags netgo -ldflags="-extldflags=-static" .
 
 velocity/docker: docker/dev
-	docker run -v ${PWD}/$(dir):/home/velocity -e ATMO_HTTP_PORT=8080 -p 8080:8080 suborbital/velocity:dev velocity --wait
+	docker run -v ${PWD}/$(dir):/home/velocity -e VELOCITY_HTTP_PORT=8080 -p 8080:8080 suborbital/velocity:dev velocity --wait
 
 docker/dev:
 	docker build . -t suborbital/velocity:dev
