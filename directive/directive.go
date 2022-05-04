@@ -6,9 +6,9 @@ import (
 
 	"gopkg.in/yaml.v2"
 
-	"github.com/suborbital/atmo/directive/executable"
-	"github.com/suborbital/atmo/fqfn"
 	"github.com/suborbital/reactr/rcap"
+	"github.com/suborbital/velocity/directive/executable"
+	"github.com/suborbital/velocity/fqfn"
 )
 
 // InputTypeRequest and others represent consts for Directives.

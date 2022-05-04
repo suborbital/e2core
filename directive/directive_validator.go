@@ -9,8 +9,8 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/mod/semver"
 
-	"github.com/suborbital/atmo/directive/executable"
-	"github.com/suborbital/atmo/fqfn"
+	"github.com/suborbital/velocity/directive/executable"
+	"github.com/suborbital/velocity/fqfn"
 )
 
 // Validate validates a directive
@@ -141,7 +141,7 @@ func (d *Directive) Validate() (err error) {
 				problems.add(fmt.Errorf("handler for resource %s has type 'request', but defines a 'respondTo' field, which only valid for type 'stream'", h.Input.Resource))
 			}
 
-			router.Handle(h.Input.Method, h.Input.Resource, func(http.ResponseWriter, *http.Request, httprouter.Params){})
+			router.Handle(h.Input.Method, h.Input.Resource, func(http.ResponseWriter, *http.Request, httprouter.Params) {})
 
 		} else if h.Input.Type == InputTypeStream {
 			if h.Input.Source == "" || h.Input.Source == InputSourceServer {

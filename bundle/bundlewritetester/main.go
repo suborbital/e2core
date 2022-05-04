@@ -6,9 +6,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/suborbital/atmo/bundle"
-	"github.com/suborbital/atmo/directive"
-	"github.com/suborbital/atmo/directive/executable"
+	"github.com/suborbital/velocity/bundle"
+	"github.com/suborbital/velocity/directive"
+	"github.com/suborbital/velocity/directive/executable"
 )
 
 func main() {

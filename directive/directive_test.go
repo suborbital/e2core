@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/suborbital/atmo/directive/executable"
+	"github.com/suborbital/velocity/directive/executable"
 )
 
 func TestYAMLMarshalUnmarshal(t *testing.T) {

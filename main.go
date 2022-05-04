@@ -5,11 +5,12 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 
-	"github.com/suborbital/atmo/atmo"
-	"github.com/suborbital/atmo/atmo/options"
-	"github.com/suborbital/atmo/atmo/release"
 	"github.com/suborbital/vektor/vlog"
+	"github.com/suborbital/velocity/server"
+	"github.com/suborbital/velocity/server/options"
+	"github.com/suborbital/velocity/server/release"
 )
 
 const (
@@ -32,18 +33,18 @@ func main() {
 
 func rootCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "atmo [bundle-path]",
-		Short: "Atmo function-based web service runner",
+		Use:   "velocity [bundle-path]",
+		Short: "Velocity cloud native function framework",
 		Long: `
-Atmo is an all-in-one function-based web service platform that enables 
+Velocity is an all-in-one cloud native functions framework that enables 
 building backend systems using composable WebAssembly modules in a declarative manner.
 
-Atmo automatically scales using a meshed message bus, job scheduler, and 
-flexible API gateway to handle any workload. 
+Velocity automatically extends any application with stateless, ephemeral functions that
+execute within a secure sandbox, written in any language. 
 
 Handling API and event-based traffic is made simple using the declarative 
-Directive format and the powerful Runnable API using a variety of languages.`,
-		Version: release.AtmoDotVersion,
+Directive format and the powerful API available for many languages.`,
+		Version: release.VelocityServerDotVersion,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			path := "./runnables.wasm.zip"
 			if len(args) > 0 {
@@ -51,43 +52,22 @@ Directive format and the powerful Runnable API using a variety of languages.`,
 			}
 
 			logger := vlog.Default(
-				vlog.AppMeta(atmoInfo{AtmoVersion: release.AtmoDotVersion}),
+				vlog.AppMeta(atmoInfo{AtmoVersion: release.VelocityServerDotVersion}),
 				vlog.Level(vlog.LogLevelInfo),
 				vlog.EnvPrefix("ATMO"),
 			)
 
-			appName, err := cmd.Flags().GetString(appNameFlag)
+			opts, err := optionsFromFlags(cmd.Flags())
 			if err != nil {
-				return errors.Wrap(err, fmt.Sprintf("get string flag '%s' value", appNameFlag))
+				return errors.Wrap(err, "failed to optionsFromFlags")
 			}
 
-			domain, err := cmd.Flags().GetString(domainFlag)
-			if err != nil {
-				return errors.Wrap(err, fmt.Sprintf("get string flag '%s' value", domainFlag))
-			}
-
-			httpPort, err := cmd.Flags().GetInt(httpPortFlag)
-			if err != nil {
-				return errors.Wrap(err, fmt.Sprintf("get int flag '%s' value", httpPortFlag))
-			}
-
-			tlsPort, err := cmd.Flags().GetInt(tlsPortFlag)
-			if err != nil {
-				return errors.Wrap(err, fmt.Sprintf("get int flag '%s' value", tlsPortFlag))
-			}
-
-			shouldWait := cmd.Flags().Changed(waitFlag)
-			shouldRunHeadless := cmd.Flags().Changed(headlessFlag)
-
-			atmoService, err := atmo.New(
-				options.UseLogger(logger),
-				options.UseBundlePath(path),
-				options.ShouldRunHeadless(shouldRunHeadless),
-				options.ShouldWait(shouldWait),
-				options.AppName(appName),
-				options.Domain(domain),
-				options.HTTPPort(httpPort),
-				options.TLSPort(tlsPort),
+			atmoService, err := server.New(
+				append(
+					opts,
+					options.UseLogger(logger),
+					options.UseBundlePath(path),
+				)...,
 			)
 			if err != nil {
 				return errors.Wrap(err, "atmo.New")
@@ -106,4 +86,40 @@ Directive format and the powerful Runnable API using a variety of languages.`,
 	cmd.Flags().Int(tlsPortFlag, 443, "if passed, it'll be used as ATMO_TLS_PORT, otherwise '443' will be used")
 
 	return cmd
+}
+
+func optionsFromFlags(flags *pflag.FlagSet) ([]options.Modifier, error) {
+	appName, err := flags.GetString(appNameFlag)
+	if err != nil {
+		return nil, errors.Wrap(err, fmt.Sprintf("get string flag '%s' value", appNameFlag))
+	}
+
+	domain, err := flags.GetString(domainFlag)
+	if err != nil {
+		return nil, errors.Wrap(err, fmt.Sprintf("get string flag '%s' value", domainFlag))
+	}
+
+	httpPort, err := flags.GetInt(httpPortFlag)
+	if err != nil {
+		return nil, errors.Wrap(err, fmt.Sprintf("get int flag '%s' value", httpPortFlag))
+	}
+
+	tlsPort, err := flags.GetInt(tlsPortFlag)
+	if err != nil {
+		return nil, errors.Wrap(err, fmt.Sprintf("get int flag '%s' value", tlsPortFlag))
+	}
+
+	shouldWait := flags.Changed(waitFlag)
+	shouldRunHeadless := flags.Changed(headlessFlag)
+
+	opts := []options.Modifier{
+		options.ShouldRunHeadless(shouldRunHeadless),
+		options.ShouldWait(shouldWait),
+		options.AppName(appName),
+		options.Domain(domain),
+		options.HTTPPort(httpPort),
+		options.TLSPort(tlsPort),
+	}
+
+	return opts, nil
 }
