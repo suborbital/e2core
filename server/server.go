@@ -65,7 +65,7 @@ func New(opts ...options.Modifier) (*Server, error) {
 	// each request to trigger Router re-generation
 	// when needed (during headless mode).
 	a.server = vk.New(
-		vk.UseEnvPrefix("ATMO"),
+		vk.UseEnvPrefix("VELOCITY"),
 		vk.UseAppName(atmoOpts.AppName),
 		vk.UseLogger(atmoOpts.Logger),
 		vk.UseInspector(a.inspectRequest),
