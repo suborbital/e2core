@@ -24,7 +24,7 @@ func Start() *cobra.Command {
 		Long:    "starts the velocity server using the provided options and configured partner + backend, if desired",
 		Version: release.VelocityServerDotVersion,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			path := ""
+			path := "./runnables.wasm.zip"
 			if len(args) > 0 {
 				path = args[0]
 			}
@@ -56,6 +56,12 @@ func Start() *cobra.Command {
 				return errors.Wrap(err, "failed to orchestrator.New")
 			}
 
+			if partnerCmd, _ := cmd.Flags().GetString(runPartnerFlag); partnerCmd != "" {
+				if err := orchestrator.RunPartner(partnerCmd); err != nil {
+					return errors.Wrap(err, "failed to RunPartner")
+				}
+			}
+
 			go orchestrator.Start()
 
 			return velocityServer.Start()
@@ -65,7 +71,8 @@ func Start() *cobra.Command {
 	cmd.SetVersionTemplate("{{.Version}}\n")
 
 	cmd.Flags().Bool(waitFlag, false, "if passed, Atmo will wait until a bundle becomes available on disk, checking once per second")
-	cmd.Flags().String(appNameFlag, "Atmo", "if passed, it'll be used as VELOCITY_APP_NAME, otherwise 'Atmo' will be used")
+	cmd.Flags().String(appNameFlag, "Velocity", "if passed, it'll be used as VELOCITY_APP_NAME, otherwise 'Velocity' will be used")
+	cmd.Flags().String(runPartnerFlag, "", "if passed, the provided command will be run as the partner application")
 	cmd.Flags().String(domainFlag, "", "if passed, it'll be used as VELOCITY_DOMAIN and HTTPS will be used, otherwise HTTP will be used")
 	cmd.Flags().Int(httpPortFlag, 8080, "if passed, it'll be used as VELOCITY_HTTP_PORT, otherwise '8080' will be used")
 	cmd.Flags().Int(tlsPortFlag, 443, "if passed, it'll be used as VELOCITY_TLS_PORT, otherwise '443' will be used")

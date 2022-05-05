@@ -1,10 +1,11 @@
 package command
 
 const (
-	headlessFlag = "headless"
-	waitFlag     = "wait"
-	appNameFlag  = "appName"
-	domainFlag   = "domain"
-	httpPortFlag = "httpPort"
-	tlsPortFlag  = "tlsPort"
+	headlessFlag   = "headless"
+	waitFlag       = "wait"
+	appNameFlag    = "app-name"
+	domainFlag     = "domain"
+	httpPortFlag   = "http-port"
+	tlsPortFlag    = "tls-port"
+	runPartnerFlag = "run"
 )

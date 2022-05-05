@@ -2,6 +2,9 @@
 velocity:
 	go build -o .bin/velocity ./main.go
 
+velocity/install:
+	go install
+
 velocity/static:
 	go build -o .bin/velocity -tags netgo -ldflags="-extldflags=-static" .
 

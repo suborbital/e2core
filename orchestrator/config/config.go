@@ -35,9 +35,12 @@ func Parse(bundlePath string) (Config, error) {
 		return Config{}, errors.Wrap(err, "resolving config: envconfig.Process")
 	}
 
-	if c.ControlPlane == DefaultControlPlane && bundlePath == "" {
-		return Config{}, errors.New("missing required argument: bundle path")
-	} else if bundlePath != "" {
+	// if the ControlPlane has been set explicitly, then we'll ignore the bundle
+	if c.ControlPlane == DefaultControlPlane {
+		if bundlePath == "" {
+			return Config{}, errors.New("missing required argument: bundle path")
+		}
+
 		c.BundlePath = bundlePath
 	}
 

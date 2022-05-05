@@ -93,7 +93,7 @@ func (c *Coordinator) Start() error {
 
 // SetupHandlers configures all of the app's handlers and generates a Vektor Router for the app.
 func (c *Coordinator) SetupHandlers() *vk.Router {
-	router := vk.NewRouter(c.log)
+	router := vk.NewRouter(c.log, c.opts.PartnerAddress)
 
 	// start by adding the otel handler to the stack.
 	router.Before(c.openTelemetryHandler())

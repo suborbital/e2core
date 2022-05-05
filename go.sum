@@ -359,6 +359,8 @@ github.com/suborbital/reactr v0.15.1 h1:IJNsh9SiXHp2B4wpTSMseIym4XvAYP7N5fQSADfG
 github.com/suborbital/reactr v0.15.1/go.mod h1:JC+km01xHNSuQDYsxWCBBh7fJrctI1Yai7Mm/Ws3xAU=
 github.com/suborbital/vektor v0.5.3-0.20220302142328-fb4fc3951eb1 h1:98FRu8Hq9ZGA7z+cEuTuWdNBprfxh3OLUv3ZrTTfqu4=
 github.com/suborbital/vektor v0.5.3-0.20220302142328-fb4fc3951eb1/go.mod h1:3BEfYMy0SEpwMqBCFmddSI66kUnKvg0YIODI/D30w1k=
+github.com/suborbital/vektor v0.5.3-0.20220504144906-e8222b283c71 h1:D6cuR59PSZbv/1VsovGQ6YwS6g09dNNZdTMk93/ZFKE=
+github.com/suborbital/vektor v0.5.3-0.20220504144906-e8222b283c71/go.mod h1:8X7jun9hB/SGJKbe5lGKKF5xUocIpF05UHMPyOu21gI=
 github.com/twmb/franz-go v1.2.6 h1:WVub2Sml7LqER9VU0WxsiOTom4LBK7YMj+7jbqadE3U=
 github.com/twmb/franz-go v1.2.6/go.mod h1:P+i2DnBaec1o0z9EI8CyAM/WAjG99CHI3oCAhZDoy48=
 github.com/twmb/franz-go v1.5.0 h1:DC2Ov0Z0+wqqrHYkTHukzm14x2mv059MD1YL6N9AYew=
