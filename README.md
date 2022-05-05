@@ -1,6 +1,6 @@
-# Velocity
+![Velocity_Long_fullcolour](https://user-images.githubusercontent.com/5942370/166942290-80c30bad-decd-48de-a89f-c90e7f6dccd3.png)
 
-Velocity is an application framework that brings multi-language functions and workflows to any application using WebAssembly. By running ephemeral, stateless, sandboxed functions, Velocity adds infinitely scalable compute to any architecture.
+**Suborbital Velocity** is an application framework that brings multi-language functions and workflows to any application using WebAssembly. By running ephemeral, stateless, sandboxed functions, Velocity adds infinitely scalable compute to any architecture.
 
 Velocity can start as small as adding a single function to an existing application, grow to be the basis for entire complex systems, and feel integrated into your existing developer tooling the entire way. Velocity can create, build, and deploy functions written in popular languages like JavaScript, TypeScript, Go, Rust, and more.
 
