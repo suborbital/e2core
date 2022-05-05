@@ -275,7 +275,6 @@ github.com/russross/blackfriday/v2 v2.1.0/go.mod h1:+Rmxgy9KzJVeS9/2gXHxylqXiyQD
 github.com/satori/go.uuid v1.2.0/go.mod h1:dA0hQrYB0VpLJoorglMZABFdXlWrHn1NEOzdhQKdks0=
 github.com/schollz/peerdiscovery v1.6.11 h1:3SG5vV1plIxylDg81fKgnqyrvlem5MrNcgcb0TLBjlE=
 github.com/schollz/peerdiscovery v1.6.11/go.mod h1:duO2S6wH3IuPJXwniPXp/9f69S2gFUSA9ePbAcKatJg=
-github.com/sethvargo/go-envconfig v0.4.0/go.mod h1:XZ2JRR7vhlBEO5zMmOpLgUhgYltqYqq4d4tKagtPUv0=
 github.com/sethvargo/go-envconfig v0.7.0 h1:P/ljQXSRjgAgsnIripHs53Jg/uNVXu2FYQ9yLSDappA=
 github.com/sethvargo/go-envconfig v0.7.0/go.mod h1:00S1FAhRUuTNJazWBWcJGvEHOM+NO6DhoRMAOX7FY5o=
 github.com/shopspring/decimal v0.0.0-20180709203117-cd690d0c9e24/go.mod h1:M+9NzErvs504Cn4c5DxATwIqPbtswREoFCre64PpcG4=
@@ -303,8 +302,8 @@ github.com/suborbital/grav v0.5.1-0.20220401153127-41df567a4501 h1:PEiRGQPYCILVP
 github.com/suborbital/grav v0.5.1-0.20220401153127-41df567a4501/go.mod h1:c0Jbycyryjz4RMtiENnvAT8J9yIMGSPt3GpyQJt1TH8=
 github.com/suborbital/reactr v0.15.1 h1:IJNsh9SiXHp2B4wpTSMseIym4XvAYP7N5fQSADfGwbM=
 github.com/suborbital/reactr v0.15.1/go.mod h1:JC+km01xHNSuQDYsxWCBBh7fJrctI1Yai7Mm/Ws3xAU=
-github.com/suborbital/vektor v0.5.3-0.20220302142328-fb4fc3951eb1 h1:98FRu8Hq9ZGA7z+cEuTuWdNBprfxh3OLUv3ZrTTfqu4=
-github.com/suborbital/vektor v0.5.3-0.20220302142328-fb4fc3951eb1/go.mod h1:3BEfYMy0SEpwMqBCFmddSI66kUnKvg0YIODI/D30w1k=
+github.com/suborbital/vektor v0.5.3-0.20220504144906-e8222b283c71 h1:D6cuR59PSZbv/1VsovGQ6YwS6g09dNNZdTMk93/ZFKE=
+github.com/suborbital/vektor v0.5.3-0.20220504144906-e8222b283c71/go.mod h1:8X7jun9hB/SGJKbe5lGKKF5xUocIpF05UHMPyOu21gI=
 github.com/twmb/franz-go v1.5.2 h1:2IwsTronFdgTtyitQxTL8WE0xrPiev1A77i5ps09Pmc=
 github.com/twmb/franz-go v1.5.2/go.mod h1:ZKQ5AtqBbdc783bLCay7nDc21lJnIIA8mFJYhLMF19E=
 github.com/twmb/franz-go/pkg/kmsg v1.0.0 h1:dQdaXLDUEb+XkSUqw2/GvMEGdw1o89X2fOiFjlhztyA=
@@ -364,7 +363,6 @@ golang.org/x/crypto v0.0.0-20201203163018-be400aefbc4c/go.mod h1:jdWPYTVW3xRLrWP
 golang.org/x/crypto v0.0.0-20210314154223-e6e6c4f2bb5b/go.mod h1:T9bdIzuCu7OtxOm1hfPfRQxPLYneinmdGuTeoZ9dtd4=
 golang.org/x/crypto v0.0.0-20210616213533-5ff15b29337e/go.mod h1:GvvjBRRGRdwPK5ydBHafDWAxML/pGHZbMvKqRZ5+Abc=
 golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97/go.mod h1:GvvjBRRGRdwPK5ydBHafDWAxML/pGHZbMvKqRZ5+Abc=
-golang.org/x/crypto v0.0.0-20211108221036-ceb1ce70b4fa/go.mod h1:GvvjBRRGRdwPK5ydBHafDWAxML/pGHZbMvKqRZ5+Abc=
 golang.org/x/crypto v0.0.0-20220427172511-eb4f295cb31f/go.mod h1:IxCIyHEi3zRg3s0A5j5BB6A9Jmi73HwBIUl50j+osU4=
 golang.org/x/crypto v0.0.0-20220516162934-403b01795ae8 h1:y+mHpWoQJNAHt26Nhh6JP7hvM71IRZureyvZhoVALIs=
 golang.org/x/crypto v0.0.0-20220516162934-403b01795ae8/go.mod h1:IxCIyHEi3zRg3s0A5j5BB6A9Jmi73HwBIUl50j+osU4=
@@ -431,7 +429,6 @@ golang.org/x/net v0.0.0-20200822124328-c89045814202/go.mod h1:/O7V0waA8r7cgGh81R
 golang.org/x/net v0.0.0-20201021035429-f5854403a974/go.mod h1:sp8m0HH+o8qH0wwXwYZr8TS3Oi6o0r6Gce1SSxlDquU=
 golang.org/x/net v0.0.0-20210226172049-e18ecbb05110/go.mod h1:m0MpNAwzfU5UDzcl9v0D8zg8gWTRqZa9RBIspLL5mdg=
 golang.org/x/net v0.0.0-20210405180319-a5a99cb37ef4/go.mod h1:p54w0d4576C0XHj96bSt6lcn1PtDYWL6XObtHCRCNQM=
-golang.org/x/net v0.0.0-20211111160137-58aab5ef257a/go.mod h1:9nx3DQGgdP8bBQD5qxJ1jj9UTztislL4KSBs9R2vV5Y=
 golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2/go.mod h1:9nx3DQGgdP8bBQD5qxJ1jj9UTztislL4KSBs9R2vV5Y=
 golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd/go.mod h1:CfG3xpIq0wQ8r1q4Su4UZFWDARRcnwPjda9FqA0JpMk=
 golang.org/x/net v0.0.0-20220225172249-27dd8689420f h1:oA4XRj0qtSt8Yo1Zms0CUlsT3KG69V2UGQWPBxujDmc=

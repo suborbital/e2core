@@ -1,8 +1,12 @@
 package orchestrator
 
 import (
+	"bytes"
 	"log"
+	"net/url"
+	"os"
 	"runtime"
+	"text/template"
 	"time"
 
 	"github.com/pkg/errors"
@@ -22,6 +26,10 @@ type Orchestrator struct {
 	logger *vlog.Logger
 	config config.Config
 	sats   map[string]*watcher // map of FQFNs to watchers
+}
+
+type commandTemplateData struct {
+	Port string
 }
 
 func New(bundlePath string) (*Orchestrator, error) {
@@ -59,6 +67,38 @@ func (o *Orchestrator) Start() {
 	for err := range errChan {
 		log.Fatal(errors.Wrap(err, "encountered error"))
 	}
+}
+
+func (o *Orchestrator) RunPartner(command string) error {
+	o.logger.Info("starting partner:", command)
+
+	data := commandTemplateData{
+		Port: "3000",
+	}
+
+	addr, exists := os.LookupEnv("VELOCITY_PARTNER")
+	if exists {
+		partnerUrl, err := url.Parse(addr)
+		if err != nil {
+			return errors.Wrap(err, "failed to Parse")
+		}
+
+		data.Port = partnerUrl.Port()
+	}
+
+	tpl := template.New("cmd")
+	tpl.Parse(command)
+
+	out := bytes.NewBuffer(nil)
+	if err := tpl.Execute(out, data); err != nil {
+		return errors.Wrap(err, "failed to Execute command template")
+	}
+
+	if _, _, err := exec.Run(out.String()); err != nil {
+		return errors.Wrap(err, "failed to Run")
+	}
+
+	return nil
 }
 
 func (o *Orchestrator) reconcileConstellation(appSource appsource.AppSource, errChan chan error) {

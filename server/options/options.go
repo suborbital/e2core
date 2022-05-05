@@ -25,6 +25,7 @@ type Options struct {
 	Domain           string       `env:"VELOCITY_DOMAIN"`
 	HTTPPort         int          `env:"VELOCITY_HTTP_PORT,default=8080"`
 	TLSPort          int          `env:"VELOCITY_TLS_PORT,default=443"`
+	PartnerAddress   string       `env:"VELOCITY_PARTNER,default=http://localhost:3000"`
 	TracerConfig     TracerConfig `env:",prefix=VELOCITY_TRACER_"`
 }
 
@@ -130,6 +131,13 @@ func TLSPort(port int) Modifier {
 	}
 }
 
+// PartnerAddress sets the partner address to be used.
+func PartnerAddress(address string) Modifier {
+	return func(opts *Options) {
+		opts.PartnerAddress = address
+	}
+}
+
 // finalize "locks in" the options by overriding any existing options with the version from the environment, and setting the default logger if needed.
 func (o *Options) finalize(prefix string) {
 	if o.Logger == nil {
@@ -188,6 +196,10 @@ func (o *Options) finalize(prefix string) {
 	// set TLSPort if it was not passed as a flag.
 	if o.TLSPort == 0 {
 		o.TLSPort = envOpts.TLSPort
+	}
+
+	if o.PartnerAddress == "" {
+		o.PartnerAddress = envOpts.PartnerAddress
 	}
 
 	o.EnvironmentToken = ""

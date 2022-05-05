@@ -35,7 +35,7 @@ func (a *AppSourceVKRouter) GenerateRouter() (*vk.Router, error) {
 		return nil, errors.Wrap(err, "failed to appSource.Start")
 	}
 
-	router := vk.NewRouter(a.options.Logger)
+	router := vk.NewRouter(a.options.Logger, "")
 
 	router.GET("/runnables/:ident/:version", a.RunnablesHandler())
 	router.GET("/runnable/:ident/:namespace/:fn/:version", a.FindRunnableHandler())
