@@ -101,7 +101,7 @@ func (h *HTTPSource) FindRunnable(FQFN, auth string) (*directive.Runnable, error
 	if resp, err := h.authedGet(path, auth, &runnable); err != nil {
 		h.opts.Logger.Error(errors.Wrapf(err, "failed to get %s", path))
 
-		if resp.StatusCode == http.StatusUnauthorized {
+		if resp != nil && resp.StatusCode == http.StatusUnauthorized {
 			return nil, ErrAuthenticationFailed
 		}
 
