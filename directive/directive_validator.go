@@ -13,7 +13,7 @@ import (
 	"github.com/suborbital/atmo/fqfn"
 )
 
-// Validate validates a directive
+// Validate validates a directive.
 func (d *Directive) Validate() (err error) {
 	problems := &problems{}
 
@@ -109,7 +109,7 @@ func (d *Directive) Validate() (err error) {
 		}
 	}
 
-	// Conflicting routes will result in a panic which we catch here
+	// Conflicting routes will result in a panic which we catch here.
 	defer func() {
 		if r := recover(); r != nil {
 			problems.add(fmt.Errorf("%s", r))
@@ -141,7 +141,7 @@ func (d *Directive) Validate() (err error) {
 				problems.add(fmt.Errorf("handler for resource %s has type 'request', but defines a 'respondTo' field, which only valid for type 'stream'", h.Input.Resource))
 			}
 
-			router.Handle(h.Input.Method, h.Input.Resource, func(http.ResponseWriter, *http.Request, httprouter.Params){})
+			router.Handle(h.Input.Method, h.Input.Resource, func(http.ResponseWriter, *http.Request, httprouter.Params) {})
 
 		} else if h.Input.Type == InputTypeStream {
 			if h.Input.Source == "" || h.Input.Source == InputSourceServer {
@@ -178,7 +178,8 @@ func (d *Directive) Validate() (err error) {
 			}
 		}
 	}
-	// httprouter instance no longer needed
+
+	// httprouter instance no longer needed.
 	router = nil
 
 	for i, s := range d.Schedules {

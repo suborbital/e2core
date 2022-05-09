@@ -198,7 +198,7 @@ func (o *Options) finalize(prefix string) {
 	// compile-time decision about enabling proxy mode.
 	o.Proxy = proxyEnabled()
 
-	// only set the env token and tracer config in config if we're in proxy mode
+	// only set the env token and tracer config in config if we're in proxy mode.
 	if o.Proxy {
 		o.EnvironmentToken = envOpts.EnvironmentToken
 		o.TracerConfig = envOpts.TracerConfig
