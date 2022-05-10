@@ -12,10 +12,10 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/suborbital/vektor/vlog"
-	"github.com/suborbital/velocity/orchestrator/exec"
 	"github.com/suborbital/velocity/server/appsource"
 
 	"github.com/suborbital/velocity/orchestrator/config"
+	"github.com/suborbital/velocity/orchestrator/exec"
 )
 
 const (
@@ -119,6 +119,8 @@ func (o *Orchestrator) reconcileConstellation(appSource appsource.AppSource, err
 			satWatcher := o.sats[runnable.FQFN]
 
 			launch := func() {
+				o.logger.Info("launching sat (", runnable.FQFN, ")")
+
 				cmd, port := satCommand(o.config, runnable)
 
 				// repeat forever in case the command does error out
@@ -130,10 +132,13 @@ func (o *Orchestrator) reconcileConstellation(appSource appsource.AppSource, err
 				)
 
 				if err != nil {
-					errChan <- errors.Wrap(err, "sat exited with error")
+					o.logger.Error(errors.Wrapf(err, "failed to exeo.Run sat ( %s )", runnable.FQFN))
+					return
 				}
 
 				satWatcher.add(port, uuid, pid)
+
+				o.logger.Info("successfully started sat (", runnable.FQFN, ") on port", port)
 			}
 
 			// we want to max out at 8 threads per instance
@@ -143,9 +148,9 @@ func (o *Orchestrator) reconcileConstellation(appSource appsource.AppSource, err
 			}
 
 			report := satWatcher.report()
-			if report == nil {
+			if report == nil || report.instCount == 0 {
 				// if no instances exist, launch one
-				o.logger.Warn("launching", runnable.FQFN)
+				o.logger.Warn("no instances exist for", runnable.FQFN)
 
 				go launch()
 			} else if report.instCount > 0 && report.totalThreads/report.instCount >= threshold {
@@ -164,7 +169,7 @@ func (o *Orchestrator) reconcileConstellation(appSource appsource.AppSource, err
 					// if the current instances have too much spare time on their hands
 					o.logger.Warn("scaling down", runnable.Name, "; totalThreads:", report.totalThreads, "instCount:", report.instCount)
 
-					satWatcher.terminate()
+					satWatcher.scaleDown()
 				}
 			}
 

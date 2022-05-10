@@ -30,6 +30,7 @@ type watcher struct {
 }
 
 type instance struct {
+	fqfn    string
 	metrics *MetricsResponse
 	uuid    string
 	pid     int
@@ -55,17 +56,18 @@ func newWatcher(fqfn string, log *vlog.Logger) *watcher {
 // add adds a new instance to the watched pool
 func (w *watcher) add(port, uuid string, pid int) {
 	w.instances[port] = &instance{
+		fqfn: w.fqfn,
 		uuid: uuid,
 		pid:  pid,
 	}
 }
 
-// terminate terminates a random instance from the pool
-func (w *watcher) terminate() error {
+// scaleDown terminates one random instance from the pool
+func (w *watcher) scaleDown() error {
 	// we use the range to get a semi-random instance
 	// and then immediately return so that we only terminate one
 	for p := range w.instances {
-		w.log.Info("terminating instance on port", p)
+		w.log.Info("scaling down, terminating instance on port", p, "(", w.instances[p].fqfn, ")")
 
 		return w.terminateInstance(p)
 	}
@@ -80,9 +82,11 @@ func (w *watcher) terminateInstance(p string) error {
 
 	if inst != nil {
 		if err := process.Delete(inst.uuid); err != nil {
-			return errors.Wrap(err, "failed to process.Delete")
+			return errors.Wrapf(err, "failed to process.Delete for port %s ( %s )", p, inst.fqfn)
 		}
 	}
+
+	w.log.Info("successfully terminated instance on port", p, "(", inst.fqfn, ")")
 
 	return nil
 }
