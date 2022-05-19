@@ -1,0 +1,153 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+    tags:
+      - v*
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
+        with:
+          go-version: 1.18
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: v1.45
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
+        with:
+          go-version: 1.18
+
+      - name: Cache Go mods
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+      - run: go mod download
+
+      - name: Build
+        run: |
+          make atmo
+          make atmo/proxy
+
+      - name: Run test
+        run: |
+          make build
+          make test
+
+  image:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        image: [atmo, atmo-proxy]
+        include:
+          - image: atmo
+            dockerfile: Dockerfile
+          - image: atmo-proxy
+            dockerfile: Dockerfile-proxy
+
+    steps:
+      - uses: docker/setup-buildx-action@v2
+      - name: Build ${{ matrix.image }} image
+        uses: docker/build-push-action@v3
+        with:
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          file: ${{ matrix.dockerfile }}
+          push: false
+          tags: suborbital/${{ matrix.image }}:dev
+
+  release-bin:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [test, image, lint]
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
+        with:
+          go-version: 1.18
+
+      - name: Cache Go mods
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+      - run: go mod download
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v2
+        with:
+          version: latest
+          args: release --rm-dist
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  release-image:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [test, image, lint]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        image: [atmo, atmo-proxy]
+        include:
+          - image: atmo
+            dockerfile: Dockerfile
+          - image: atmo-proxy
+            dockerfile: Dockerfile-proxy
+
+    steps:
+      - uses: docker/setup-buildx-action@v2
+      - uses: docker/setup-qemu-action@v2
+
+      - uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/metadata-action@v4
+        id: docker_meta
+        with:
+          images: suborbital/${{ matrix.image }},ghcr.io/suborbital/${{ matrix.image }}
+          tags: |
+            type=match,pattern=(v.*)
+          flavor: |
+            latest=auto
+          labels: |
+            org.opencontainers.image.title=${{ matrix.image }}
+
+      - name: Build and push ${{ matrix.image }} image
+        uses: docker/build-push-action@v3
+        with:
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          file: ${{ matrix.dockerfile }}
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.docker_meta.outputs.tags }}
+          labels: ${{ steps.docker_meta.outputs.labels }}

@@ -1,4 +1,4 @@
-name: Links
+name: links
 
 on:
   pull_request:
