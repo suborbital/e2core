@@ -28,7 +28,7 @@ func New(sync *syncer.Syncer, opts *options.Options) (*Server, error) {
 	// tracer in case of a shutdown. Usually that is put in a defer statement. Server doesn't have a graceful shutdown.
 	_, err := setupTracing(opts.TracerConfig, opts.Logger())
 	if err != nil {
-		return nil, errors.Wrapf(err, "setupTracing(%s, %s, %f)", "atmo", "reporter_uri", 0.04)
+		return nil, errors.Wrapf(err, "setupTracing(%s, %s, %f)", "e2core", "reporter_uri", 0.04)
 	}
 
 	s := &Server{

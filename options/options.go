@@ -18,7 +18,7 @@ const (
 	FeatureMultiTenant  = "adminV1"
 )
 
-// Options defines options for Atmo.
+// Options defines options for E2Core.
 type Options struct {
 	logger *vlog.Logger
 
@@ -41,7 +41,7 @@ type Options struct {
 // have a prefix of E2CORE_TRACER_ specified in the parent Options struct.
 type TracerConfig struct {
 	TracerType      string           `env:"TYPE,default=none"`
-	ServiceName     string           `env:"SERVICENAME,default=atmo"`
+	ServiceName     string           `env:"SERVICENAME,default=e2core"`
 	Probability     float64          `env:"PROBABILITY,default=0.5"`
 	Collector       *CollectorConfig `env:",prefix=COLLECTOR_,noinit"`
 	HoneycombConfig *HoneycombConfig `env:",prefix=HONEYCOMB_,noinit"`
@@ -62,7 +62,7 @@ type HoneycombConfig struct {
 	Dataset  string `env:"DATASET"`
 }
 
-// Modifier defines options for Atmo.
+// Modifier defines options for E2Core.
 type Modifier func(*Options)
 
 func NewWithModifiers(mods ...Modifier) *Options {
