@@ -69,13 +69,13 @@ func (c *Coordinator) streamConnectionForDirectiveHandler(handler directive.Hand
 		}
 
 		// a sequence executes the handler's steps and manages its state.
-		seq, err := sequence.New(handler.Steps, req, c.exec, ctx)
+		seq, err := sequence.New(handler.Steps, req, ctx)
 		if err != nil {
 			c.log.Error(errors.Wrap(err, "failed to sequence.New"))
 			return nil
 		}
 
-		if err := seq.Execute(); err != nil {
+		if err := seq.Execute(c.exec); err != nil {
 			if runErr, isRunErr := err.(scheduler.RunErr); isRunErr {
 				c.log.Error(errors.Wrapf(runErr, "handler for %s returned an error", handler.Input.Resource))
 			} else {

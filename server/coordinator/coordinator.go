@@ -42,7 +42,7 @@ type Coordinator struct {
 
 	log *vlog.Logger
 
-	exec *executor.Executor
+	exec executor.Executor
 
 	transport *websocket.Transport
 
@@ -83,10 +83,6 @@ func (c *Coordinator) Start() error {
 
 	// establish connections defined by the app.
 	c.createConnections()
-
-	// do an initial sync of Runnables
-	// from the AppSource into RVG.
-	c.SyncAppState()
 
 	return nil
 }

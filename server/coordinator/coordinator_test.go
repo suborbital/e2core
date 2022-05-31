@@ -53,13 +53,13 @@ func TestBasicSequence(t *testing.T) {
 		State:  map[string][]byte{},
 	}
 
-	seq, err := sequence.New(steps, req, coord.exec, vk.NewCtx(coord.log, nil, nil))
+	seq, err := sequence.New(steps, req, vk.NewCtx(coord.log, nil, nil))
 	if err != nil {
 		t.Error(errors.Wrap(err, "failed to sequence.New"))
 		return
 	}
 
-	if err := seq.Execute(); err != nil {
+	if err := seq.Execute(coord.exec); err != nil {
 		t.Error(err)
 		return
 	}
@@ -98,13 +98,13 @@ func TestGroupSequence(t *testing.T) {
 		},
 	}
 
-	seq, err := sequence.New(steps, req, coord.exec, vk.NewCtx(coord.log, nil, nil))
+	seq, err := sequence.New(steps, req, vk.NewCtx(coord.log, nil, nil))
 	if err != nil {
 		t.Error(errors.Wrap(err, "failed to sequence.New"))
 		return
 	}
 
-	if err := seq.Execute(); err != nil {
+	if err := seq.Execute(coord.exec); err != nil {
 		t.Error(err)
 	}
 
@@ -149,13 +149,13 @@ func TestAsOnErrContinueSequence(t *testing.T) {
 		State:  map[string][]byte{},
 	}
 
-	seq, err := sequence.New(steps, req, coord.exec, vk.NewCtx(coord.log, nil, nil))
+	seq, err := sequence.New(steps, req, vk.NewCtx(coord.log, nil, nil))
 	if err != nil {
 		t.Error(errors.Wrap(err, "failed to sequence.New"))
 		return
 	}
 
-	if err := seq.Execute(); err != nil {
+	if err := seq.Execute(coord.exec); err != nil {
 		t.Error(err)
 	}
 
@@ -194,13 +194,13 @@ func TestAsOnErrReturnSequence(t *testing.T) {
 		State:  map[string][]byte{},
 	}
 
-	seq, err := sequence.New(steps, req, coord.exec, vk.NewCtx(coord.log, nil, nil))
+	seq, err := sequence.New(steps, req, vk.NewCtx(coord.log, nil, nil))
 	if err != nil {
 		t.Error(errors.Wrap(err, "failed to sequence.New"))
 		return
 	}
 
-	if err = seq.Execute(); err == nil {
+	if err = seq.Execute(coord.exec); err == nil {
 		t.Error(errors.New("sequence should have returned err, did not"))
 		return
 	}
@@ -244,13 +244,13 @@ func TestWithSequence(t *testing.T) {
 		State:  map[string][]byte{},
 	}
 
-	seq, err := sequence.New(steps, req, coord.exec, vk.NewCtx(coord.log, nil, nil))
+	seq, err := sequence.New(steps, req, vk.NewCtx(coord.log, nil, nil))
 	if err != nil {
 		t.Error(errors.Wrap(err, "failed to sequence.New"))
 		return
 	}
 
-	if err := seq.Execute(); err != nil {
+	if err := seq.Execute(coord.exec); err != nil {
 		t.Error(err)
 	}
 
@@ -292,13 +292,13 @@ func TestAsSequence(t *testing.T) {
 		State:  map[string][]byte{},
 	}
 
-	seq, err := sequence.New(steps, req, coord.exec, vk.NewCtx(coord.log, nil, nil))
+	seq, err := sequence.New(steps, req, vk.NewCtx(coord.log, nil, nil))
 	if err != nil {
 		t.Error(errors.Wrap(err, "failed to sequence.New"))
 		return
 	}
 
-	if err := seq.Execute(); err != nil {
+	if err := seq.Execute(coord.exec); err != nil {
 		t.Error(err)
 	}
 

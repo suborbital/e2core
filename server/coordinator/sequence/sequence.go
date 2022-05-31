@@ -18,7 +18,7 @@ import (
 type Sequence struct {
 	steps []Step
 
-	exec *executor.Executor
+	exec executor.Executor
 
 	req *request.CoordinatedRequest
 
@@ -43,23 +43,23 @@ type FnResult struct {
 }
 
 // FromJSON creates a sequence from a JSON-encoded set of steps.
-func FromJSON(seqJSON []byte, req *request.CoordinatedRequest, exec *executor.Executor, ctx *vk.Ctx) (*Sequence, error) {
+func FromJSON(seqJSON []byte, req *request.CoordinatedRequest, ctx *vk.Ctx) (*Sequence, error) {
 	steps := []Step{}
 	if err := json.Unmarshal(seqJSON, &steps); err != nil {
 		return nil, errors.Wrap(err, "failed to Unmarshal steps")
 	}
 
-	return newWithSteps(steps, req, exec, ctx)
+	return newWithSteps(steps, req, ctx)
 }
 
 // New creates a new Sequence.
-func New(execs []executable.Executable, req *request.CoordinatedRequest, exec *executor.Executor, ctx *vk.Ctx) (*Sequence, error) {
+func New(execs []executable.Executable, req *request.CoordinatedRequest, ctx *vk.Ctx) (*Sequence, error) {
 	steps := stepsFromExecutables(execs)
 
-	return newWithSteps(steps, req, exec, ctx)
+	return newWithSteps(steps, req, ctx)
 }
 
-func newWithSteps(steps []Step, req *request.CoordinatedRequest, exec *executor.Executor, ctx *vk.Ctx) (*Sequence, error) {
+func newWithSteps(steps []Step, req *request.CoordinatedRequest, ctx *vk.Ctx) (*Sequence, error) {
 	stepsJSON, err := json.Marshal(steps)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to Marshal step")
@@ -69,7 +69,6 @@ func newWithSteps(steps []Step, req *request.CoordinatedRequest, exec *executor.
 
 	s := &Sequence{
 		steps: steps,
-		exec:  exec,
 		req:   req,
 		ctx:   ctx,
 		lock:  sync.Mutex{},
@@ -84,7 +83,9 @@ func newWithSteps(steps []Step, req *request.CoordinatedRequest, exec *executor.
 
 // Execute returns the "final state" of a Sequence. If the state's err is not nil, it means a runnable returned an error, and the Directive indicates the Sequence should return.
 // if exec itself actually returns an error other than ErrSequenceRunErr, it means there was a problem executing the Sequence as described, and should be treated as such.
-func (seq *Sequence) Execute() error {
+func (seq *Sequence) Execute(exec executor.Executor) error {
+	seq.exec = exec
+
 	for {
 		// continue running steps until the sequence is complete.
 		if err := seq.ExecuteNext(); err != nil {

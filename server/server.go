@@ -131,9 +131,6 @@ func (s *Server) inspectRequest(r http.Request) {
 
 		s.options.Logger.Debug(fmt.Sprintf("found new Runnable %s, will be available at next sync", FQFN))
 
-		// do a sync to load the new Runnable into Reactr.
-		s.coordinator.SyncAppState()
-
 		// re-generate the Router which should now include
 		// the new function as a handler.
 		newRouter := s.coordinator.SetupHandlers()

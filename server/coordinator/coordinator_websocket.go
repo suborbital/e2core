@@ -53,14 +53,14 @@ func (c *Coordinator) websocketHandlerForDirectiveHandler(handler directive.Hand
 			}
 
 			// a sequence executes the handler's steps and manages its state.
-			seq, err := sequence.New(handler.Steps, req, c.exec, ctx)
+			seq, err := sequence.New(handler.Steps, req, ctx)
 			if err != nil {
 				ctx.Log.Error(errors.Wrap(err, "failed to sequence.New"))
 				breakErr = err
 				break
 			}
 
-			if err := seq.Execute(); err != nil {
+			if err := seq.Execute(c.exec); err != nil {
 				if runErr, isRunErr := err.(scheduler.RunErr); isRunErr {
 					if err := conn.WriteJSON(runErr); err != nil {
 						breakErr = err

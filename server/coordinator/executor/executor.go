@@ -31,9 +31,16 @@ var (
 	ErrCannotHandle             = errors.New("cannot handle job")
 )
 
-// Executor is a facade over Grav that allows executing remote
+type Executor interface {
+	Do(jobType string, req *request.CoordinatedRequest, ctx *vk.Ctx, cb grav.MsgFunc) (interface{}, error)
+	DesiredStepState(step executable.Executable, req *request.CoordinatedRequest) (map[string][]byte, error)
+	SetSchedule(sched scheduler.Schedule) error
+	Metrics() (*scheduler.ScalerMetrics, error)
+}
+
+// meshExecutor is a facade over Grav that allows executing remote
 // functions with a single call, ensuring there is no difference between them to the caller
-type Executor struct {
+type meshExecutor struct {
 	grav      *grav.Grav
 	pod       *grav.Pod
 	log       *vlog.Logger
@@ -42,7 +49,7 @@ type Executor struct {
 }
 
 // New creates a new Executor
-func New(log *vlog.Logger, transport *websocket.Transport) *Executor {
+func New(log *vlog.Logger, transport *websocket.Transport) *meshExecutor {
 	gravOpts := []grav.OptionsModifier{
 		grav.UseLogger(log),
 	}
@@ -56,7 +63,7 @@ func New(log *vlog.Logger, transport *websocket.Transport) *Executor {
 
 	g := grav.New(gravOpts...)
 
-	e := &Executor{
+	e := &meshExecutor{
 		grav:      g,
 		pod:       g.Connect(),
 		log:       log,
@@ -84,7 +91,7 @@ func New(log *vlog.Logger, transport *websocket.Transport) *Executor {
 }
 
 // Do executes a remote job
-func (e *Executor) Do(jobType string, req *request.CoordinatedRequest, ctx *vk.Ctx, cb grav.MsgFunc) (interface{}, error) {
+func (e *meshExecutor) Do(jobType string, req *request.CoordinatedRequest, ctx *vk.Ctx, cb grav.MsgFunc) (interface{}, error) {
 	var runErr error
 	var cbErr error
 
@@ -161,14 +168,14 @@ func (e *Executor) Do(jobType string, req *request.CoordinatedRequest, ctx *vk.C
 	return nil, nil
 }
 
-func (e *Executor) addCallback(parentID string, cb grav.MsgFunc) {
+func (e *meshExecutor) addCallback(parentID string, cb grav.MsgFunc) {
 	e.cbLock.Lock()
 	defer e.cbLock.Unlock()
 
 	e.callbacks[parentID] = cb
 }
 
-func (e *Executor) removeCallback(parentID string) {
+func (e *meshExecutor) removeCallback(parentID string) {
 	e.cbLock.Lock()
 	defer e.cbLock.Unlock()
 
@@ -176,25 +183,25 @@ func (e *Executor) removeCallback(parentID string) {
 }
 
 // UseCapabilityConfig sets up the executor's Reactr instance using the provided capability configuration
-func (e *Executor) UseCapabilityConfig(config rcap.CapabilityConfig) error {
+func (e *meshExecutor) UseCapabilityConfig(config rcap.CapabilityConfig) error {
 	// nothing to do in proxy mode
 
 	return nil
 }
 
 // DesiredStepState generates the desired state for the step from the 'real' state
-func (e *Executor) DesiredStepState(step executable.Executable, req *request.CoordinatedRequest) (map[string][]byte, error) {
+func (e *meshExecutor) DesiredStepState(step executable.Executable, req *request.CoordinatedRequest) (map[string][]byte, error) {
 	// in proxy mode, we don't want to handle desired state ourselves, we want each peer to handle it themselves
 	return nil, ErrDesiredStateNotGenerated
 }
 
 // this does nothing in proxy mode
-func (e *Executor) ListenAndRun(msgType string, run func(grav.Message, interface{}, error)) error {
+func (e *meshExecutor) ListenAndRun(msgType string, run func(grav.Message, interface{}, error)) error {
 	return nil
 }
 
 // SetSchedule adds a Schedule to the executor's Reactr instance
-func (e *Executor) SetSchedule(sched scheduler.Schedule) error {
+func (e *meshExecutor) SetSchedule(sched scheduler.Schedule) error {
 	// nothing to do in proxy mode
 
 	return nil
@@ -202,14 +209,14 @@ func (e *Executor) SetSchedule(sched scheduler.Schedule) error {
 
 // Load loads Runnables into the executor's Reactr instance
 // And connects them to the Grav instance (currently unused)
-func (e *Executor) Load(source appsource.AppSource) error {
+func (e *meshExecutor) Load(source appsource.AppSource) error {
 	// nothing to do in proxy mode
 
 	return nil
 }
 
 // Metrics returns the executor's Reactr isntance's internal metrics
-func (e *Executor) Metrics() (*scheduler.ScalerMetrics, error) {
+func (e *meshExecutor) Metrics() (*scheduler.ScalerMetrics, error) {
 	// nothing to do in proxy mode
 
 	return &scheduler.ScalerMetrics{}, nil

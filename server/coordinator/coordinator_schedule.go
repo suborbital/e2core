@@ -43,13 +43,13 @@ func (c *Coordinator) rtFuncForDirectiveSchedule(sched directive.Schedule) rtFun
 		}
 
 		// a sequence executes the handler's steps and manages its state.
-		seq, err := sequence.New(sched.Steps, req, c.exec, vk.NewCtx(c.log, nil, nil))
+		seq, err := sequence.New(sched.Steps, req, vk.NewCtx(c.log, nil, nil))
 		if err != nil {
 			c.log.Error(errors.Wrap(err, "failed to sequence.New"))
 			return nil, nil
 		}
 
-		if err := seq.Execute(); err != nil {
+		if err := seq.Execute(c.exec); err != nil {
 			if runErr, isRunErr := err.(scheduler.RunErr); isRunErr {
 				c.log.Error(errors.Wrapf(runErr, "schedule %s returned an error", sched.Name))
 			} else {

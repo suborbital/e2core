@@ -26,13 +26,13 @@ func (c *Coordinator) vkHandlerForDirectiveHandler(handler directive.Handler) vk
 		}
 
 		// a sequence executes the handler's steps and manages its state.
-		seq, err := sequence.New(handler.Steps, req, c.exec, ctx)
+		seq, err := sequence.New(handler.Steps, req, ctx)
 		if err != nil {
 			ctx.Log.Error(errors.Wrap(err, "failed to sequence.New"))
 			return nil, vk.E(http.StatusInternalServerError, "failed to handle request")
 		}
 
-		if err := seq.Execute(); err != nil {
+		if err := seq.Execute(c.exec); err != nil {
 			ctx.Log.Error(errors.Wrap(err, "failed to seq.exec"))
 
 			if runErr, isRunErr := err.(scheduler.RunErr); isRunErr {
