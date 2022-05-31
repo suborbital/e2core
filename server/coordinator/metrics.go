@@ -5,12 +5,12 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/reactr/rt"
 	"github.com/suborbital/vektor/vk"
+	"github.com/suborbital/velocity/scheduler"
 )
 
 type MetricsResponse struct {
-	Scheduler rt.ScalerMetrics `json:"scheduler"`
+	Scheduler scheduler.ScalerMetrics `json:"scheduler"`
 }
 
 func (c *Coordinator) metricsHandler() vk.HandlerFunc {

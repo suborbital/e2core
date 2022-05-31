@@ -7,12 +7,12 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/suborbital/grav/grav"
-	"github.com/suborbital/reactr/request"
-	"github.com/suborbital/reactr/rt"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
 	"github.com/suborbital/velocity/directive/executable"
+	"github.com/suborbital/velocity/scheduler"
 	"github.com/suborbital/velocity/server/coordinator/executor"
+	"github.com/suborbital/velocity/server/request"
 )
 
 type Sequence struct {
@@ -38,7 +38,7 @@ type FnResult struct {
 	FQFN     string                       `json:"fqfn"`
 	Key      string                       `json:"key"`
 	Response *request.CoordinatedResponse `json:"response"`
-	RunErr   rt.RunErr                    `json:"runErr"`  // runErr is an error returned from a Runnable.
+	RunErr   scheduler.RunErr             `json:"runErr"`  // runErr is an error returned from a Runnable.
 	ExecErr  string                       `json:"execErr"` // err is an annoying workaround that allows runGroup to propogate non-RunErrs out of its loop. Should be refactored when possible.
 }
 

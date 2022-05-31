@@ -7,11 +7,11 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/reactr/request"
-	"github.com/suborbital/reactr/rt"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/velocity/directive"
+	"github.com/suborbital/velocity/scheduler"
 	"github.com/suborbital/velocity/server/coordinator/sequence"
+	"github.com/suborbital/velocity/server/request"
 )
 
 func (c *Coordinator) websocketHandlerForDirectiveHandler(handler directive.Handler) http.HandlerFunc {
@@ -61,7 +61,7 @@ func (c *Coordinator) websocketHandlerForDirectiveHandler(handler directive.Hand
 			}
 
 			if err := seq.Execute(); err != nil {
-				if runErr, isRunErr := err.(rt.RunErr); isRunErr {
+				if runErr, isRunErr := err.(scheduler.RunErr); isRunErr {
 					if err := conn.WriteJSON(runErr); err != nil {
 						breakErr = err
 						break

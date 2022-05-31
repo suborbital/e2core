@@ -6,12 +6,12 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/suborbital/grav/grav"
-	"github.com/suborbital/reactr/request"
-	"github.com/suborbital/reactr/rt"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/velocity/directive"
+	"github.com/suborbital/velocity/scheduler"
 	"github.com/suborbital/velocity/server/appsource"
 	"github.com/suborbital/velocity/server/coordinator/sequence"
+	"github.com/suborbital/velocity/server/request"
 )
 
 type messageScope struct {
@@ -76,7 +76,7 @@ func (c *Coordinator) streamConnectionForDirectiveHandler(handler directive.Hand
 		}
 
 		if err := seq.Execute(); err != nil {
-			if runErr, isRunErr := err.(rt.RunErr); isRunErr {
+			if runErr, isRunErr := err.(scheduler.RunErr); isRunErr {
 				c.log.Error(errors.Wrapf(runErr, "handler for %s returned an error", handler.Input.Resource))
 			} else {
 				c.log.Error(errors.Wrapf(err, "schedule %s failed", handler.Input.Resource))

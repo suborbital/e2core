@@ -5,11 +5,15 @@ import (
 	"log"
 	"net/url"
 	"os"
+	"os/signal"
 	"runtime"
+	"sync"
+	"syscall"
 	"text/template"
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/sethvargo/go-envconfig"
 
 	"github.com/suborbital/vektor/vlog"
 	"github.com/suborbital/velocity/server/appsource"
@@ -23,9 +27,11 @@ const (
 )
 
 type Orchestrator struct {
-	logger *vlog.Logger
-	config config.Config
-	sats   map[string]*watcher // map of FQFNs to watchers
+	logger     *vlog.Logger
+	config     config.Config
+	sats       map[string]*watcher // map of FQFNs to watchers
+	signalChan chan os.Signal
+	wg         sync.WaitGroup
 }
 
 type commandTemplateData struct {
@@ -33,19 +39,20 @@ type commandTemplateData struct {
 }
 
 func New(bundlePath string) (*Orchestrator, error) {
-	conf, err := config.Parse(bundlePath)
+	conf, err := config.Parse(bundlePath, envconfig.OsLookuper())
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to config.Parse")
 	}
 
 	l := vlog.Default(
-		vlog.EnvPrefix("APPSOURCE"),
+		vlog.EnvPrefix("VELOCITY"),
 	)
 
 	o := &Orchestrator{
 		logger: l,
 		config: conf,
 		sats:   map[string]*watcher{},
+		wg:     sync.WaitGroup{},
 	}
 
 	return o, nil
@@ -54,19 +61,50 @@ func New(bundlePath string) (*Orchestrator, error) {
 func (o *Orchestrator) Start() {
 	appSource, errChan := o.setupAppSource()
 
-	// main event loop
-	go func() {
-		for {
-			o.reconcileConstellation(appSource, errChan)
+	o.signalChan = make(chan os.Signal, 1)
+	signal.Notify(o.signalChan, syscall.SIGINT, syscall.SIGTERM)
 
-			time.Sleep(time.Second)
+	o.wg.Add(1)
+
+loop:
+	for {
+		select {
+		case <-o.signalChan:
+			o.logger.Info("terminating orchestrator")
+			break loop
+		case err := <-errChan:
+			o.logger.Error(err)
+			log.Fatal(errors.Wrap(err, "encountered error"))
+		default:
+			break
 		}
-	}()
 
-	// assuming nothing above throws an error, this will block forever
-	for err := range errChan {
-		log.Fatal(errors.Wrap(err, "encountered error"))
+		o.logger.Info("reconciling")
+		o.reconcileConstellation(appSource, errChan)
+
+		time.Sleep(time.Second)
 	}
+
+	o.logger.Info("shutting down")
+
+	for _, s := range o.sats {
+		err := s.terminate()
+		if err != nil {
+			log.Fatal("terminating sats failed", err)
+		}
+	}
+
+	o.wg.Done()
+
+	o.logger.Info("shutdown complete")
+}
+
+// Shutdown signals to the orchestrator that shutdown is needed
+// mostly only required for testing purposes as the OS handles it normally
+func (o *Orchestrator) Shutdown() {
+	o.signalChan <- syscall.SIGTERM
+
+	o.wg.Wait()
 }
 
 func (o *Orchestrator) RunPartner(command string) error {
@@ -136,7 +174,7 @@ func (o *Orchestrator) reconcileConstellation(appSource appsource.AppSource, err
 					return
 				}
 
-				satWatcher.add(port, uuid, pid)
+				satWatcher.add(runnable.FQFN, port, uuid, pid)
 
 				o.logger.Info("successfully started sat (", runnable.FQFN, ") on port", port)
 			}

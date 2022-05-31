@@ -48,7 +48,7 @@ func Start() *cobra.Command {
 				)...,
 			)
 			if err != nil {
-				return errors.Wrap(err, "atmo.New")
+				return errors.Wrap(err, "server.New")
 			}
 
 			orchestrator, err := orchestrator.New(path)

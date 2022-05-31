@@ -7,14 +7,14 @@ import (
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/reactr/request"
-	"github.com/suborbital/reactr/rt"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
 	"github.com/suborbital/velocity/directive/executable"
+	"github.com/suborbital/velocity/scheduler"
 	"github.com/suborbital/velocity/server/appsource"
 	"github.com/suborbital/velocity/server/coordinator/sequence"
 	"github.com/suborbital/velocity/server/options"
+	"github.com/suborbital/velocity/server/request"
 )
 
 var coord *Coordinator
@@ -205,7 +205,7 @@ func TestAsOnErrReturnSequence(t *testing.T) {
 		return
 	}
 
-	runErr, isRunErr := err.(rt.RunErr)
+	runErr, isRunErr := err.(scheduler.RunErr)
 	if !isRunErr {
 		t.Error(errors.Wrap(err, "sequence should have returned RunErr, did not"))
 	}

@@ -25,6 +25,6 @@ impl Runnable for FetchTest {
 static RUNNABLE: &FetchTest = &FetchTest{};
 
 #[no_mangle]
-pub extern fn init() {
+pub extern fn _start() {
     use_runnable(RUNNABLE);
 }

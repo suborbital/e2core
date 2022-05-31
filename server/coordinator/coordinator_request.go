@@ -5,11 +5,11 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/reactr/request"
-	"github.com/suborbital/reactr/rt"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/velocity/directive"
+	"github.com/suborbital/velocity/scheduler"
 	"github.com/suborbital/velocity/server/coordinator/sequence"
+	"github.com/suborbital/velocity/server/request"
 )
 
 func (c *Coordinator) vkHandlerForDirectiveHandler(handler directive.Handler) vk.HandlerFunc {
@@ -35,7 +35,7 @@ func (c *Coordinator) vkHandlerForDirectiveHandler(handler directive.Handler) vk
 		if err := seq.Execute(); err != nil {
 			ctx.Log.Error(errors.Wrap(err, "failed to seq.exec"))
 
-			if runErr, isRunErr := err.(rt.RunErr); isRunErr {
+			if runErr, isRunErr := err.(scheduler.RunErr); isRunErr {
 				if runErr.Code < 200 || runErr.Code > 599 {
 					// if the Runnable returned an invalid code for HTTP, default to 500.
 					return nil, vk.Err(http.StatusInternalServerError, runErr.Message)

@@ -22,18 +22,6 @@ type Server struct {
 	options *options.Options
 }
 
-func (s *Server) testServer() (*vk.Server, error) {
-	if err := s.coordinator.Start(); err != nil {
-		return nil, errors.Wrap(err, "failed to coordinator.Start")
-	}
-
-	// mount and set up the app's handlers.
-	router := s.coordinator.SetupHandlers()
-	s.server.SwapRouter(router)
-
-	return s.server, nil
-}
-
 // New creates a new Server instance.
 func New(opts ...options.Modifier) (*Server, error) {
 	vOpts := options.NewWithModifiers(opts...)
@@ -153,4 +141,16 @@ func (s *Server) inspectRequest(r http.Request) {
 
 		s.options.Logger.Debug("app sync and router swap completed")
 	}
+}
+
+func (s *Server) testServer() (*vk.Server, error) {
+	if err := s.coordinator.Start(); err != nil {
+		return nil, errors.Wrap(err, "failed to coordinator.Start")
+	}
+
+	// mount and set up the app's handlers.
+	router := s.coordinator.SetupHandlers()
+	s.server.SwapRouter(router)
+
+	return s.server, nil
 }

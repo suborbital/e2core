@@ -11,10 +11,10 @@ import (
 	"github.com/suborbital/grav/transport/nats"
 	"github.com/suborbital/grav/transport/websocket"
 	"github.com/suborbital/reactr/rcap"
-	"github.com/suborbital/reactr/rt"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
 	"github.com/suborbital/velocity/directive"
+	"github.com/suborbital/velocity/scheduler"
 	"github.com/suborbital/velocity/server/appsource"
 	"github.com/suborbital/velocity/server/coordinator/executor"
 	"github.com/suborbital/velocity/server/options"
@@ -32,7 +32,7 @@ const (
 	connectionKeyFormat          = "%s.%s.%s"
 )
 
-type rtFunc func(rt.Job, *rt.Ctx) (interface{}, error)
+type rtFunc func(scheduler.Job, *scheduler.Ctx) (interface{}, error)
 
 // Coordinator is a type that is responsible for converting the directive into
 // usable Vektor handles by coordinating Reactr jobs and meshing when needed.
@@ -60,7 +60,7 @@ func New(appSource appsource.AppSource, options *options.Options) *Coordinator {
 
 	transport = websocket.New()
 
-	exec := executor.New(options.Logger, transport, options)
+	exec := executor.New(options.Logger, transport)
 
 	c := &Coordinator{
 		App:         appSource,
@@ -167,7 +167,7 @@ func (c *Coordinator) createConnections() {
 			} else {
 				g := grav.New(
 					grav.UseLogger(c.log),
-					grav.UseTransport(gnats),
+					grav.UseBridgeTransport(gnats),
 				)
 
 				c.connections[natsKey] = g
@@ -183,7 +183,7 @@ func (c *Coordinator) createConnections() {
 			} else {
 				g := grav.New(
 					grav.UseLogger(c.log),
-					grav.UseTransport(gkafka),
+					grav.UseBridgeTransport(gkafka),
 				)
 
 				c.connections[kafkaKey] = g
@@ -214,8 +214,8 @@ func (c *Coordinator) SetSchedules() {
 			if *c.opts.RunSchedules {
 				c.log.Debug("adding schedule", jobName)
 
-				c.exec.SetSchedule(rt.Every(seconds, func() rt.Job {
-					return rt.NewJob(jobName, nil)
+				c.exec.SetSchedule(scheduler.Every(seconds, func() scheduler.Job {
+					return scheduler.NewJob(jobName, nil)
 				}))
 			}
 		}

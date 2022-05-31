@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"syscall"
 	"time"
 
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/reactr/rt"
 	"github.com/suborbital/vektor/vlog"
+	"github.com/suborbital/velocity/scheduler"
 
 	"github.com/suborbital/velocity/orchestrator/process"
 )
@@ -19,7 +20,7 @@ var client = http.Client{Timeout: time.Second}
 
 // MetricsResponse is a response that backend instances use to report their status
 type MetricsResponse struct {
-	Scheduler rt.ScalerMetrics `json:"scheduler"`
+	Scheduler scheduler.ScalerMetrics `json:"scheduler"`
 }
 
 // watcher watches a "replicaSet" of Sats for a single FQFN
@@ -44,19 +45,17 @@ type watcherReport struct {
 
 // newWatcher creates a new watcher instance for the given fqfn
 func newWatcher(fqfn string, log *vlog.Logger) *watcher {
-	w := &watcher{
+	return &watcher{
 		fqfn:      fqfn,
 		instances: map[string]*instance{},
 		log:       log,
 	}
-
-	return w
 }
 
-// add adds a new instance to the watched pool
-func (w *watcher) add(port, uuid string, pid int) {
+// add inserts a new instance to the watched pool.
+func (w *watcher) add(fqfn, port, uuid string, pid int) {
 	w.instances[port] = &instance{
-		fqfn: w.fqfn,
+		fqfn: fqfn,
 		uuid: uuid,
 		pid:  pid,
 	}
@@ -75,18 +74,36 @@ func (w *watcher) scaleDown() error {
 	return nil
 }
 
-// terminateInstance terminates the instance from the given port
-func (w *watcher) terminateInstance(p string) error {
-	inst := w.instances[p]
-	delete(w.instances, p)
-
-	if inst != nil {
-		if err := process.Delete(inst.uuid); err != nil {
-			return errors.Wrapf(err, "failed to process.Delete for port %s ( %s )", p, inst.fqfn)
+func (w *watcher) terminate() error {
+	var err error
+	for p, instance := range w.instances {
+		w.log.Info(fmt.Sprintf("terminating instance on port %s", p))
+		err = w.terminateInstance(p)
+		if err != nil {
+			w.log.Warn("could not terminate instance", instance.fqfn, err.Error())
 		}
 	}
 
-	w.log.Info("successfully terminated instance on port", p, "(", inst.fqfn, ")")
+	return err
+}
+
+// terminateInstance terminates the instance from the given port
+func (w *watcher) terminateInstance(p string) error {
+	inst, ok := w.instances[p]
+	if !ok {
+		return fmt.Errorf("there isn't an instance on port %s", p)
+	}
+
+	if err := process.Delete(inst.uuid); err != nil {
+		w.log.Warn(fmt.Sprintf("process.Delete for port %s / fqfn %s failed, sending syscall.Kill", p, inst.fqfn))
+
+		if err := syscall.Kill(inst.pid, syscall.SIGTERM); err != nil {
+			return errors.Wrapf(err, "syscall.Kill for pid %d failed", inst.pid)
+		}
+	}
+
+	delete(w.instances, p)
+	w.log.Info(fmt.Sprintf("successfully terminated instance on port %s (%s)", p, inst.fqfn))
 
 	return nil
 }
@@ -98,7 +115,7 @@ func (w *watcher) report() *watcherReport {
 	}
 
 	totalThreads := 0
-	failedPorts := []string{}
+	failedPorts := make([]string, 0)
 
 	for p := range w.instances {
 		metrics, err := getReport(p)
