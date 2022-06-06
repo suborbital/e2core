@@ -10,9 +10,9 @@ import (
 	"github.com/suborbital/grav/transport/kafka"
 	"github.com/suborbital/grav/transport/nats"
 	"github.com/suborbital/grav/transport/websocket"
-	"github.com/suborbital/reactr/rcap"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
+	"github.com/suborbital/velocity/capabilities"
 	"github.com/suborbital/velocity/directive"
 	"github.com/suborbital/velocity/scheduler"
 	"github.com/suborbital/velocity/server/appsource"
@@ -155,7 +155,7 @@ func (c *Coordinator) createConnections() {
 		kafkaKey := fmt.Sprintf(connectionKeyFormat, application.Identifier, application.AppVersion, directive.InputSourceKafka)
 
 		if connections.NATS != nil {
-			address := rcap.AugmentedValFromEnv(connections.NATS.ServerAddress)
+			address := capabilities.AugmentedValFromEnv(connections.NATS.ServerAddress)
 
 			gnats, err := nats.New(address)
 			if err != nil {
@@ -171,7 +171,7 @@ func (c *Coordinator) createConnections() {
 		}
 
 		if connections.Kafka != nil {
-			address := rcap.AugmentedValFromEnv(connections.Kafka.BrokerAddress)
+			address := capabilities.AugmentedValFromEnv(connections.Kafka.BrokerAddress)
 
 			gkafka, err := kafka.New(address)
 			if err != nil {

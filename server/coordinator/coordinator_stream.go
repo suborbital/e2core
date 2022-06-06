@@ -55,7 +55,7 @@ func (c *Coordinator) streamConnectionForDirectiveHandler(handler directive.Hand
 		ctx := vk.NewCtx(c.log, nil, nil)
 		ctx.UseScope(messageScope{msg.UUID()})
 
-		ctx.Log.Info("handling message", msg.UUID(), "for handler", handlerIdent)
+		ctx.Log.Debug("handling message", msg.UUID(), "for handler", handlerIdent)
 
 		req := &request.CoordinatedRequest{
 			Method:      velocityMethodStream,

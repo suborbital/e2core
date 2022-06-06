@@ -39,7 +39,7 @@ func (c *Coordinator) websocketHandlerForDirectiveHandler(handler directive.Hand
 			ctx := vk.NewCtx(c.log, nil, nil)
 			ctx.UseScope(messageScope{ctx.RequestID()})
 
-			ctx.Log.Info("handling message", ctx.RequestID(), "from handler", handler.Input.Resource)
+			ctx.Log.Debug("handling message", ctx.RequestID(), "from handler", handler.Input.Resource)
 
 			req := &request.CoordinatedRequest{
 				Method:      http.MethodGet,

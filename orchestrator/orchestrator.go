@@ -2,10 +2,10 @@ package orchestrator
 
 import (
 	"bytes"
+	"context"
 	"log"
 	"net/url"
 	"os"
-	"os/signal"
 	"runtime"
 	"sync"
 	"syscall"
@@ -46,6 +46,7 @@ func New(bundlePath string) (*Orchestrator, error) {
 
 	l := vlog.Default(
 		vlog.EnvPrefix("VELOCITY"),
+		vlog.Level(vlog.LogLevelWarn),
 	)
 
 	o := &Orchestrator{
@@ -58,34 +59,28 @@ func New(bundlePath string) (*Orchestrator, error) {
 	return o, nil
 }
 
-func (o *Orchestrator) Start() {
+func (o *Orchestrator) Start(ctx context.Context) error {
 	appSource, errChan := o.setupAppSource()
-
-	o.signalChan = make(chan os.Signal, 1)
-	signal.Notify(o.signalChan, syscall.SIGINT, syscall.SIGTERM)
 
 	o.wg.Add(1)
 
 loop:
 	for {
 		select {
-		case <-o.signalChan:
-			o.logger.Info("terminating orchestrator")
+		case <-ctx.Done():
 			break loop
 		case err := <-errChan:
-			o.logger.Error(err)
-			log.Fatal(errors.Wrap(err, "encountered error"))
+			return err
 		default:
 			break
 		}
 
-		o.logger.Info("reconciling")
 		o.reconcileConstellation(appSource, errChan)
 
 		time.Sleep(time.Second)
 	}
 
-	o.logger.Info("shutting down")
+	o.logger.Debug("stopping orchestrator")
 
 	for _, s := range o.sats {
 		err := s.terminate()
@@ -96,7 +91,7 @@ loop:
 
 	o.wg.Done()
 
-	o.logger.Info("shutdown complete")
+	return nil
 }
 
 // Shutdown signals to the orchestrator that shutdown is needed
@@ -108,7 +103,7 @@ func (o *Orchestrator) Shutdown() {
 }
 
 func (o *Orchestrator) RunPartner(command string) error {
-	o.logger.Info("starting partner:", command)
+	o.logger.Debug("starting partner:", command)
 
 	data := commandTemplateData{
 		Port: "3000",
@@ -157,7 +152,7 @@ func (o *Orchestrator) reconcileConstellation(appSource appsource.AppSource, err
 			satWatcher := o.sats[runnable.FQFN]
 
 			launch := func() {
-				o.logger.Info("launching sat (", runnable.FQFN, ")")
+				o.logger.Debug("launching sat (", runnable.FQFN, ")")
 
 				cmd, port := satCommand(o.config, runnable)
 
@@ -170,13 +165,13 @@ func (o *Orchestrator) reconcileConstellation(appSource appsource.AppSource, err
 				)
 
 				if err != nil {
-					o.logger.Error(errors.Wrapf(err, "failed to exeo.Run sat ( %s )", runnable.FQFN))
+					o.logger.Error(errors.Wrapf(err, "failed to exec.Run sat ( %s )", runnable.FQFN))
 					return
 				}
 
 				satWatcher.add(runnable.FQFN, port, uuid, pid)
 
-				o.logger.Info("successfully started sat (", runnable.FQFN, ") on port", port)
+				o.logger.Debug("successfully started sat (", runnable.FQFN, ") on port", port)
 			}
 
 			// we want to max out at 8 threads per instance
@@ -186,9 +181,10 @@ func (o *Orchestrator) reconcileConstellation(appSource appsource.AppSource, err
 			}
 
 			report := satWatcher.report()
+
 			if report == nil || report.instCount == 0 {
 				// if no instances exist, launch one
-				o.logger.Warn("no instances exist for", runnable.FQFN)
+				o.logger.Debug("no instances exist for", runnable.FQFN)
 
 				go launch()
 			} else if report.instCount > 0 && report.totalThreads/report.instCount >= threshold {
@@ -196,7 +192,7 @@ func (o *Orchestrator) reconcileConstellation(appSource appsource.AppSource, err
 					o.logger.Warn("maximum instance count reached for", runnable.Name)
 				} else {
 					// if the current instances seem overwhelmed, add one
-					o.logger.Warn("scaling up", runnable.Name, "; totalThreads:", report.totalThreads, "instCount:", report.instCount)
+					o.logger.Debug("scaling up", runnable.Name, "; totalThreads:", report.totalThreads, "instCount:", report.instCount)
 
 					go launch()
 				}
@@ -205,7 +201,7 @@ func (o *Orchestrator) reconcileConstellation(appSource appsource.AppSource, err
 					// that's fine, do nothing
 				} else {
 					// if the current instances have too much spare time on their hands
-					o.logger.Warn("scaling down", runnable.Name, "; totalThreads:", report.totalThreads, "instCount:", report.instCount)
+					o.logger.Debug("scaling down", runnable.Name, "; totalThreads:", report.totalThreads, "instCount:", report.instCount)
 
 					satWatcher.scaleDown()
 				}
@@ -213,7 +209,7 @@ func (o *Orchestrator) reconcileConstellation(appSource appsource.AppSource, err
 
 			if report != nil {
 				for _, p := range report.failedPorts {
-					o.logger.Warn("killing instance from failed port", p)
+					o.logger.Debug("killing instance from failed port", p)
 
 					satWatcher.terminateInstance(p)
 				}

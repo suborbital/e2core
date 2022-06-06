@@ -223,7 +223,7 @@ func (seq *Sequence) HandleStepErrs(results []FnResult, step executable.Executab
 
 			return result.RunErr
 		} else {
-			seq.log.Info("continuing after error from", result.FQFN)
+			seq.log.Debug("continuing after error from", result.FQFN)
 			seq.req.State[result.Key] = []byte(result.RunErr.Error())
 		}
 	}
@@ -244,14 +244,14 @@ func (seq *Sequence) handleMessage(msg grav.Message) error {
 		return errors.Wrap(err, "failed to Unmarshal FnResult")
 	}
 
-	seq.log.Info("handleMessage recieved", msg.UUID(), "(", msg.ParentID(), ")")
+	seq.log.Debug("handleMessage recieved", msg.UUID(), "(", msg.ParentID(), ")")
 
 	step := seq.NextStep()
 	if step == nil {
 		seq.log.ErrorString("handleMessage got nil NextStep")
 		return executable.ErrSequenceCompleted
 	} else if step.Exec.IsFn() {
-		seq.log.Info("handling result of", step.Exec.FQFN)
+		seq.log.Debug("handling result of", step.Exec.FQFN)
 		step.Completed = true
 	} else {
 		seq.log.Warn("cannot handle message from group step")

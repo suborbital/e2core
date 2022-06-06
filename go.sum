@@ -298,12 +298,12 @@ github.com/stretchr/testify v1.6.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/
 github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/stretchr/testify v1.7.1 h1:5TQK59W5E3v0r2duFAb7P95B6hEeOyEnHRa8MjYSMTY=
 github.com/stretchr/testify v1.7.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
-github.com/suborbital/grav v0.5.1-0.20220511140711-ca4276890ff4 h1:sjkn/f0WjcPVSzPPg0fnBwB+G8es2zkHoxgx2CMfWo8=
-github.com/suborbital/grav v0.5.1-0.20220511140711-ca4276890ff4/go.mod h1:FJdeNxlJEUyYhXEvHhptqrTUiiqIah4pjRAY+1PDJlY=
+github.com/suborbital/grav v0.5.1-0.20220606135350-6493ce990962 h1:fY+R9+BRgrUbX4sEgYIIBNln+N/DWo5Vr8B4CR+hyOM=
+github.com/suborbital/grav v0.5.1-0.20220606135350-6493ce990962/go.mod h1:FJdeNxlJEUyYhXEvHhptqrTUiiqIah4pjRAY+1PDJlY=
 github.com/suborbital/reactr v0.15.1 h1:IJNsh9SiXHp2B4wpTSMseIym4XvAYP7N5fQSADfGwbM=
 github.com/suborbital/reactr v0.15.1/go.mod h1:JC+km01xHNSuQDYsxWCBBh7fJrctI1Yai7Mm/Ws3xAU=
-github.com/suborbital/vektor v0.5.3-0.20220504144906-e8222b283c71 h1:D6cuR59PSZbv/1VsovGQ6YwS6g09dNNZdTMk93/ZFKE=
-github.com/suborbital/vektor v0.5.3-0.20220504144906-e8222b283c71/go.mod h1:8X7jun9hB/SGJKbe5lGKKF5xUocIpF05UHMPyOu21gI=
+github.com/suborbital/vektor v0.5.3-0.20220606135050-f50f19fb1860 h1:NpVh260XoL3H8SxiUDdmLIApwM3Y6p3USpl8WY+opRI=
+github.com/suborbital/vektor v0.5.3-0.20220606135050-f50f19fb1860/go.mod h1:8X7jun9hB/SGJKbe5lGKKF5xUocIpF05UHMPyOu21gI=
 github.com/twmb/franz-go v1.5.2 h1:2IwsTronFdgTtyitQxTL8WE0xrPiev1A77i5ps09Pmc=
 github.com/twmb/franz-go v1.5.2/go.mod h1:ZKQ5AtqBbdc783bLCay7nDc21lJnIIA8mFJYhLMF19E=
 github.com/twmb/franz-go/pkg/kmsg v1.0.0 h1:dQdaXLDUEb+XkSUqw2/GvMEGdw1o89X2fOiFjlhztyA=
@@ -375,6 +375,8 @@ golang.org/x/exp v0.0.0-20191227195350-da58074b4299/go.mod h1:2RIsYlXP63K8oxa1u0
 golang.org/x/exp v0.0.0-20200119233911-0405dc783f0a/go.mod h1:2RIsYlXP63K8oxa1u096TMicItID8zy7Y6sNkU49FU4=
 golang.org/x/exp v0.0.0-20200207192155-f17229e696bd/go.mod h1:J/WKrq2StrnmMY6+EHIKF9dgMWnmCNThgcyBT1FY9mM=
 golang.org/x/exp v0.0.0-20200224162631-6cc2880d07d6/go.mod h1:3jZMyOhIsHpP37uCMkUooju7aAi5cS1Q23tOzKc+0MU=
+golang.org/x/exp v0.0.0-20220518171630-0b5c67f07fdf h1:oXVg4h2qJDd9htKxb5SCpFBHLipW6hXmL3qpUixS2jw=
+golang.org/x/exp v0.0.0-20220518171630-0b5c67f07fdf/go.mod h1:yh0Ynu2b5ZUe3MQfp2nM0ecK7wsgouWTDN0FNeJuIys=
 golang.org/x/image v0.0.0-20190227222117-0694c2d4d067/go.mod h1:kZ7UVZpmo3dzQBMxlp+ypCbDeSB+sBbTgSJuh5dn5js=
 golang.org/x/image v0.0.0-20190802002840-cff245a6509b/go.mod h1:FeLwcggjj3mMvU+oOTbSwawSJRM1uh48EjtB4UJZlP0=
 golang.org/x/lint v0.0.0-20181026193005-c67002cb31c3/go.mod h1:UVdnD1Gm6xHRNCYTkRU2/jEulfH38KcIWyp/GAMgvoE=
@@ -396,8 +398,8 @@ golang.org/x/mod v0.1.1-0.20191107180719-034126e5016b/go.mod h1:QqPTAvyqsEbceGzB
 golang.org/x/mod v0.2.0/go.mod h1:s0Qsj1ACt9ePp/hMypM3fl4fZqREWJwdYDEqhRiZZUA=
 golang.org/x/mod v0.3.0/go.mod h1:s0Qsj1ACt9ePp/hMypM3fl4fZqREWJwdYDEqhRiZZUA=
 golang.org/x/mod v0.4.2/go.mod h1:s0Qsj1ACt9ePp/hMypM3fl4fZqREWJwdYDEqhRiZZUA=
-golang.org/x/mod v0.5.1 h1:OJxoQ/rynoF0dcCdI7cLPktw/hR2cueqYfjm43oqK38=
-golang.org/x/mod v0.5.1/go.mod h1:5OXOZSfqPIIbmVBIIKWRFfZjPR0E5r58TLhUjH0a2Ro=
+golang.org/x/mod v0.6.0-dev.0.20220106191415-9b9b3d81d5e3 h1:kQgndtyPBW/JIYERgdxfwMYh3AVStj88WQTlNDi2a+o=
+golang.org/x/mod v0.6.0-dev.0.20220106191415-9b9b3d81d5e3/go.mod h1:3p9vT2HGsQu2K1YbXdKPJLVgG5VJdoTa1poYQBtP1AY=
 golang.org/x/net v0.0.0-20180724234803-3673e40ba225/go.mod h1:mL1N/T3taQHkDXs73rZJwtUhF3w3ftmwwsq0BUmARs4=
 golang.org/x/net v0.0.0-20180826012351-8a410e7b638d/go.mod h1:mL1N/T3taQHkDXs73rZJwtUhF3w3ftmwwsq0BUmARs4=
 golang.org/x/net v0.0.0-20190108225652-1e06a53dbb7e/go.mod h1:mL1N/T3taQHkDXs73rZJwtUhF3w3ftmwwsq0BUmARs4=

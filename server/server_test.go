@@ -16,13 +16,15 @@ import (
 	"github.com/suborbital/vektor/vtest"
 	"github.com/suborbital/velocity/orchestrator"
 	"github.com/suborbital/velocity/server/options"
+	"github.com/suborbital/velocity/signaler"
 )
 
 type serverTestSuite struct {
 	suite.Suite
-	ts   *vk.Server
-	o    *orchestrator.Orchestrator
-	lock sync.Mutex
+	ts       *vk.Server
+	o        *orchestrator.Orchestrator
+	signaler *signaler.Signaler
+	lock     sync.Mutex
 }
 
 // SetupSuite sets up the entire suite
@@ -34,7 +36,7 @@ func (s *serverTestSuite) SetupSuite() {
 func (s *serverTestSuite) TearDownSuite() {
 	fmt.Println("TEARDOWN")
 
-	s.o.Shutdown()
+	s.signaler.ManualShutdown(time.Second)
 }
 
 //curl -d 'my friend' localhost:8080/hello.
@@ -205,12 +207,15 @@ func (s *serverTestSuite) serverForBundle(filepath string) (*vk.Server, error) {
 			return nil, errors.Wrap(err, "failed to orchestrator.New")
 		}
 
-		go orchestrator.Start()
+		signaler := signaler.Setup()
+
+		signaler.Start(orchestrator.Start)
 
 		time.Sleep(time.Second * 3)
 
 		s.o = orchestrator
 		s.ts = testServer
+		s.signaler = signaler
 	}
 
 	return s.ts, nil

@@ -141,7 +141,10 @@ func PartnerAddress(address string) Modifier {
 // finalize "locks in" the options by overriding any existing options with the version from the environment, and setting the default logger if needed.
 func (o *Options) finalize(prefix string) {
 	if o.Logger == nil {
-		o.Logger = vlog.Default(vlog.EnvPrefix(prefix))
+		o.Logger = vlog.Default(
+			vlog.EnvPrefix(prefix),
+			vlog.Level(vlog.LogLevelWarn),
+		)
 	}
 
 	envOpts := Options{}

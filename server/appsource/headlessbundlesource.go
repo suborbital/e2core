@@ -5,7 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/reactr/rcap"
+	"github.com/suborbital/velocity/capabilities"
 	"github.com/suborbital/velocity/directive"
 	"github.com/suborbital/velocity/directive/executable"
 	"github.com/suborbital/velocity/fqfn"
@@ -103,7 +103,7 @@ func (h *HeadlessBundleSource) Authentication(identifier, version string) direct
 }
 
 // Capabilities returns the Capabilities for the app.
-func (h *HeadlessBundleSource) Capabilities(identifier, namespace, version string) *rcap.CapabilityConfig {
+func (h *HeadlessBundleSource) Capabilities(identifier, namespace, version string) *capabilities.CapabilityConfig {
 	return h.bundleSource.Capabilities(identifier, namespace, version)
 }
 

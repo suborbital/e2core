@@ -2,6 +2,7 @@ package command
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -11,6 +12,7 @@ import (
 	"github.com/suborbital/velocity/server"
 	"github.com/suborbital/velocity/server/options"
 	"github.com/suborbital/velocity/server/release"
+	"github.com/suborbital/velocity/signaler"
 )
 
 type velocityInfo struct {
@@ -31,7 +33,6 @@ func Start() *cobra.Command {
 
 			logger := vlog.Default(
 				vlog.AppMeta(velocityInfo{VelocityVersion: release.VelocityServerDotVersion}),
-				vlog.Level(vlog.LogLevelInfo),
 				vlog.EnvPrefix("VELOCITY"),
 			)
 
@@ -40,13 +41,13 @@ func Start() *cobra.Command {
 				return errors.Wrap(err, "failed to optionsFromFlags")
 			}
 
-			velocityServer, err := server.New(
-				append(
-					opts,
-					options.UseLogger(logger),
-					options.UseBundlePath(path),
-				)...,
+			opts = append(
+				opts,
+				options.UseLogger(logger),
+				options.UseBundlePath(path),
 			)
+
+			server, err := server.New(opts...)
 			if err != nil {
 				return errors.Wrap(err, "server.New")
 			}
@@ -62,9 +63,13 @@ func Start() *cobra.Command {
 				}
 			}
 
-			go orchestrator.Start()
+			signaler := signaler.Setup()
 
-			return velocityServer.Start()
+			signaler.Start(orchestrator.Start)
+
+			signaler.Start(server.Start)
+
+			return signaler.Wait(time.Second * 5)
 		},
 	}
 

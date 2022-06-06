@@ -2,7 +2,6 @@ package executor
 
 import (
 	"encoding/json"
-	"fmt"
 	"sync"
 	"time"
 
@@ -11,9 +10,9 @@ import (
 	"github.com/suborbital/grav/discovery/local"
 	"github.com/suborbital/grav/grav"
 	"github.com/suborbital/grav/transport/websocket"
-	"github.com/suborbital/reactr/rcap"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
+	"github.com/suborbital/velocity/capabilities"
 	"github.com/suborbital/velocity/directive/executable"
 	"github.com/suborbital/velocity/scheduler"
 	"github.com/suborbital/velocity/server/appsource"
@@ -130,11 +129,11 @@ func (e *meshExecutor) Do(jobType string, req *request.CoordinatedRequest, ctx *
 
 	defer e.removeCallback(ctx.RequestID())
 
-	defer func() {
-		if e := recover(); e != nil {
-			fmt.Println("RECOVERED:", e)
-		}
-	}()
+	// defer func() {
+	// 	if e := recover(); e != nil {
+	// 		fmt.Println("RECOVERED:", e)
+	// 	}
+	// }()
 
 	data, err := json.Marshal(req)
 	if err != nil {
@@ -148,7 +147,7 @@ func (e *meshExecutor) Do(jobType string, req *request.CoordinatedRequest, ctx *
 		return nil, errors.Wrap(err, "failed to Tunnel, will retry")
 	}
 
-	ctx.Log.Info("proxied execution for", ctx.RequestID(), "to peer")
+	ctx.Log.Debug("proxied execution for", ctx.RequestID(), "to peer with message", msg.UUID())
 
 	// wait until the sequence completes or errors
 	select {
@@ -183,7 +182,7 @@ func (e *meshExecutor) removeCallback(parentID string) {
 }
 
 // UseCapabilityConfig sets up the executor's Reactr instance using the provided capability configuration
-func (e *meshExecutor) UseCapabilityConfig(config rcap.CapabilityConfig) error {
+func (e *meshExecutor) UseCapabilityConfig(config capabilities.CapabilityConfig) error {
 	// nothing to do in proxy mode
 
 	return nil

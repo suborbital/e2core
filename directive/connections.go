@@ -5,8 +5,7 @@ import (
 	"net/url"
 
 	"github.com/pkg/errors"
-
-	"github.com/suborbital/reactr/rcap"
+	"github.com/suborbital/velocity/capabilities"
 )
 
 const (
@@ -53,17 +52,17 @@ type DBConnection struct {
 	ConnectionString string `yaml:"connectionString" json:"connectionString"`
 }
 
-func (d *DBConnection) ToRCAPConfig(queries []DBQuery) (*rcap.DatabaseConfig, error) {
+func (d *DBConnection) ToRCAPConfig(queries []DBQuery) (*capabilities.DatabaseConfig, error) {
 	if d == nil {
 		return nil, nil
 	}
 
-	rcapType := rcap.DBTypeMySQL
+	rcapType := capabilities.DBTypeMySQL
 	if d.Type == "postgresql" {
-		rcapType = rcap.DBTypePostgres
+		rcapType = capabilities.DBTypePostgres
 	}
 
-	rcapQueries := make([]rcap.Query, len(queries))
+	rcapQueries := make([]capabilities.Query, len(queries))
 	for i := range queries {
 		q, err := queries[i].toRCAPQuery(rcapType)
 		if err != nil {
@@ -73,7 +72,7 @@ func (d *DBConnection) ToRCAPConfig(queries []DBQuery) (*rcap.DatabaseConfig, er
 		rcapQueries[i] = *q
 	}
 
-	config := &rcap.DatabaseConfig{
+	config := &capabilities.DatabaseConfig{
 		Enabled:          d.ConnectionString != "",
 		DBType:           rcapType,
 		ConnectionString: d.ConnectionString,

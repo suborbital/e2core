@@ -13,7 +13,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/reactr/rcap"
+	"github.com/suborbital/velocity/capabilities"
 	"github.com/suborbital/velocity/directive"
 	"github.com/suborbital/velocity/directive/executable"
 	"github.com/suborbital/velocity/fqfn"
@@ -181,8 +181,8 @@ func (h *HTTPSource) Authentication(ident, version string) directive.Authenticat
 }
 
 // Capabilities returns the Capabilities for the app.
-func (h *HTTPSource) Capabilities(ident, namespace, version string) *rcap.CapabilityConfig {
-	capabilities := rcap.CapabilityConfig{}
+func (h *HTTPSource) Capabilities(ident, namespace, version string) *capabilities.CapabilityConfig {
+	capabilities := capabilities.CapabilityConfig{}
 
 	if _, err := h.get(fmt.Sprintf("/capabilities/%s/%s/%s", ident, namespace, version), &capabilities); err != nil {
 		h.opts.Logger.Error(errors.Wrap(err, "failed to get /authentication"))

@@ -1,17 +1,16 @@
-package capabilities
+package appsource
 
 import (
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/reactr/rcap"
 	"github.com/suborbital/vektor/vlog"
-	"github.com/suborbital/velocity/server/appsource"
+	"github.com/suborbital/velocity/capabilities"
 )
 
-// ResolveFromSource takes the ident, namespace, and version, and looks up the capabilities for that trio from the
+// ResolveCapabilitiesFromSource takes the ident, namespace, and version, and looks up the capabilities for that trio from the
 // AppSource applying the user overrides over the default configurations.
-func ResolveFromSource(source appsource.AppSource, ident, namespace, version string, log *vlog.Logger) (rcap.CapabilityConfig, error) {
-	defaultConfig := rcap.DefaultCapabilityConfig()
+func ResolveCapabilitiesFromSource(source AppSource, ident, namespace, version string, log *vlog.Logger) (capabilities.CapabilityConfig, error) {
+	defaultConfig := capabilities.DefaultCapabilityConfig()
 
 	userConfig := source.Capabilities(ident, namespace, version)
 	if userConfig == nil {
@@ -43,7 +42,7 @@ func ResolveFromSource(source appsource.AppSource, ident, namespace, version str
 	}
 
 	if connections.Redis != nil {
-		redisConfig := &rcap.RedisConfig{
+		redisConfig := &capabilities.RedisConfig{
 			ServerAddress: connections.Redis.ServerAddress,
 			Username:      connections.Redis.Username,
 			Password:      connections.Redis.Password,
@@ -72,8 +71,8 @@ func ResolveFromSource(source appsource.AppSource, ident, namespace, version str
 		defaultConfig.DB = userConfig.DB
 	}
 
-	if userConfig.RequestHandler != nil {
-		defaultConfig.RequestHandler = userConfig.RequestHandler
+	if userConfig.Request != nil {
+		defaultConfig.Request = userConfig.Request
 	}
 
 	f := func(pathName string) ([]byte, error) {

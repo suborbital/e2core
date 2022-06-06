@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 
@@ -27,7 +28,7 @@ func New(opts ...options.Modifier) (*Server, error) {
 	vOpts := options.NewWithModifiers(opts...)
 
 	if vOpts.PartnerAddress != "" {
-		vOpts.Logger.Info("using partner", vOpts.PartnerAddress)
+		vOpts.Logger.Debug("using partner", vOpts.PartnerAddress)
 	}
 
 	// @todo https://github.com/suborbital/velocity/issues/144, the first return value is a function that would close the
@@ -78,7 +79,7 @@ func New(opts ...options.Modifier) (*Server, error) {
 }
 
 // Start starts the Server server.
-func (s *Server) Start() error {
+func (s *Server) Start(ctx context.Context) error {
 	if err := s.coordinator.Start(); err != nil {
 		return errors.Wrap(err, "failed to coordinator.Start")
 	}
