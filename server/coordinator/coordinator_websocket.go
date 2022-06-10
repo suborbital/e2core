@@ -7,11 +7,11 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/reactr/request"
-	"github.com/suborbital/reactr/rt"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/velocity/directive"
+	"github.com/suborbital/velocity/scheduler"
 	"github.com/suborbital/velocity/server/coordinator/sequence"
+	"github.com/suborbital/velocity/server/request"
 )
 
 func (c *Coordinator) websocketHandlerForDirectiveHandler(handler directive.Handler) http.HandlerFunc {
@@ -39,7 +39,7 @@ func (c *Coordinator) websocketHandlerForDirectiveHandler(handler directive.Hand
 			ctx := vk.NewCtx(c.log, nil, nil)
 			ctx.UseScope(messageScope{ctx.RequestID()})
 
-			ctx.Log.Info("handling message", ctx.RequestID(), "from handler", handler.Input.Resource)
+			ctx.Log.Debug("handling message", ctx.RequestID(), "from handler", handler.Input.Resource)
 
 			req := &request.CoordinatedRequest{
 				Method:      http.MethodGet,
@@ -53,15 +53,15 @@ func (c *Coordinator) websocketHandlerForDirectiveHandler(handler directive.Hand
 			}
 
 			// a sequence executes the handler's steps and manages its state.
-			seq, err := sequence.New(handler.Steps, req, c.exec, ctx)
+			seq, err := sequence.New(handler.Steps, req, ctx)
 			if err != nil {
 				ctx.Log.Error(errors.Wrap(err, "failed to sequence.New"))
 				breakErr = err
 				break
 			}
 
-			if err := seq.Execute(); err != nil {
-				if runErr, isRunErr := err.(rt.RunErr); isRunErr {
+			if err := seq.Execute(c.exec); err != nil {
+				if runErr, isRunErr := err.(scheduler.RunErr); isRunErr {
 					if err := conn.WriteJSON(runErr); err != nil {
 						breakErr = err
 						break

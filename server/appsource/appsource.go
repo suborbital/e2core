@@ -3,7 +3,7 @@ package appsource
 import (
 	"errors"
 
-	"github.com/suborbital/reactr/rcap"
+	"github.com/suborbital/velocity/capabilities"
 	"github.com/suborbital/velocity/directive"
 	"github.com/suborbital/velocity/server/options"
 )
@@ -43,7 +43,7 @@ type AppSource interface {
 	Authentication(ident, version string) directive.Authentication
 
 	// Capabilities provides the application's configured capabilities.
-	Capabilities(ident, namespace, version string) *rcap.CapabilityConfig
+	Capabilities(ident, namespace, version string) *capabilities.CapabilityConfig
 
 	// File is a source of files for the Runnables
 	// TODO: refactor this into a set of capabilities / profiles.

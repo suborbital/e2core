@@ -29,7 +29,7 @@ func setupTracing(config options.TracerConfig, logger *vlog.Logger) (func(), err
 
 	switch config.TracerType {
 	case "honeycomb":
-		logger.Info("configuring honeycomb exporter for tracing")
+		logger.Debug("configuring honeycomb exporter for tracing")
 
 		honeyOpts, err := honeycombExporterOptions(config.HoneycombConfig)
 		if err != nil {
@@ -39,9 +39,9 @@ func setupTracing(config options.TracerConfig, logger *vlog.Logger) (func(), err
 		exporterString = "honeycomb"
 		exporterOpts = append(exporterOpts, honeyOpts...)
 
-		logger.Info("created honeycomb trace exporter")
+		logger.Debug("created honeycomb trace exporter")
 	case "collector":
-		logger.Info("configuring collector exporter for tracing")
+		logger.Debug("configuring collector exporter for tracing")
 
 		collectorOpts, err := collectorExporterOptions(config.Collector)
 		if err != nil {
@@ -51,14 +51,14 @@ func setupTracing(config options.TracerConfig, logger *vlog.Logger) (func(), err
 		exporterString = "collector"
 		exporterOpts = append(exporterOpts, collectorOpts...)
 
-		logger.Info("created collector trace exporter")
+		logger.Debug("created collector trace exporter")
 	default:
 		logger.Warn(fmt.Sprintf("unrecognised tracer type configuration [%s]. Defaulting to no tracer", config.TracerType))
 		fallthrough
 	case "none", "":
 		otel.SetTracerProvider(traceProviders.NewNoopTracerProvider())
 
-		logger.Info("finished setting up noop tracer")
+		logger.Debug("finished setting up noop tracer")
 
 		return func() {}, nil
 	}
@@ -95,7 +95,7 @@ func setupTracing(config options.TracerConfig, logger *vlog.Logger) (func(), err
 
 	otel.SetTracerProvider(traceProvider)
 
-	logger.Info(fmt.Sprintf("finished setting up tracer [%s] with a trace probability of [%f]",
+	logger.Debug(fmt.Sprintf("finished setting up tracer [%s] with a trace probability of [%f]",
 		exporterString, config.Probability))
 
 	return func() {

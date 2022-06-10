@@ -6,12 +6,12 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/suborbital/grav/grav"
-	"github.com/suborbital/reactr/request"
-	"github.com/suborbital/reactr/rt"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/velocity/directive"
+	"github.com/suborbital/velocity/scheduler"
 	"github.com/suborbital/velocity/server/appsource"
 	"github.com/suborbital/velocity/server/coordinator/sequence"
+	"github.com/suborbital/velocity/server/request"
 )
 
 type messageScope struct {
@@ -55,7 +55,7 @@ func (c *Coordinator) streamConnectionForDirectiveHandler(handler directive.Hand
 		ctx := vk.NewCtx(c.log, nil, nil)
 		ctx.UseScope(messageScope{msg.UUID()})
 
-		ctx.Log.Info("handling message", msg.UUID(), "for handler", handlerIdent)
+		ctx.Log.Debug("handling message", msg.UUID(), "for handler", handlerIdent)
 
 		req := &request.CoordinatedRequest{
 			Method:      velocityMethodStream,
@@ -69,14 +69,14 @@ func (c *Coordinator) streamConnectionForDirectiveHandler(handler directive.Hand
 		}
 
 		// a sequence executes the handler's steps and manages its state.
-		seq, err := sequence.New(handler.Steps, req, c.exec, ctx)
+		seq, err := sequence.New(handler.Steps, req, ctx)
 		if err != nil {
 			c.log.Error(errors.Wrap(err, "failed to sequence.New"))
 			return nil
 		}
 
-		if err := seq.Execute(); err != nil {
-			if runErr, isRunErr := err.(rt.RunErr); isRunErr {
+		if err := seq.Execute(c.exec); err != nil {
+			if runErr, isRunErr := err.(scheduler.RunErr); isRunErr {
 				c.log.Error(errors.Wrapf(runErr, "handler for %s returned an error", handler.Input.Resource))
 			} else {
 				c.log.Error(errors.Wrapf(err, "schedule %s failed", handler.Input.Resource))

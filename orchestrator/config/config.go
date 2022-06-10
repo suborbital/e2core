@@ -13,17 +13,18 @@ const (
 )
 
 type Config struct {
-	BundlePath   string `env:""`
+	BundlePath   string `env:"bundle_path"`
 	ExecMode     string `env:"VELOCITY_EXEC_MODE,default=metal"`
 	SatTag       string `env:"VELOCITY_SAT_VERSION,default=latest"`
 	ControlPlane string `env:"VELOCITY_CONTROL_PLANE,overwrite"`
 	EnvToken     string `env:"VELOCITY_ENV_TOKEN"`
 	UpstreamHost string `env:"VELOCITY_UPSTREAM_HOST"`
+	Headless     bool   `env:"VELOCITY_HEADLESS,default=false"`
 }
 
 // Parse will return a resolved config struct configured by a combination of environment variables and command line
 // arguments.
-func Parse(bundlePath string) (Config, error) {
+func Parse(bundlePath string, configLookuper envconfig.Lookuper) (Config, error) {
 	c := Config{
 		ControlPlane: DefaultControlPlane,
 	}
@@ -31,16 +32,13 @@ func Parse(bundlePath string) (Config, error) {
 	ctx, ctxCancel := context.WithTimeout(context.Background(), time.Second)
 	defer ctxCancel()
 
-	if err := envconfig.Process(ctx, &c); err != nil {
+	if err := envconfig.ProcessWith(ctx, &c, configLookuper); err != nil {
 		return Config{}, errors.Wrap(err, "resolving config: envconfig.Process")
 	}
 
-	// if the ControlPlane has been set explicitly, then we'll ignore the bundle
-	if c.ControlPlane == DefaultControlPlane {
-		if bundlePath == "" {
-			return Config{}, errors.New("missing required argument: bundle path")
-		}
-
+	if c.ControlPlane == DefaultControlPlane && bundlePath == "" {
+		return Config{}, errors.New("missing required argument: bundle path")
+	} else if bundlePath != "" {
 		c.BundlePath = bundlePath
 	}
 

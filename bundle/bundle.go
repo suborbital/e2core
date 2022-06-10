@@ -11,7 +11,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/reactr/rwasm/moduleref"
 	"github.com/suborbital/velocity/directive"
 )
 
@@ -210,7 +209,7 @@ func Read(path string) (*Bundle, error) {
 			return nil, fmt.Errorf("unable to find Runnable for module %s", f.Name)
 		}
 
-		runnable.ModuleRef = moduleref.RefWithData(f.Name, runnable.FQFN, wasmBytes)
+		runnable.ModuleRef = directive.NewWasmModuleRef(f.Name, runnable.FQFN, wasmBytes)
 	}
 
 	if bundle.Directive == nil {

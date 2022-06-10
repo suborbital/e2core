@@ -7,18 +7,18 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/suborbital/grav/grav"
-	"github.com/suborbital/reactr/request"
-	"github.com/suborbital/reactr/rt"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
 	"github.com/suborbital/velocity/directive/executable"
+	"github.com/suborbital/velocity/scheduler"
 	"github.com/suborbital/velocity/server/coordinator/executor"
+	"github.com/suborbital/velocity/server/request"
 )
 
 type Sequence struct {
 	steps []Step
 
-	exec *executor.Executor
+	exec executor.Executor
 
 	req *request.CoordinatedRequest
 
@@ -38,28 +38,28 @@ type FnResult struct {
 	FQFN     string                       `json:"fqfn"`
 	Key      string                       `json:"key"`
 	Response *request.CoordinatedResponse `json:"response"`
-	RunErr   rt.RunErr                    `json:"runErr"`  // runErr is an error returned from a Runnable.
+	RunErr   scheduler.RunErr             `json:"runErr"`  // runErr is an error returned from a Runnable.
 	ExecErr  string                       `json:"execErr"` // err is an annoying workaround that allows runGroup to propogate non-RunErrs out of its loop. Should be refactored when possible.
 }
 
 // FromJSON creates a sequence from a JSON-encoded set of steps.
-func FromJSON(seqJSON []byte, req *request.CoordinatedRequest, exec *executor.Executor, ctx *vk.Ctx) (*Sequence, error) {
+func FromJSON(seqJSON []byte, req *request.CoordinatedRequest, ctx *vk.Ctx) (*Sequence, error) {
 	steps := []Step{}
 	if err := json.Unmarshal(seqJSON, &steps); err != nil {
 		return nil, errors.Wrap(err, "failed to Unmarshal steps")
 	}
 
-	return newWithSteps(steps, req, exec, ctx)
+	return newWithSteps(steps, req, ctx)
 }
 
 // New creates a new Sequence.
-func New(execs []executable.Executable, req *request.CoordinatedRequest, exec *executor.Executor, ctx *vk.Ctx) (*Sequence, error) {
+func New(execs []executable.Executable, req *request.CoordinatedRequest, ctx *vk.Ctx) (*Sequence, error) {
 	steps := stepsFromExecutables(execs)
 
-	return newWithSteps(steps, req, exec, ctx)
+	return newWithSteps(steps, req, ctx)
 }
 
-func newWithSteps(steps []Step, req *request.CoordinatedRequest, exec *executor.Executor, ctx *vk.Ctx) (*Sequence, error) {
+func newWithSteps(steps []Step, req *request.CoordinatedRequest, ctx *vk.Ctx) (*Sequence, error) {
 	stepsJSON, err := json.Marshal(steps)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to Marshal step")
@@ -69,7 +69,6 @@ func newWithSteps(steps []Step, req *request.CoordinatedRequest, exec *executor.
 
 	s := &Sequence{
 		steps: steps,
-		exec:  exec,
 		req:   req,
 		ctx:   ctx,
 		lock:  sync.Mutex{},
@@ -84,7 +83,9 @@ func newWithSteps(steps []Step, req *request.CoordinatedRequest, exec *executor.
 
 // Execute returns the "final state" of a Sequence. If the state's err is not nil, it means a runnable returned an error, and the Directive indicates the Sequence should return.
 // if exec itself actually returns an error other than ErrSequenceRunErr, it means there was a problem executing the Sequence as described, and should be treated as such.
-func (seq *Sequence) Execute() error {
+func (seq *Sequence) Execute(exec executor.Executor) error {
+	seq.exec = exec
+
 	for {
 		// continue running steps until the sequence is complete.
 		if err := seq.ExecuteNext(); err != nil {
@@ -222,7 +223,7 @@ func (seq *Sequence) HandleStepErrs(results []FnResult, step executable.Executab
 
 			return result.RunErr
 		} else {
-			seq.log.Info("continuing after error from", result.FQFN)
+			seq.log.Debug("continuing after error from", result.FQFN)
 			seq.req.State[result.Key] = []byte(result.RunErr.Error())
 		}
 	}
@@ -243,14 +244,14 @@ func (seq *Sequence) handleMessage(msg grav.Message) error {
 		return errors.Wrap(err, "failed to Unmarshal FnResult")
 	}
 
-	seq.log.Info("handleMessage recieved", msg.UUID(), "(", msg.ParentID(), ")")
+	seq.log.Debug("handleMessage recieved", msg.UUID(), "(", msg.ParentID(), ")")
 
 	step := seq.NextStep()
 	if step == nil {
 		seq.log.ErrorString("handleMessage got nil NextStep")
 		return executable.ErrSequenceCompleted
 	} else if step.Exec.IsFn() {
-		seq.log.Info("handling result of", step.Exec.FQFN)
+		seq.log.Debug("handling result of", step.Exec.FQFN)
 		step.Completed = true
 	} else {
 		seq.log.Warn("cannot handle message from group step")

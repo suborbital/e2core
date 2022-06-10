@@ -5,11 +5,11 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/reactr/request"
-	"github.com/suborbital/reactr/rt"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/velocity/directive"
+	"github.com/suborbital/velocity/scheduler"
 	"github.com/suborbital/velocity/server/coordinator/sequence"
+	"github.com/suborbital/velocity/server/request"
 )
 
 func (c *Coordinator) vkHandlerForDirectiveHandler(handler directive.Handler) vk.HandlerFunc {
@@ -26,16 +26,16 @@ func (c *Coordinator) vkHandlerForDirectiveHandler(handler directive.Handler) vk
 		}
 
 		// a sequence executes the handler's steps and manages its state.
-		seq, err := sequence.New(handler.Steps, req, c.exec, ctx)
+		seq, err := sequence.New(handler.Steps, req, ctx)
 		if err != nil {
 			ctx.Log.Error(errors.Wrap(err, "failed to sequence.New"))
 			return nil, vk.E(http.StatusInternalServerError, "failed to handle request")
 		}
 
-		if err := seq.Execute(); err != nil {
+		if err := seq.Execute(c.exec); err != nil {
 			ctx.Log.Error(errors.Wrap(err, "failed to seq.exec"))
 
-			if runErr, isRunErr := err.(rt.RunErr); isRunErr {
+			if runErr, isRunErr := err.(scheduler.RunErr); isRunErr {
 				if runErr.Code < 200 || runErr.Code > 599 {
 					// if the Runnable returned an invalid code for HTTP, default to 500.
 					return nil, vk.Err(http.StatusInternalServerError, runErr.Message)

@@ -5,9 +5,9 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/reactr/request"
-	"github.com/suborbital/reactr/rt"
 	"github.com/suborbital/velocity/directive/executable"
+	"github.com/suborbital/velocity/scheduler"
+	"github.com/suborbital/velocity/server/request"
 )
 
 var ErrMissingFQFN = errors.New("callableFn missing FQFN")
@@ -22,13 +22,13 @@ func (seq *Sequence) ExecSingleFn(fn executable.CallableFn) (*FnResult, error) {
 		return nil, ErrMissingFQFN
 	}
 
-	var runErr rt.RunErr
+	var runErr scheduler.RunErr
 
 	// Do will execute the job locally if possible or find a remote peer to execute it.
 	res, err := seq.exec.Do(fn.FQFN, seq.req, seq.ctx, seq.handleMessage)
 	if err != nil {
-		// check if the error type is rt.RunErr, because those are handled differently.
-		if returnedErr, isRunErr := err.(rt.RunErr); isRunErr {
+		// check if the error type is scheduler.RunErr, because those are handled differently.
+		if returnedErr, isRunErr := err.(scheduler.RunErr); isRunErr {
 			runErr = returnedErr
 		} else {
 			return nil, errors.Wrap(err, "failed to exec.Do")

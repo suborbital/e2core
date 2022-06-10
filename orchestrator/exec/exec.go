@@ -16,7 +16,7 @@ import (
 // a channel is returned which, when sent on, will terminate the process that was started
 func Run(cmd string, env ...string) (string, int, error) {
 	// you can uncomment this below if you want to see exactly the commands being run
-	fmt.Println("▶️", cmd)
+	// fmt.Println("▶️", cmd)
 
 	parts := strings.Split(cmd, " ")
 
@@ -27,13 +27,13 @@ func Run(cmd string, env ...string) (string, int, error) {
 	uuidEnv := fmt.Sprintf("%s_UUID=%s", strings.ToUpper(parts[0]), procUUID)
 	env = append(env, uuidEnv)
 
-	logPath, err := logfilePath(procUUID)
-	if err != nil {
-		return "", 0, errors.Wrap(err, "failed to logFilePath")
-	}
+	// logPath, err := logfilePath(procUUID)
+	// if err != nil {
+	// 	return "", 0, errors.Wrap(err, "failed to logFilePath")
+	// }
 
-	logEnv := fmt.Sprintf("%s_LOG_FILE=%s", strings.ToUpper(parts[0]), logPath)
-	env = append(env, logEnv)
+	// logEnv := fmt.Sprintf("%s_LOG_FILE=%s", strings.ToUpper(parts[0]), logPath)
+	// env = append(env, logEnv)
 
 	// augment the provided env with the env of the parent
 	env = append(env, os.Environ()...)

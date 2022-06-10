@@ -23,6 +23,6 @@ impl Runnable for LogIt {
 static RUNNABLE: &LogIt = &LogIt{};
 
 #[no_mangle]
-pub extern fn init() {
+pub extern fn _start() {
     use_runnable(RUNNABLE);
 }
