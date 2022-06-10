@@ -7,8 +7,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/reactr/rcap"
 	"github.com/suborbital/velocity/bundle"
+	"github.com/suborbital/velocity/capabilities"
 	"github.com/suborbital/velocity/directive"
 	"github.com/suborbital/velocity/server/options"
 )
@@ -144,8 +144,8 @@ func (b *BundleSource) Authentication(identifier, version string) directive.Auth
 
 // Capabilities returns the configuration for the app's capabilities.
 
-func (b *BundleSource) Capabilities(identifier, namespace, version string) *rcap.CapabilityConfig {
-	defaultConfig := rcap.DefaultCapabilityConfig()
+func (b *BundleSource) Capabilities(identifier, namespace, version string) *capabilities.CapabilityConfig {
+	defaultConfig := capabilities.DefaultCapabilityConfig()
 
 	if !b.checkIdentifierVersion(identifier, version) {
 		return &defaultConfig
@@ -224,7 +224,7 @@ func (b *BundleSource) findBundle() error {
 			continue
 		}
 
-		b.opts.Logger.Info("loaded bundle from", b.path)
+		b.opts.Logger.Debug("loaded bundle from", b.path)
 
 		b.lock.Lock()
 		defer b.lock.Unlock()

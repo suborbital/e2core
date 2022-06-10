@@ -1,9 +1,9 @@
 package config_test
 
 import (
-	"os"
 	"testing"
 
+	"github.com/sethvargo/go-envconfig"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
@@ -14,21 +14,21 @@ func (cts *ConfigTestSuite) TestParse() {
 	bundlePath := "./bundle.wasm.zip"
 
 	tests := []struct {
-		name    string
-		args    []string
-		setEnvs map[string]string
-		want    config.Config
-		wantErr assert.ErrorAssertionFunc
+		name       string
+		bundlePath string
+		setEnvs    map[string]string
+		want       config.Config
+		wantErr    assert.ErrorAssertionFunc
 	}{
 		{
-			name: "parses config correctly with correct environment variable values",
-			args: []string{bundlePath},
+			name:       "parses config correctly with correct environment variable values",
+			bundlePath: bundlePath,
 			setEnvs: map[string]string{
-				"VELOCITY_EXEC_MODE":     "metal",
-				"VELOCITY_SAT_VERSION":   "1.0.2",
-				"VELOCITY_CONTROL_PLANE": "controlplane.com:16384",
-				"VELOCITY_ENV_TOKEN":     "envtoken.isajwt.butnotreally",
-				"VELOCITY_UPSTREAM_HOST": "192.168.1.33:9888",
+				"CONSTD_EXEC_MODE":     "metal",
+				"CONSTD_SAT_VERSION":   "1.0.2",
+				"CONSTD_CONTROL_PLANE": "controlplane.com:16384",
+				"CONSTD_ENV_TOKEN":     "envtoken.isajwt.butnotreally",
+				"CONSTD_UPSTREAM_HOST": "192.168.1.33:9888",
 			},
 			want: config.Config{
 				BundlePath:   bundlePath,
@@ -41,9 +41,9 @@ func (cts *ConfigTestSuite) TestParse() {
 			wantErr: assert.NoError,
 		},
 		{
-			name:    "parses the config with defaults, everything unset",
-			args:    []string{bundlePath},
-			setEnvs: map[string]string{},
+			name:       "parses the config with defaults, everything unset",
+			bundlePath: bundlePath,
+			setEnvs:    map[string]string{},
 			want: config.Config{
 				BundlePath:   bundlePath,
 				ExecMode:     "docker",
@@ -55,34 +55,20 @@ func (cts *ConfigTestSuite) TestParse() {
 			wantErr: assert.NoError,
 		},
 		{
-			name:    "parses the config with defaults, do not pass bundlepath, receive error",
-			args:    []string{},
-			setEnvs: map[string]string{},
-			want:    config.Config{},
-			wantErr: assert.Error,
+			name:       "parses the config with defaults, do not pass bundlepath, receive error",
+			bundlePath: "",
+			setEnvs:    map[string]string{},
+			want:       config.Config{},
+			wantErr:    assert.Error,
 		},
 	}
 	for _, tt := range tests {
 		cts.Run(tt.name, func() {
-			cts.SetupTest()
 			var err error
-
-			for k, v := range tt.setEnvs {
-				err = os.Setenv(k, v)
-				if err != nil {
-					cts.FailNowf(
-						"set environment variable",
-						"tried to set [%s] to [%s], got error [%s]",
-						k,
-						v,
-						err,
-					)
-				}
-			}
 
 			subTestT := cts.T()
 
-			got, err := config.Parse(tt.args[0])
+			got, err := config.Parse(tt.bundlePath, envconfig.MapLookuper(tt.setEnvs))
 
 			tt.wantErr(subTestT, err)
 			cts.Equal(tt.want, got)

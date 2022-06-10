@@ -5,8 +5,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-
-	"github.com/suborbital/reactr/rcap"
+	"github.com/suborbital/velocity/capabilities"
 )
 
 var (
@@ -28,7 +27,7 @@ type DBQuery struct {
 	Query    string `yaml:"query" json:"query"`
 }
 
-func (d *DBQuery) toRCAPQuery(dbType string) (*rcap.Query, error) {
+func (d *DBQuery) toRCAPQuery(dbType string) (*capabilities.Query, error) {
 	if d.VarCount == 0 {
 		count, err := d.varCount(dbType)
 		if err != nil {
@@ -43,7 +42,7 @@ func (d *DBQuery) toRCAPQuery(dbType string) (*rcap.Query, error) {
 		return nil, errors.Wrap(err, "failed to queryType")
 	}
 
-	q := &rcap.Query{
+	q := &capabilities.Query{
 		Type:     qType,
 		Name:     d.Name,
 		VarCount: d.VarCount,
@@ -56,9 +55,9 @@ func (d *DBQuery) toRCAPQuery(dbType string) (*rcap.Query, error) {
 func (d *DBQuery) varCount(dbType string) (int, error) {
 	var regexString string
 	switch dbType {
-	case rcap.DBTypeMySQL:
+	case capabilities.DBTypeMySQL:
 		regexString = ` \? | \?,|\(\?|\?\)|,\?|\? `
-	case rcap.DBTypePostgres:
+	case capabilities.DBTypePostgres:
 		regexString = `\$\d`
 	default:
 		return -1, ErrDBTypeUnknown
@@ -74,31 +73,31 @@ func (d *DBQuery) varCount(dbType string) (int, error) {
 	return len(matches), nil
 }
 
-func (d *DBQuery) queryType() (rcap.QueryType, error) {
+func (d *DBQuery) queryType() (capabilities.QueryType, error) {
 	if d.Type != "" {
 		switch d.Type {
 		case queryTypeInsert:
-			return rcap.QueryTypeInsert, nil
+			return capabilities.QueryTypeInsert, nil
 		case queryTypeSelect:
-			return rcap.QueryTypeSelect, nil
+			return capabilities.QueryTypeSelect, nil
 		case queryTypeUpdate:
-			return rcap.QueryTypeUpdate, nil
+			return capabilities.QueryTypeUpdate, nil
 		case queryTypeDelete:
-			return rcap.QueryTypeDelete, nil
+			return capabilities.QueryTypeDelete, nil
 		default:
-			return rcap.QueryType(-1), ErrQueryTypeUnknown
+			return capabilities.QueryType(-1), ErrQueryTypeUnknown
 		}
 	}
 
 	if strings.HasPrefix(d.Query, "insert") || strings.HasPrefix(d.Query, "INSERT") {
-		return rcap.QueryTypeInsert, nil
+		return capabilities.QueryTypeInsert, nil
 	} else if strings.HasPrefix(d.Query, "select") || strings.HasPrefix(d.Query, "SELECT") {
-		return rcap.QueryTypeSelect, nil
+		return capabilities.QueryTypeSelect, nil
 	} else if strings.HasPrefix(d.Query, "update") || strings.HasPrefix(d.Query, "UPDATE") {
-		return rcap.QueryTypeUpdate, nil
+		return capabilities.QueryTypeUpdate, nil
 	} else if strings.HasPrefix(d.Query, "delete") || strings.HasPrefix(d.Query, "DELETE") {
-		return rcap.QueryTypeDelete, nil
+		return capabilities.QueryTypeDelete, nil
 	}
 
-	return rcap.QueryType(-1), ErrQueryTypeUnknown
+	return capabilities.QueryType(-1), ErrQueryTypeUnknown
 }

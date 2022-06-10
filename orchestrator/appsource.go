@@ -22,7 +22,12 @@ func startAppSourceServer(bundlePath string) (appsource.AppSource, chan error) {
 		errChan <- errors.Wrap(err, "failed to NewAppSourceVKRouter.GenerateRouter")
 	}
 
+	log := vlog.Default(
+		vlog.Level(vlog.LogLevelWarn),
+	)
+
 	server := vk.New(
+		vk.UseLogger(log),
 		vk.UseAppName("AppSource server"),
 		vk.UseHTTPPort(9090),
 	)
