@@ -8,8 +8,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-
-	"github.com/suborbital/reactr/util"
+	"golang.org/x/exp/slices"
 )
 
 var (
@@ -117,7 +116,7 @@ func (h HTTPRules) portAllowed(url *url.URL) error {
 		return ErrPortDisallowed
 	}
 
-	if util.ContainsInt(port, h.BlockedPorts) {
+	if slices.Contains(h.BlockedPorts, port) {
 		return ErrPortDisallowed
 	}
 
