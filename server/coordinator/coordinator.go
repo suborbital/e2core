@@ -6,12 +6,12 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/grav/grav"
-	"github.com/suborbital/grav/transport/kafka"
-	"github.com/suborbital/grav/transport/nats"
-	"github.com/suborbital/grav/transport/websocket"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
+	"github.com/suborbital/velocity/bus/bus"
+	"github.com/suborbital/velocity/bus/transport/kafka"
+	"github.com/suborbital/velocity/bus/transport/nats"
+	"github.com/suborbital/velocity/bus/transport/websocket"
 	"github.com/suborbital/velocity/capabilities"
 	"github.com/suborbital/velocity/directive"
 	"github.com/suborbital/velocity/scheduler"
@@ -46,8 +46,8 @@ type Coordinator struct {
 
 	transport *websocket.Transport
 
-	connections map[string]*grav.Grav
-	handlerPods map[string]*grav.Pod
+	connections map[string]*bus.Bus
+	handlerPods map[string]*bus.Pod
 }
 
 type requestScope struct {
@@ -67,8 +67,8 @@ func New(appSource appsource.AppSource, options *options.Options) *Coordinator {
 		opts:        options,
 		log:         options.Logger,
 		exec:        exec,
-		connections: map[string]*grav.Grav{},
-		handlerPods: map[string]*grav.Pod{},
+		connections: map[string]*bus.Bus{},
+		handlerPods: map[string]*bus.Pod{},
 		transport:   transport,
 	}
 
@@ -161,12 +161,12 @@ func (c *Coordinator) createConnections() {
 			if err != nil {
 				c.log.Error(errors.Wrap(err, "failed to nats.New for NATS connection"))
 			} else {
-				g := grav.New(
-					grav.UseLogger(c.log),
-					grav.UseBridgeTransport(gnats),
+				b := bus.New(
+					bus.UseLogger(c.log),
+					bus.UseBridgeTransport(gnats),
 				)
 
-				c.connections[natsKey] = g
+				c.connections[natsKey] = b
 			}
 		}
 
@@ -177,9 +177,9 @@ func (c *Coordinator) createConnections() {
 			if err != nil {
 				c.log.Error(errors.Wrap(err, "failed to kafka.New for Kafka connection"))
 			} else {
-				g := grav.New(
-					grav.UseLogger(c.log),
-					grav.UseBridgeTransport(gkafka),
+				g := bus.New(
+					bus.UseLogger(c.log),
+					bus.UseBridgeTransport(gkafka),
 				)
 
 				c.connections[kafkaKey] = g

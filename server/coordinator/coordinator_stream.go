@@ -5,8 +5,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/grav/grav"
 	"github.com/suborbital/vektor/vk"
+	"github.com/suborbital/velocity/bus/bus"
 	"github.com/suborbital/velocity/directive"
 	"github.com/suborbital/velocity/scheduler"
 	"github.com/suborbital/velocity/server/appsource"
@@ -51,7 +51,7 @@ func (c *Coordinator) streamConnectionForDirectiveHandler(handler directive.Hand
 	}
 
 	pod := connection.Connect()
-	pod.OnType(handler.Input.Resource, func(msg grav.Message) error {
+	pod.OnType(handler.Input.Resource, func(msg bus.Message) error {
 		ctx := vk.NewCtx(c.log, nil, nil)
 		ctx.UseScope(messageScope{msg.UUID()})
 
@@ -90,7 +90,7 @@ func (c *Coordinator) streamConnectionForDirectiveHandler(handler directive.Hand
 			replyTopic = handler.RespondTo
 		}
 
-		pod.ReplyTo(msg, grav.NewMsgWithParentID(replyTopic, ctx.RequestID(), result))
+		pod.ReplyTo(msg, bus.NewMsgWithParentID(replyTopic, ctx.RequestID(), result))
 
 		return nil
 	})
