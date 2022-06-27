@@ -7,11 +7,11 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/grav/discovery/local"
-	"github.com/suborbital/grav/grav"
-	"github.com/suborbital/grav/transport/websocket"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
+	"github.com/suborbital/velocity/bus/bus"
+	"github.com/suborbital/velocity/bus/discovery/local"
+	"github.com/suborbital/velocity/bus/transport/websocket"
 	"github.com/suborbital/velocity/capabilities"
 	"github.com/suborbital/velocity/directive/executable"
 	"github.com/suborbital/velocity/scheduler"
@@ -31,7 +31,7 @@ var (
 )
 
 type Executor interface {
-	Do(jobType string, req *request.CoordinatedRequest, ctx *vk.Ctx, cb grav.MsgFunc) (interface{}, error)
+	Do(jobType string, req *request.CoordinatedRequest, ctx *vk.Ctx, cb bus.MsgFunc) (interface{}, error)
 	DesiredStepState(step executable.Executable, req *request.CoordinatedRequest) (map[string][]byte, error)
 	SetSchedule(sched scheduler.Schedule) error
 	Metrics() (*scheduler.ScalerMetrics, error)
@@ -40,38 +40,38 @@ type Executor interface {
 // meshExecutor is a facade over Grav that allows executing remote
 // functions with a single call, ensuring there is no difference between them to the caller
 type meshExecutor struct {
-	grav      *grav.Grav
-	pod       *grav.Pod
+	bus       *bus.Bus
+	pod       *bus.Pod
 	log       *vlog.Logger
-	callbacks map[string]grav.MsgFunc
+	callbacks map[string]bus.MsgFunc
 	cbLock    sync.RWMutex
 }
 
 // New creates a new Executor
 func New(log *vlog.Logger, transport *websocket.Transport) *meshExecutor {
-	gravOpts := []grav.OptionsModifier{
-		grav.UseLogger(log),
+	gravOpts := []bus.OptionsModifier{
+		bus.UseLogger(log),
 	}
 
 	if transport != nil {
 		d := local.New()
 
-		gravOpts = append(gravOpts, grav.UseMeshTransport(transport))
-		gravOpts = append(gravOpts, grav.UseDiscovery(d))
+		gravOpts = append(gravOpts, bus.UseMeshTransport(transport))
+		gravOpts = append(gravOpts, bus.UseDiscovery(d))
 	}
 
-	g := grav.New(gravOpts...)
+	b := bus.New(gravOpts...)
 
 	e := &meshExecutor{
-		grav:      g,
-		pod:       g.Connect(),
+		bus:       b,
+		pod:       b.Connect(),
 		log:       log,
-		callbacks: map[string]grav.MsgFunc{},
+		callbacks: map[string]bus.MsgFunc{},
 		cbLock:    sync.RWMutex{},
 	}
 
 	// funnel all result messages to their respective sequence callbacks
-	e.pod.OnType(MsgTypeAtmoFnResult, func(msg grav.Message) error {
+	e.pod.OnType(MsgTypeAtmoFnResult, func(msg bus.Message) error {
 		e.cbLock.RLock()
 		defer e.cbLock.RUnlock()
 
@@ -90,11 +90,11 @@ func New(log *vlog.Logger, transport *websocket.Transport) *meshExecutor {
 }
 
 // Do executes a remote job
-func (e *meshExecutor) Do(jobType string, req *request.CoordinatedRequest, ctx *vk.Ctx, cb grav.MsgFunc) (interface{}, error) {
+func (e *meshExecutor) Do(jobType string, req *request.CoordinatedRequest, ctx *vk.Ctx, cb bus.MsgFunc) (interface{}, error) {
 	var runErr error
 	var cbErr error
 
-	pod := e.grav.Connect()
+	pod := e.bus.Connect()
 	defer pod.Disconnect()
 
 	ctx.Log.Debug("proxying execution for", jobType)
@@ -104,7 +104,7 @@ func (e *meshExecutor) Do(jobType string, req *request.CoordinatedRequest, ctx *
 	// start listening to the messages produced by peers
 	// on the network, and don't stop until there's an error
 	// or the Sequence we're connected to deems that it's complete
-	e.addCallback(ctx.RequestID(), func(msg grav.Message) error {
+	e.addCallback(ctx.RequestID(), func(msg bus.Message) error {
 		// the Sequence callback will return an error under two main conditions:
 		// - The sequence has ended: yay!
 		// - The result we just got caused an error: boo :(
@@ -140,10 +140,10 @@ func (e *meshExecutor) Do(jobType string, req *request.CoordinatedRequest, ctx *
 		return nil, errors.Wrap(err, "failed to req.toJSON")
 	}
 
-	msg := grav.NewMsgWithParentID(jobType, ctx.RequestID(), data)
+	msg := bus.NewMsgWithParentID(jobType, ctx.RequestID(), data)
 
 	// find an appropriate peer and tunnel the first excution to them
-	if err := e.grav.Tunnel(jobType, msg); err != nil {
+	if err := e.bus.Tunnel(jobType, msg); err != nil {
 		return nil, errors.Wrap(err, "failed to Tunnel, will retry")
 	}
 
@@ -167,7 +167,7 @@ func (e *meshExecutor) Do(jobType string, req *request.CoordinatedRequest, ctx *
 	return nil, nil
 }
 
-func (e *meshExecutor) addCallback(parentID string, cb grav.MsgFunc) {
+func (e *meshExecutor) addCallback(parentID string, cb bus.MsgFunc) {
 	e.cbLock.Lock()
 	defer e.cbLock.Unlock()
 
@@ -195,7 +195,7 @@ func (e *meshExecutor) DesiredStepState(step executable.Executable, req *request
 }
 
 // this does nothing in proxy mode
-func (e *meshExecutor) ListenAndRun(msgType string, run func(grav.Message, interface{}, error)) error {
+func (e *meshExecutor) ListenAndRun(msgType string, run func(bus.Message, interface{}, error)) error {
 	return nil
 }
 

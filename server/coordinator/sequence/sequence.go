@@ -6,9 +6,9 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/grav/grav"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
+	"github.com/suborbital/velocity/bus/bus"
 	"github.com/suborbital/velocity/directive/executable"
 	"github.com/suborbital/velocity/scheduler"
 	"github.com/suborbital/velocity/server/coordinator/executor"
@@ -235,7 +235,7 @@ func (seq *Sequence) HandleStepErrs(results []FnResult, step executable.Executab
 // and it is responsible for collecting the fnResults from the proxied peers:
 //
 // sequence.Execute -> exec.do -> handleMessage (n times) -> .do returns to .Execute.
-func (seq *Sequence) handleMessage(msg grav.Message) error {
+func (seq *Sequence) handleMessage(msg bus.Message) error {
 	seq.lock.Lock()
 	defer seq.lock.Unlock()
 

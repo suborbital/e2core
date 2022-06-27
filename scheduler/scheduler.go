@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 
 	"github.com/pkg/errors"
-	"github.com/suborbital/grav/grav"
 	"github.com/suborbital/vektor/vlog"
+	"github.com/suborbital/velocity/bus/bus"
 )
 
 // MsgTypeReactrJobErr and others are Grav message types used for Scheduler job
@@ -73,9 +73,9 @@ func (r *Scheduler) DeRegister(jobType string) error {
 // The message's data is passed to the runnable as the job data.
 // The job's result is then emitted as a message. If an error occurs, it is logged and an error is sent.
 // If the result is nil, nothing is sent.
-func (r *Scheduler) Listen(pod *grav.Pod, msgType string) {
-	r.ListenAndRun(pod, msgType, func(msg grav.Message, result interface{}, err error) {
-		var replyMsg grav.Message
+func (r *Scheduler) Listen(pod *bus.Pod, msgType string) {
+	r.ListenAndRun(pod, msgType, func(msg bus.Message, result interface{}, err error) {
+		var replyMsg bus.Message
 
 		if err != nil {
 			r.log.Error(errors.Wrapf(err, "job from message %s returned error result", msg.UUID()))
@@ -83,32 +83,32 @@ func (r *Scheduler) Listen(pod *grav.Pod, msgType string) {
 			runErr := &RunErr{}
 			if errors.As(err, runErr) {
 				// if a Wasm Runnable returned a RunErr, let's be sure to handle that
-				replyMsg = grav.NewMsgWithParentID(MsgTypeReactrRunErr, msg.ParentID(), []byte(runErr.Error()))
+				replyMsg = bus.NewMsgWithParentID(MsgTypeReactrRunErr, msg.ParentID(), []byte(runErr.Error()))
 			} else {
-				replyMsg = grav.NewMsgWithParentID(MsgTypeReactrJobErr, msg.ParentID(), []byte(err.Error()))
+				replyMsg = bus.NewMsgWithParentID(MsgTypeReactrJobErr, msg.ParentID(), []byte(err.Error()))
 			}
 		} else {
 			if result == nil {
 				// if the job returned no result
-				replyMsg = grav.NewMsgWithParentID(MsgTypeReactrNilResult, msg.ParentID(), []byte{})
-			} else if resultMsg, isMsg := result.(grav.Message); isMsg {
+				replyMsg = bus.NewMsgWithParentID(MsgTypeReactrNilResult, msg.ParentID(), []byte{})
+			} else if resultMsg, isMsg := result.(bus.Message); isMsg {
 				// if the job returned a Grav message
 				resultMsg.SetReplyTo(msg.UUID())
 				replyMsg = resultMsg
 			} else if bytes, isBytes := result.([]byte); isBytes {
 				// if the job returned bytes
-				replyMsg = grav.NewMsgWithParentID(MsgTypeReactrResult, msg.ParentID(), bytes)
+				replyMsg = bus.NewMsgWithParentID(MsgTypeReactrResult, msg.ParentID(), bytes)
 			} else if resultString, isString := result.(string); isString {
 				// if the job returned a string
-				replyMsg = grav.NewMsgWithParentID(MsgTypeReactrResult, msg.ParentID(), []byte(resultString))
+				replyMsg = bus.NewMsgWithParentID(MsgTypeReactrResult, msg.ParentID(), []byte(resultString))
 			} else {
 				// if the job returned something else like a struct
 				resultJSON, err := json.Marshal(result)
 				if err != nil {
 					r.log.Error(errors.Wrapf(err, "job from message %s returned result that could not be JSON marshalled", msg.UUID()))
-					replyMsg = grav.NewMsgWithParentID(MsgTypeReactrJobErr, msg.ParentID(), []byte(errors.Wrap(err, "failed to Marshal job result").Error()))
+					replyMsg = bus.NewMsgWithParentID(MsgTypeReactrJobErr, msg.ParentID(), []byte(errors.Wrap(err, "failed to Marshal job result").Error()))
 				} else {
-					replyMsg = grav.NewMsgWithParentID(MsgTypeReactrResult, msg.ParentID(), resultJSON)
+					replyMsg = bus.NewMsgWithParentID(MsgTypeReactrResult, msg.ParentID(), resultJSON)
 				}
 			}
 		}
@@ -118,7 +118,7 @@ func (r *Scheduler) Listen(pod *grav.Pod, msgType string) {
 }
 
 // ListenAndRun subscribes Scheduler to a messageType and calls `run` for each job result
-func (r *Scheduler) ListenAndRun(pod *grav.Pod, msgType string, run func(grav.Message, interface{}, error)) {
+func (r *Scheduler) ListenAndRun(pod *bus.Pod, msgType string, run func(bus.Message, interface{}, error)) {
 	helper := func(data interface{}) *Result {
 		job := NewJob(msgType, data)
 
@@ -127,7 +127,7 @@ func (r *Scheduler) ListenAndRun(pod *grav.Pod, msgType string, run func(grav.Me
 
 	// each time a message is received with the associated type,
 	// execute the associated job and pass the result to `run`
-	pod.OnType(msgType, func(msg grav.Message) error {
+	pod.OnType(msgType, func(msg bus.Message) error {
 		result, err := helper(msg.Data()).Then()
 
 		run(msg, result, err)

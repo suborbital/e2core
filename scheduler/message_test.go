@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/pkg/errors"
-	"github.com/suborbital/grav/grav"
-	"github.com/suborbital/grav/testutil"
+	"github.com/suborbital/velocity/bus/bus"
+	"github.com/suborbital/velocity/bus/testutil"
 )
 
 const msgTypeTester = "reactr.test"
@@ -18,7 +18,7 @@ type msgRunner struct{}
 func (m *msgRunner) Run(job Job, ctx *Ctx) (interface{}, error) {
 	name := string(job.Bytes())
 
-	reply := grav.NewMsg(msgTypeTester, []byte(fmt.Sprintf("hello, %s", name)))
+	reply := bus.NewMsg(msgTypeTester, []byte(fmt.Sprintf("hello, %s", name)))
 
 	return reply, nil
 }
@@ -36,7 +36,7 @@ func (m *nilRunner) OnChange(change ChangeEvent) error { return nil }
 
 func TestHandleMessage(t *testing.T) {
 	r := New()
-	g := grav.New()
+	g := bus.New()
 
 	r.Register(msgTypeTester, &msgRunner{})
 	r.Listen(g.Connect(), msgTypeTester)
@@ -45,12 +45,12 @@ func TestHandleMessage(t *testing.T) {
 
 	sender := g.Connect()
 
-	sender.OnType(msgTypeTester, func(msg grav.Message) error {
+	sender.OnType(msgTypeTester, func(msg bus.Message) error {
 		counter.Count()
 		return nil
 	})
 
-	sender.Send(grav.NewMsg(msgTypeTester, []byte("charlie brown")))
+	sender.Send(bus.NewMsg(msgTypeTester, []byte("charlie brown")))
 
 	if err := counter.Wait(1, 1); err != nil {
 		t.Error(errors.Wrap(err, "failed to counter.Wait"))
@@ -59,7 +59,7 @@ func TestHandleMessage(t *testing.T) {
 
 func TestHandleMessagePt2(t *testing.T) {
 	r := New()
-	g := grav.New()
+	g := bus.New()
 
 	r.Register(msgTypeTester, &msgRunner{})
 	r.Listen(g.Connect(), msgTypeTester)
@@ -68,13 +68,13 @@ func TestHandleMessagePt2(t *testing.T) {
 
 	sender := g.Connect()
 
-	sender.OnType(msgTypeTester, func(msg grav.Message) error {
+	sender.OnType(msgTypeTester, func(msg bus.Message) error {
 		counter.Count()
 		return nil
 	})
 
 	for i := 0; i < 9876; i++ {
-		sender.Send(grav.NewMsg(msgTypeTester, []byte("charlie brown")))
+		sender.Send(bus.NewMsg(msgTypeTester, []byte("charlie brown")))
 	}
 
 	if err := counter.Wait(9876, 1); err != nil {
@@ -84,7 +84,7 @@ func TestHandleMessagePt2(t *testing.T) {
 
 func TestHandleMessageNilResult(t *testing.T) {
 	r := New()
-	g := grav.New()
+	g := bus.New()
 
 	r.Register(msgTypeNil, &nilRunner{})
 	r.Listen(g.Connect(), msgTypeNil)
@@ -93,13 +93,13 @@ func TestHandleMessageNilResult(t *testing.T) {
 
 	pod := g.Connect()
 
-	pod.OnType(MsgTypeReactrNilResult, func(msg grav.Message) error {
+	pod.OnType(MsgTypeReactrNilResult, func(msg bus.Message) error {
 		counter.Count()
 		return nil
 	})
 
 	for i := 0; i < 5; i++ {
-		pod.Send(grav.NewMsg(msgTypeNil, []byte("hi")))
+		pod.Send(bus.NewMsg(msgTypeNil, []byte("hi")))
 	}
 
 	if err := counter.Wait(5, 1); err != nil {
