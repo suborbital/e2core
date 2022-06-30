@@ -3,6 +3,7 @@ package orchestrator
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"log"
 	"net/url"
 	"os"
@@ -127,7 +128,7 @@ func (o *Orchestrator) RunPartner(command string) error {
 		return errors.Wrap(err, "failed to Execute command template")
 	}
 
-	if _, _, err := exec.Run(out.String()); err != nil {
+	if _, _, err := exec.Run(out.String(), fmt.Sprintf("PORT=%s", data.Port)); err != nil {
 		return errors.Wrap(err, "failed to Run")
 	}
 
