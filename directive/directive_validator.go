@@ -13,7 +13,7 @@ import (
 	"github.com/suborbital/atmo/fqfn"
 )
 
-// Validate validates a directive.
+// Validate problems a directive.
 func (d *Directive) Validate() (err error) {
 	problems := &problems{}
 
