@@ -261,12 +261,12 @@ func (h *HTTPSource) get(path string, dest interface{}) (*http.Response, error) 
 
 // authedGet performs a GET request against the configured host and given path with the given auth header.
 func (h *HTTPSource) authedGet(path, auth string, dest interface{}) (*http.Response, error) {
-	url, err := url.Parse(fmt.Sprintf("%s%s", h.host, path))
+	parseURL, err := url.Parse(fmt.Sprintf("%s%s", h.host, path))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to url.Parse")
 	}
 
-	req, err := http.NewRequest(http.MethodGet, url.String(), nil)
+	req, err := http.NewRequest(http.MethodGet, parseURL.String(), nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to NewRequest")
 	}
