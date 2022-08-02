@@ -5,8 +5,8 @@ import (
 
 	"github.com/nats-io/nats.go"
 	"github.com/pkg/errors"
+	"github.com/suborbital/deltav/bus/bus"
 	"github.com/suborbital/vektor/vlog"
-	"github.com/suborbital/velocity/bus/bus"
 )
 
 // Transport is a transport that connects Grav nodes via NATS

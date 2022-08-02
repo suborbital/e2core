@@ -10,7 +10,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/velocity/orchestrator/config"
+	"github.com/suborbital/deltav/orchestrator/config"
 )
 
 // AddUpstreamRequest is a request to add an upstream

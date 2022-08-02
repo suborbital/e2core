@@ -5,7 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/velocity/directive/executable"
+	"github.com/suborbital/deltav/directive/executable"
 )
 
 // runGroup runs a group of functions

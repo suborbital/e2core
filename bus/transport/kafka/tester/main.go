@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/suborbital/deltav/bus/bus"
+	"github.com/suborbital/deltav/bus/transport/kafka"
 	"github.com/suborbital/vektor/vlog"
-	"github.com/suborbital/velocity/bus/bus"
-	"github.com/suborbital/velocity/bus/transport/kafka"
 )
 
 func main() {

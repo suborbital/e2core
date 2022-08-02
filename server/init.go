@@ -18,8 +18,8 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 
+	"github.com/suborbital/deltav/server/options"
 	"github.com/suborbital/vektor/vlog"
-	"github.com/suborbital/velocity/server/options"
 )
 
 // setupTracing configure open telemetry to be used with otel exporter. Returns a tracer closer func and an error.

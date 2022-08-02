@@ -6,9 +6,9 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/suborbital/deltav/fqfn"
+	"github.com/suborbital/deltav/server/appsource"
 	"github.com/suborbital/vektor/vk"
-	"github.com/suborbital/velocity/fqfn"
-	"github.com/suborbital/velocity/server/appsource"
 )
 
 func (c *Coordinator) headlessAuthMiddleware() vk.Middleware {

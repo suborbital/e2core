@@ -1,4 +1,4 @@
-module github.com/suborbital/velocity
+module github.com/suborbital/deltav
 
 go 1.18
 

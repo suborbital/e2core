@@ -3,8 +3,8 @@ package appsource
 import (
 	"github.com/pkg/errors"
 
+	"github.com/suborbital/deltav/capabilities"
 	"github.com/suborbital/vektor/vlog"
-	"github.com/suborbital/velocity/capabilities"
 )
 
 // ResolveCapabilitiesFromSource takes the ident, namespace, and version, and looks up the capabilities for that trio from the

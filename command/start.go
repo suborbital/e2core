@@ -7,24 +7,24 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"github.com/suborbital/deltav/orchestrator"
+	"github.com/suborbital/deltav/server"
+	"github.com/suborbital/deltav/server/options"
+	"github.com/suborbital/deltav/server/release"
+	"github.com/suborbital/deltav/signaler"
 	"github.com/suborbital/vektor/vlog"
-	"github.com/suborbital/velocity/orchestrator"
-	"github.com/suborbital/velocity/server"
-	"github.com/suborbital/velocity/server/options"
-	"github.com/suborbital/velocity/server/release"
-	"github.com/suborbital/velocity/signaler"
 )
 
-type velocityInfo struct {
-	VelocityVersion string `json:"velocity_version"`
+type deltavInfo struct {
+	DeltavVersion string `json:"deltav_version"`
 }
 
 func Start() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "start [bundle-path]",
-		Short:   "start the velocity server",
-		Long:    "starts the velocity server using the provided options and configured partner + backend, if desired",
-		Version: release.VelocityServerDotVersion,
+		Short:   "start the deltav server",
+		Long:    "starts the deltav server using the provided options",
+		Version: release.DeltavServerDotVersion,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			path := "./runnables.wasm.zip"
 			if len(args) > 0 {
@@ -32,8 +32,8 @@ func Start() *cobra.Command {
 			}
 
 			logger := vlog.Default(
-				vlog.AppMeta(velocityInfo{VelocityVersion: release.VelocityServerDotVersion}),
-				vlog.EnvPrefix("VELOCITY"),
+				vlog.AppMeta(deltavInfo{DeltavVersion: release.DeltavServerDotVersion}),
+				vlog.EnvPrefix("DELTAV"),
 			)
 
 			opts, err := optionsFromFlags(cmd.Flags())
@@ -75,12 +75,12 @@ func Start() *cobra.Command {
 
 	cmd.SetVersionTemplate("{{.Version}}\n")
 
-	cmd.Flags().Bool(waitFlag, false, "if passed, Atmo will wait until a bundle becomes available on disk, checking once per second")
-	cmd.Flags().String(appNameFlag, "Velocity", "if passed, it'll be used as VELOCITY_APP_NAME, otherwise 'Velocity' will be used")
+	cmd.Flags().Bool(waitFlag, false, "if passed, DeltaV will wait until a bundle becomes available on disk, checking once per second")
+	cmd.Flags().String(appNameFlag, "DeltaV", "if passed, it'll be used as DELTAV_APP_NAME, otherwise 'DeltaV' will be used")
 	cmd.Flags().String(runPartnerFlag, "", "if passed, the provided command will be run as the partner application")
-	cmd.Flags().String(domainFlag, "", "if passed, it'll be used as VELOCITY_DOMAIN and HTTPS will be used, otherwise HTTP will be used")
-	cmd.Flags().Int(httpPortFlag, 8080, "if passed, it'll be used as VELOCITY_HTTP_PORT, otherwise '8080' will be used")
-	cmd.Flags().Int(tlsPortFlag, 443, "if passed, it'll be used as VELOCITY_TLS_PORT, otherwise '443' will be used")
+	cmd.Flags().String(domainFlag, "", "if passed, it'll be used as DELTAV_DOMAIN and HTTPS will be used, otherwise HTTP will be used")
+	cmd.Flags().Int(httpPortFlag, 8080, "if passed, it'll be used as DELTAV_HTTP_PORT, otherwise '8080' will be used")
+	cmd.Flags().Int(tlsPortFlag, 443, "if passed, it'll be used as DELTAV_TLS_PORT, otherwise '443' will be used")
 
 	return cmd
 }

@@ -6,30 +6,30 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/suborbital/deltav/bus/bus"
+	"github.com/suborbital/deltav/bus/transport/kafka"
+	"github.com/suborbital/deltav/bus/transport/nats"
+	"github.com/suborbital/deltav/bus/transport/websocket"
+	"github.com/suborbital/deltav/capabilities"
+	"github.com/suborbital/deltav/directive"
+	"github.com/suborbital/deltav/scheduler"
+	"github.com/suborbital/deltav/server/appsource"
+	"github.com/suborbital/deltav/server/coordinator/executor"
+	"github.com/suborbital/deltav/server/options"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
-	"github.com/suborbital/velocity/bus/bus"
-	"github.com/suborbital/velocity/bus/transport/kafka"
-	"github.com/suborbital/velocity/bus/transport/nats"
-	"github.com/suborbital/velocity/bus/transport/websocket"
-	"github.com/suborbital/velocity/capabilities"
-	"github.com/suborbital/velocity/directive"
-	"github.com/suborbital/velocity/scheduler"
-	"github.com/suborbital/velocity/server/appsource"
-	"github.com/suborbital/velocity/server/coordinator/executor"
-	"github.com/suborbital/velocity/server/options"
 )
 
 const (
-	velocityMethodSchedule       = "SCHED"
-	velocityMethodStream         = "STREAM"
-	velocityHeadlessStateHeader  = "X-Velocity-State"
-	velocityHeadlessParamsHeader = "X-Velocity-Params"
-	velocityRequestIDHeader      = "X-Velocity-RequestID"
-	velocityMessageURI           = "/meta/message"
-	VelocityMetricsURI           = "/meta/metrics"
-	VelocityHealthURI            = "/health"
-	connectionKeyFormat          = "%s.%s.%s"
+	deltavMethodSchedule       = "SCHED"
+	deltavMethodStream         = "STREAM"
+	deltavHeadlessStateHeader  = "X-Deltav-State"
+	deltavHeadlessParamsHeader = "X-Deltav-Params"
+	deltavRequestIDHeader      = "X-Deltav-RequestID"
+	deltavMessageURI           = "/meta/message"
+	DeltavMetricsURI           = "/meta/metrics"
+	DeltavHealthURI            = "/health"
+	connectionKeyFormat        = "%s.%s.%s"
 )
 
 type rtFunc func(scheduler.Job, *scheduler.Ctx) (interface{}, error)
@@ -130,12 +130,12 @@ func (c *Coordinator) SetupHandlers() *vk.Router {
 		}
 	}
 
-	router.GET(VelocityMetricsURI, c.metricsHandler())
+	router.GET(DeltavMetricsURI, c.metricsHandler())
 
-	router.GET(VelocityHealthURI, c.health())
+	router.GET(DeltavHealthURI, c.health())
 
 	if c.transport != nil {
-		router.HandleHTTP(http.MethodGet, velocityMessageURI, c.transport.HTTPHandlerFunc())
+		router.HandleHTTP(http.MethodGet, deltavMessageURI, c.transport.HTTPHandlerFunc())
 	}
 
 	return router

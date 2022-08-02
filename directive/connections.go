@@ -5,7 +5,7 @@ import (
 	"net/url"
 
 	"github.com/pkg/errors"
-	"github.com/suborbital/velocity/capabilities"
+	"github.com/suborbital/deltav/capabilities"
 )
 
 const (

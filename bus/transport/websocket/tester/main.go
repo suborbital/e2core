@@ -7,11 +7,11 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/suborbital/deltav/bus/bus"
+	"github.com/suborbital/deltav/bus/discovery/local"
+	"github.com/suborbital/deltav/bus/transport/websocket"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
-	"github.com/suborbital/velocity/bus/bus"
-	"github.com/suborbital/velocity/bus/discovery/local"
-	"github.com/suborbital/velocity/bus/transport/websocket"
 )
 
 func main() {

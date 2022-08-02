@@ -11,7 +11,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/velocity/directive"
+	"github.com/suborbital/deltav/directive"
 )
 
 // Bundle represents a Runnable bundle.

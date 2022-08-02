@@ -9,8 +9,8 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/mod/semver"
 
-	"github.com/suborbital/velocity/directive/executable"
-	"github.com/suborbital/velocity/fqfn"
+	"github.com/suborbital/deltav/directive/executable"
+	"github.com/suborbital/deltav/fqfn"
 )
 
 // Validate validates a directive.

@@ -9,28 +9,28 @@ import (
 	"github.com/suborbital/vektor/vlog"
 )
 
-const velocityEnvPrefix = "VELOCITY"
+const deltavEnvPrefix = "DELTAV"
 
 // Options defines options for Atmo.
 type Options struct {
 	Logger           *vlog.Logger
-	BundlePath       string       `env:"VELOCITY_BUNDLE_PATH"`
-	RunSchedules     *bool        `env:"VELOCITY_RUN_SCHEDULES,default=true"`
-	Headless         *bool        `env:"VELOCITY_HEADLESS,default=false"`
-	Wait             *bool        `env:"VELOCITY_WAIT,default=false"`
-	ControlPlane     string       `env:"VELOCITY_CONTROL_PLANE"`
-	EnvironmentToken string       `env:"VELOCITY_ENV_TOKEN"`
-	StaticPeers      string       `env:"VELOCITY_PEERS"`
-	AppName          string       `env:"VELOCITY_APP_NAME,default=Velocity"`
-	Domain           string       `env:"VELOCITY_DOMAIN"`
-	HTTPPort         int          `env:"VELOCITY_HTTP_PORT,default=8080"`
-	TLSPort          int          `env:"VELOCITY_TLS_PORT,default=443"`
-	PartnerAddress   string       `env:"VELOCITY_PARTNER,default=http://localhost:3000"`
-	TracerConfig     TracerConfig `env:",prefix=VELOCITY_TRACER_"`
+	BundlePath       string       `env:"DELTAV_BUNDLE_PATH"`
+	RunSchedules     *bool        `env:"DELTAV_RUN_SCHEDULES,default=true"`
+	Headless         *bool        `env:"DELTAV_HEADLESS,default=false"`
+	Wait             *bool        `env:"DELTAV_WAIT,default=false"`
+	ControlPlane     string       `env:"DELTAV_CONTROL_PLANE"`
+	EnvironmentToken string       `env:"DELTAV_ENV_TOKEN"`
+	StaticPeers      string       `env:"DELTAV_PEERS"`
+	AppName          string       `env:"DELTAV_APP_NAME,default=DeltaV"`
+	Domain           string       `env:"DELTAV_DOMAIN"`
+	HTTPPort         int          `env:"DELTAV_HTTP_PORT,default=8080"`
+	TLSPort          int          `env:"DELTAV_TLS_PORT,default=443"`
+	PartnerAddress   string       `env:"DELTAV_PARTNER,default=http://localhost:3000"`
+	TracerConfig     TracerConfig `env:",prefix=DELTAV_TRACER_"`
 }
 
 // TracerConfig holds values specific to setting up the tracer. It's only used in proxy mode. All configuration options
-// have a prefix of VELOCITY_TRACER_ specified in the parent Options struct.
+// have a prefix of DELTAV_TRACER_ specified in the parent Options struct.
 type TracerConfig struct {
 	TracerType      string           `env:"TYPE,default=none"`
 	ServiceName     string           `env:"SERVICENAME,default=atmo"`
@@ -40,14 +40,14 @@ type TracerConfig struct {
 }
 
 // CollectorConfig holds config values specific to the collector tracer exporter running locally / within your cluster.
-// All the configuration values here have a prefix of VELOCITY_TRACER_COLLECTOR_, specified in the top level Options struct,
+// All the configuration values here have a prefix of DELTAV_TRACER_COLLECTOR_, specified in the top level Options struct,
 // and the parent TracerConfig struct.
 type CollectorConfig struct {
 	Endpoint string `env:"ENDPOINT"`
 }
 
 // HoneycombConfig holds config values specific to the honeycomb tracer exporter. All the configuration values here have
-// a prefix of VELOCITY_TRACER_HONEYCOMB_, specified in the top level Options struct, and the parent TracerConfig struct.
+// a prefix of DELTAV_TRACER_HONEYCOMB_, specified in the top level Options struct, and the parent TracerConfig struct.
 type HoneycombConfig struct {
 	Endpoint string `env:"ENDPOINT"`
 	APIKey   string `env:"APIKEY"`
@@ -64,7 +64,7 @@ func NewWithModifiers(mods ...Modifier) *Options {
 		mod(opts)
 	}
 
-	opts.finalize(velocityEnvPrefix)
+	opts.finalize(deltavEnvPrefix)
 
 	return opts
 }

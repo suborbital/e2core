@@ -13,11 +13,11 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/velocity/capabilities"
-	"github.com/suborbital/velocity/directive"
-	"github.com/suborbital/velocity/directive/executable"
-	"github.com/suborbital/velocity/fqfn"
-	"github.com/suborbital/velocity/server/options"
+	"github.com/suborbital/deltav/capabilities"
+	"github.com/suborbital/deltav/directive"
+	"github.com/suborbital/deltav/directive/executable"
+	"github.com/suborbital/deltav/fqfn"
+	"github.com/suborbital/deltav/server/options"
 )
 
 // HTTPSource is an AppSource backed by an HTTP client connected to a remote source.

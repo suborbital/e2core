@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 
 	"github.com/pkg/errors"
+	"github.com/suborbital/deltav/bus/bus"
 	"github.com/suborbital/vektor/vlog"
-	"github.com/suborbital/velocity/bus/bus"
 )
 
 // MsgTypeReactrJobErr and others are Grav message types used for Scheduler job

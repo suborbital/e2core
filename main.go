@@ -3,8 +3,8 @@ package main
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/suborbital/velocity/command"
-	"github.com/suborbital/velocity/server/release"
+	"github.com/suborbital/deltav/command"
+	"github.com/suborbital/deltav/server/release"
 )
 
 func main() {
@@ -16,17 +16,12 @@ func main() {
 
 func rootCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "velocity [bundle-path]",
-		Version: release.VelocityServerDotVersion,
+		Use:     "deltav",
+		Version: release.DeltavServerDotVersion,
 		Long: `
-	Velocity is an all-in-one cloud native functions framework that enables 
-	building backend systems using composable WebAssembly modules in a declarative manner.
+	Deltav is a secure development kit and server for writing and running untrusted third-party plugins.
 	
-	Velocity automatically extends any application with stateless, ephemeral functions that
-	execute within a secure sandbox, written in any language. 
-	
-	Handling API and event-based traffic is made simple using the declarative 
-	Directive format and the powerful API available for many languages.`,
+	The DeltaV server is responsible for managing and running plugins using simple HTTP, RPC, or streaming interfaces.`,
 	}
 
 	return cmd

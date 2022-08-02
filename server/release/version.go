@@ -1,4 +1,4 @@
 package release
 
-// VelocityServerDotVersion represents the dot version for Velocity Server
-var VelocityServerDotVersion = "0.4.6"
+// DeltavServerDotVersion represents the dot version for DeltaV Server
+var DeltavServerDotVersion = "0.4.6"

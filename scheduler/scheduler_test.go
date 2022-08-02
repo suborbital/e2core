@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/pkg/errors"
-	"github.com/suborbital/velocity/bus/testutil"
+	"github.com/suborbital/deltav/bus/testutil"
 )
 
 type generic struct{}

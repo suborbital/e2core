@@ -1,27 +1,27 @@
 
-velocity:
-	go build -o .bin/velocity ./main.go
+deltav:
+	go build -o .bin/deltav ./main.go
 
-velocity/install:
+deltav/install:
 	go install
 
-velocity/static:
-	go build -o .bin/velocity -tags netgo -ldflags="-extldflags=-static" .
+deltav/static:
+	go build -o .bin/deltav -tags netgo -ldflags="-extldflags=-static" .
 
-velocity/docker: docker/dev
-	docker run -v ${PWD}/$(dir):/home/velocity -e VELOCITY_HTTP_PORT=8080 -p 8080:8080 suborbital/velocity:dev velocity --wait
+deltav/docker: docker/dev
+	docker run -v ${PWD}/$(dir):/home/deltav -e DELTAV_HTTP_PORT=8080 -p 8080:8080 suborbital/deltav:dev deltav --wait
 
 docker/dev:
-	docker build . -t suborbital/velocity:dev
+	docker build . -t suborbital/deltav:dev
 
 docker/dev/multi:
-	docker buildx build . --platform linux/amd64,linux/arm64 -t velocity:dev
+	docker buildx build . --platform linux/amd64,linux/arm64 -t deltav:dev
 
 docker/publish:
-	docker buildx build . --platform linux/amd64,linux/arm64 -t suborbital/velocity:$(version) --push
+	docker buildx build . --platform linux/amd64,linux/arm64 -t suborbital/deltav:$(version) --push
 
 docker/publish/latest:
-	docker buildx build . --platform linux/amd64,linux/arm64 -t suborbital/velocity:latest --push
+	docker buildx build . --platform linux/amd64,linux/arm64 -t suborbital/deltav:latest --push
 
 docker/builder:
 	docker buildx create --use
@@ -51,5 +51,5 @@ mod/replace/reactr:
 mod/replace/vektor:
 	go mod edit -replace github.com/suborbital/vektor=$(HOME)/Workspaces/suborbital/vektor
 
-.PHONY: build velocity velocity/docker docker/dev docker/dev/multi docker/publish docker/builder example-project test lint \
+.PHONY: build deltav deltav/docker docker/dev docker/dev/multi docker/publish docker/builder example-project test lint \
 	lint/fix fix-imports deps

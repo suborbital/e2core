@@ -7,16 +7,16 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/suborbital/deltav/bus/bus"
+	"github.com/suborbital/deltav/bus/discovery/local"
+	"github.com/suborbital/deltav/bus/transport/websocket"
+	"github.com/suborbital/deltav/capabilities"
+	"github.com/suborbital/deltav/directive/executable"
+	"github.com/suborbital/deltav/scheduler"
+	"github.com/suborbital/deltav/server/appsource"
+	"github.com/suborbital/deltav/server/request"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
-	"github.com/suborbital/velocity/bus/bus"
-	"github.com/suborbital/velocity/bus/discovery/local"
-	"github.com/suborbital/velocity/bus/transport/websocket"
-	"github.com/suborbital/velocity/capabilities"
-	"github.com/suborbital/velocity/directive/executable"
-	"github.com/suborbital/velocity/scheduler"
-	"github.com/suborbital/velocity/server/appsource"
-	"github.com/suborbital/velocity/server/request"
 )
 
 const (

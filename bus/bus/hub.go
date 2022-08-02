@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/suborbital/deltav/bus/bus/tunnel"
+	"github.com/suborbital/deltav/bus/bus/withdraw"
 	"github.com/suborbital/vektor/vlog"
-	"github.com/suborbital/velocity/bus/bus/tunnel"
-	"github.com/suborbital/velocity/bus/bus/withdraw"
 )
 
 const tunnelRetryCount = 32

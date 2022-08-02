@@ -12,11 +12,11 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/suite"
+	"github.com/suborbital/deltav/orchestrator"
+	"github.com/suborbital/deltav/server/options"
+	"github.com/suborbital/deltav/signaler"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vtest"
-	"github.com/suborbital/velocity/orchestrator"
-	"github.com/suborbital/velocity/server/options"
-	"github.com/suborbital/velocity/signaler"
 )
 
 type serverTestSuite struct {

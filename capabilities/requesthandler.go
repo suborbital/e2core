@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"github.com/suborbital/velocity/server/request"
+	"github.com/suborbital/deltav/server/request"
 )
 
 const (

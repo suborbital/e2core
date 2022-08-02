@@ -2,8 +2,8 @@ package bus
 
 import (
 	"github.com/pkg/errors"
+	"github.com/suborbital/deltav/bus/bus/withdraw"
 	"github.com/suborbital/vektor/vlog"
-	"github.com/suborbital/velocity/bus/bus/withdraw"
 )
 
 type connectionHandler struct {

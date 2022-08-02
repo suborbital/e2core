@@ -7,9 +7,9 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/suborbital/deltav/fqfn"
+	"github.com/suborbital/deltav/server/options"
 	"github.com/suborbital/vektor/vk"
-	"github.com/suborbital/velocity/fqfn"
-	"github.com/suborbital/velocity/server/options"
 )
 
 // AppSourceVKRouter is a helper struct to generate a VK router that can serve

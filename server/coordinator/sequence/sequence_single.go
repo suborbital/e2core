@@ -5,9 +5,9 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/velocity/directive/executable"
-	"github.com/suborbital/velocity/scheduler"
-	"github.com/suborbital/velocity/server/request"
+	"github.com/suborbital/deltav/directive/executable"
+	"github.com/suborbital/deltav/scheduler"
+	"github.com/suborbital/deltav/server/request"
 )
 
 var ErrMissingFQFN = errors.New("callableFn missing FQFN")

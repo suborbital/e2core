@@ -4,11 +4,11 @@ import (
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 
+	"github.com/suborbital/deltav/directive"
+	"github.com/suborbital/deltav/scheduler"
+	"github.com/suborbital/deltav/server/coordinator/sequence"
+	"github.com/suborbital/deltav/server/request"
 	"github.com/suborbital/vektor/vk"
-	"github.com/suborbital/velocity/directive"
-	"github.com/suborbital/velocity/scheduler"
-	"github.com/suborbital/velocity/server/coordinator/sequence"
-	"github.com/suborbital/velocity/server/request"
 )
 
 // scheduledRunner is a runner that will run a schedule on a.... schedule.
@@ -33,7 +33,7 @@ func (c *Coordinator) rtFuncForDirectiveSchedule(sched directive.Schedule) rtFun
 		}
 
 		req := &request.CoordinatedRequest{
-			Method:  velocityMethodSchedule,
+			Method:  deltavMethodSchedule,
 			URL:     sched.Name,
 			ID:      uuid.New().String(),
 			Body:    []byte{},

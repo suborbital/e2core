@@ -55,9 +55,9 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        image: [velocity]
+        image: [deltav]
         include:
-          - image: velocity
+          - image: deltav
             dockerfile: Dockerfile
 
     steps:

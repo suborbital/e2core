@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/suborbital/velocity/bus/testutil"
+	"github.com/suborbital/deltav/bus/testutil"
 )
 
 func TestRequestReply(t *testing.T) {

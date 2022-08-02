@@ -14,12 +14,12 @@ const (
 
 type Config struct {
 	BundlePath   string `env:"bundle_path"`
-	ExecMode     string `env:"VELOCITY_EXEC_MODE,default=metal"`
-	SatTag       string `env:"VELOCITY_SAT_VERSION,default=latest"`
-	ControlPlane string `env:"VELOCITY_CONTROL_PLANE,overwrite"`
-	EnvToken     string `env:"VELOCITY_ENV_TOKEN"`
-	UpstreamHost string `env:"VELOCITY_UPSTREAM_HOST"`
-	Headless     bool   `env:"VELOCITY_HEADLESS,default=false"`
+	ExecMode     string `env:"DELTAV_EXEC_MODE,default=metal"`
+	SatTag       string `env:"DELTAV_SAT_VERSION,default=latest"`
+	ControlPlane string `env:"DELTAV_CONTROL_PLANE,overwrite"`
+	EnvToken     string `env:"DELTAV_ENV_TOKEN"`
+	UpstreamHost string `env:"DELTAV_UPSTREAM_HOST"`
+	Headless     bool   `env:"DELTAV_HEADLESS,default=false"`
 }
 
 // Parse will return a resolved config struct configured by a combination of environment variables and command line

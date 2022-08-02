@@ -8,9 +8,9 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/velocity/directive"
+	"github.com/suborbital/deltav/directive"
 
-	"github.com/suborbital/velocity/orchestrator/config"
+	"github.com/suborbital/deltav/orchestrator/config"
 )
 
 // satCommand returns the command and the port string

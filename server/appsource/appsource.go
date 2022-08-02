@@ -3,9 +3,9 @@ package appsource
 import (
 	"errors"
 
-	"github.com/suborbital/velocity/capabilities"
-	"github.com/suborbital/velocity/directive"
-	"github.com/suborbital/velocity/server/options"
+	"github.com/suborbital/deltav/capabilities"
+	"github.com/suborbital/deltav/directive"
+	"github.com/suborbital/deltav/server/options"
 )
 
 var (

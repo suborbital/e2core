@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/suborbital/velocity/scheduler"
+	"github.com/suborbital/deltav/scheduler"
 )
 
 var successCount int64 = 0

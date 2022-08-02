@@ -5,10 +5,10 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/suborbital/deltav/server/appsource"
+	"github.com/suborbital/deltav/server/options"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
-	"github.com/suborbital/velocity/server/appsource"
-	"github.com/suborbital/velocity/server/options"
 )
 
 func startAppSourceServer(bundlePath string) (appsource.AppSource, chan error) {

@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/schollz/peerdiscovery"
+	"github.com/suborbital/deltav/bus/bus"
 	"github.com/suborbital/vektor/vlog"
-	"github.com/suborbital/velocity/bus/bus"
 )
 
 // Discovery is a grav Discovery plugin using local network multicast

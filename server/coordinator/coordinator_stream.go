@@ -5,13 +5,13 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/suborbital/deltav/bus/bus"
+	"github.com/suborbital/deltav/directive"
+	"github.com/suborbital/deltav/scheduler"
+	"github.com/suborbital/deltav/server/appsource"
+	"github.com/suborbital/deltav/server/coordinator/sequence"
+	"github.com/suborbital/deltav/server/request"
 	"github.com/suborbital/vektor/vk"
-	"github.com/suborbital/velocity/bus/bus"
-	"github.com/suborbital/velocity/directive"
-	"github.com/suborbital/velocity/scheduler"
-	"github.com/suborbital/velocity/server/appsource"
-	"github.com/suborbital/velocity/server/coordinator/sequence"
-	"github.com/suborbital/velocity/server/request"
 )
 
 type messageScope struct {
@@ -58,7 +58,7 @@ func (c *Coordinator) streamConnectionForDirectiveHandler(handler directive.Hand
 		ctx.Log.Debug("handling message", msg.UUID(), "for handler", handlerIdent)
 
 		req := &request.CoordinatedRequest{
-			Method:      velocityMethodStream,
+			Method:      deltavMethodStream,
 			URL:         handler.Input.Resource,
 			ID:          ctx.RequestID(),
 			Body:        msg.Data(),

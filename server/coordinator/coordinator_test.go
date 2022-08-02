@@ -7,14 +7,14 @@ import (
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 
+	"github.com/suborbital/deltav/directive/executable"
+	"github.com/suborbital/deltav/scheduler"
+	"github.com/suborbital/deltav/server/appsource"
+	"github.com/suborbital/deltav/server/coordinator/sequence"
+	"github.com/suborbital/deltav/server/options"
+	"github.com/suborbital/deltav/server/request"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
-	"github.com/suborbital/velocity/directive/executable"
-	"github.com/suborbital/velocity/scheduler"
-	"github.com/suborbital/velocity/server/appsource"
-	"github.com/suborbital/velocity/server/coordinator/sequence"
-	"github.com/suborbital/velocity/server/options"
-	"github.com/suborbital/velocity/server/request"
 )
 
 var coord *Coordinator

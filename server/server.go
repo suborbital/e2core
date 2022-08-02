@@ -8,14 +8,14 @@ import (
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 
+	"github.com/suborbital/deltav/fqfn"
+	"github.com/suborbital/deltav/server/appsource"
+	"github.com/suborbital/deltav/server/coordinator"
+	"github.com/suborbital/deltav/server/options"
 	"github.com/suborbital/vektor/vk"
-	"github.com/suborbital/velocity/fqfn"
-	"github.com/suborbital/velocity/server/appsource"
-	"github.com/suborbital/velocity/server/coordinator"
-	"github.com/suborbital/velocity/server/options"
 )
 
-// Server is a Velocity server.
+// Server is a DeltaV server.
 type Server struct {
 	coordinator *coordinator.Coordinator
 	server      *vk.Server
@@ -31,7 +31,7 @@ func New(opts ...options.Modifier) (*Server, error) {
 		vOpts.Logger.Debug("using partner", vOpts.PartnerAddress)
 	}
 
-	// @todo https://github.com/suborbital/velocity/issues/144, the first return value is a function that would close the
+	// @todo https://github.com/suborbital/deltav/issues/144, the first return value is a function that would close the
 	// tracer in case of a shutdown. Usually that is put in a defer statement. Server doesn't have a graceful shutdown.
 	_, err := setupTracing(vOpts.TracerConfig, vOpts.Logger)
 	if err != nil {
@@ -58,7 +58,7 @@ func New(opts ...options.Modifier) (*Server, error) {
 	// each request to trigger Router re-generation
 	// when needed (during headless mode).
 	s.server = vk.New(
-		vk.UseEnvPrefix("VELOCITY"),
+		vk.UseEnvPrefix("DELTAV"),
 		vk.UseAppName(vOpts.AppName),
 		vk.UseLogger(vOpts.Logger),
 		vk.UseInspector(s.inspectRequest),
@@ -66,11 +66,11 @@ func New(opts ...options.Modifier) (*Server, error) {
 		vk.UseHTTPPort(vOpts.HTTPPort),
 		vk.UseTLSPort(vOpts.TLSPort),
 		vk.UseQuietRoutes(
-			coordinator.VelocityHealthURI,
-			coordinator.VelocityMetricsURI,
+			coordinator.DeltavHealthURI,
+			coordinator.DeltavMetricsURI,
 		),
 		vk.UseRouterWrapper(func(inner http.Handler) http.Handler {
-			return otelhttp.NewHandler(inner, "velocity")
+			return otelhttp.NewHandler(inner, "deltav")
 		}),
 		vk.UseFallbackAddress(vOpts.PartnerAddress),
 	)

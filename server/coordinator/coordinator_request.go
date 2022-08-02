@@ -5,11 +5,11 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/suborbital/deltav/directive"
+	"github.com/suborbital/deltav/scheduler"
+	"github.com/suborbital/deltav/server/coordinator/sequence"
+	"github.com/suborbital/deltav/server/request"
 	"github.com/suborbital/vektor/vk"
-	"github.com/suborbital/velocity/directive"
-	"github.com/suborbital/velocity/scheduler"
-	"github.com/suborbital/velocity/server/coordinator/sequence"
-	"github.com/suborbital/velocity/server/request"
 )
 
 func (c *Coordinator) vkHandlerForDirectiveHandler(handler directive.Handler) vk.HandlerFunc {

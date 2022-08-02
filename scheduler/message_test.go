@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/pkg/errors"
-	"github.com/suborbital/velocity/bus/bus"
-	"github.com/suborbital/velocity/bus/testutil"
+	"github.com/suborbital/deltav/bus/bus"
+	"github.com/suborbital/deltav/bus/testutil"
 )
 
 const msgTypeTester = "reactr.test"

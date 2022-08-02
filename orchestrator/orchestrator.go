@@ -16,11 +16,11 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sethvargo/go-envconfig"
 
+	"github.com/suborbital/deltav/server/appsource"
 	"github.com/suborbital/vektor/vlog"
-	"github.com/suborbital/velocity/server/appsource"
 
-	"github.com/suborbital/velocity/orchestrator/config"
-	"github.com/suborbital/velocity/orchestrator/exec"
+	"github.com/suborbital/deltav/orchestrator/config"
+	"github.com/suborbital/deltav/orchestrator/exec"
 )
 
 const (
@@ -46,7 +46,7 @@ func New(bundlePath string) (*Orchestrator, error) {
 	}
 
 	l := vlog.Default(
-		vlog.EnvPrefix("VELOCITY"),
+		vlog.EnvPrefix("DELTAV"),
 		vlog.Level(vlog.LogLevelWarn),
 	)
 
@@ -110,7 +110,7 @@ func (o *Orchestrator) RunPartner(command string) error {
 		Port: "3000",
 	}
 
-	addr, exists := os.LookupEnv("VELOCITY_PARTNER")
+	addr, exists := os.LookupEnv("DELTAV_PARTNER")
 	if exists {
 		partnerUrl, err := url.Parse(addr)
 		if err != nil {
