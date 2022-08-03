@@ -170,7 +170,7 @@ func Read(path string) (*Bundle, error) {
 				return nil, errors.Wrap(err, "failed to readDirective from bundle")
 			}
 
-			bundle.Directive = Reading_directive
+			bundle.Directive = d
 			continue
 		}
 	}
