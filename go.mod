@@ -12,7 +12,7 @@ require (
 	github.com/suborbital/grav v0.5.1
 	github.com/suborbital/reactr v0.15.1
 	github.com/suborbital/vektor v0.6.0
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.33.0
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.34.0
 	go.opentelemetry.io/otel v1.9.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.9.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.9.0
