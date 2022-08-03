@@ -1,4 +1,4 @@
-FROM golang:1.17 as builder
+FROM golang:1.18 as builder
 
 RUN mkdir -p /go/src/github.com/suborbital/atmo
 WORKDIR /go/src/github.com/suborbital/atmo/
