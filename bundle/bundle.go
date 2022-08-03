@@ -165,7 +165,7 @@ func Read(path string) (*Bundle, error) {
 	// first, find the Directive.
 	for _, f := range r.File {
 		if f.Name == "Directive.yaml" {
-			Reading_directive, err := readDirective(f)
+			d, err := readDirective(f)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to readDirective from bundle")
 			}
