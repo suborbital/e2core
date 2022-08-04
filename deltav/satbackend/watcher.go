@@ -1,4 +1,4 @@
-package orchestrator
+package satbackend
 
 import (
 	"encoding/json"
@@ -13,7 +13,7 @@ import (
 	"github.com/suborbital/deltav/scheduler"
 	"github.com/suborbital/vektor/vlog"
 
-	"github.com/suborbital/deltav/orchestrator/process"
+	"github.com/suborbital/deltav/deltav/satbackend/process"
 )
 
 var client = http.Client{Timeout: time.Second}

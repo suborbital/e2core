@@ -12,7 +12,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/suite"
-	"github.com/suborbital/deltav/orchestrator"
+	"github.com/suborbital/deltav/deltav/satbackend"
 	"github.com/suborbital/deltav/server/options"
 	"github.com/suborbital/deltav/signaler"
 	"github.com/suborbital/vektor/vk"
@@ -22,7 +22,7 @@ import (
 type serverTestSuite struct {
 	suite.Suite
 	ts       *vk.Server
-	o        *orchestrator.Orchestrator
+	o        *satbackend.Orchestrator
 	signaler *signaler.Signaler
 	lock     sync.Mutex
 }
@@ -202,7 +202,7 @@ func (s *serverTestSuite) serverForBundle(filepath string) (*vk.Server, error) {
 			return nil, errors.Wrap(err, "failed to s.testServer")
 		}
 
-		orchestrator, err := orchestrator.New(filepath)
+		orchestrator, err := satbackend.New(filepath)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to orchestrator.New")
 		}

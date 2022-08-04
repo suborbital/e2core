@@ -1,4 +1,4 @@
-package orchestrator
+package satbackend
 
 import (
 	"crypto/rand"
@@ -10,7 +10,7 @@ import (
 
 	"github.com/suborbital/deltav/directive"
 
-	"github.com/suborbital/deltav/orchestrator/config"
+	"github.com/suborbital/deltav/deltav/satbackend/config"
 )
 
 // satCommand returns the command and the port string
