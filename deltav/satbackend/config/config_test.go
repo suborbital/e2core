@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/suborbital/deltav/orchestrator/config"
+	"github.com/suborbital/deltav/deltav/satbackend/config"
 )
 
 func (cts *ConfigTestSuite) TestParse() {

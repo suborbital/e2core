@@ -2,16 +2,15 @@ package command
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"github.com/suborbital/deltav/orchestrator"
+	"github.com/suborbital/deltav/deltav"
+	"github.com/suborbital/deltav/deltav/satbackend"
 	"github.com/suborbital/deltav/server"
 	"github.com/suborbital/deltav/server/options"
 	"github.com/suborbital/deltav/server/release"
-	"github.com/suborbital/deltav/signaler"
 	"github.com/suborbital/vektor/vlog"
 )
 
@@ -52,24 +51,16 @@ func Start() *cobra.Command {
 				return errors.Wrap(err, "server.New")
 			}
 
-			orchestrator, err := orchestrator.New(path)
+			backend, err := satbackend.New(path)
 			if err != nil {
-				return errors.Wrap(err, "failed to orchestrator.New")
+				return errors.Wrap(err, "failed to satbackend.New")
 			}
 
-			if partnerCmd, _ := cmd.Flags().GetString(runPartnerFlag); partnerCmd != "" {
-				if err := orchestrator.RunPartner(partnerCmd); err != nil {
-					return errors.Wrap(err, "failed to RunPartner")
-				}
-			}
+			system := deltav.NewSystem(server, backend)
 
-			signaler := signaler.Setup()
+			system.StartAll()
 
-			signaler.Start(orchestrator.Start)
-
-			signaler.Start(server.Start)
-
-			return signaler.Wait(time.Second * 5)
+			return system.ShutdownWait()
 		},
 	}
 
@@ -77,7 +68,6 @@ func Start() *cobra.Command {
 
 	cmd.Flags().Bool(waitFlag, false, "if passed, DeltaV will wait until a bundle becomes available on disk, checking once per second")
 	cmd.Flags().String(appNameFlag, "DeltaV", "if passed, it'll be used as DELTAV_APP_NAME, otherwise 'DeltaV' will be used")
-	cmd.Flags().String(runPartnerFlag, "", "if passed, the provided command will be run as the partner application")
 	cmd.Flags().String(domainFlag, "", "if passed, it'll be used as DELTAV_DOMAIN and HTTPS will be used, otherwise HTTP will be used")
 	cmd.Flags().Int(httpPortFlag, 8080, "if passed, it'll be used as DELTAV_HTTP_PORT, otherwise '8080' will be used")
 	cmd.Flags().Int(tlsPortFlag, 443, "if passed, it'll be used as DELTAV_TLS_PORT, otherwise '443' will be used")

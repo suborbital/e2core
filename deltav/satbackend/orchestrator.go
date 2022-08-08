@@ -1,16 +1,12 @@
-package orchestrator
+package satbackend
 
 import (
-	"bytes"
 	"context"
-	"fmt"
 	"log"
-	"net/url"
 	"os"
 	"runtime"
 	"sync"
 	"syscall"
-	"text/template"
 	"time"
 
 	"github.com/pkg/errors"
@@ -19,8 +15,8 @@ import (
 	"github.com/suborbital/deltav/server/appsource"
 	"github.com/suborbital/vektor/vlog"
 
-	"github.com/suborbital/deltav/orchestrator/config"
-	"github.com/suborbital/deltav/orchestrator/exec"
+	"github.com/suborbital/deltav/deltav/satbackend/config"
+	"github.com/suborbital/deltav/deltav/satbackend/exec"
 )
 
 const (
@@ -101,38 +97,6 @@ func (o *Orchestrator) Shutdown() {
 	o.signalChan <- syscall.SIGTERM
 
 	o.wg.Wait()
-}
-
-func (o *Orchestrator) RunPartner(command string) error {
-	o.logger.Debug("starting partner:", command)
-
-	data := commandTemplateData{
-		Port: "3000",
-	}
-
-	addr, exists := os.LookupEnv("DELTAV_PARTNER")
-	if exists {
-		partnerUrl, err := url.Parse(addr)
-		if err != nil {
-			return errors.Wrap(err, "failed to Parse")
-		}
-
-		data.Port = partnerUrl.Port()
-	}
-
-	tpl := template.New("cmd")
-	tpl.Parse(command)
-
-	out := bytes.NewBuffer(nil)
-	if err := tpl.Execute(out, data); err != nil {
-		return errors.Wrap(err, "failed to Execute command template")
-	}
-
-	if _, _, err := exec.Run(out.String(), fmt.Sprintf("PORT=%s", data.Port)); err != nil {
-		return errors.Wrap(err, "failed to Run")
-	}
-
-	return nil
 }
 
 func (o *Orchestrator) reconcileConstellation(appSource appsource.AppSource, errChan chan error) {

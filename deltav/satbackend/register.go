@@ -1,4 +1,4 @@
-package orchestrator
+package satbackend
 
 import (
 	"bytes"
@@ -10,7 +10,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/deltav/orchestrator/config"
+	"github.com/suborbital/deltav/deltav/satbackend/config"
 )
 
 // AddUpstreamRequest is a request to add an upstream
