@@ -5,11 +5,11 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/suborbital/appspec/request"
 	"github.com/suborbital/appspec/tenant"
 	"github.com/suborbital/appspec/tenant/executable"
 	"github.com/suborbital/deltav/scheduler"
 	"github.com/suborbital/deltav/server/coordinator/sequence"
-	"github.com/suborbital/deltav/server/request"
 	"github.com/suborbital/vektor/vk"
 )
 
@@ -21,13 +21,10 @@ func (c *Coordinator) vkHandlerForModule(mod tenant.Module) vk.HandlerFunc {
 			return nil, vk.E(http.StatusInternalServerError, "failed to handle request")
 		}
 
-		// Pull the X-Atmo-State and X-Atmo-Params headers into the request.
-		if *c.opts.Headless {
-			req.UseHeadlessHeaders(r, ctx)
-		}
+		req.UseSuborbitalHeaders(r, ctx)
 
 		steps := []executable.Executable{
-			executable.Executable{
+			{
 				ExecutableMod: executable.ExecutableMod{
 					FQMN: mod.FQMN,
 				},

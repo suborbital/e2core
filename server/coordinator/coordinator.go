@@ -3,6 +3,7 @@ package coordinator
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -128,14 +129,20 @@ func (c *Coordinator) SetupHandlers() (*vk.Router, error) {
 		for i := range tnt.Config.Modules {
 			mod := tnt.Config.Modules[i]
 
+			c.log.Debug("mounting module with FQMN", mod.FQMN)
+
 			FQMN, err := fqmn.Parse(mod.FQMN)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to fqmn.Parse")
 			}
 
+			c.log.Debug("ident", FQMN.Tenant, "ref", FQMN.Ref, "namespace", FQMN.Namespace, "name", FQMN.Name)
+
 			URIs := []string{FQMN.URLPath()}
 			URIs = append(URIs, fmt.Sprintf("/name/%s/%s", FQMN.Namespace, FQMN.Name))
 			URIs = append(URIs, fmt.Sprintf("/ref/%s", FQMN.Ref))
+
+			c.log.Debug("mounting URIs", strings.Join(URIs, ","))
 
 			for _, uri := range URIs {
 				if _, exists := added[uri]; exists {

@@ -12,7 +12,7 @@ require (
 	github.com/spf13/cobra v1.4.0
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.7.1
-	github.com/suborbital/appspec v0.0.0-20220812192234-63df17b54637
+	github.com/suborbital/appspec v0.0.0-20220815195423-8ee35f6159fd
 	github.com/suborbital/vektor v0.5.3-0.20220606154347-af1e678993a8
 	github.com/twmb/franz-go v1.6.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.32.0

@@ -12,7 +12,7 @@ package coordinator
 // 	"github.com/suborbital/appspec/directive"
 // 	"github.com/suborbital/deltav/scheduler"
 // 	"github.com/suborbital/deltav/server/coordinator/sequence"
-// 	"github.com/suborbital/deltav/server/request"
+// 	"github.com/suborbital/appspec/request"
 // 	"github.com/suborbital/vektor/vk"
 // )
 

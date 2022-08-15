@@ -6,11 +6,11 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/suborbital/appspec/request"
 	"github.com/suborbital/appspec/tenant/executable"
 	"github.com/suborbital/deltav/bus/bus"
 	"github.com/suborbital/deltav/scheduler"
 	"github.com/suborbital/deltav/server/coordinator/executor"
-	"github.com/suborbital/deltav/server/request"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
 )

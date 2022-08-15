@@ -9,12 +9,12 @@ import (
 
 	"github.com/suborbital/appspec/appsource"
 	"github.com/suborbital/appspec/capabilities"
+	"github.com/suborbital/appspec/request"
 	"github.com/suborbital/appspec/tenant/executable"
 	"github.com/suborbital/deltav/bus/bus"
 	"github.com/suborbital/deltav/bus/discovery/local"
 	"github.com/suborbital/deltav/bus/transport/websocket"
 	"github.com/suborbital/deltav/scheduler"
-	"github.com/suborbital/deltav/server/request"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
 )
