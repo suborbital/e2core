@@ -5,19 +5,21 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/deltav/server/appsource"
+	"github.com/suborbital/appspec/appsource"
+	"github.com/suborbital/appspec/appsource/bundle"
+	"github.com/suborbital/appspec/appsource/server"
 	"github.com/suborbital/deltav/server/options"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
 )
 
 func startAppSourceServer(bundlePath string) (appsource.AppSource, chan error) {
-	app := appsource.NewBundleSource(bundlePath)
+	app := bundle.NewBundleSource(bundlePath)
 	opts := options.NewWithModifiers()
 
 	errChan := make(chan error)
 
-	router, err := appsource.NewAppSourceVKRouter(app, *opts).GenerateRouter()
+	router, err := server.NewAppSourceVKRouter(app, opts).GenerateRouter()
 	if err != nil {
 		errChan <- errors.Wrap(err, "failed to NewAppSourceVKRouter.GenerateRouter")
 	}
@@ -48,10 +50,10 @@ func startAppSourceWithRetry(log *vlog.Logger, source appsource.AppSource) error
 
 	var err error
 
-	atmoOpts := options.NewWithModifiers()
+	dvOpts := options.NewWithModifiers()
 
 	for i := 0; i < 10; i++ {
-		if err = source.Start(*atmoOpts); err != nil {
+		if err = source.Start(dvOpts); err != nil {
 			log.Error(errors.Wrap(err, "failed to source.Start, will retry"))
 
 			time.Sleep(time.Millisecond * time.Duration(backoffMS))

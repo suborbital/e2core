@@ -13,7 +13,8 @@ const deltavEnvPrefix = "DELTAV"
 
 // Options defines options for Atmo.
 type Options struct {
-	Logger           *vlog.Logger
+	logger *vlog.Logger
+
 	BundlePath       string       `env:"DELTAV_BUNDLE_PATH"`
 	RunSchedules     *bool        `env:"DELTAV_RUN_SCHEDULES,default=true"`
 	Headless         *bool        `env:"DELTAV_HEADLESS,default=false"`
@@ -72,7 +73,7 @@ func NewWithModifiers(mods ...Modifier) *Options {
 // UseLogger sets the logger to be used.
 func UseLogger(logger *vlog.Logger) Modifier {
 	return func(opts *Options) {
-		opts.Logger = logger
+		opts.logger = logger
 	}
 }
 
@@ -138,10 +139,15 @@ func PartnerAddress(address string) Modifier {
 	}
 }
 
+// Logger returns the options' logger
+func (o *Options) Logger() *vlog.Logger {
+	return o.logger
+}
+
 // finalize "locks in" the options by overriding any existing options with the version from the environment, and setting the default logger if needed.
 func (o *Options) finalize(prefix string) {
-	if o.Logger == nil {
-		o.Logger = vlog.Default(
+	if o.logger == nil {
+		o.logger = vlog.Default(
 			vlog.EnvPrefix(prefix),
 			vlog.Level(vlog.LogLevelWarn),
 		)
@@ -149,7 +155,7 @@ func (o *Options) finalize(prefix string) {
 
 	envOpts := Options{}
 	if err := envconfig.Process(context.Background(), &envOpts); err != nil {
-		o.Logger.Error(errors.Wrap(err, "failed to Process environment config"))
+		o.logger.Error(errors.Wrap(err, "failed to Process environment config"))
 		return
 	}
 

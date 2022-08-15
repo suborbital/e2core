@@ -13,7 +13,7 @@ const (
 )
 
 type Config struct {
-	BundlePath   string `env:"bundle_path"`
+	BundlePath   string `env:"DELTAV_BUNDLE_PATH,default=./modules.wasm.zip"`
 	ExecMode     string `env:"DELTAV_EXEC_MODE,default=metal"`
 	SatTag       string `env:"DELTAV_SAT_VERSION,default=latest"`
 	ControlPlane string `env:"DELTAV_CONTROL_PLANE,overwrite"`
@@ -25,13 +25,10 @@ type Config struct {
 // Parse will return a resolved config struct configured by a combination of environment variables and command line
 // arguments.
 func Parse(bundlePath string, configLookuper envconfig.Lookuper) (Config, error) {
-	c := Config{
-		ControlPlane: DefaultControlPlane,
-	}
-
 	ctx, ctxCancel := context.WithTimeout(context.Background(), time.Second)
 	defer ctxCancel()
 
+	c := Config{}
 	if err := envconfig.ProcessWith(ctx, &c, configLookuper); err != nil {
 		return Config{}, errors.Wrap(err, "resolving config: envconfig.Process")
 	}

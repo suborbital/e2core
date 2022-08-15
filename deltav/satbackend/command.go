@@ -8,13 +8,12 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/deltav/directive"
-
+	"github.com/suborbital/appspec/tenant"
 	"github.com/suborbital/deltav/deltav/satbackend/config"
 )
 
 // satCommand returns the command and the port string
-func satCommand(config config.Config, runnable directive.Runnable) (string, string) {
+func satCommand(config config.Config, module tenant.Module) (string, string) {
 	port, err := randPort()
 	if err != nil {
 		log.Fatal(errors.Wrap(err, "failed to randPort"))
@@ -28,12 +27,12 @@ func satCommand(config config.Config, runnable directive.Runnable) (string, stri
 			"docker run --rm -p %s:%s -e SAT_HTTP_PORT=%s -e SAT_CONTROL_PLANE=docker.for.mac.localhost:9090 --network bridge suborbital/sat:%s sat %s",
 			port, port, port,
 			config.SatTag,
-			runnable.FQFN,
+			module.FQMN,
 		)
 	case "metal":
 		cmd = fmt.Sprintf(
 			"sat %s",
-			runnable.FQFN,
+			module.FQMN,
 		)
 	default:
 		cmd = "echo 'invalid exec mode'"

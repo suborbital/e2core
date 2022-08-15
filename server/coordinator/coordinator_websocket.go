@@ -7,14 +7,14 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/deltav/directive"
+	"github.com/suborbital/appspec/tenant/executable"
 	"github.com/suborbital/deltav/scheduler"
 	"github.com/suborbital/deltav/server/coordinator/sequence"
 	"github.com/suborbital/deltav/server/request"
 	"github.com/suborbital/vektor/vk"
 )
 
-func (c *Coordinator) websocketHandlerForDirectiveHandler(handler directive.Handler) http.HandlerFunc {
+func (c *Coordinator) websocketHandlerForSteps(steps []executable.Executable) http.HandlerFunc {
 	upgrader := websocket.Upgrader{} // use default options.
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -37,9 +37,9 @@ func (c *Coordinator) websocketHandlerForDirectiveHandler(handler directive.Hand
 			}
 
 			ctx := vk.NewCtx(c.log, nil, nil)
-			ctx.UseScope(messageScope{ctx.RequestID()})
+			ctx.UseScope(requestScope{ctx.RequestID()})
 
-			ctx.Log.Debug("handling message", ctx.RequestID(), "from handler", handler.Input.Resource)
+			ctx.Log.Debug("handling message", ctx.RequestID())
 
 			req := &request.CoordinatedRequest{
 				Method:      http.MethodGet,
@@ -53,7 +53,7 @@ func (c *Coordinator) websocketHandlerForDirectiveHandler(handler directive.Hand
 			}
 
 			// a sequence executes the handler's steps and manages its state.
-			seq, err := sequence.New(handler.Steps, req, ctx)
+			seq, err := sequence.New(steps, req, ctx)
 			if err != nil {
 				ctx.Log.Error(errors.Wrap(err, "failed to sequence.New"))
 				breakErr = err
@@ -76,7 +76,7 @@ func (c *Coordinator) websocketHandlerForDirectiveHandler(handler directive.Hand
 				continue
 			}
 
-			result := resultFromState(handler, req.State)
+			result := resultFromState(steps, req.State)
 
 			if err := conn.WriteMessage(websocket.TextMessage, result); err != nil {
 				breakErr = err

@@ -6,14 +6,16 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/suborbital/appspec/appsource"
+	"github.com/suborbital/appspec/capabilities"
+	"github.com/suborbital/appspec/fqmn"
+	"github.com/suborbital/appspec/tenant"
+	"github.com/suborbital/appspec/tenant/executable"
 	"github.com/suborbital/deltav/bus/bus"
 	"github.com/suborbital/deltav/bus/transport/kafka"
 	"github.com/suborbital/deltav/bus/transport/nats"
 	"github.com/suborbital/deltav/bus/transport/websocket"
-	"github.com/suborbital/deltav/capabilities"
-	"github.com/suborbital/deltav/directive"
 	"github.com/suborbital/deltav/scheduler"
-	"github.com/suborbital/deltav/server/appsource"
 	"github.com/suborbital/deltav/server/coordinator/executor"
 	"github.com/suborbital/deltav/server/options"
 	"github.com/suborbital/vektor/vk"
@@ -29,7 +31,7 @@ const (
 	deltavMessageURI           = "/meta/message"
 	DeltavMetricsURI           = "/meta/metrics"
 	DeltavHealthURI            = "/health"
-	connectionKeyFormat        = "%s.%s.%s"
+	connectionKeyFormat        = "%s.%d.%s.%s.%s" // ident.version.namespace.connType.connName
 )
 
 type rtFunc func(scheduler.Job, *scheduler.Ctx) (interface{}, error)
@@ -60,12 +62,12 @@ func New(appSource appsource.AppSource, options *options.Options) *Coordinator {
 
 	transport = websocket.New()
 
-	exec := executor.New(options.Logger, transport)
+	exec := executor.New(options.Logger(), transport)
 
 	c := &Coordinator{
 		App:         appSource,
 		opts:        options,
-		log:         options.Logger,
+		log:         options.Logger(),
 		exec:        exec,
 		connections: map[string]*bus.Bus{},
 		handlerPods: map[string]*bus.Pod{},
@@ -77,7 +79,7 @@ func New(appSource appsource.AppSource, options *options.Options) *Coordinator {
 
 // Start allows the Coordinator to bootstrap.
 func (c *Coordinator) Start() error {
-	if err := c.App.Start(*c.opts); err != nil {
+	if err := c.App.Start(c.opts); err != nil {
 		return errors.Wrap(err, "failed to App.Start")
 	}
 
@@ -88,7 +90,7 @@ func (c *Coordinator) Start() error {
 }
 
 // SetupHandlers configures all of the app's handlers and generates a Vektor Router for the app.
-func (c *Coordinator) SetupHandlers() *vk.Router {
+func (c *Coordinator) SetupHandlers() (*vk.Router, error) {
 	router := vk.NewRouter(c.log, c.opts.PartnerAddress)
 
 	// start by adding the otel handler to the stack.
@@ -99,7 +101,7 @@ func (c *Coordinator) SetupHandlers() *vk.Router {
 
 	// if in headless mode, enable runnable authentication.
 	if *c.opts.Headless {
-		router.Before(c.headlessAuthMiddleware())
+		router.Before(c.authMiddleware())
 	}
 
 	// there are certain edge cases where handlers can be duplicated, let's prevent
@@ -107,26 +109,55 @@ func (c *Coordinator) SetupHandlers() *vk.Router {
 	// ref: https://github.com/suborbital/scn/issues/282
 	added := map[string]bool{}
 
+	ovv, err := c.App.Overview()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to app.Overview")
+	}
+
 	// mount each handler into the VK group.
-	for _, application := range c.App.Applications() {
-		for _, h := range c.App.Handlers(application.Identifier, application.AppVersion) {
-			key := fmt.Sprintf("%s:%s:%s:%s:%s:%s", application.Identifier, application.AppVersion, h.Input.Type, h.Input.Source, h.Input.Method, h.Input.Resource)
-			if _, exists := added[key]; exists {
-				continue
+	for ident, version := range ovv.TenantRefs.Identifiers {
+		tnt, err := c.App.TenantOverview(ident)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to app.TenantOverview for %s", ident)
+		}
+
+		if tnt.Version != version {
+			c.log.Warn("encountered version mismatch for tenant", ident, "expected", version, "got", tnt.Version)
+		}
+
+		for i := range tnt.Config.Modules {
+			mod := tnt.Config.Modules[i]
+
+			FQMN, err := fqmn.Parse(mod.FQMN)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to fqmn.Parse")
 			}
 
-			switch h.Input.Type {
-			case directive.InputTypeRequest:
-				router.Handle(h.Input.Method, h.Input.Resource, c.vkHandlerForDirectiveHandler(h))
-			case directive.InputTypeStream:
-				if h.Input.Source == "" || h.Input.Source == directive.InputSourceServer {
-					router.HandleHTTP(http.MethodGet, h.Input.Resource, c.websocketHandlerForDirectiveHandler(h))
-				} else {
-					c.streamConnectionForDirectiveHandler(h, application)
+			URIs := []string{FQMN.URLPath()}
+			URIs = append(URIs, fmt.Sprintf("/name/%s/%s", FQMN.Namespace, FQMN.Name))
+			URIs = append(URIs, fmt.Sprintf("/ref/%s", FQMN.Ref))
+
+			for _, uri := range URIs {
+				if _, exists := added[uri]; exists {
+					continue
 				}
+
+				router.Handle(http.MethodPost, uri, c.vkHandlerForModule(mod))
+
+				added[uri] = true
 			}
 
-			added[key] = true
+			// TODO: implement triggers
+			// switch h.Input.Type {
+			// case tenant.InputTypeRequest:
+			// 	router.Handle(h.Input.Method, h.Input.Resource, c.vkHandlerForDirectiveHandler(h))
+			// case tenant.InputTypeStream:
+			// 	if h.Input.Source == "" || h.Input.Source == tenant.InputSourceServer {
+			// 		router.HandleHTTP(http.MethodGet, h.Input.Resource, c.websocketHandlerForDirectiveHandler(h))
+			// 	} else {
+			// 		c.streamConnectionForDirectiveHandler(h, application)
+			// 	}
+			// }
 		}
 	}
 
@@ -138,106 +169,137 @@ func (c *Coordinator) SetupHandlers() *vk.Router {
 		router.HandleHTTP(http.MethodGet, deltavMessageURI, c.transport.HTTPHandlerFunc())
 	}
 
-	return router
+	return router, nil
 }
 
-// CreateConnections establishes all of the connections described in the directive.
-func (c *Coordinator) createConnections() {
-	if *c.opts.Headless {
-		c.log.Debug("running in headless mode, connections will not be established")
-		return
+// CreateConnections establishes all of the connections described in the tenant.
+func (c *Coordinator) createConnections() error {
+	ovv, err := c.App.Overview()
+	if err != nil {
+		return errors.Wrap(err, "failed to app.Overview")
 	}
 
-	for _, application := range c.App.Applications() {
-		connections := c.App.Connections(application.Identifier, application.AppVersion)
-
-		natsKey := fmt.Sprintf(connectionKeyFormat, application.Identifier, application.AppVersion, directive.InputSourceNATS)
-		kafkaKey := fmt.Sprintf(connectionKeyFormat, application.Identifier, application.AppVersion, directive.InputSourceKafka)
-
-		if connections.NATS != nil {
-			address := capabilities.AugmentedValFromEnv(connections.NATS.ServerAddress)
-
-			gnats, err := nats.New(address)
-			if err != nil {
-				c.log.Error(errors.Wrap(err, "failed to nats.New for NATS connection"))
-			} else {
-				b := bus.New(
-					bus.UseLogger(c.log),
-					bus.UseBridgeTransport(gnats),
-				)
-
-				c.connections[natsKey] = b
-			}
+	// mount each handler into the VK group.
+	for ident, version := range ovv.TenantRefs.Identifiers {
+		tnt, err := c.App.TenantOverview(ident)
+		if err != nil {
+			return errors.Wrapf(err, "failed to app.TenantOverview for %s", ident)
 		}
 
-		if connections.Kafka != nil {
-			address := capabilities.AugmentedValFromEnv(connections.Kafka.BrokerAddress)
+		if tnt.Version != version {
+			c.log.Warn("encountered version mismatch for tenant", ident, "expected", version, "got", tnt.Version)
+		}
 
-			gkafka, err := kafka.New(address)
-			if err != nil {
-				c.log.Error(errors.Wrap(err, "failed to kafka.New for Kafka connection"))
-			} else {
-				g := bus.New(
-					bus.UseLogger(c.log),
-					bus.UseBridgeTransport(gkafka),
-				)
+		namespaces := []tenant.NamespaceConfig{tnt.Config.DefaultNamespace}
+		namespaces = append(namespaces, tnt.Config.Namespaces...)
 
-				c.connections[kafkaKey] = g
+		for i := range namespaces {
+			ns := namespaces[i]
+
+			for j := range ns.Connections {
+				conn := ns.Connections[j]
+
+				if conn.Type == tenant.ConnectionTypeNATS {
+					natsKey := fmt.Sprintf(connectionKeyFormat, tnt.Identifier, tnt.Version, ns.Name, tenant.InputSourceNATS, conn.Name)
+					config := conn.Config.(*tenant.NATSConnection)
+
+					address := capabilities.AugmentedValFromEnv(config.ServerAddress)
+
+					gnats, err := nats.New(address)
+					if err != nil {
+						c.log.Error(errors.Wrap(err, "failed to nats.New for NATS connection"))
+					} else {
+						b := bus.New(
+							bus.UseLogger(c.log),
+							bus.UseBridgeTransport(gnats),
+						)
+
+						c.connections[natsKey] = b
+					}
+				} else if conn.Type == tenant.ConnectionTypeKafka {
+					kafkaKey := fmt.Sprintf(connectionKeyFormat, tnt.Identifier, tnt.Version, ns.Name, tenant.InputSourceKafka, conn.Name)
+					config := conn.Config.(*tenant.KafkaConnection)
+
+					address := capabilities.AugmentedValFromEnv(config.BrokerAddress)
+
+					gkafka, err := kafka.New(address)
+					if err != nil {
+						c.log.Error(errors.Wrap(err, "failed to kafka.New for Kafka connection"))
+					} else {
+						g := bus.New(
+							bus.UseLogger(c.log),
+							bus.UseBridgeTransport(gkafka),
+						)
+
+						c.connections[kafkaKey] = g
+					}
+				}
 			}
 		}
 	}
+
+	return nil
 }
 
-// V-TODO: Schedules are not currently implemented
-func (c *Coordinator) SetSchedules() {
-	if *c.opts.Headless {
-		c.log.Debug("running in headless mode, schedules will not execute")
-		return
+// TODO: Workflows are not fully implemented, need to add execution by URI
+func (c *Coordinator) SetupWorkflows() error {
+	ovv, err := c.App.Overview()
+	if err != nil {
+		return errors.Wrap(err, "failed to app.Overview")
 	}
 
-	for _, application := range c.App.Applications() {
+	// mount each handler into the VK group.
+	for ident, version := range ovv.TenantRefs.Identifiers {
+		tnt, err := c.App.TenantOverview(ident)
+		if err != nil {
+			return errors.Wrapf(err, "failed to app.TenantOverview for %s", ident)
+		}
 
-		// mount each schedule into Reactr.
-		for _, s := range c.App.Schedules(application.Identifier, application.AppVersion) {
+		if tnt.Version != version {
+			c.log.Warn("encountered version mismatch for tenant", ident, "expected", version, "got", tnt.Version)
+		}
 
-			// create basically an fqfn for this schedule (com.suborbital.appname#schedule.dojob@v0.1.0).
-			jobName := fmt.Sprintf("%s#schedule.%s@%s", application.Identifier, s.Name, application.AppVersion)
+		namespaces := []tenant.NamespaceConfig{tnt.Config.DefaultNamespace}
+		namespaces = append(namespaces, tnt.Config.Namespaces...)
 
-			seconds := s.NumberOfSeconds()
+		for i := range namespaces {
+			ns := namespaces[i]
 
-			// only actually schedule the job if the env var isn't set (or is set but not 'false')
-			// the job stays mounted on reactr because we could get a request to run it from grav.
-			if *c.opts.RunSchedules {
-				c.log.Debug("adding schedule", jobName)
+			for j := range ns.Workflows {
+				wfl := ns.Workflows[j]
 
-				c.exec.SetSchedule(scheduler.Every(seconds, func() scheduler.Job {
-					return scheduler.NewJob(jobName, nil)
-				}))
+				// create basically an fqfn for this schedule (com.suborbital.appname#schedule.dojob@v0.1.0).
+				jobName := fmt.Sprintf("%s#workflow.%s@%d", tnt.Identifier, wfl.Name, tnt.Version)
+
+				seconds := wfl.Schedule.NumberOfSeconds()
+
+				// only actually schedule the job if the env var isn't set (or is set but not 'false')
+				// the job stays mounted on reactr because we could get a request to run it from grav.
+				if *c.opts.RunSchedules {
+					c.log.Debug("adding schedule", jobName)
+
+					c.exec.SetSchedule(scheduler.Every(seconds, func() scheduler.Job {
+						return scheduler.NewJob(jobName, nil)
+					}))
+				}
 			}
 		}
+
 	}
+
+	return nil
 }
 
 // resultFromState returns the state value for the last single function that ran in a handler.
-func resultFromState(handler directive.Handler, state map[string][]byte) []byte {
-	// if the handler defines a response explicitly, use it (return nil if there is nothing in state).
-	if handler.Response != "" {
-		resp, exists := state[handler.Response]
-		if exists {
-			return resp
-		}
-
-		return nil
-	}
-
+func resultFromState(steps []executable.Executable, state map[string][]byte) []byte {
 	// if not, use the last step. If last step is a group, return nil.
-	step := handler.Steps[len(handler.Steps)-1]
+	step := steps[len(steps)-1]
 	if step.IsGroup() {
 		return nil
 	}
 
 	// determine what the state traceKey is.
-	key := step.Fn
+	key := step.FQMN
 	if step.As != "" {
 		key = step.As
 	}

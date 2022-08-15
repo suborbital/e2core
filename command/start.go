@@ -25,7 +25,7 @@ func Start() *cobra.Command {
 		Long:    "starts the deltav server using the provided options",
 		Version: release.DeltavServerDotVersion,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			path := "./runnables.wasm.zip"
+			path := "./modules.wasm.zip"
 			if len(args) > 0 {
 				path = args[0]
 			}

@@ -1,100 +1,102 @@
 package coordinator
 
-import (
-	"fmt"
+// TODO: implement streaming triggers properly
 
-	"github.com/pkg/errors"
+// import (
+// 	"fmt"
 
-	"github.com/suborbital/deltav/bus/bus"
-	"github.com/suborbital/deltav/directive"
-	"github.com/suborbital/deltav/scheduler"
-	"github.com/suborbital/deltav/server/appsource"
-	"github.com/suborbital/deltav/server/coordinator/sequence"
-	"github.com/suborbital/deltav/server/request"
-	"github.com/suborbital/vektor/vk"
-)
+// 	"github.com/pkg/errors"
 
-type messageScope struct {
-	MessageUUID string `json:"messageUUID"`
-}
+// 	"github.com/suborbital/appspec/appsource"
+// 	"github.com/suborbital/deltav/bus/bus"
+// 	"github.com/suborbital/appspec/directive"
+// 	"github.com/suborbital/deltav/scheduler"
+// 	"github.com/suborbital/deltav/server/coordinator/sequence"
+// 	"github.com/suborbital/deltav/server/request"
+// 	"github.com/suborbital/vektor/vk"
+// )
 
-func (c *Coordinator) streamConnectionForDirectiveHandler(handler directive.Handler, appInfo appsource.Meta) {
-	handlerIdent := fmt.Sprintf("%s:%s", handler.Input.Source, handler.Input.Resource)
+// type messageScope struct {
+// 	MessageUUID string `json:"messageUUID"`
+// }
 
-	c.log.Debug("setting up stream connection for", handlerIdent)
+// func (c *Coordinator) streamConnectionForDirectiveHandler(handler directive.Handler, appInfo appsource.Meta) {
+// 	handlerIdent := fmt.Sprintf("%s:%s", handler.Input.Source, handler.Input.Resource)
 
-	connectionKey := fmt.Sprintf(connectionKeyFormat, appInfo.Identifier, appInfo.AppVersion, handler.Input.Source)
+// 	c.log.Debug("setting up stream connection for", handlerIdent)
 
-	connection, exists := c.connections[connectionKey]
-	if !exists {
-		c.log.ErrorString("connection to", handler.Input.Source, "not configured, handler will not be mounted")
-		return
-	}
+// 	connectionKey := fmt.Sprintf(connectionKeyFormat, appInfo.Identifier, appInfo.AppVersion, handler.Input.Source)
 
-	if err := connection.ConnectBridgeTopic(handler.Input.Resource); err != nil {
-		c.log.Error(errors.Wrapf(err, "failed to ConnectBridgeTopic for resource %s", handler.Input.Resource))
-		return
-	}
+// 	connection, exists := c.connections[connectionKey]
+// 	if !exists {
+// 		c.log.ErrorString("connection to", handler.Input.Source, "not configured, handler will not be mounted")
+// 		return
+// 	}
 
-	if handler.RespondTo != "" {
-		c.log.Debug("setting up respondTo stream connection for", handler.RespondTo)
-		if err := connection.ConnectBridgeTopic(handler.RespondTo); err != nil {
-			c.log.Error(errors.Wrapf(err, "failed to ConnectBridgeTopic for resource %s's respondTo topic %s", handler.Input.Resource, handler.RespondTo))
-			return
-		}
-	}
+// 	if err := connection.ConnectBridgeTopic(handler.Input.Resource); err != nil {
+// 		c.log.Error(errors.Wrapf(err, "failed to ConnectBridgeTopic for resource %s", handler.Input.Resource))
+// 		return
+// 	}
 
-	existingPod, exists := c.handlerPods[handlerIdent]
-	if exists {
-		existingPod.Disconnect()
-		delete(c.handlerPods, handlerIdent)
-	}
+// 	if handler.RespondTo != "" {
+// 		c.log.Debug("setting up respondTo stream connection for", handler.RespondTo)
+// 		if err := connection.ConnectBridgeTopic(handler.RespondTo); err != nil {
+// 			c.log.Error(errors.Wrapf(err, "failed to ConnectBridgeTopic for resource %s's respondTo topic %s", handler.Input.Resource, handler.RespondTo))
+// 			return
+// 		}
+// 	}
 
-	pod := connection.Connect()
-	pod.OnType(handler.Input.Resource, func(msg bus.Message) error {
-		ctx := vk.NewCtx(c.log, nil, nil)
-		ctx.UseScope(messageScope{msg.UUID()})
+// 	existingPod, exists := c.handlerPods[handlerIdent]
+// 	if exists {
+// 		existingPod.Disconnect()
+// 		delete(c.handlerPods, handlerIdent)
+// 	}
 
-		ctx.Log.Debug("handling message", msg.UUID(), "for handler", handlerIdent)
+// 	pod := connection.Connect()
+// 	pod.OnType(handler.Input.Resource, func(msg bus.Message) error {
+// 		ctx := vk.NewCtx(c.log, nil, nil)
+// 		ctx.UseScope(messageScope{msg.UUID()})
 
-		req := &request.CoordinatedRequest{
-			Method:      deltavMethodStream,
-			URL:         handler.Input.Resource,
-			ID:          ctx.RequestID(),
-			Body:        msg.Data(),
-			Headers:     map[string]string{},
-			RespHeaders: map[string]string{},
-			Params:      map[string]string{},
-			State:       map[string][]byte{},
-		}
+// 		ctx.Log.Debug("handling message", msg.UUID(), "for handler", handlerIdent)
 
-		// a sequence executes the handler's steps and manages its state.
-		seq, err := sequence.New(handler.Steps, req, ctx)
-		if err != nil {
-			c.log.Error(errors.Wrap(err, "failed to sequence.New"))
-			return nil
-		}
+// 		req := &request.CoordinatedRequest{
+// 			Method:      deltavMethodStream,
+// 			URL:         handler.Input.Resource,
+// 			ID:          ctx.RequestID(),
+// 			Body:        msg.Data(),
+// 			Headers:     map[string]string{},
+// 			RespHeaders: map[string]string{},
+// 			Params:      map[string]string{},
+// 			State:       map[string][]byte{},
+// 		}
 
-		if err := seq.Execute(c.exec); err != nil {
-			if runErr, isRunErr := err.(scheduler.RunErr); isRunErr {
-				c.log.Error(errors.Wrapf(runErr, "handler for %s returned an error", handler.Input.Resource))
-			} else {
-				c.log.Error(errors.Wrapf(err, "schedule %s failed", handler.Input.Resource))
-			}
-		}
+// 		// a sequence executes the handler's steps and manages its state.
+// 		seq, err := sequence.New(handler.Steps, req, ctx)
+// 		if err != nil {
+// 			c.log.Error(errors.Wrap(err, "failed to sequence.New"))
+// 			return nil
+// 		}
 
-		result := resultFromState(handler, req.State)
+// 		if err := seq.Execute(c.exec); err != nil {
+// 			if runErr, isRunErr := err.(scheduler.RunErr); isRunErr {
+// 				c.log.Error(errors.Wrapf(runErr, "handler for %s returned an error", handler.Input.Resource))
+// 			} else {
+// 				c.log.Error(errors.Wrapf(err, "schedule %s failed", handler.Input.Resource))
+// 			}
+// 		}
 
-		replyTopic := handler.Input.Resource
-		if handler.RespondTo != "" {
-			replyTopic = handler.RespondTo
-		}
+// 		result := resultFromState(handler, req.State)
 
-		pod.ReplyTo(msg, bus.NewMsgWithParentID(replyTopic, ctx.RequestID(), result))
+// 		replyTopic := handler.Input.Resource
+// 		if handler.RespondTo != "" {
+// 			replyTopic = handler.RespondTo
+// 		}
 
-		return nil
-	})
+// 		pod.ReplyTo(msg, bus.NewMsgWithParentID(replyTopic, ctx.RequestID(), result))
 
-	// keep the pod in state so it isn't GC'd.
-	c.handlerPods[handlerIdent] = pod
-}
+// 		return nil
+// 	})
+
+// 	// keep the pod in state so it isn't GC'd.
+// 	c.handlerPods[handlerIdent] = pod
+// }

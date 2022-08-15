@@ -5,28 +5,28 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/deltav/directive/executable"
+	"github.com/suborbital/appspec/tenant/executable"
 )
 
 // runGroup runs a group of functions
 // this is all more complicated than it needs to be, Grav should be doing more of the work for us here.
-func (seq *Sequence) ExecGroup(fns []executable.CallableFn) ([]FnResult, error) {
+func (seq *Sequence) ExecGroup(mods []executable.ExecutableMod) ([]FnResult, error) {
 	start := time.Now()
 	defer func() {
 		seq.log.Debug("group executed in", time.Since(start).Milliseconds(), "ms")
 	}()
 
-	resultChan := make(chan FnResult, len(fns))
+	resultChan := make(chan FnResult, len(mods))
 
-	// for now we'll use a bit of a kludgy means of running all of the group fns concurrently
+	// for now we'll use a bit of a kludgy means of running all of the group mods concurrently
 	// in the future, we should send out all of the messages first, then have some new Grav
 	// functionality to collect all the responses, probably using the parent ID.
-	for i := range fns {
-		fn := fns[i]
-		seq.log.Debug("running fn", fn.Fn, "from group")
+	for i := range mods {
+		mod := mods[i]
+		seq.log.Debug("running fn", mod.FQMN, "from group")
 
 		go func() {
-			res, err := seq.ExecSingleFn(fn)
+			res, err := seq.ExecSingleMod(mod)
 			if err != nil {
 				seq.log.Error(errors.Wrap(err, "failed to runSingleFn"))
 				resultChan <- FnResult{ExecErr: err.Error()}
@@ -40,7 +40,7 @@ func (seq *Sequence) ExecGroup(fns []executable.CallableFn) ([]FnResult, error) 
 	respCount := 0
 	timeoutChan := time.After(30 * time.Second)
 
-	for respCount < len(fns) {
+	for respCount < len(mods) {
 		select {
 		case result := <-resultChan:
 			if result.ExecErr != "" {
