@@ -8,14 +8,15 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/suborbital/deltav/deltav"
 	"github.com/suborbital/deltav/deltav/satbackend"
+	"github.com/suborbital/deltav/options"
 	"github.com/suborbital/deltav/server"
-	"github.com/suborbital/deltav/server/options"
 	"github.com/suborbital/deltav/server/release"
 	"github.com/suborbital/vektor/vlog"
 )
 
 type deltavInfo struct {
 	DeltavVersion string `json:"deltav_version"`
+	ModuleName    string `json:"module_name,omitempty"`
 }
 
 func Start() *cobra.Command {
@@ -51,7 +52,7 @@ func Start() *cobra.Command {
 				return errors.Wrap(err, "server.New")
 			}
 
-			backend, err := satbackend.New(path)
+			backend, err := satbackend.New(path, server.Options())
 			if err != nil {
 				return errors.Wrap(err, "failed to satbackend.New")
 			}

@@ -11,8 +11,8 @@ import (
 	"github.com/suborbital/appspec/appsource/bundle"
 	"github.com/suborbital/appspec/appsource/client"
 	"github.com/suborbital/deltav/fqfn"
+	"github.com/suborbital/deltav/options"
 	"github.com/suborbital/deltav/server/coordinator"
-	"github.com/suborbital/deltav/server/options"
 	"github.com/suborbital/vektor/vk"
 )
 
@@ -27,10 +27,6 @@ type Server struct {
 // New creates a new Server instance.
 func New(opts ...options.Modifier) (*Server, error) {
 	vOpts := options.NewWithModifiers(opts...)
-
-	if vOpts.PartnerAddress != "" {
-		vOpts.Logger().Debug("using partner", vOpts.PartnerAddress)
-	}
 
 	// @todo https://github.com/suborbital/deltav/issues/144, the first return value is a function that would close the
 	// tracer in case of a shutdown. Usually that is put in a defer statement. Server doesn't have a graceful shutdown.
@@ -70,7 +66,6 @@ func New(opts ...options.Modifier) (*Server, error) {
 		vk.UseRouterWrapper(func(inner http.Handler) http.Handler {
 			return otelhttp.NewHandler(inner, "deltav")
 		}),
-		vk.UseFallbackAddress(vOpts.PartnerAddress),
 	)
 
 	return s, nil
@@ -98,6 +93,11 @@ func (s *Server) Start(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+// Options returns the options that the server was configured with
+func (s *Server) Options() options.Options {
+	return *s.options
 }
 
 // inspectRequest is critical and runs BEFORE every single request that Server receives, which means it must be very efficient

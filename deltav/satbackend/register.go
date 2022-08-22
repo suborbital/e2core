@@ -10,7 +10,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/deltav/deltav/satbackend/config"
+	"github.com/suborbital/deltav/options"
 )
 
 // AddUpstreamRequest is a request to add an upstream
@@ -18,14 +18,14 @@ type AddUpstreamRequest struct {
 	UpstreamAddress string `json:"upstreamAddress"`
 }
 
-func registerWithControlPlane(conf config.Config) error {
-	if conf.ControlPlane == config.DefaultControlPlane {
+func registerWithControlPlane(opts options.Options) error {
+	if opts.ControlPlane == options.DefaultControlPlane {
 		return nil
 	}
 
 	var selfIPs []net.IP
-	if conf.UpstreamHost != "" {
-		selfIPs = []net.IP{net.ParseIP(conf.UpstreamHost)}
+	if opts.UpstreamAddress != "" {
+		selfIPs = []net.IP{net.ParseIP(opts.UpstreamAddress)}
 	} else {
 		detectedIPs, err := getSelfIPAddress()
 		if err != nil {
@@ -35,7 +35,7 @@ func registerWithControlPlane(conf config.Config) error {
 		selfIPs = detectedIPs
 	}
 
-	registerURL := fmt.Sprintf("%s/api/v1/upstream/register", conf.ControlPlane)
+	registerURL := fmt.Sprintf("%s/api/v1/upstream/register", opts.ControlPlane)
 
 	for _, ip := range selfIPs {
 		upstreamURL, err := url.Parse(fmt.Sprintf("http://%s:%s", ip.String(), atmoPort))

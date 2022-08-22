@@ -10,14 +10,13 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/sethvargo/go-envconfig"
 
 	"github.com/suborbital/appspec/appsource"
 	"github.com/suborbital/appspec/appsource/client"
 	"github.com/suborbital/vektor/vlog"
 
-	"github.com/suborbital/deltav/deltav/satbackend/config"
 	"github.com/suborbital/deltav/deltav/satbackend/exec"
+	"github.com/suborbital/deltav/options"
 )
 
 const (
@@ -26,7 +25,7 @@ const (
 
 type Orchestrator struct {
 	logger     *vlog.Logger
-	config     config.Config
+	opts       options.Options
 	sats       map[string]*watcher // map of FQFNs to watchers
 	signalChan chan os.Signal
 	wg         sync.WaitGroup
@@ -36,12 +35,7 @@ type commandTemplateData struct {
 	Port string
 }
 
-func New(bundlePath string) (*Orchestrator, error) {
-	conf, err := config.Parse(bundlePath, envconfig.OsLookuper())
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to config.Parse")
-	}
-
+func New(bundlePath string, opts options.Options) (*Orchestrator, error) {
 	l := vlog.Default(
 		vlog.EnvPrefix("DELTAV"),
 		vlog.Level(vlog.LogLevelWarn),
@@ -49,7 +43,7 @@ func New(bundlePath string) (*Orchestrator, error) {
 
 	o := &Orchestrator{
 		logger: l,
-		config: conf,
+		opts:   opts,
 		sats:   map[string]*watcher{},
 		wg:     sync.WaitGroup{},
 	}
@@ -132,14 +126,14 @@ func (o *Orchestrator) reconcileConstellation(appSource appsource.AppSource, err
 			launch := func() {
 				o.logger.Debug("launching sat (", module.FQMN, ")")
 
-				cmd, port := satCommand(o.config, module)
+				cmd, port := satCommand(o.opts, module)
 
 				// repeat forever in case the command does error out
 				uuid, pid, err := exec.Run(
 					cmd,
 					"SAT_HTTP_PORT="+port,
-					"SAT_ENV_TOKEN="+o.config.EnvToken,
-					"SAT_CONTROL_PLANE="+o.config.ControlPlane,
+					"SAT_ENV_TOKEN="+o.opts.EnvironmentToken,
+					"SAT_CONTROL_PLANE="+o.opts.ControlPlane,
 				)
 
 				if err != nil {
@@ -200,22 +194,22 @@ func (o *Orchestrator) reconcileConstellation(appSource appsource.AppSource, err
 func (o *Orchestrator) setupAppSource() (appsource.AppSource, chan error) {
 	// if an external control plane hasn't been set, act as the control plane
 	// but if one has been set, use it (and launch all children with it configured)
-	if o.config.ControlPlane == config.DefaultControlPlane || o.config.ControlPlane == "" {
-		o.config.ControlPlane = config.DefaultControlPlane
+	if o.opts.ControlPlane == options.DefaultControlPlane || o.opts.ControlPlane == "" {
+		o.opts.ControlPlane = options.DefaultControlPlane
 
 		// the returned appSource is a bundleSource
-		appSource, errChan := startAppSourceServer(o.config.BundlePath)
+		appSource, errChan := startAppSourceServer(o.opts.BundlePath)
 
 		return appSource, errChan
 	}
 
-	appSource := client.NewHTTPSource(o.config.ControlPlane, nil)
+	appSource := client.NewHTTPSource(o.opts.ControlPlane, nil)
 
 	if err := startAppSourceWithRetry(o.logger, appSource); err != nil {
 		log.Fatal(errors.Wrap(err, "failed to startAppSourceHTTPClient"))
 	}
 
-	if err := registerWithControlPlane(o.config); err != nil {
+	if err := registerWithControlPlane(o.opts); err != nil {
 		log.Fatal(errors.Wrap(err, "failed to registerWithControlPlane"))
 	}
 

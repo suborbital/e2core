@@ -8,7 +8,7 @@ import (
 	"github.com/suborbital/appspec/appsource"
 	"github.com/suborbital/appspec/appsource/bundle"
 	"github.com/suborbital/appspec/appsource/server"
-	"github.com/suborbital/deltav/server/options"
+	"github.com/suborbital/deltav/options"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
 )

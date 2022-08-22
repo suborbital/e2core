@@ -10,9 +10,9 @@ import (
 	"github.com/suborbital/appspec/appsource/bundle"
 	"github.com/suborbital/appspec/request"
 	"github.com/suborbital/appspec/tenant/executable"
+	"github.com/suborbital/deltav/options"
 	"github.com/suborbital/deltav/scheduler"
 	"github.com/suborbital/deltav/server/coordinator/sequence"
-	"github.com/suborbital/deltav/server/options"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
 )

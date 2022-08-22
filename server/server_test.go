@@ -13,7 +13,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/suite"
 	"github.com/suborbital/deltav/deltav/satbackend"
-	"github.com/suborbital/deltav/server/options"
+	"github.com/suborbital/deltav/options"
 	"github.com/suborbital/deltav/signaler"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vtest"
@@ -202,7 +202,7 @@ func (s *serverTestSuite) serverForBundle(filepath string) (*vk.Server, error) {
 			return nil, errors.Wrap(err, "failed to s.testServer")
 		}
 
-		orchestrator, err := satbackend.New(filepath)
+		orchestrator, err := satbackend.New(filepath, server.Options())
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to orchestrator.New")
 		}

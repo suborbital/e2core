@@ -16,9 +16,9 @@ import (
 	"github.com/suborbital/deltav/bus/transport/kafka"
 	"github.com/suborbital/deltav/bus/transport/nats"
 	"github.com/suborbital/deltav/bus/transport/websocket"
+	"github.com/suborbital/deltav/options"
 	"github.com/suborbital/deltav/scheduler"
 	"github.com/suborbital/deltav/server/coordinator/executor"
-	"github.com/suborbital/deltav/server/options"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
 )
@@ -92,7 +92,7 @@ func (c *Coordinator) Start() error {
 
 // SetupHandlers configures all of the app's handlers and generates a Vektor Router for the app.
 func (c *Coordinator) SetupHandlers() (*vk.Router, error) {
-	router := vk.NewRouter(c.log, c.opts.PartnerAddress)
+	router := vk.NewRouter(c.log, "")
 
 	// start by adding the otel handler to the stack.
 	router.Before(c.openTelemetryHandler())
