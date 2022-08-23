@@ -30,10 +30,6 @@ type Orchestrator struct {
 	wg         sync.WaitGroup
 }
 
-type commandTemplateData struct {
-	Port string
-}
-
 func New(bundlePath string, opts options.Options) (*Orchestrator, error) {
 	l := vlog.Default(
 		vlog.EnvPrefix("DELTAV"),
@@ -63,7 +59,7 @@ loop:
 		case err := <-errChan:
 			return err
 		default:
-			break
+			// fall through and reconcile
 		}
 
 		o.reconcileConstellation(appSource, errChan)

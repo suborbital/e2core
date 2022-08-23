@@ -3,7 +3,7 @@ package satbackend
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"syscall"
 	"time"
@@ -148,7 +148,7 @@ func getReport(port string) (*MetricsResponse, error) {
 	}
 
 	defer resp.Body.Close()
-	metricsJSON, _ := ioutil.ReadAll(resp.Body)
+	metricsJSON, _ := io.ReadAll(resp.Body)
 
 	metrics := &MetricsResponse{}
 	if err := json.Unmarshal(metricsJSON, metrics); err != nil {
