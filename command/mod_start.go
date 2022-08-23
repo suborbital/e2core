@@ -5,10 +5,11 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"go.opentelemetry.io/otel/trace"
+
 	"github.com/suborbital/deltav/server/release"
 	"github.com/suborbital/deltav/signaler"
 	"github.com/suborbital/sat/sat"
-	"go.opentelemetry.io/otel/trace"
 )
 
 func ModStart() *cobra.Command {

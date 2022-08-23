@@ -10,10 +10,9 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/suborbital/deltav/deltav/satbackend/process"
 	"github.com/suborbital/deltav/scheduler"
 	"github.com/suborbital/vektor/vlog"
-
-	"github.com/suborbital/deltav/deltav/satbackend/process"
 )
 
 var httpClient = http.Client{Timeout: time.Second}

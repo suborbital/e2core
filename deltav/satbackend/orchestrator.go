@@ -13,10 +13,9 @@ import (
 
 	"github.com/suborbital/appspec/appsource"
 	"github.com/suborbital/appspec/appsource/client"
-	"github.com/suborbital/vektor/vlog"
-
 	"github.com/suborbital/deltav/deltav/satbackend/exec"
 	"github.com/suborbital/deltav/options"
+	"github.com/suborbital/vektor/vlog"
 )
 
 const (

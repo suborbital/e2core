@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+
 	"github.com/suborbital/deltav/bus/bus"
 	"github.com/suborbital/deltav/bus/discovery/local"
 	"github.com/suborbital/deltav/bus/transport/websocket"

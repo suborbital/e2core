@@ -2,6 +2,7 @@ package bus
 
 import (
 	"github.com/pkg/errors"
+
 	"github.com/suborbital/vektor/vlog"
 )
 

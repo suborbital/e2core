@@ -12,6 +12,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/suite"
+
 	"github.com/suborbital/deltav/deltav/satbackend"
 	"github.com/suborbital/deltav/options"
 	"github.com/suborbital/deltav/signaler"
