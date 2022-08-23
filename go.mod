@@ -12,7 +12,7 @@ require (
 	github.com/spf13/cobra v1.4.0
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.7.1
-	github.com/suborbital/appspec v0.0.1
+	github.com/suborbital/appspec v0.0.2-0.20220823192854-03dd8d2a3e57
 	github.com/suborbital/vektor v0.5.3-0.20220606154347-af1e678993a8
 	github.com/twmb/franz-go v1.6.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.32.0
@@ -57,7 +57,7 @@ require (
 	github.com/pierrec/lz4/v4 v4.1.15 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/second-state/WasmEdge-go v0.9.2 // indirect
-	github.com/suborbital/sat v0.0.0-20220818172517-c754cfa2b8fa // indirect
+	github.com/suborbital/sat v0.0.0-20220823181007-a310be3c2357 // indirect
 	github.com/twmb/franz-go/pkg/kmsg v1.1.0 // indirect
 	github.com/wasmerio/wasmer-go v1.0.4 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/internal/retry v1.7.0 // indirect

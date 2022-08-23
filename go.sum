@@ -336,8 +336,14 @@ github.com/suborbital/appspec v0.0.0-20220815195423-8ee35f6159fd h1:buoT/RAA0UHD
 github.com/suborbital/appspec v0.0.0-20220815195423-8ee35f6159fd/go.mod h1:6TkMFP7jppvsJ7l3bkz30eSAo20gOd2bMbSJGLDmxIM=
 github.com/suborbital/appspec v0.0.1 h1:UaUPJs/rpjVfyA/4snyF+gRnVTj+HTWDj7pQ6zlYaQc=
 github.com/suborbital/appspec v0.0.1/go.mod h1:6TkMFP7jppvsJ7l3bkz30eSAo20gOd2bMbSJGLDmxIM=
+github.com/suborbital/appspec v0.0.2-0.20220823192854-03dd8d2a3e57 h1:FGnp0qHPPY9aJJXe6V+Dtua3uAeIgqCva04i2lLaegM=
+github.com/suborbital/appspec v0.0.2-0.20220823192854-03dd8d2a3e57/go.mod h1:6TkMFP7jppvsJ7l3bkz30eSAo20gOd2bMbSJGLDmxIM=
 github.com/suborbital/sat v0.0.0-20220818172517-c754cfa2b8fa h1:fOy5h6y4GnmwuPQ3FbfxV/zkJW0MDHenXjEMKZSGSx0=
 github.com/suborbital/sat v0.0.0-20220818172517-c754cfa2b8fa/go.mod h1:ZHTS4x60lSzmaUHnawtvhW5LDCHBQ9KKbzM9Tnk9YmY=
+github.com/suborbital/sat v0.0.0-20220822175012-b8900e0ae271 h1:r7VZhRc32rpxlW4pK3gKAAravrSstfarZT6ljZp3H0k=
+github.com/suborbital/sat v0.0.0-20220822175012-b8900e0ae271/go.mod h1:h5o3S2WV/CYm6bd2R+iFtjx2VBAnIURdtkvEDMSRhG4=
+github.com/suborbital/sat v0.0.0-20220823181007-a310be3c2357 h1:gCALnjCJ/kuSjiGQyztNfhSS6fDZOroU9ITuR65vyw0=
+github.com/suborbital/sat v0.0.0-20220823181007-a310be3c2357/go.mod h1:h5o3S2WV/CYm6bd2R+iFtjx2VBAnIURdtkvEDMSRhG4=
 github.com/suborbital/vektor v0.5.3-0.20220606154347-af1e678993a8 h1:1GUeXgAL4969UAg0IuZg0tKvYlsxiDd4v/MOwYIKD2U=
 github.com/suborbital/vektor v0.5.3-0.20220606154347-af1e678993a8/go.mod h1:/OSnPYtTDFwGHnoFaBYpWQu1moH1X8Vo/y4BVU3+oWM=
 github.com/twmb/franz-go v1.6.0 h1:yri7YsVBe/k1LKcoZSLILgUI3U14e82qtD9i4VOcs9c=

@@ -9,20 +9,16 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/suborbital/appspec/tenant"
-	"github.com/suborbital/deltav/options"
 )
 
-// satCommand returns the command and the port string
-func satCommand(opts options.Options, module tenant.Module) (string, string) {
+// modStartCommand returns the command and the port string
+func modStartCommand(module tenant.Module) (string, string) {
 	port, err := randPort()
 	if err != nil {
 		log.Fatal(errors.Wrap(err, "failed to randPort"))
 	}
 
-	cmd := fmt.Sprintf(
-		"sat %s",
-		module.FQMN,
-	)
+	cmd := fmt.Sprintf("deltav mod start %s", module.FQMN)
 
 	return cmd, port
 }

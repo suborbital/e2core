@@ -126,7 +126,7 @@ func (o *Orchestrator) reconcileConstellation(appSource appsource.AppSource, err
 			launch := func() {
 				o.logger.Debug("launching sat (", module.FQMN, ")")
 
-				cmd, port := satCommand(o.opts, module)
+				cmd, port := modStartCommand(module)
 
 				// repeat forever in case the command does error out
 				uuid, pid, err := exec.Run(
