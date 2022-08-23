@@ -43,12 +43,11 @@ jobs:
 
       - name: Build
         run: |
-          make atmo
-          make atmo/proxy
+          make deltav
+          make deltav/static
 
       - name: Run test
         run: |
-          make build
           make test
 
   image:
