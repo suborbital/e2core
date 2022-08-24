@@ -275,7 +275,7 @@ func (c *Coordinator) SetupWorkflows() error {
 			for j := range ns.Workflows {
 				wfl := ns.Workflows[j]
 
-				// create basically an fqfn for this schedule (com.suborbital.appname#schedule.dojob@v0.1.0).
+				// create basically an fqmn for this schedule (com.suborbital.appname#schedule.dojob@v0.1.0).
 				jobName := fmt.Sprintf("%s#workflow.%s@%d", tnt.Identifier, wfl.Name, tnt.Version)
 
 				seconds := wfl.Schedule.NumberOfSeconds()
