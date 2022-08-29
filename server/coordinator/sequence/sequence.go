@@ -6,11 +6,11 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/suborbital/appspec/request"
+	"github.com/suborbital/appspec/tenant/executable"
 	"github.com/suborbital/deltav/bus/bus"
-	"github.com/suborbital/deltav/directive/executable"
 	"github.com/suborbital/deltav/scheduler"
 	"github.com/suborbital/deltav/server/coordinator/executor"
-	"github.com/suborbital/deltav/server/request"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
 )
@@ -150,9 +150,9 @@ func (seq *Sequence) executeStep(step *Step) error {
 	stepResults := []FnResult{}
 
 	if step.Exec.IsFn() {
-		seq.log.Debug("running single fn", step.Exec.FQFN)
+		seq.log.Debug("running single fn", step.Exec.FQMN)
 
-		singleResult, err := seq.ExecSingleFn(step.Exec.CallableFn)
+		singleResult, err := seq.ExecSingleMod(step.Exec.ExecutableMod)
 		if err != nil {
 			return err
 		} else if singleResult != nil {
@@ -251,7 +251,7 @@ func (seq *Sequence) handleMessage(msg bus.Message) error {
 		seq.log.ErrorString("handleMessage got nil NextStep")
 		return executable.ErrSequenceCompleted
 	} else if step.Exec.IsFn() {
-		seq.log.Debug("handling result of", step.Exec.FQFN)
+		seq.log.Debug("handling result of", step.Exec.FQMN)
 		step.Completed = true
 	} else {
 		seq.log.Warn("cannot handle message from group step")

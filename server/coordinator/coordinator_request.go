@@ -5,14 +5,15 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/deltav/directive"
+	"github.com/suborbital/appspec/request"
+	"github.com/suborbital/appspec/tenant"
+	"github.com/suborbital/appspec/tenant/executable"
 	"github.com/suborbital/deltav/scheduler"
 	"github.com/suborbital/deltav/server/coordinator/sequence"
-	"github.com/suborbital/deltav/server/request"
 	"github.com/suborbital/vektor/vk"
 )
 
-func (c *Coordinator) vkHandlerForDirectiveHandler(handler directive.Handler) vk.HandlerFunc {
+func (c *Coordinator) vkHandlerForModule(mod tenant.Module) vk.HandlerFunc {
 	return func(r *http.Request, ctx *vk.Ctx) (interface{}, error) {
 		req, err := request.FromVKRequest(r, ctx)
 		if err != nil {
@@ -20,13 +21,18 @@ func (c *Coordinator) vkHandlerForDirectiveHandler(handler directive.Handler) vk
 			return nil, vk.E(http.StatusInternalServerError, "failed to handle request")
 		}
 
-		// Pull the X-Atmo-State and X-Atmo-Params headers into the request.
-		if *c.opts.Headless {
-			req.UseHeadlessHeaders(r, ctx)
+		req.UseSuborbitalHeaders(r, ctx)
+
+		steps := []executable.Executable{
+			{
+				ExecutableMod: executable.ExecutableMod{
+					FQMN: mod.FQMN,
+				},
+			},
 		}
 
 		// a sequence executes the handler's steps and manages its state.
-		seq, err := sequence.New(handler.Steps, req, ctx)
+		seq, err := sequence.New(steps, req, ctx)
 		if err != nil {
 			ctx.Log.Error(errors.Wrap(err, "failed to sequence.New"))
 			return nil, vk.E(http.StatusInternalServerError, "failed to handle request")
@@ -54,6 +60,6 @@ func (c *Coordinator) vkHandlerForDirectiveHandler(handler directive.Handler) vk
 			}
 		}
 
-		return resultFromState(handler, req.State), nil
+		return resultFromState(steps, req.State), nil
 	}
 }

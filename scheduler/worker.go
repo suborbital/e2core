@@ -4,9 +4,8 @@ import (
 	"sync"
 	"time"
 
-	"golang.org/x/sync/singleflight"
-
 	"github.com/pkg/errors"
+	"golang.org/x/sync/singleflight"
 )
 
 const (

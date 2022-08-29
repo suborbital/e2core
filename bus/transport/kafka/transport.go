@@ -4,9 +4,10 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
+	"github.com/twmb/franz-go/pkg/kgo"
+
 	"github.com/suborbital/deltav/bus/bus"
 	"github.com/suborbital/vektor/vlog"
-	"github.com/twmb/franz-go/pkg/kgo"
 )
 
 // Transport is a transport that connects Grav nodes via kafka

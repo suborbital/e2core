@@ -1,45 +1,43 @@
 package coordinator
 
 import (
-	"crypto/subtle"
 	"net/http"
 
-	"github.com/pkg/errors"
-
-	"github.com/suborbital/deltav/fqfn"
-	"github.com/suborbital/deltav/server/appsource"
 	"github.com/suborbital/vektor/vk"
 )
 
-func (c *Coordinator) headlessAuthMiddleware() vk.Middleware {
+func (c *Coordinator) authMiddleware() vk.Middleware {
 	return func(r *http.Request, ctx *vk.Ctx) error {
 		if c.opts.EnvironmentToken != "" {
 			return nil
+		} else {
+			return vk.E(http.StatusUnauthorized, "unauthorized")
 		}
 
-		FQFN, err := fqfn.FromURL(r.URL)
-		if err != nil {
-			ctx.Log.Debug(errors.Wrap(err, "failed to fqfn.FromURL, skipping headless auth"))
-			return nil
-		}
+		// TODO: restore the ability to have dynamic auth
+		// FQFN, err := fqfn.FromURL(r.URL)
+		// if err != nil {
+		// 	ctx.Log.Debug(errors.Wrap(err, "failed to fqfn.FromURL, skipping headless auth"))
+		// 	return nil
+		// }
 
-		auth := r.Header.Get("Authorization")
+		// auth := r.Header.Get("Authorization")
 
-		// we call FindRunnable, which by now should have the Runnable cached, so it'll be fast.
-		runnable, err := c.App.FindRunnable(FQFN, auth)
-		if err != nil {
-			ctx.Log.Error(errors.Wrap(err, "failed to FindRunnable"))
-			return vk.E(http.StatusBadRequest, "invalid FQFN URI")
-		}
+		// // we call GetModule, which by now should have the module cached, so it'll be fast.
+		// module, err := c.App.GetModule(FQFN)
+		// if err != nil {
+		// 	ctx.Log.Error(errors.Wrap(err, "failed to GetModule"))
+		// 	return vk.E(http.StatusBadRequest, "invalid FQFN URI")
+		// }
 
-		if len(runnable.TokenHash) > 0 {
-			providedHash := appsource.TokenHash(auth)
+		// if len(module.TokenHash) > 0 {
+		// 	providedHash := appsource.TokenHash(auth)
 
-			if subtle.ConstantTimeCompare(runnable.TokenHash, providedHash) != 1 {
-				ctx.Log.Error(errors.New("provided authorization header does not match runnable's token hash"))
-				return vk.E(http.StatusUnauthorized, "unauthorized")
-			}
-		}
+		// 	if subtle.ConstantTimeCompare(module.TokenHash, providedHash) != 1 {
+		// 		ctx.Log.Error(errors.New("provided authorization header does not match module's token hash"))
+		// 		return vk.E(http.StatusUnauthorized, "unauthorized")
+		// 	}
+		// }
 
 		return nil
 	}

@@ -7,12 +7,12 @@ import (
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/deltav/directive/executable"
+	"github.com/suborbital/appspec/appsource/bundle"
+	"github.com/suborbital/appspec/request"
+	"github.com/suborbital/appspec/tenant/executable"
+	"github.com/suborbital/deltav/options"
 	"github.com/suborbital/deltav/scheduler"
-	"github.com/suborbital/deltav/server/appsource"
 	"github.com/suborbital/deltav/server/coordinator/sequence"
-	"github.com/suborbital/deltav/server/options"
-	"github.com/suborbital/deltav/server/request"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
 )
@@ -26,21 +26,20 @@ func init() {
 		)),
 	)
 
-	appSource := appsource.NewBundleSource("../../example-project/runnables.wasm.zip")
+	appSource := bundle.NewBundleSource("../../example-project/runnables.wasm.zip")
 
 	coord = New(appSource, opts)
 
 	if err := coord.Start(); err != nil {
-		opts.Logger.Error(errors.Wrap(err, "failed to coord.Start"))
+		opts.Logger().Error(errors.Wrap(err, "failed to coord.Start"))
 	}
 }
 
 func TestBasicSequence(t *testing.T) {
 	steps := []executable.Executable{
 		{
-			CallableFn: executable.CallableFn{
-				Fn:   "helloworld-rs",
-				FQFN: "com.suborbital.test#default::helloworld-rs@v0.0.1",
+			ExecutableMod: executable.ExecutableMod{
+				FQMN: "com.suborbital.test#default::helloworld-rs@v0.0.1",
 			},
 		},
 	}
@@ -74,14 +73,12 @@ func TestBasicSequence(t *testing.T) {
 func TestGroupSequence(t *testing.T) {
 	steps := []executable.Executable{
 		{
-			Group: []executable.CallableFn{
+			Group: []executable.ExecutableMod{
 				{
-					Fn:   "helloworld-rs",
-					FQFN: "com.suborbital.test#default::helloworld-rs@v0.0.1",
+					FQMN: "com.suborbital.test#default::helloworld-rs@v0.0.1",
 				},
 				{
-					Fn:   "get-file",
-					FQFN: "com.suborbital.test#default::get-file@v0.0.1",
+					FQMN: "com.suborbital.test#default::get-file@v0.0.1",
 					As:   "main.md",
 				},
 			},
@@ -124,16 +121,14 @@ func TestGroupSequence(t *testing.T) {
 func TestAsOnErrContinueSequence(t *testing.T) {
 	steps := []executable.Executable{
 		{
-			CallableFn: executable.CallableFn{
-				Fn:   "helloworld-rs",
-				FQFN: "com.suborbital.test#default::helloworld-rs@v0.0.1",
+			ExecutableMod: executable.ExecutableMod{
+				FQMN: "com.suborbital.test#default::helloworld-rs@v0.0.1",
 				As:   "hello",
 			},
 		},
 		{
-			CallableFn: executable.CallableFn{
-				Fn:   "return-err",
-				FQFN: "com.suborbital.test#default::return-err@v0.0.1",
+			ExecutableMod: executable.ExecutableMod{
+				FQMN: "com.suborbital.test#default::return-err@v0.0.1",
 				OnErr: &executable.ErrHandler{
 					Any: "continue",
 				},
@@ -169,16 +164,14 @@ func TestAsOnErrContinueSequence(t *testing.T) {
 func TestAsOnErrReturnSequence(t *testing.T) {
 	steps := []executable.Executable{
 		{
-			CallableFn: executable.CallableFn{
-				Fn:   "helloworld-rs",
-				FQFN: "com.suborbital.test#default::helloworld-rs@v0.0.1",
+			ExecutableMod: executable.ExecutableMod{
+				FQMN: "com.suborbital.test#default::helloworld-rs@v0.0.1",
 				As:   "hello",
 			},
 		},
 		{
-			CallableFn: executable.CallableFn{
-				Fn:   "return-err",
-				FQFN: "com.suborbital.test#default::return-err@v0.0.1",
+			ExecutableMod: executable.ExecutableMod{
+				FQMN: "com.suborbital.test#default::return-err@v0.0.1",
 				OnErr: &executable.ErrHandler{
 					Any: "return",
 				},
@@ -222,15 +215,13 @@ func TestAsOnErrReturnSequence(t *testing.T) {
 func TestWithSequence(t *testing.T) {
 	steps := []executable.Executable{
 		{
-			CallableFn: executable.CallableFn{
-				Fn:   "helloworld-rs", // the body is empty, so this will return only "hello".
-				FQFN: "com.suborbital.test#default::helloworld-rs@v0.0.1",
+			ExecutableMod: executable.ExecutableMod{
+				FQMN: "com.suborbital.test#default::helloworld-rs@v0.0.1",
 			},
 		},
 		{
-			CallableFn: executable.CallableFn{
-				Fn:   "modify-url", // if there's no body, it'll look in state for '.
-				FQFN: "com.suborbital.test#default::modify-url@v0.0.1",
+			ExecutableMod: executable.ExecutableMod{
+				FQMN: "com.suborbital.test#default::modify-url@v0.0.1",
 				With: map[string]string{"url": "helloworld-rs"},
 			},
 		},
@@ -270,16 +261,14 @@ func TestWithSequence(t *testing.T) {
 func TestAsSequence(t *testing.T) {
 	steps := []executable.Executable{
 		{
-			CallableFn: executable.CallableFn{
-				Fn:   "helloworld-rs",
-				FQFN: "com.suborbital.test#default::helloworld-rs@v0.0.1",
+			ExecutableMod: executable.ExecutableMod{
+				FQMN: "com.suborbital.test#default::helloworld-rs@v0.0.1",
 				As:   "url",
 			},
 		},
 		{
-			CallableFn: executable.CallableFn{
-				Fn:   "modify-url",
-				FQFN: "com.suborbital.test#default::modify-url@v0.0.1",
+			ExecutableMod: executable.ExecutableMod{
+				FQMN: "com.suborbital.test#default::modify-url@v0.0.1",
 			},
 		},
 	}

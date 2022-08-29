@@ -10,13 +10,12 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/sethvargo/go-envconfig"
 
-	"github.com/suborbital/deltav/server/appsource"
-	"github.com/suborbital/vektor/vlog"
-
-	"github.com/suborbital/deltav/deltav/satbackend/config"
+	"github.com/suborbital/appspec/appsource"
+	"github.com/suborbital/appspec/appsource/client"
 	"github.com/suborbital/deltav/deltav/satbackend/exec"
+	"github.com/suborbital/deltav/options"
+	"github.com/suborbital/vektor/vlog"
 )
 
 const (
@@ -25,22 +24,13 @@ const (
 
 type Orchestrator struct {
 	logger     *vlog.Logger
-	config     config.Config
+	opts       options.Options
 	sats       map[string]*watcher // map of FQFNs to watchers
 	signalChan chan os.Signal
 	wg         sync.WaitGroup
 }
 
-type commandTemplateData struct {
-	Port string
-}
-
-func New(bundlePath string) (*Orchestrator, error) {
-	conf, err := config.Parse(bundlePath, envconfig.OsLookuper())
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to config.Parse")
-	}
-
+func New(bundlePath string, opts options.Options) (*Orchestrator, error) {
 	l := vlog.Default(
 		vlog.EnvPrefix("DELTAV"),
 		vlog.Level(vlog.LogLevelWarn),
@@ -48,7 +38,7 @@ func New(bundlePath string) (*Orchestrator, error) {
 
 	o := &Orchestrator{
 		logger: l,
-		config: conf,
+		opts:   opts,
 		sats:   map[string]*watcher{},
 		wg:     sync.WaitGroup{},
 	}
@@ -69,7 +59,7 @@ loop:
 		case err := <-errChan:
 			return err
 		default:
-			break
+			// fall through and reconcile
 		}
 
 		o.reconcileConstellation(appSource, errChan)
@@ -100,43 +90,55 @@ func (o *Orchestrator) Shutdown() {
 }
 
 func (o *Orchestrator) reconcileConstellation(appSource appsource.AppSource, errChan chan error) {
-	apps := appSource.Applications()
+	ovv, err := appSource.Overview()
+	if err != nil {
+		o.logger.Error(errors.Wrap(err, "failed to app.Overview"))
+	}
 
-	for _, app := range apps {
-		runnables := appSource.Runnables(app.Identifier, app.AppVersion)
+	// mount each handler into the VK group.
+	for ident, version := range ovv.TenantRefs.Identifiers {
+		tnt, err := appSource.TenantOverview(ident)
+		if err != nil {
+			o.logger.Error(errors.Wrapf(err, "failed to app.TenantOverview for %s", ident))
+			return
+		}
 
-		for i := range runnables {
-			runnable := runnables[i]
+		if tnt.Version != version {
+			o.logger.Warn("encountered version mismatch for tenant", ident, "expected", version, "got", tnt.Version)
+		}
 
-			o.logger.Debug("reconciling", runnable.FQFN)
+		for i := range tnt.Config.Modules {
+			module := tnt.Config.Modules[i]
 
-			if _, exists := o.sats[runnable.FQFN]; !exists {
-				o.sats[runnable.FQFN] = newWatcher(runnable.FQFN, o.logger)
+			o.logger.Debug("reconciling", module.FQMN)
+
+			if _, exists := o.sats[module.FQMN]; !exists {
+				o.sats[module.FQMN] = newWatcher(module.FQMN, o.logger)
 			}
 
-			satWatcher := o.sats[runnable.FQFN]
+			satWatcher := o.sats[module.FQMN]
 
 			launch := func() {
-				o.logger.Debug("launching sat (", runnable.FQFN, ")")
+				o.logger.Debug("launching sat (", module.FQMN, ")")
 
-				cmd, port := satCommand(o.config, runnable)
+				cmd, port := modStartCommand(module)
 
 				// repeat forever in case the command does error out
 				uuid, pid, err := exec.Run(
 					cmd,
 					"SAT_HTTP_PORT="+port,
-					"SAT_ENV_TOKEN="+o.config.EnvToken,
-					"SAT_CONTROL_PLANE="+o.config.ControlPlane,
+					"SAT_ENV_TOKEN="+o.opts.EnvironmentToken,
+					"SAT_CONTROL_PLANE="+o.opts.ControlPlane,
 				)
 
 				if err != nil {
-					o.logger.Error(errors.Wrapf(err, "failed to exec.Run sat ( %s )", runnable.FQFN))
+					o.logger.Error(errors.Wrapf(err, "failed to exec.Run sat ( %s )", module.FQMN))
 					return
 				}
 
-				satWatcher.add(runnable.FQFN, port, uuid, pid)
+				satWatcher.add(module.FQMN, port, uuid, pid)
 
-				o.logger.Debug("successfully started sat (", runnable.FQFN, ") on port", port)
+				o.logger.Debug("successfully started sat (", module.FQMN, ") on port", port)
 			}
 
 			// we want to max out at 8 threads per instance
@@ -149,15 +151,15 @@ func (o *Orchestrator) reconcileConstellation(appSource appsource.AppSource, err
 
 			if report == nil || report.instCount == 0 {
 				// if no instances exist, launch one
-				o.logger.Debug("no instances exist for", runnable.FQFN)
+				o.logger.Debug("no instances exist for", module.FQMN)
 
 				go launch()
 			} else if report.instCount > 0 && report.totalThreads/report.instCount >= threshold {
 				if report.instCount >= runtime.NumCPU() {
-					o.logger.Warn("maximum instance count reached for", runnable.Name)
+					o.logger.Warn("maximum instance count reached for", module.Name)
 				} else {
 					// if the current instances seem overwhelmed, add one
-					o.logger.Debug("scaling up", runnable.Name, "; totalThreads:", report.totalThreads, "instCount:", report.instCount)
+					o.logger.Debug("scaling up", module.Name, "; totalThreads:", report.totalThreads, "instCount:", report.instCount)
 
 					go launch()
 				}
@@ -166,7 +168,7 @@ func (o *Orchestrator) reconcileConstellation(appSource appsource.AppSource, err
 					// that's fine, do nothing
 				} else {
 					// if the current instances have too much spare time on their hands
-					o.logger.Debug("scaling down", runnable.Name, "; totalThreads:", report.totalThreads, "instCount:", report.instCount)
+					o.logger.Debug("scaling down", module.Name, "; totalThreads:", report.totalThreads, "instCount:", report.instCount)
 
 					satWatcher.scaleDown()
 				}
@@ -183,21 +185,26 @@ func (o *Orchestrator) reconcileConstellation(appSource appsource.AppSource, err
 	}
 }
 
+// TODO: implement and use an authSource when creating NewHTTPSource
 func (o *Orchestrator) setupAppSource() (appsource.AppSource, chan error) {
 	// if an external control plane hasn't been set, act as the control plane
 	// but if one has been set, use it (and launch all children with it configured)
-	if o.config.ControlPlane == config.DefaultControlPlane {
-		appSource, errChan := startAppSourceServer(o.config.BundlePath)
+	if o.opts.ControlPlane == options.DefaultControlPlane || o.opts.ControlPlane == "" {
+		o.opts.ControlPlane = options.DefaultControlPlane
+
+		// the returned appSource is a bundleSource
+		appSource, errChan := startAppSourceServer(o.opts.BundlePath)
+
 		return appSource, errChan
 	}
 
-	appSource := appsource.NewHTTPSource(o.config.ControlPlane)
+	appSource := client.NewHTTPSource(o.opts.ControlPlane, nil)
 
 	if err := startAppSourceWithRetry(o.logger, appSource); err != nil {
 		log.Fatal(errors.Wrap(err, "failed to startAppSourceHTTPClient"))
 	}
 
-	if err := registerWithControlPlane(o.config); err != nil {
+	if err := registerWithControlPlane(o.opts); err != nil {
 		log.Fatal(errors.Wrap(err, "failed to registerWithControlPlane"))
 	}
 

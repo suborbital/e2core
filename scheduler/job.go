@@ -5,7 +5,8 @@ import (
 	"errors"
 
 	"github.com/google/uuid"
-	"github.com/suborbital/deltav/server/request"
+
+	"github.com/suborbital/appspec/request"
 )
 
 // Job describes a job to be done

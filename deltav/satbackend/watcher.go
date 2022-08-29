@@ -3,20 +3,19 @@ package satbackend
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"syscall"
 	"time"
 
 	"github.com/pkg/errors"
 
+	"github.com/suborbital/deltav/deltav/satbackend/process"
 	"github.com/suborbital/deltav/scheduler"
 	"github.com/suborbital/vektor/vlog"
-
-	"github.com/suborbital/deltav/deltav/satbackend/process"
 )
 
-var client = http.Client{Timeout: time.Second}
+var httpClient = http.Client{Timeout: time.Second}
 
 // MetricsResponse is a response that backend instances use to report their status
 type MetricsResponse struct {
@@ -143,13 +142,13 @@ func (w *watcher) report() *watcherReport {
 func getReport(port string) (*MetricsResponse, error) {
 	req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%s/meta/metrics", port), nil)
 
-	resp, err := client.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to Do metrics request")
 	}
 
 	defer resp.Body.Close()
-	metricsJSON, _ := ioutil.ReadAll(resp.Body)
+	metricsJSON, _ := io.ReadAll(resp.Body)
 
 	metrics := &MetricsResponse{}
 	if err := json.Unmarshal(metricsJSON, metrics); err != nil {

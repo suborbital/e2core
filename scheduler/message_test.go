@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/pkg/errors"
+
 	"github.com/suborbital/deltav/bus/bus"
 	"github.com/suborbital/deltav/bus/testutil"
 )

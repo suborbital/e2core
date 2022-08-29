@@ -10,6 +10,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/pkg/errors"
+
 	"github.com/suborbital/deltav/bus/bus"
 	"github.com/suborbital/vektor/vlog"
 )

@@ -8,10 +8,11 @@ import (
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 
+	"github.com/suborbital/appspec/appsource/bundle"
+	"github.com/suborbital/appspec/appsource/client"
 	"github.com/suborbital/deltav/fqfn"
-	"github.com/suborbital/deltav/server/appsource"
+	"github.com/suborbital/deltav/options"
 	"github.com/suborbital/deltav/server/coordinator"
-	"github.com/suborbital/deltav/server/options"
 	"github.com/suborbital/vektor/vk"
 )
 
@@ -27,26 +28,19 @@ type Server struct {
 func New(opts ...options.Modifier) (*Server, error) {
 	vOpts := options.NewWithModifiers(opts...)
 
-	if vOpts.PartnerAddress != "" {
-		vOpts.Logger.Debug("using partner", vOpts.PartnerAddress)
-	}
-
 	// @todo https://github.com/suborbital/deltav/issues/144, the first return value is a function that would close the
 	// tracer in case of a shutdown. Usually that is put in a defer statement. Server doesn't have a graceful shutdown.
-	_, err := setupTracing(vOpts.TracerConfig, vOpts.Logger)
+	_, err := setupTracing(vOpts.TracerConfig, vOpts.Logger())
 	if err != nil {
 		return nil, errors.Wrapf(err, "setupTracing(%s, %s, %f)", "atmo", "reporter_uri", 0.04)
 	}
 
-	appSource := appsource.NewBundleSource(vOpts.BundlePath)
+	// TODO: implement and use a CredentialSupplier
+	appSource := bundle.NewBundleSource(vOpts.BundlePath)
 	if vOpts.ControlPlane != "" {
 		// the HTTP appsource gets Server's data from a remote server
 		// which can essentially control Server's behaviour.
-		appSource = appsource.NewHTTPSource(vOpts.ControlPlane)
-	} else if *vOpts.Headless {
-		// the headless appsource ignores the Directive and mounts
-		// each Runnable as its own route (for testing, other purposes).
-		appSource = appsource.NewHeadlessBundleSource(vOpts.BundlePath)
+		appSource = client.NewHTTPSource(vOpts.ControlPlane, nil)
 	}
 
 	s := &Server{
@@ -60,7 +54,7 @@ func New(opts ...options.Modifier) (*Server, error) {
 	s.server = vk.New(
 		vk.UseEnvPrefix("DELTAV"),
 		vk.UseAppName(vOpts.AppName),
-		vk.UseLogger(vOpts.Logger),
+		vk.UseLogger(vOpts.Logger()),
 		vk.UseInspector(s.inspectRequest),
 		vk.UseDomain(vOpts.Domain),
 		vk.UseHTTPPort(vOpts.HTTPPort),
@@ -72,7 +66,6 @@ func New(opts ...options.Modifier) (*Server, error) {
 		vk.UseRouterWrapper(func(inner http.Handler) http.Handler {
 			return otelhttp.NewHandler(inner, "deltav")
 		}),
-		vk.UseFallbackAddress(vOpts.PartnerAddress),
 	)
 
 	return s, nil
@@ -84,18 +77,27 @@ func (s *Server) Start(ctx context.Context) error {
 		return errors.Wrap(err, "failed to coordinator.Start")
 	}
 
-	// mount and set up the app's handlers.
-	router := s.coordinator.SetupHandlers()
+	router, err := s.coordinator.SetupHandlers()
+	if err != nil {
+		return errors.Wrap(err, "failed to SetupHandlers")
+	}
+
 	s.server.SwapRouter(router)
 
-	// mount the schedules defined in the App.
-	s.coordinator.SetSchedules()
+	if err := s.coordinator.SetupWorkflows(); err != nil {
+		return errors.Wrap(err, "failed to SetupWorkflows")
+	}
 
 	if err := s.server.Start(); err != nil {
 		return errors.Wrap(err, "failed to server.Start")
 	}
 
 	return nil
+}
+
+// Options returns the options that the server was configured with
+func (s *Server) Options() options.Options {
+	return *s.options
 }
 
 // inspectRequest is critical and runs BEFORE every single request that Server receives, which means it must be very efficient
@@ -113,31 +115,36 @@ func (s *Server) inspectRequest(r http.Request) {
 	if !s.server.CanHandle(r.Method, r.URL.Path) {
 		FQFN, err := fqfn.FromURL(r.URL)
 		if err != nil {
-			s.options.Logger.Debug(errors.Wrap(err, "failed to fqfn.FromURL, likely invalid, request will proceed and fail").Error())
+			s.options.Logger().Debug(errors.Wrap(err, "failed to fqfn.FromURL, likely invalid, request will proceed and fail").Error())
 			return
 		}
 
 		// the Authorization header is passed through to the AppSource, and can be used to authenticate calls.
-		auth := r.Header.Get("Authorization")
+		// TODO: implement properly with CredentialSupplier
+		// auth := r.Header.Get("Authorization")
 
 		// use the configured global env token for all requests (if available)
-		if s.options.EnvironmentToken != "" {
-			auth = s.options.EnvironmentToken
-		}
+		// if s.options.EnvironmentToken != "" {
+		// 	auth = s.options.EnvironmentToken
+		// }
 
-		if _, err := s.coordinator.App.FindRunnable(FQFN, auth); err != nil {
-			s.options.Logger.Debug(errors.Wrapf(err, "failed to FindRunnable %s, request will proceed and fail", FQFN).Error())
+		if _, err := s.coordinator.App.GetModule(FQFN); err != nil {
+			s.options.Logger().Debug(errors.Wrapf(err, "failed to FindRunnable %s, request will proceed and fail", FQFN).Error())
 			return
 		}
 
-		s.options.Logger.Debug(fmt.Sprintf("found new Runnable %s, will be available at next sync", FQFN))
+		s.options.Logger().Debug(fmt.Sprintf("found new Runnable %s, will be available at next sync", FQFN))
 
 		// re-generate the Router which should now include
 		// the new function as a handler.
-		newRouter := s.coordinator.SetupHandlers()
+		newRouter, err := s.coordinator.SetupHandlers()
+		if err != nil {
+			s.options.Logger().Error(errors.Wrap(err, "failed to SetupHandlers"))
+		}
+
 		s.server.SwapRouter(newRouter)
 
-		s.options.Logger.Debug("app sync and router swap completed")
+		s.options.Logger().Debug("app sync and router swap completed")
 	}
 }
 
@@ -147,7 +154,11 @@ func (s *Server) testServer() (*vk.Server, error) {
 	}
 
 	// mount and set up the app's handlers.
-	router := s.coordinator.SetupHandlers()
+	router, err := s.coordinator.SetupHandlers()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to SetupHandlers")
+	}
+
 	s.server.SwapRouter(router)
 
 	return s.server, nil

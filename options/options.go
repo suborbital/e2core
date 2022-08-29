@@ -9,23 +9,27 @@ import (
 	"github.com/suborbital/vektor/vlog"
 )
 
-const deltavEnvPrefix = "DELTAV"
+const (
+	DefaultControlPlane = "localhost:9090"
+	deltavEnvPrefix     = "DELTAV"
+)
 
 // Options defines options for Atmo.
 type Options struct {
-	Logger           *vlog.Logger
+	logger *vlog.Logger
+
 	BundlePath       string       `env:"DELTAV_BUNDLE_PATH"`
 	RunSchedules     *bool        `env:"DELTAV_RUN_SCHEDULES,default=true"`
 	Headless         *bool        `env:"DELTAV_HEADLESS,default=false"`
 	Wait             *bool        `env:"DELTAV_WAIT,default=false"`
 	ControlPlane     string       `env:"DELTAV_CONTROL_PLANE"`
+	UpstreamAddress  string       `env:"DELTAV_UPSTREAM_ADDRESS"`
 	EnvironmentToken string       `env:"DELTAV_ENV_TOKEN"`
 	StaticPeers      string       `env:"DELTAV_PEERS"`
 	AppName          string       `env:"DELTAV_APP_NAME,default=DeltaV"`
 	Domain           string       `env:"DELTAV_DOMAIN"`
 	HTTPPort         int          `env:"DELTAV_HTTP_PORT,default=8080"`
 	TLSPort          int          `env:"DELTAV_TLS_PORT,default=443"`
-	PartnerAddress   string       `env:"DELTAV_PARTNER,default=http://localhost:3000"`
 	TracerConfig     TracerConfig `env:",prefix=DELTAV_TRACER_"`
 }
 
@@ -72,7 +76,7 @@ func NewWithModifiers(mods ...Modifier) *Options {
 // UseLogger sets the logger to be used.
 func UseLogger(logger *vlog.Logger) Modifier {
 	return func(opts *Options) {
-		opts.Logger = logger
+		opts.logger = logger
 	}
 }
 
@@ -131,17 +135,15 @@ func TLSPort(port int) Modifier {
 	}
 }
 
-// PartnerAddress sets the partner address to be used.
-func PartnerAddress(address string) Modifier {
-	return func(opts *Options) {
-		opts.PartnerAddress = address
-	}
+// Logger returns the options' logger
+func (o *Options) Logger() *vlog.Logger {
+	return o.logger
 }
 
 // finalize "locks in" the options by overriding any existing options with the version from the environment, and setting the default logger if needed.
 func (o *Options) finalize(prefix string) {
-	if o.Logger == nil {
-		o.Logger = vlog.Default(
+	if o.logger == nil {
+		o.logger = vlog.Default(
 			vlog.EnvPrefix(prefix),
 			vlog.Level(vlog.LogLevelWarn),
 		)
@@ -149,7 +151,7 @@ func (o *Options) finalize(prefix string) {
 
 	envOpts := Options{}
 	if err := envconfig.Process(context.Background(), &envOpts); err != nil {
-		o.Logger.Error(errors.Wrap(err, "failed to Process environment config"))
+		o.logger.Error(errors.Wrap(err, "failed to Process environment config"))
 		return
 	}
 
@@ -199,10 +201,6 @@ func (o *Options) finalize(prefix string) {
 	// set TLSPort if it was not passed as a flag.
 	if o.TLSPort == 0 {
 		o.TLSPort = envOpts.TLSPort
-	}
-
-	if o.PartnerAddress == "" {
-		o.PartnerAddress = envOpts.PartnerAddress
 	}
 
 	o.EnvironmentToken = ""
