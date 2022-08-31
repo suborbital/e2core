@@ -26,7 +26,7 @@ func init() {
 		)),
 	)
 
-	appSource := bundle.NewBundleSource("../../example-project/runnables.wasm.zip")
+	appSource := bundle.NewBundleSource("../../example-project/modules.wasm.zip")
 
 	coord = New(appSource, opts)
 

@@ -40,9 +40,9 @@ func (s *serverTestSuite) TearDownSuite() {
 	s.signaler.ManualShutdown(time.Second)
 }
 
-//curl -d 'my friend' localhost:8080/hello.
+// curl -d 'my friend' localhost:8080/hello.
 func (s *serverTestSuite) TestHelloEndpoint() {
-	server, err := s.serverForBundle("../example-project/runnables.wasm.zip")
+	server, err := s.serverForBundle("../example-project/modules.wasm.zip")
 	if err != nil {
 		s.T().Error(errors.Wrap(err, "failed to s.serverForBundle"))
 		return
@@ -60,10 +60,10 @@ func (s *serverTestSuite) TestHelloEndpoint() {
 		AssertBodyString("hello my friend")
 }
 
-//curl -d 'name' localhost:8080/set/name
-//curl localhost:8080/get/name.
+// curl -d 'name' localhost:8080/set/name
+// curl localhost:8080/get/name.
 func (s *serverTestSuite) TestSetAndGetKeyEndpoints() {
-	server, err := s.serverForBundle("../example-project/runnables.wasm.zip")
+	server, err := s.serverForBundle("../example-project/modules.wasm.zip")
 	if err != nil {
 		s.T().Error(errors.Wrap(err, "failed to s.serverForBundle"))
 		return
@@ -87,9 +87,9 @@ func (s *serverTestSuite) TestSetAndGetKeyEndpoints() {
 
 }
 
-//curl localhost:8080/file/main.md.
+// curl localhost:8080/file/main.md.
 func (s *serverTestSuite) TestFileMainMDEndpoint() {
-	server, err := s.serverForBundle("../example-project/runnables.wasm.zip")
+	server, err := s.serverForBundle("../example-project/modules.wasm.zip")
 	if err != nil {
 		s.T().Error(errors.Wrap(err, "failed to s.serverForBundle"))
 		return
@@ -106,9 +106,9 @@ func (s *serverTestSuite) TestFileMainMDEndpoint() {
 		AssertBodyString("## hello")
 }
 
-//curl localhost:8080/file/css/main.css.
+// curl localhost:8080/file/css/main.css.
 func (s *serverTestSuite) TestFileMainCSSEndpoint() {
-	server, err := s.serverForBundle("../example-project/runnables.wasm.zip")
+	server, err := s.serverForBundle("../example-project/modules.wasm.zip")
 	if err != nil {
 		s.T().Error(errors.Wrap(err, "failed to s.serverForBundle"))
 		return
@@ -131,7 +131,7 @@ func (s *serverTestSuite) TestFileMainCSSEndpoint() {
 
 // curl localhost:8080/file/js/app/main.js.
 func (s *serverTestSuite) TestFileMainJSEndpoint() {
-	server, err := s.serverForBundle("../example-project/runnables.wasm.zip")
+	server, err := s.serverForBundle("../example-project/modules.wasm.zip")
 	if err != nil {
 		s.T().Error(errors.Wrap(err, "failed to s.serverForBundle"))
 		return
@@ -153,9 +153,9 @@ func (s *serverTestSuite) TestFileMainJSEndpoint() {
 		AssertBody(data)
 }
 
-//curl -d 'https://github.com' localhost:8080/fetch | grep "grav".
+// curl -d 'https://github.com' localhost:8080/fetch | grep "grav".
 func (s *serverTestSuite) TestFetchEndpoint() {
-	server, err := s.serverForBundle("../example-project/runnables.wasm.zip")
+	server, err := s.serverForBundle("../example-project/modules.wasm.zip")
 	if err != nil {
 		s.T().Error(errors.Wrap(err, "failed to s.serverForBundle"))
 		return
