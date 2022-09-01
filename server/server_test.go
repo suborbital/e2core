@@ -162,11 +162,13 @@ func (s *serverTestSuite) TestFetchEndpoint() {
 	}
 
 	vt := vtest.New(server)
-	req, err := http.NewRequest(http.MethodPost, "/fetch", bytes.NewBuffer([]byte("https://github.com")))
+	req, err := http.NewRequest(http.MethodPost, "/workflow/com.suborbital.app/default/fetch", bytes.NewBuffer([]byte("https://github.com")))
 	if err != nil {
 		s.T().Fatal(err)
 	}
 	resp := vt.Do(req, s.T())
+
+	fmt.Println(string(resp.Body)[:10])
 
 	// Check the response for these "Repositories", "People" and "Sponsoring" keywords to ensure that the correct HTML
 	// has been loaded.

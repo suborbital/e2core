@@ -82,11 +82,11 @@ func (s *Server) Start(ctx context.Context) error {
 		return errors.Wrap(err, "failed to SetupHandlers")
 	}
 
-	s.server.SwapRouter(router)
-
-	if err := s.coordinator.SetupWorkflows(); err != nil {
+	if err := s.coordinator.SetupWorkflows(router); err != nil {
 		return errors.Wrap(err, "failed to SetupWorkflows")
 	}
+
+	s.server.SwapRouter(router)
 
 	if err := s.server.Start(); err != nil {
 		return errors.Wrap(err, "failed to server.Start")
@@ -157,6 +157,10 @@ func (s *Server) testServer() (*vk.Server, error) {
 	router, err := s.coordinator.SetupHandlers()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to SetupHandlers")
+	}
+
+	if err := s.coordinator.SetupWorkflows(router); err != nil {
+		return nil, errors.Wrap(err, "failed to SetupWorkflows")
 	}
 
 	s.server.SwapRouter(router)

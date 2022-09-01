@@ -304,8 +304,12 @@ github.com/stretchr/testify v1.7.1 h1:5TQK59W5E3v0r2duFAb7P95B6hEeOyEnHRa8MjYSMT
 github.com/stretchr/testify v1.7.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/suborbital/appspec v0.0.2-0.20220823192854-03dd8d2a3e57 h1:FGnp0qHPPY9aJJXe6V+Dtua3uAeIgqCva04i2lLaegM=
 github.com/suborbital/appspec v0.0.2-0.20220823192854-03dd8d2a3e57/go.mod h1:6TkMFP7jppvsJ7l3bkz30eSAo20gOd2bMbSJGLDmxIM=
+github.com/suborbital/appspec v0.0.2-0.20220901195134-4faf34198e58 h1:dZTfI0RXCBSbL6deH5anGxNOoe/LWpIBHaAUwngSUHI=
+github.com/suborbital/appspec v0.0.2-0.20220901195134-4faf34198e58/go.mod h1:6TkMFP7jppvsJ7l3bkz30eSAo20gOd2bMbSJGLDmxIM=
 github.com/suborbital/sat v0.0.0-20220823181007-a310be3c2357 h1:gCALnjCJ/kuSjiGQyztNfhSS6fDZOroU9ITuR65vyw0=
 github.com/suborbital/sat v0.0.0-20220823181007-a310be3c2357/go.mod h1:h5o3S2WV/CYm6bd2R+iFtjx2VBAnIURdtkvEDMSRhG4=
+github.com/suborbital/sat v0.0.0-20220901194649-561d821702e4 h1:e/sBAPzZIJaPwwRnPqgeiSQmjoAEAuJxnH5sBHLSk/w=
+github.com/suborbital/sat v0.0.0-20220901194649-561d821702e4/go.mod h1:h5o3S2WV/CYm6bd2R+iFtjx2VBAnIURdtkvEDMSRhG4=
 github.com/suborbital/vektor v0.5.3-0.20220606154347-af1e678993a8 h1:1GUeXgAL4969UAg0IuZg0tKvYlsxiDd4v/MOwYIKD2U=
 github.com/suborbital/vektor v0.5.3-0.20220606154347-af1e678993a8/go.mod h1:/OSnPYtTDFwGHnoFaBYpWQu1moH1X8Vo/y4BVU3+oWM=
 github.com/twmb/franz-go v1.6.0 h1:yri7YsVBe/k1LKcoZSLILgUI3U14e82qtD9i4VOcs9c=

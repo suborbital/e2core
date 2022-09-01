@@ -22,7 +22,7 @@ func (s *scheduledRunner) Run(job scheduler.Job, ctx *scheduler.Ctx) (interface{
 
 func (s *scheduledRunner) OnChange(_ scheduler.ChangeEvent) error { return nil }
 
-func (c *Coordinator) rtFuncForDirectiveSchedule(wfl tenant.Workflow) rtFunc {
+func (c *Coordinator) rtFuncForSchedule(wfl tenant.Workflow) rtFunc {
 	return func(job scheduler.Job, ctx *scheduler.Ctx) (interface{}, error) {
 		c.log.Info("executing schedule", wfl.Name)
 
