@@ -24,15 +24,12 @@ import (
 )
 
 const (
-	deltavMethodSchedule       = "SCHED"
-	deltavMethodStream         = "STREAM"
-	deltavHeadlessStateHeader  = "X-Deltav-State"
-	deltavHeadlessParamsHeader = "X-Deltav-Params"
-	deltavRequestIDHeader      = "X-Deltav-RequestID"
-	deltavMessageURI           = "/meta/message"
-	DeltavMetricsURI           = "/meta/metrics"
-	DeltavHealthURI            = "/health"
-	connectionKeyFormat        = "%s.%d.%s.%s.%s" // ident.version.namespace.connType.connName
+	deltavMethodSchedule = "SCHED"
+	deltavMethodStream   = "STREAM"
+	deltavMessageURI     = "/meta/message"
+	DeltavMetricsURI     = "/meta/metrics"
+	DeltavHealthURI      = "/health"
+	connectionKeyFormat  = "%s.%d.%s.%s.%s" // ident.version.namespace.connType.connName
 )
 
 type rtFunc func(scheduler.Job, *scheduler.Ctx) (interface{}, error)
