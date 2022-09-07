@@ -24,15 +24,12 @@ import (
 )
 
 const (
-	deltavMethodSchedule       = "SCHED"
-	deltavMethodStream         = "STREAM"
-	deltavHeadlessStateHeader  = "X-Deltav-State"
-	deltavHeadlessParamsHeader = "X-Deltav-Params"
-	deltavRequestIDHeader      = "X-Deltav-RequestID"
-	deltavMessageURI           = "/meta/message"
-	DeltavMetricsURI           = "/meta/metrics"
-	DeltavHealthURI            = "/health"
-	connectionKeyFormat        = "%s.%d.%s.%s.%s" // ident.version.namespace.connType.connName
+	deltavMethodSchedule = "SCHED"
+	deltavMethodStream   = "STREAM"
+	deltavMessageURI     = "/meta/message"
+	DeltavMetricsURI     = "/meta/metrics"
+	DeltavHealthURI      = "/health"
+	connectionKeyFormat  = "%s.%d.%s.%s.%s" // ident.version.namespace.connType.connName
 )
 
 type rtFunc func(scheduler.Job, *scheduler.Ctx) (interface{}, error)
@@ -248,8 +245,8 @@ func (c *Coordinator) createConnections() error {
 	return nil
 }
 
-// TODO: Workflows are not fully implemented, need to add execution by URI
-func (c *Coordinator) SetupWorkflows() error {
+// TODO: Workflows are not fully implemented, need to add scheduled execution
+func (c *Coordinator) SetupWorkflows(router *vk.Router) error {
 	ovv, err := c.App.Overview()
 	if err != nil {
 		return errors.Wrap(err, "failed to app.Overview")
@@ -275,20 +272,23 @@ func (c *Coordinator) SetupWorkflows() error {
 			for j := range ns.Workflows {
 				wfl := ns.Workflows[j]
 
-				// create basically an fqmn for this schedule (com.suborbital.appname#schedule.dojob@v0.1.0).
-				jobName := fmt.Sprintf("%s#workflow.%s@%d", tnt.Identifier, wfl.Name, tnt.Version)
+				// mount the workflow's handler to /workflow/{ident}/{namespace}{workflowname}, i.e. /workflow/com.suborbital.appname/default/dosomething
+				path := fmt.Sprintf("/workflow/%s/%s/%s", tnt.Config.Identifier, ns.Name, wfl.Name)
 
-				seconds := wfl.Schedule.NumberOfSeconds()
+				router.POST(path, c.vkHandlerForWorkflow(wfl))
 
-				// only actually schedule the job if the env var isn't set (or is set but not 'false')
-				// the job stays mounted on reactr because we could get a request to run it from grav.
-				if *c.opts.RunSchedules {
-					c.log.Debug("adding schedule", jobName)
+				// TODO: set up scheduled workflows (will need to add a scheduler instance to the coordinator and register them)
+				// seconds := wfl.Schedule.NumberOfSeconds()
 
-					c.exec.SetSchedule(scheduler.Every(seconds, func() scheduler.Job {
-						return scheduler.NewJob(jobName, nil)
-					}))
-				}
+				// // only actually schedule the job if the env var isn't set (or is set but not 'false')
+				// // the job stays mounted on reactr because we could get a request to run it from grav.
+				// if *c.opts.RunSchedules && wfl.Schedule != nil {
+				// 	c.log.Debug("adding schedule", jobName)
+
+				// 	c.exec.SetSchedule(scheduler.Every(seconds, func() scheduler.Job {
+				// 		return scheduler.NewJob(jobName, nil)
+				// 	}))
+				// }
 			}
 		}
 

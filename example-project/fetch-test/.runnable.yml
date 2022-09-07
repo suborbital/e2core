@@ -1,4 +1,0 @@
-name: fetch-test
-namespace: default
-lang: rust
-apiVersion: 0.0.1

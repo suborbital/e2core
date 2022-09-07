@@ -43,7 +43,7 @@ jobs:
 
       - name: Build
         run: |
-          make deltav
+          make deltav/install
           make deltav/static
 
       - name: Run test

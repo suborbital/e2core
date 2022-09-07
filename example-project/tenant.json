@@ -1,0 +1,92 @@
+{
+    "identifier": "com.suborbital.app",
+    "specVersion": 1,
+    "tenantVersion": 14,
+    "defaultNamespace": {
+        "name": "default",
+        "workflows": [
+            {
+                "name": "fetch",
+                "steps": [
+                    {
+                        "executableMod": {
+                            "fqmn": "/name/default/modify-url"
+                        },
+                        "ForEach": null
+                    },
+                    {
+                        "executableMod": {
+                            "fqmn": "/name/default/fetch-test",
+                            "with": {
+                                "url": "modify-url"
+                            }
+                        },
+                        "ForEach": null
+                    }
+                ],
+                "triggers": null
+            }
+        ],
+        "capabilities": {
+            "logger": {
+                "enabled": true
+            },
+            "http": {
+                "enabled": true,
+                "rules": {
+                    "allowedDomains": [],
+                    "blockedDomains": [],
+                    "allowedPorts": null,
+                    "blockedPorts": null,
+                    "allowIPs": true,
+                    "allowPrivate": true,
+                    "allowHTTP": true
+                }
+            },
+            "graphql": {
+                "enabled": true,
+                "rules": {
+                    "allowedDomains": [],
+                    "blockedDomains": [],
+                    "allowedPorts": null,
+                    "blockedPorts": null,
+                    "allowIPs": true,
+                    "allowPrivate": true,
+                    "allowHTTP": true
+                }
+            },
+            "auth": {
+                "enabled": true,
+                "headers": null
+            },
+            "cache": {
+                "enabled": true,
+                "rules": {
+                    "allowSet": true,
+                    "allowGet": true,
+                    "allowDelete": true
+                }
+            },
+            "file": {
+                "enabled": true
+            },
+            "db": {
+                "enabled": false,
+                "dbType": "",
+                "connectionString": "",
+                "queries": null
+            },
+            "requestHandler": {
+                "enabled": true,
+                "allowGetField": true,
+                "allowSetField": true
+            },
+            "secrets": {
+                "enabled": true
+            }
+        },
+        "modules": null
+    },
+    "namespaces": [],
+    "modules": null
+}
