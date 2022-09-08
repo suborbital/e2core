@@ -23,24 +23,21 @@ const (
 )
 
 type Orchestrator struct {
-	logger     *vlog.Logger
-	opts       options.Options
-	sats       map[string]*watcher // map of FQFNs to watchers
-	signalChan chan os.Signal
-	wg         sync.WaitGroup
+	logger           *vlog.Logger
+	opts             options.Options
+	sats             map[string]*watcher // map of FQFNs to watchers
+	failedPortCounts map[string]int
+	signalChan       chan os.Signal
+	wg               sync.WaitGroup
 }
 
 func New(bundlePath string, opts options.Options) (*Orchestrator, error) {
-	l := vlog.Default(
-		vlog.EnvPrefix("DELTAV"),
-		vlog.Level(vlog.LogLevelWarn),
-	)
-
 	o := &Orchestrator{
-		logger: l,
-		opts:   opts,
-		sats:   map[string]*watcher{},
-		wg:     sync.WaitGroup{},
+		logger:           opts.Logger(),
+		opts:             opts,
+		sats:             map[string]*watcher{},
+		failedPortCounts: map[string]int{},
+		wg:               sync.WaitGroup{},
 	}
 
 	return o, nil
@@ -175,10 +172,20 @@ func (o *Orchestrator) reconcileConstellation(appSource appsource.AppSource, err
 			}
 
 			if report != nil {
+				// for each failed port, track how many times it's failed and terminate if > 5
 				for _, p := range report.failedPorts {
-					o.logger.Debug("killing instance from failed port", p)
+					count, exists := o.failedPortCounts[p]
+					if !exists {
+						o.failedPortCounts[p] = 1
+					} else if count > 5 {
+						o.logger.Debug("killing instance from failed port", p)
 
-					satWatcher.terminateInstance(p)
+						satWatcher.terminateInstance(p)
+
+						delete(o.failedPortCounts, p)
+					} else {
+						o.failedPortCounts[p] = count + 1
+					}
 				}
 			}
 		}

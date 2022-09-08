@@ -17,6 +17,7 @@ import (
 	"github.com/suborbital/deltav/options"
 	"github.com/suborbital/deltav/signaler"
 	"github.com/suborbital/vektor/vk"
+	"github.com/suborbital/vektor/vlog"
 	"github.com/suborbital/vektor/vtest"
 )
 
@@ -204,7 +205,9 @@ func (s *serverTestSuite) serverForBundle(filepath string) (*vk.Server, error) {
 	defer s.lock.Unlock()
 
 	if s.ts == nil {
-		server, err := New(options.UseBundlePath(filepath))
+		logger := vlog.Default(vlog.Level(vlog.LogLevelDebug))
+
+		server, err := New(options.UseBundlePath(filepath), options.UseLogger(logger))
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to New")
 		}
