@@ -199,11 +199,15 @@ func (o *Orchestrator) setupAppSource() (appsource.AppSource, chan error) {
 	if o.opts.ControlPlane == options.DefaultControlPlane || o.opts.ControlPlane == "" {
 		o.opts.ControlPlane = options.DefaultControlPlane
 
+		o.logger.Debug("starting AppSource server")
+
 		// the returned appSource is a bundleSource
 		appSource, errChan := startAppSourceServer(o.opts.BundlePath)
 
 		return appSource, errChan
 	}
+
+	o.logger.Debug("using passthrough AppSource client")
 
 	appSource := client.NewHTTPSource(o.opts.ControlPlane, nil)
 
