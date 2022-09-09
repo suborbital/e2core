@@ -43,6 +43,11 @@ func (s *serverTestSuite) TearDownSuite() {
 
 // curl -d 'my friend' localhost:8080/hello.
 func (s *serverTestSuite) TestHelloEndpoint() {
+	if shouldRun := os.Getenv("RUN_SERVER_TESTS"); shouldRun != "true" {
+		fmt.Println("skipping server test")
+		return
+	}
+
 	server, err := s.serverForBundle("../example-project/modules.wasm.zip")
 	if err != nil {
 		s.T().Error(errors.Wrap(err, "failed to s.serverForBundle"))
@@ -64,6 +69,11 @@ func (s *serverTestSuite) TestHelloEndpoint() {
 // curl -d 'name' localhost:8080/set/name
 // curl localhost:8080/get/name.
 func (s *serverTestSuite) TestSetAndGetKeyEndpoints() {
+	if shouldRun := os.Getenv("RUN_SERVER_TESTS"); shouldRun != "true" {
+		fmt.Println("skipping server test")
+		return
+	}
+
 	server, err := s.serverForBundle("../example-project/modules.wasm.zip")
 	if err != nil {
 		s.T().Error(errors.Wrap(err, "failed to s.serverForBundle"))
@@ -94,6 +104,11 @@ func (s *serverTestSuite) TestSetAndGetKeyEndpoints() {
 
 // curl localhost:8080/file/main.md.
 func (s *serverTestSuite) TestFileMainMDEndpoint() {
+	if shouldRun := os.Getenv("RUN_SERVER_TESTS"); shouldRun != "true" {
+		fmt.Println("skipping server test")
+		return
+	}
+
 	server, err := s.serverForBundle("../example-project/modules.wasm.zip")
 	if err != nil {
 		s.T().Error(errors.Wrap(err, "failed to s.serverForBundle"))
@@ -115,6 +130,11 @@ func (s *serverTestSuite) TestFileMainMDEndpoint() {
 
 // curl localhost:8080/file/css/main.css.
 func (s *serverTestSuite) TestFileMainCSSEndpoint() {
+	if shouldRun := os.Getenv("RUN_SERVER_TESTS"); shouldRun != "true" {
+		fmt.Println("skipping server test")
+		return
+	}
+
 	server, err := s.serverForBundle("../example-project/modules.wasm.zip")
 	if err != nil {
 		s.T().Error(errors.Wrap(err, "failed to s.serverForBundle"))
@@ -141,6 +161,11 @@ func (s *serverTestSuite) TestFileMainCSSEndpoint() {
 
 // curl localhost:8080/file/js/app/main.js.
 func (s *serverTestSuite) TestFileMainJSEndpoint() {
+	if shouldRun := os.Getenv("RUN_SERVER_TESTS"); shouldRun != "true" {
+		fmt.Println("skipping server test")
+		return
+	}
+
 	server, err := s.serverForBundle("../example-project/modules.wasm.zip")
 	if err != nil {
 		s.T().Error(errors.Wrap(err, "failed to s.serverForBundle"))
@@ -167,6 +192,11 @@ func (s *serverTestSuite) TestFileMainJSEndpoint() {
 
 // curl -d 'https://github.com' localhost:8080/fetch | grep "grav".
 func (s *serverTestSuite) TestFetchEndpoint() {
+	if shouldRun := os.Getenv("RUN_SERVER_TESTS"); shouldRun != "true" {
+		fmt.Println("skipping server test")
+		return
+	}
+
 	server, err := s.serverForBundle("../example-project/modules.wasm.zip")
 	if err != nil {
 		s.T().Error(errors.Wrap(err, "failed to s.serverForBundle"))
