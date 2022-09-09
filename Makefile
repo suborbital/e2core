@@ -32,6 +32,9 @@ example-project:
 test:
 	RUN_SERVER_TESTS=true go test -v --count=1 -p=1 ./...
 
+test/ci:
+	go test -v --count=1 -p=1 ./...
+
 lint:
 	golangci-lint run ./...
 

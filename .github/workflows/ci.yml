@@ -48,7 +48,7 @@ jobs:
 
       - name: Run test
         run: |
-          make test
+          make test/ci
 
   image:
     runs-on: ubuntu-latest
