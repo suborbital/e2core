@@ -31,11 +31,21 @@ type serverTestSuite struct {
 
 // SetupSuite sets up the entire suite
 func (s *serverTestSuite) SetupSuite() {
+	if shouldRun := os.Getenv("RUN_SERVER_TESTS"); shouldRun != "true" {
+		fmt.Println("skipping server test")
+		return
+	}
+
 	fmt.Println("SETUP")
 }
 
 // TearDownSuite tears everything down
 func (s *serverTestSuite) TearDownSuite() {
+	if shouldRun := os.Getenv("RUN_SERVER_TESTS"); shouldRun != "true" {
+		fmt.Println("skipping server test")
+		return
+	}
+
 	fmt.Println("TEARDOWN")
 
 	s.signaler.ManualShutdown(time.Second)
@@ -231,6 +241,11 @@ func (s *serverTestSuite) TestFetchEndpoint() {
 
 // nolint
 func (s *serverTestSuite) serverForBundle(filepath string) (*vk.Server, error) {
+	if shouldRun := os.Getenv("RUN_SERVER_TESTS"); shouldRun != "true" {
+		fmt.Println("skipping server test")
+		return nil, nil
+	}
+
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
