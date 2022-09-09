@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 	"syscall"
 
@@ -57,19 +56,19 @@ func Run(cmd string, env ...string) (string, int, error) {
 }
 
 // logfilePath returns the directory that Info files should be written to
-func logfilePath(uuid string) (string, error) {
-	config, err := os.UserConfigDir()
-	if err != nil {
-		return "", errors.Wrap(err, "failed to UserConfigDir")
-	}
+// func logfilePath(uuid string) (string, error) {
+// 	config, err := os.UserConfigDir()
+// 	if err != nil {
+// 		return "", errors.Wrap(err, "failed to UserConfigDir")
+// 	}
 
-	dir := filepath.Join(config, "suborbital", "log")
+// 	dir := filepath.Join(config, "suborbital", "log")
 
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		return "", errors.Wrap(err, "failed to MkdirAll")
-	}
+// 	if err := os.MkdirAll(dir, 0755); err != nil {
+// 		return "", errors.Wrap(err, "failed to MkdirAll")
+// 	}
 
-	filePath := filepath.Join(dir, fmt.Sprintf("%s.log", uuid))
+// 	filePath := filepath.Join(dir, fmt.Sprintf("%s.log", uuid))
 
-	return filePath, nil
-}
+// 	return filePath, nil
+// }

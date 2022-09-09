@@ -1,3 +1,5 @@
+//nolint
+
 package coordinator
 
 import (
@@ -11,17 +13,24 @@ import (
 	"github.com/suborbital/vektor/vk"
 )
 
+// nolint
+type rtFunc func(scheduler.Job, *scheduler.Ctx) (interface{}, error)
+
+// nolint
 // scheduledRunner is a runner that will run a schedule on a.... schedule.
 type scheduledRunner struct {
 	RunFunc rtFunc
 }
 
+// nolint
 func (s *scheduledRunner) Run(job scheduler.Job, ctx *scheduler.Ctx) (interface{}, error) {
 	return s.RunFunc(job, ctx)
 }
 
+// nolint
 func (s *scheduledRunner) OnChange(_ scheduler.ChangeEvent) error { return nil }
 
+// nolint
 func (c *Coordinator) rtFuncForSchedule(wfl tenant.Workflow) rtFunc {
 	return func(job scheduler.Job, ctx *scheduler.Ctx) (interface{}, error) {
 		c.log.Info("executing schedule", wfl.Name)

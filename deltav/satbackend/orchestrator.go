@@ -59,7 +59,7 @@ loop:
 			// fall through and reconcile
 		}
 
-		o.reconcileConstellation(appSource, errChan)
+		o.reconcileConstellation(appSource)
 
 		time.Sleep(time.Second)
 	}
@@ -86,7 +86,7 @@ func (o *Orchestrator) Shutdown() {
 	o.wg.Wait()
 }
 
-func (o *Orchestrator) reconcileConstellation(appSource appsource.AppSource, errChan chan error) {
+func (o *Orchestrator) reconcileConstellation(appSource appsource.AppSource) {
 	ovv, err := appSource.Overview()
 	if err != nil {
 		o.logger.Error(errors.Wrap(err, "failed to app.Overview"))

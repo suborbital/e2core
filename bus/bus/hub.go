@@ -126,7 +126,7 @@ func (h *hub) discoveryHandler() func(endpoint string, uuid string) {
 		}
 
 		// this reduces the number of extraneous outgoing handshakes that get attempted.
-		if _, exists := h.findConnection(uuid); exists {
+		if h.connectionExists(uuid) {
 			h.log.Debug("[grav] encountered duplicate connection, discarding")
 			return
 		}
@@ -254,19 +254,11 @@ func (h *hub) handleIncomingConnection(connection Connection) {
 }
 
 func (h *hub) setupNewConnection(connection Connection, uuid, belongsTo string, interests []string) {
-	if _, exists := h.findConnection(uuid); exists {
+	if h.connectionExists(uuid) {
 		connection.Close()
 		h.log.Debug("[grav] encountered duplicate connection, discarding")
 	} else {
 		h.addConnection(connection, uuid, belongsTo, interests)
-	}
-}
-
-func (h *hub) incomingMessageHandler(uuid string) ReceiveFunc {
-	return func(msg Message) {
-		h.log.Debug("[grav] received message ", msg.UUID(), "from node", uuid)
-
-		h.pod.Send(msg)
 	}
 }
 
@@ -326,16 +318,16 @@ func (h *hub) removeMeshConnection(uuid string) {
 	delete(h.meshConnections, uuid)
 }
 
-func (h *hub) findConnection(uuid string) (Connection, bool) {
+func (h *hub) connectionExists(uuid string) bool {
 	h.lock.RLock()
 	defer h.lock.RUnlock()
 
 	conn, exists := h.meshConnections[uuid]
 	if exists && conn.Conn != nil {
-		return conn.Conn, true
+		return true
 	}
 
-	return nil, false
+	return false
 }
 
 // scanFailedMeshConnections should be run on a goroutine to constantly
