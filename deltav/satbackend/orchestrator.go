@@ -23,24 +23,21 @@ const (
 )
 
 type Orchestrator struct {
-	logger     *vlog.Logger
-	opts       options.Options
-	sats       map[string]*watcher // map of FQFNs to watchers
-	signalChan chan os.Signal
-	wg         sync.WaitGroup
+	logger           *vlog.Logger
+	opts             options.Options
+	sats             map[string]*watcher // map of FQFNs to watchers
+	failedPortCounts map[string]int
+	signalChan       chan os.Signal
+	wg               sync.WaitGroup
 }
 
 func New(bundlePath string, opts options.Options) (*Orchestrator, error) {
-	l := vlog.Default(
-		vlog.EnvPrefix("DELTAV"),
-		vlog.Level(vlog.LogLevelWarn),
-	)
-
 	o := &Orchestrator{
-		logger: l,
-		opts:   opts,
-		sats:   map[string]*watcher{},
-		wg:     sync.WaitGroup{},
+		logger:           opts.Logger(),
+		opts:             opts,
+		sats:             map[string]*watcher{},
+		failedPortCounts: map[string]int{},
+		wg:               sync.WaitGroup{},
 	}
 
 	return o, nil
@@ -62,7 +59,7 @@ loop:
 			// fall through and reconcile
 		}
 
-		o.reconcileConstellation(appSource, errChan)
+		o.reconcileConstellation(appSource)
 
 		time.Sleep(time.Second)
 	}
@@ -89,7 +86,7 @@ func (o *Orchestrator) Shutdown() {
 	o.wg.Wait()
 }
 
-func (o *Orchestrator) reconcileConstellation(appSource appsource.AppSource, errChan chan error) {
+func (o *Orchestrator) reconcileConstellation(appSource appsource.AppSource) {
 	ovv, err := appSource.Overview()
 	if err != nil {
 		o.logger.Error(errors.Wrap(err, "failed to app.Overview"))
@@ -175,10 +172,20 @@ func (o *Orchestrator) reconcileConstellation(appSource appsource.AppSource, err
 			}
 
 			if report != nil {
+				// for each failed port, track how many times it's failed and terminate if > 5
 				for _, p := range report.failedPorts {
-					o.logger.Debug("killing instance from failed port", p)
+					count, exists := o.failedPortCounts[p]
+					if !exists {
+						o.failedPortCounts[p] = 1
+					} else if count > 5 {
+						o.logger.Debug("killing instance from failed port", p)
 
-					satWatcher.terminateInstance(p)
+						satWatcher.terminateInstance(p)
+
+						delete(o.failedPortCounts, p)
+					} else {
+						o.failedPortCounts[p] = count + 1
+					}
 				}
 			}
 		}
@@ -192,11 +199,15 @@ func (o *Orchestrator) setupAppSource() (appsource.AppSource, chan error) {
 	if o.opts.ControlPlane == options.DefaultControlPlane || o.opts.ControlPlane == "" {
 		o.opts.ControlPlane = options.DefaultControlPlane
 
+		o.logger.Debug("starting AppSource server")
+
 		// the returned appSource is a bundleSource
 		appSource, errChan := startAppSourceServer(o.opts.BundlePath)
 
 		return appSource, errChan
 	}
+
+	o.logger.Debug("using passthrough AppSource client")
 
 	appSource := client.NewHTTPSource(o.opts.ControlPlane, nil)
 

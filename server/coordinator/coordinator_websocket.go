@@ -14,6 +14,7 @@ import (
 	"github.com/suborbital/vektor/vk"
 )
 
+// nolint
 func (c *Coordinator) websocketHandlerForSteps(steps []executable.Executable) http.HandlerFunc {
 	upgrader := websocket.Upgrader{} // use default options.
 

@@ -2,6 +2,7 @@ package coordinator
 
 import (
 	"bytes"
+	"fmt"
 	"testing"
 
 	"github.com/google/uuid"
@@ -12,6 +13,7 @@ import (
 	"github.com/suborbital/appspec/tenant/executable"
 	"github.com/suborbital/deltav/options"
 	"github.com/suborbital/deltav/scheduler"
+	"github.com/suborbital/deltav/server/coordinator/executor/mock"
 	"github.com/suborbital/deltav/server/coordinator/sequence"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
@@ -30,6 +32,39 @@ func init() {
 
 	coord = New(appSource, opts)
 
+	coord.exec = &mock.Executor{
+		Jobs: map[string]mock.JobFunc{
+			"/name/default/helloworld-rs": func(job interface{}, ctx *vk.Ctx) (interface{}, error) {
+				req := job.(*request.CoordinatedRequest)
+				resp := &request.CoordinatedResponse{
+					Output: []byte(fmt.Sprintf("hello %s", string(req.Body))),
+				}
+
+				return resp, nil
+			},
+			"/name/default/get-file": func(job interface{}, ctx *vk.Ctx) (interface{}, error) {
+				resp := &request.CoordinatedResponse{
+					Output: []byte("## hello"),
+				}
+
+				return resp, nil
+			},
+			"/name/default/return-err": func(job interface{}, ctx *vk.Ctx) (interface{}, error) {
+				return nil, scheduler.RunErr{Code: 400, Message: "job failed"}
+			},
+			"/name/default/modify-url": func(job interface{}, ctx *vk.Ctx) (interface{}, error) {
+				req := job.(*request.CoordinatedRequest)
+				urlState := req.State["url"]
+
+				resp := &request.CoordinatedResponse{
+					Output: []byte(fmt.Sprintf("%s/suborbital", string(urlState))),
+				}
+
+				return resp, nil
+			},
+		},
+	}
+
 	if err := coord.Start(); err != nil {
 		opts.Logger().Error(errors.Wrap(err, "failed to coord.Start"))
 	}
@@ -39,14 +74,14 @@ func TestBasicSequence(t *testing.T) {
 	steps := []executable.Executable{
 		{
 			ExecutableMod: executable.ExecutableMod{
-				FQMN: "com.suborbital.test#default::helloworld-rs@v0.0.1",
+				FQMN: "/name/default/helloworld-rs",
 			},
 		},
 	}
 
 	req := &request.CoordinatedRequest{
 		Method: "GET",
-		URL:    "/hello/world",
+		URL:    "/name/default/helloworld-rs",
 		ID:     uuid.New().String(),
 		Body:   []byte("world"),
 		State:  map[string][]byte{},
@@ -63,7 +98,7 @@ func TestBasicSequence(t *testing.T) {
 		return
 	}
 
-	if val, ok := req.State["helloworld-rs"]; !ok {
+	if val, ok := req.State["/name/default/helloworld-rs"]; !ok {
 		t.Error("helloworld state is missing")
 	} else if !bytes.Equal(val, []byte("hello world")) {
 		t.Error("unexpected helloworld state value:", string(val))
@@ -75,10 +110,10 @@ func TestGroupSequence(t *testing.T) {
 		{
 			Group: []executable.ExecutableMod{
 				{
-					FQMN: "com.suborbital.test#default::helloworld-rs@v0.0.1",
+					FQMN: "/name/default/helloworld-rs",
 				},
 				{
-					FQMN: "com.suborbital.test#default::get-file@v0.0.1",
+					FQMN: "/name/default/get-file",
 					As:   "main.md",
 				},
 			},
@@ -87,7 +122,7 @@ func TestGroupSequence(t *testing.T) {
 
 	req := &request.CoordinatedRequest{
 		Method: "GET",
-		URL:    "/hello/world",
+		URL:    "/workflows/com.suborbital.test/default/testgroup",
 		ID:     uuid.New().String(),
 		Body:   []byte("world"),
 		State: map[string][]byte{
@@ -105,7 +140,7 @@ func TestGroupSequence(t *testing.T) {
 		t.Error(err)
 	}
 
-	if val, ok := req.State["helloworld-rs"]; !ok {
+	if val, ok := req.State["/name/default/helloworld-rs"]; !ok {
 		t.Error("helloworld state is missing")
 	} else if !bytes.Equal(val, []byte("hello world")) {
 		t.Error("unexpected helloworld state value:", string(val))
@@ -122,13 +157,13 @@ func TestAsOnErrContinueSequence(t *testing.T) {
 	steps := []executable.Executable{
 		{
 			ExecutableMod: executable.ExecutableMod{
-				FQMN: "com.suborbital.test#default::helloworld-rs@v0.0.1",
+				FQMN: "/name/default/helloworld-rs",
 				As:   "hello",
 			},
 		},
 		{
 			ExecutableMod: executable.ExecutableMod{
-				FQMN: "com.suborbital.test#default::return-err@v0.0.1",
+				FQMN: "/name/default/return-err",
 				OnErr: &executable.ErrHandler{
 					Any: "continue",
 				},
@@ -138,7 +173,7 @@ func TestAsOnErrContinueSequence(t *testing.T) {
 
 	req := &request.CoordinatedRequest{
 		Method: "GET",
-		URL:    "/hello/world",
+		URL:    "/workflows/com.suborbital.test/default/testasonerrcontinue",
 		ID:     uuid.New().String(),
 		Body:   []byte("world"),
 		State:  map[string][]byte{},
@@ -165,13 +200,13 @@ func TestAsOnErrReturnSequence(t *testing.T) {
 	steps := []executable.Executable{
 		{
 			ExecutableMod: executable.ExecutableMod{
-				FQMN: "com.suborbital.test#default::helloworld-rs@v0.0.1",
+				FQMN: "/name/default/helloworld-rs",
 				As:   "hello",
 			},
 		},
 		{
 			ExecutableMod: executable.ExecutableMod{
-				FQMN: "com.suborbital.test#default::return-err@v0.0.1",
+				FQMN: "/name/default/return-err",
 				OnErr: &executable.ErrHandler{
 					Any: "return",
 				},
@@ -181,7 +216,7 @@ func TestAsOnErrReturnSequence(t *testing.T) {
 
 	req := &request.CoordinatedRequest{
 		Method: "GET",
-		URL:    "/hello/world",
+		URL:    "/workflows/com.suborbital.test/default/testasonerrreturn",
 		ID:     uuid.New().String(),
 		Body:   []byte("world"),
 		State:  map[string][]byte{},
@@ -216,22 +251,22 @@ func TestWithSequence(t *testing.T) {
 	steps := []executable.Executable{
 		{
 			ExecutableMod: executable.ExecutableMod{
-				FQMN: "com.suborbital.test#default::helloworld-rs@v0.0.1",
+				FQMN: "/name/default/helloworld-rs",
 			},
 		},
 		{
 			ExecutableMod: executable.ExecutableMod{
-				FQMN: "com.suborbital.test#default::modify-url@v0.0.1",
-				With: map[string]string{"url": "helloworld-rs"},
+				FQMN: "/name/default/modify-url",
+				With: map[string]string{"url": "/name/default/helloworld-rs"},
 			},
 		},
 	}
 
 	req := &request.CoordinatedRequest{
 		Method: "GET",
-		URL:    "/hello/world",
+		URL:    "/workflows/com.suborbital.test/default/testwithsequence",
 		ID:     uuid.New().String(),
-		Body:   []byte(""),
+		Body:   []byte("from URL"),
 		State:  map[string][]byte{},
 	}
 
@@ -245,15 +280,15 @@ func TestWithSequence(t *testing.T) {
 		t.Error(err)
 	}
 
-	if val, ok := req.State["helloworld-rs"]; !ok {
+	if val, ok := req.State["/name/default/helloworld-rs"]; !ok {
 		t.Error("helloworld-rs state is missing")
-	} else if !bytes.Equal(val, []byte("hello ")) {
+	} else if !bytes.Equal(val, []byte("hello from URL")) {
 		t.Error("unexpected helloworld-rs state value:", string(val))
 	}
 
-	if val, ok := req.State["modify-url"]; !ok {
+	if val, ok := req.State["/name/default/modify-url"]; !ok {
 		t.Error("modify-url state is missing")
-	} else if !bytes.Equal(val, []byte("hello /suborbital")) {
+	} else if !bytes.Equal(val, []byte("hello from URL/suborbital")) {
 		t.Error("unexpected modify-url state value:", string(val))
 	}
 }
@@ -262,20 +297,20 @@ func TestAsSequence(t *testing.T) {
 	steps := []executable.Executable{
 		{
 			ExecutableMod: executable.ExecutableMod{
-				FQMN: "com.suborbital.test#default::helloworld-rs@v0.0.1",
+				FQMN: "/name/default/helloworld-rs",
 				As:   "url",
 			},
 		},
 		{
 			ExecutableMod: executable.ExecutableMod{
-				FQMN: "com.suborbital.test#default::modify-url@v0.0.1",
+				FQMN: "/name/default/modify-url",
 			},
 		},
 	}
 
 	req := &request.CoordinatedRequest{
 		Method: "GET",
-		URL:    "/hello/world",
+		URL:    "/workflows/com.suborbital.test/default/testassequence",
 		ID:     uuid.New().String(),
 		Body:   []byte("friend"),
 		State:  map[string][]byte{},
@@ -297,7 +332,7 @@ func TestAsSequence(t *testing.T) {
 		t.Error("unexpected url state value:", string(val))
 	}
 
-	if val, ok := req.State["modify-url"]; !ok {
+	if val, ok := req.State["/name/default/modify-url"]; !ok {
 		t.Error("modify-url state is missing")
 	} else if !bytes.Equal(val, []byte("hello friend/suborbital")) {
 		t.Error("unexpected modify-url state value:", string(val))

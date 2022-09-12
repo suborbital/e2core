@@ -17,7 +17,6 @@ import (
 	"github.com/suborbital/deltav/bus/transport/nats"
 	"github.com/suborbital/deltav/bus/transport/websocket"
 	"github.com/suborbital/deltav/options"
-	"github.com/suborbital/deltav/scheduler"
 	"github.com/suborbital/deltav/server/coordinator/executor"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
@@ -25,14 +24,11 @@ import (
 
 const (
 	deltavMethodSchedule = "SCHED"
-	deltavMethodStream   = "STREAM"
 	deltavMessageURI     = "/meta/message"
 	DeltavMetricsURI     = "/meta/metrics"
 	DeltavHealthURI      = "/health"
 	connectionKeyFormat  = "%s.%d.%s.%s.%s" // ident.version.namespace.connType.connName
 )
-
-type rtFunc func(scheduler.Job, *scheduler.Ctx) (interface{}, error)
 
 // Coordinator is a type that is responsible for converting the directive into
 // usable Vektor handles by coordinating Reactr jobs and meshing when needed.

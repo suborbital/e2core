@@ -17,6 +17,7 @@ import (
 	"github.com/suborbital/deltav/options"
 	"github.com/suborbital/deltav/signaler"
 	"github.com/suborbital/vektor/vk"
+	"github.com/suborbital/vektor/vlog"
 	"github.com/suborbital/vektor/vtest"
 )
 
@@ -30,11 +31,21 @@ type serverTestSuite struct {
 
 // SetupSuite sets up the entire suite
 func (s *serverTestSuite) SetupSuite() {
+	if shouldRun := os.Getenv("RUN_SERVER_TESTS"); shouldRun != "true" {
+		fmt.Println("skipping server test")
+		return
+	}
+
 	fmt.Println("SETUP")
 }
 
 // TearDownSuite tears everything down
 func (s *serverTestSuite) TearDownSuite() {
+	if shouldRun := os.Getenv("RUN_SERVER_TESTS"); shouldRun != "true" {
+		fmt.Println("skipping server test")
+		return
+	}
+
 	fmt.Println("TEARDOWN")
 
 	s.signaler.ManualShutdown(time.Second)
@@ -42,6 +53,11 @@ func (s *serverTestSuite) TearDownSuite() {
 
 // curl -d 'my friend' localhost:8080/hello.
 func (s *serverTestSuite) TestHelloEndpoint() {
+	if shouldRun := os.Getenv("RUN_SERVER_TESTS"); shouldRun != "true" {
+		fmt.Println("skipping server test")
+		return
+	}
+
 	server, err := s.serverForBundle("../example-project/modules.wasm.zip")
 	if err != nil {
 		s.T().Error(errors.Wrap(err, "failed to s.serverForBundle"))
@@ -63,6 +79,11 @@ func (s *serverTestSuite) TestHelloEndpoint() {
 // curl -d 'name' localhost:8080/set/name
 // curl localhost:8080/get/name.
 func (s *serverTestSuite) TestSetAndGetKeyEndpoints() {
+	if shouldRun := os.Getenv("RUN_SERVER_TESTS"); shouldRun != "true" {
+		fmt.Println("skipping server test")
+		return
+	}
+
 	server, err := s.serverForBundle("../example-project/modules.wasm.zip")
 	if err != nil {
 		s.T().Error(errors.Wrap(err, "failed to s.serverForBundle"))
@@ -93,6 +114,11 @@ func (s *serverTestSuite) TestSetAndGetKeyEndpoints() {
 
 // curl localhost:8080/file/main.md.
 func (s *serverTestSuite) TestFileMainMDEndpoint() {
+	if shouldRun := os.Getenv("RUN_SERVER_TESTS"); shouldRun != "true" {
+		fmt.Println("skipping server test")
+		return
+	}
+
 	server, err := s.serverForBundle("../example-project/modules.wasm.zip")
 	if err != nil {
 		s.T().Error(errors.Wrap(err, "failed to s.serverForBundle"))
@@ -114,6 +140,11 @@ func (s *serverTestSuite) TestFileMainMDEndpoint() {
 
 // curl localhost:8080/file/css/main.css.
 func (s *serverTestSuite) TestFileMainCSSEndpoint() {
+	if shouldRun := os.Getenv("RUN_SERVER_TESTS"); shouldRun != "true" {
+		fmt.Println("skipping server test")
+		return
+	}
+
 	server, err := s.serverForBundle("../example-project/modules.wasm.zip")
 	if err != nil {
 		s.T().Error(errors.Wrap(err, "failed to s.serverForBundle"))
@@ -140,6 +171,11 @@ func (s *serverTestSuite) TestFileMainCSSEndpoint() {
 
 // curl localhost:8080/file/js/app/main.js.
 func (s *serverTestSuite) TestFileMainJSEndpoint() {
+	if shouldRun := os.Getenv("RUN_SERVER_TESTS"); shouldRun != "true" {
+		fmt.Println("skipping server test")
+		return
+	}
+
 	server, err := s.serverForBundle("../example-project/modules.wasm.zip")
 	if err != nil {
 		s.T().Error(errors.Wrap(err, "failed to s.serverForBundle"))
@@ -166,6 +202,11 @@ func (s *serverTestSuite) TestFileMainJSEndpoint() {
 
 // curl -d 'https://github.com' localhost:8080/fetch | grep "grav".
 func (s *serverTestSuite) TestFetchEndpoint() {
+	if shouldRun := os.Getenv("RUN_SERVER_TESTS"); shouldRun != "true" {
+		fmt.Println("skipping server test")
+		return
+	}
+
 	server, err := s.serverForBundle("../example-project/modules.wasm.zip")
 	if err != nil {
 		s.T().Error(errors.Wrap(err, "failed to s.serverForBundle"))
@@ -200,11 +241,18 @@ func (s *serverTestSuite) TestFetchEndpoint() {
 
 // nolint
 func (s *serverTestSuite) serverForBundle(filepath string) (*vk.Server, error) {
+	if shouldRun := os.Getenv("RUN_SERVER_TESTS"); shouldRun != "true" {
+		fmt.Println("skipping server test")
+		return nil, nil
+	}
+
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
 	if s.ts == nil {
-		server, err := New(options.UseBundlePath(filepath))
+		logger := vlog.Default(vlog.Level(vlog.LogLevelDebug))
+
+		server, err := New(options.UseBundlePath(filepath), options.UseLogger(logger))
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to New")
 		}

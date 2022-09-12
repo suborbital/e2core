@@ -16,8 +16,6 @@ type Transport struct {
 	log  *vlog.Logger
 
 	serverConn *nats.Conn
-
-	connectionFunc func(bus.Connection)
 }
 
 // Conn implements transport.TopicConnection and represents a subscribe/send pair for a NATS topic

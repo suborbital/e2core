@@ -9,7 +9,7 @@ deltav/static:
 	go build -o .bin/deltav -tags netgo -ldflags="-extldflags=-static" .
 
 deltav/docker: docker/dev
-	docker run -v ${PWD}/$(dir):/home/deltav -e DELTAV_HTTP_PORT=8080 -p 8080:8080 suborbital/deltav:dev deltav --wait
+	docker run -v ${PWD}/$(dir):/home/deltav -e DELTAV_HTTP_PORT=8080 -p 8080:8080 suborbital/deltav:dev deltav start ./example-project/modules.wasm.zip
 
 docker/dev:
 	docker build . -t suborbital/deltav:dev
@@ -30,6 +30,9 @@ example-project:
 	subo build ./example-project --native
 
 test:
+	RUN_SERVER_TESTS=true go test -v --count=1 -p=1 ./...
+
+test/ci:
 	go test -v --count=1 -p=1 ./...
 
 lint:

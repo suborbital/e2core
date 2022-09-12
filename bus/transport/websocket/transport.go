@@ -39,8 +39,6 @@ type Conn struct {
 
 	conn *websocket.Conn
 	lock sync.Mutex
-
-	recvFunc bus.ReceiveFunc
 }
 
 // New creates a new websocket transport
