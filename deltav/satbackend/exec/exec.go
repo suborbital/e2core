@@ -55,6 +55,8 @@ func Run(cmd string, env ...string) (string, int, error) {
 	return procUUID, pid, nil
 }
 
+// this is unused but we may want to do logging-to-speficig-directory some time in the
+// future, so we're leaving it here.
 // logfilePath returns the directory that Info files should be written to
 // func logfilePath(uuid string) (string, error) {
 // 	config, err := os.UserConfigDir()
