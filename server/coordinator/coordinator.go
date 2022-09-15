@@ -23,10 +23,10 @@ import (
 )
 
 const (
-	deltavMethodSchedule = "SCHED"
-	deltavMessageURI     = "/meta/message"
-	DeltavMetricsURI     = "/meta/metrics"
-	DeltavHealthURI      = "/health"
+	e2coreMethodSchedule = "SCHED"
+	e2coreMessageURI     = "/meta/message"
+	E2CoreMetricsURI     = "/meta/metrics"
+	E2CoreHealthURI      = "/health"
 	connectionKeyFormat  = "%s.%d.%s.%s.%s" // ident.version.namespace.connType.connName
 )
 
@@ -161,12 +161,12 @@ func (c *Coordinator) SetupHandlers() (*vk.Router, error) {
 		}
 	}
 
-	router.GET(DeltavMetricsURI, c.metricsHandler())
+	router.GET(E2CoreMetricsURI, c.metricsHandler())
 
-	router.GET(DeltavHealthURI, c.health())
+	router.GET(E2CoreHealthURI, c.health())
 
 	if c.transport != nil {
-		router.HandleHTTP(http.MethodGet, deltavMessageURI, c.transport.HTTPHandlerFunc())
+		router.HandleHTTP(http.MethodGet, e2coreMessageURI, c.transport.HTTPHandlerFunc())
 	}
 
 	return router, nil

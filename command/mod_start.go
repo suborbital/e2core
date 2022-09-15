@@ -15,9 +15,9 @@ import (
 func ModStart() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "start [module path or FQMN]",
-		Short:   "start a DeltaV module",
+		Short:   "start a E2Core module",
 		Long:    "starts a single module and connects to the mesh to receive jobs",
-		Version: release.DeltavServerDotVersion,
+		Version: release.E2CoreServerDotVersion,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			path := ""
 			if len(args) > 0 {

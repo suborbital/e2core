@@ -36,7 +36,7 @@ func (c *Coordinator) rtFuncForSchedule(wfl tenant.Workflow) rtFunc {
 		c.log.Info("executing schedule", wfl.Name)
 
 		req := &request.CoordinatedRequest{
-			Method:  deltavMethodSchedule,
+			Method:  e2coreMethodSchedule,
 			URL:     wfl.Name,
 			ID:      uuid.New().String(),
 			Body:    []byte{},

@@ -60,7 +60,7 @@ package coordinator
 // 		ctx.Log.Debug("handling message", msg.UUID(), "for handler", handlerIdent)
 
 // 		req := &request.CoordinatedRequest{
-// 			Method:      deltavMethodStream,
+// 			Method:      e2coreMethodStream,
 // 			URL:         handler.Input.Resource,
 // 			ID:          ctx.RequestID(),
 // 			Body:        msg.Data(),

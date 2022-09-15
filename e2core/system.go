@@ -11,7 +11,7 @@ const (
 	shutdownWaitTime = time.Second * 3
 )
 
-// System describes a DeltaV system, which is comprised of a server and a backend
+// System describes a E2Core system, which is comprised of a server and a backend
 type System struct {
 	Server  *server.Server
 	Backend Backend

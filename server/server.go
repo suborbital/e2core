@@ -16,7 +16,7 @@ import (
 	"github.com/suborbital/vektor/vk"
 )
 
-// Server is a DeltaV server.
+// Server is a E2Core server.
 type Server struct {
 	coordinator *coordinator.Coordinator
 	server      *vk.Server
@@ -52,7 +52,7 @@ func New(opts ...options.Modifier) (*Server, error) {
 	// each request to trigger Router re-generation
 	// when needed (during headless mode).
 	s.server = vk.New(
-		vk.UseEnvPrefix("DELTAV"),
+		vk.UseEnvPrefix("E2CORE"),
 		vk.UseAppName(vOpts.AppName),
 		vk.UseLogger(vOpts.Logger()),
 		vk.UseInspector(s.inspectRequest),
@@ -60,8 +60,8 @@ func New(opts ...options.Modifier) (*Server, error) {
 		vk.UseHTTPPort(vOpts.HTTPPort),
 		vk.UseTLSPort(vOpts.TLSPort),
 		vk.UseQuietRoutes(
-			coordinator.DeltavHealthURI,
-			coordinator.DeltavMetricsURI,
+			coordinator.E2CoreHealthURI,
+			coordinator.E2CoreMetricsURI,
 		),
 		vk.UseRouterWrapper(func(inner http.Handler) http.Handler {
 			return otelhttp.NewHandler(inner, "e2core")

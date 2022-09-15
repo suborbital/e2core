@@ -15,8 +15,8 @@ import (
 	"github.com/suborbital/vektor/vlog"
 )
 
-type deltavInfo struct {
-	DeltavVersion string `json:"deltav_version"`
+type e2coreInfo struct {
+	E2CoreVersion string `json:"e2core_version"`
 	ModuleName    string `json:"module_name,omitempty"`
 }
 
@@ -25,7 +25,7 @@ func Start() *cobra.Command {
 		Use:     "start [bundle-path]",
 		Short:   "start the e2core server",
 		Long:    "starts the e2core server using the provided options",
-		Version: release.DeltavServerDotVersion,
+		Version: release.E2CoreServerDotVersion,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			path := "./modules.wasm.zip"
 			if len(args) > 0 {
@@ -33,8 +33,8 @@ func Start() *cobra.Command {
 			}
 
 			logger := vlog.Default(
-				vlog.AppMeta(deltavInfo{DeltavVersion: release.DeltavServerDotVersion}),
-				vlog.EnvPrefix("DELTAV"),
+				vlog.AppMeta(e2coreInfo{E2CoreVersion: release.E2CoreServerDotVersion}),
+				vlog.EnvPrefix("E2CORE"),
 			)
 
 			opts, err := optionsFromFlags(cmd.Flags())
@@ -68,11 +68,11 @@ func Start() *cobra.Command {
 
 	cmd.SetVersionTemplate("{{.Version}}\n")
 
-	cmd.Flags().Bool(waitFlag, false, "if passed, DeltaV will wait until a bundle becomes available on disk, checking once per second")
-	cmd.Flags().String(appNameFlag, "DeltaV", "if passed, it'll be used as DELTAV_APP_NAME, otherwise 'DeltaV' will be used")
-	cmd.Flags().String(domainFlag, "", "if passed, it'll be used as DELTAV_DOMAIN and HTTPS will be used, otherwise HTTP will be used")
-	cmd.Flags().Int(httpPortFlag, 8080, "if passed, it'll be used as DELTAV_HTTP_PORT, otherwise '8080' will be used")
-	cmd.Flags().Int(tlsPortFlag, 443, "if passed, it'll be used as DELTAV_TLS_PORT, otherwise '443' will be used")
+	cmd.Flags().Bool(waitFlag, false, "if passed, E2Core will wait until a bundle becomes available on disk, checking once per second")
+	cmd.Flags().String(appNameFlag, "E2Core", "if passed, it'll be used as E2CORE_APP_NAME, otherwise 'E2Core' will be used")
+	cmd.Flags().String(domainFlag, "", "if passed, it'll be used as E2CORE_DOMAIN and HTTPS will be used, otherwise HTTP will be used")
+	cmd.Flags().Int(httpPortFlag, 8080, "if passed, it'll be used as E2CORE_HTTP_PORT, otherwise '8080' will be used")
+	cmd.Flags().Int(tlsPortFlag, 443, "if passed, it'll be used as E2CORE_TLS_PORT, otherwise '443' will be used")
 
 	return cmd
 }
