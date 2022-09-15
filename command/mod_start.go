@@ -7,8 +7,8 @@ import (
 	"github.com/spf13/cobra"
 	"go.opentelemetry.io/otel/trace"
 
-	"github.com/suborbital/deltav/server/release"
-	"github.com/suborbital/deltav/signaler"
+	"github.com/suborbital/e2core/server/release"
+	"github.com/suborbital/e2core/signaler"
 	"github.com/suborbital/sat/sat"
 )
 

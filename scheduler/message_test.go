@@ -6,8 +6,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/deltav/bus/bus"
-	"github.com/suborbital/deltav/bus/testutil"
+	"github.com/suborbital/e2core/bus/bus"
+	"github.com/suborbital/e2core/bus/testutil"
 )
 
 const msgTypeTester = "reactr.test"

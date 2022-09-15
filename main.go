@@ -3,8 +3,8 @@ package main
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/suborbital/deltav/command"
-	"github.com/suborbital/deltav/server/release"
+	"github.com/suborbital/e2core/command"
+	"github.com/suborbital/e2core/server/release"
 )
 
 func main() {
@@ -20,7 +20,7 @@ func main() {
 
 func rootCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "deltav",
+		Use:     "e2core",
 		Version: release.DeltavServerDotVersion,
 		Long: `
 	Deltav is a secure development kit and server for writing and running untrusted third-party plugins.

@@ -18,7 +18,7 @@ func modStartCommand(module tenant.Module) (string, string) {
 		log.Fatal(errors.Wrap(err, "failed to randPort"))
 	}
 
-	cmd := fmt.Sprintf("deltav mod start %s", module.FQMN)
+	cmd := fmt.Sprintf("e2core mod start %s", module.FQMN)
 
 	return cmd, port
 }

@@ -10,9 +10,9 @@ import (
 
 	"github.com/suborbital/appspec/appsource/bundle"
 	"github.com/suborbital/appspec/appsource/client"
-	"github.com/suborbital/deltav/fqfn"
-	"github.com/suborbital/deltav/options"
-	"github.com/suborbital/deltav/server/coordinator"
+	"github.com/suborbital/e2core/fqfn"
+	"github.com/suborbital/e2core/options"
+	"github.com/suborbital/e2core/server/coordinator"
 	"github.com/suborbital/vektor/vk"
 )
 
@@ -28,7 +28,7 @@ type Server struct {
 func New(opts ...options.Modifier) (*Server, error) {
 	vOpts := options.NewWithModifiers(opts...)
 
-	// @todo https://github.com/suborbital/deltav/issues/144, the first return value is a function that would close the
+	// @todo https://github.com/suborbital/e2core/issues/144, the first return value is a function that would close the
 	// tracer in case of a shutdown. Usually that is put in a defer statement. Server doesn't have a graceful shutdown.
 	_, err := setupTracing(vOpts.TracerConfig, vOpts.Logger())
 	if err != nil {
@@ -64,7 +64,7 @@ func New(opts ...options.Modifier) (*Server, error) {
 			coordinator.DeltavMetricsURI,
 		),
 		vk.UseRouterWrapper(func(inner http.Handler) http.Handler {
-			return otelhttp.NewHandler(inner, "deltav")
+			return otelhttp.NewHandler(inner, "e2core")
 		}),
 	)
 

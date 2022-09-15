@@ -7,11 +7,11 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
-	"github.com/suborbital/deltav/deltav"
-	"github.com/suborbital/deltav/deltav/satbackend"
-	"github.com/suborbital/deltav/options"
-	"github.com/suborbital/deltav/server"
-	"github.com/suborbital/deltav/server/release"
+	"github.com/suborbital/e2core/e2core"
+	"github.com/suborbital/e2core/e2core/satbackend"
+	"github.com/suborbital/e2core/options"
+	"github.com/suborbital/e2core/server"
+	"github.com/suborbital/e2core/server/release"
 	"github.com/suborbital/vektor/vlog"
 )
 
@@ -23,8 +23,8 @@ type deltavInfo struct {
 func Start() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "start [bundle-path]",
-		Short:   "start the deltav server",
-		Long:    "starts the deltav server using the provided options",
+		Short:   "start the e2core server",
+		Long:    "starts the e2core server using the provided options",
 		Version: release.DeltavServerDotVersion,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			path := "./modules.wasm.zip"
@@ -58,7 +58,7 @@ func Start() *cobra.Command {
 				return errors.Wrap(err, "failed to satbackend.New")
 			}
 
-			system := deltav.NewSystem(server, backend)
+			system := e2core.NewSystem(server, backend)
 
 			system.StartAll()
 

@@ -8,10 +8,10 @@ package coordinator
 // 	"github.com/pkg/errors"
 
 // 	"github.com/suborbital/appspec/appsource"
-// 	"github.com/suborbital/deltav/bus/bus"
+// 	"github.com/suborbital/e2core/bus/bus"
 // 	"github.com/suborbital/appspec/directive"
-// 	"github.com/suborbital/deltav/scheduler"
-// 	"github.com/suborbital/deltav/server/coordinator/sequence"
+// 	"github.com/suborbital/e2core/scheduler"
+// 	"github.com/suborbital/e2core/server/coordinator/sequence"
 // 	"github.com/suborbital/appspec/request"
 // 	"github.com/suborbital/vektor/vk"
 // )

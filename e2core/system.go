@@ -1,10 +1,10 @@
-package deltav
+package e2core
 
 import (
 	"time"
 
-	"github.com/suborbital/deltav/server"
-	"github.com/suborbital/deltav/signaler"
+	"github.com/suborbital/e2core/server"
+	"github.com/suborbital/e2core/signaler"
 )
 
 const (

@@ -6,7 +6,7 @@ import (
 	"github.com/nats-io/nats.go"
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/deltav/bus/bus"
+	"github.com/suborbital/e2core/bus/bus"
 	"github.com/suborbital/vektor/vlog"
 )
 

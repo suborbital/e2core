@@ -9,8 +9,8 @@ import (
 
 	"github.com/suborbital/appspec/request"
 	"github.com/suborbital/appspec/tenant/executable"
-	"github.com/suborbital/deltav/scheduler"
-	"github.com/suborbital/deltav/server/coordinator/sequence"
+	"github.com/suborbital/e2core/scheduler"
+	"github.com/suborbital/e2core/server/coordinator/sequence"
 	"github.com/suborbital/vektor/vk"
 )
 

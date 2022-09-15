@@ -10,7 +10,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/deltav/options"
+	"github.com/suborbital/e2core/options"
 )
 
 // AddUpstreamRequest is a request to add an upstream

@@ -13,9 +13,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/suborbital/deltav/deltav/satbackend"
-	"github.com/suborbital/deltav/options"
-	"github.com/suborbital/deltav/signaler"
+	"github.com/suborbital/e2core/e2core/satbackend"
+	"github.com/suborbital/e2core/options"
+	"github.com/suborbital/e2core/signaler"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
 	"github.com/suborbital/vektor/vtest"

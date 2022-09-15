@@ -10,7 +10,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/deltav/scheduler"
+	"github.com/suborbital/e2core/scheduler"
 )
 
 var successCount int64 = 0

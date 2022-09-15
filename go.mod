@@ -1,4 +1,4 @@
-module github.com/suborbital/deltav
+module github.com/suborbital/e2core
 
 go 1.18
 
