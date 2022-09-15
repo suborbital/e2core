@@ -1,4 +1,4 @@
-<img width="740" alt="E2Core" src="https://user-images.githubusercontent.com/5942370/178003243-8dd979b2-b92b-47b3-8a74-a391843b83b3.png">
+<img width="883" alt="e2core" src="https://user-images.githubusercontent.com/5942370/190490109-2fd7f923-ba01-4675-a07c-3d571e7c314a.png">
 
 **Suborbital E2 Core** is a server and SDK that allows developers to add third-party plugins to any application. Plugins are developed using familiar languages like JavaScript, TypeScript, Go, and Rust, and are executed in a securely sandboxed environment. E2Core can be run within proviate infrastructure and protects against potential malicious untrusted code while providing useful capabilities to plugin developers.
 
