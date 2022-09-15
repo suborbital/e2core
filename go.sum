@@ -322,6 +322,8 @@ github.com/suborbital/sat v0.0.0-20220902180105-4a66d7c17c95 h1:8YZktE4lijaJg5uQ
 github.com/suborbital/sat v0.0.0-20220902180105-4a66d7c17c95/go.mod h1:8i1XDRueUQxGjdFydYIOeeRackN++i5dFJO03OMlYnw=
 github.com/suborbital/sat v0.0.0-20220902180902-a2e39b5ec307 h1:3jzTG0yoeAvqUIswQcFIKg2Nr2ZmySA4Flm1XpwBGHA=
 github.com/suborbital/sat v0.0.0-20220902180902-a2e39b5ec307/go.mod h1:+5DFCq4BPeJ/OYlGd3TxHSzt8d++orNIV3lfT6HW34I=
+github.com/suborbital/sat v0.0.0-20220915170635-f9c83d3c45d5 h1:x2EupetrSUFTVHM/r3WACBsVi8q8xEoYzbTyjHtAbn0=
+github.com/suborbital/sat v0.0.0-20220915170635-f9c83d3c45d5/go.mod h1:wvt1p1jjHIWhGPJxGWKcHMMfdn5FXBz+3WEFt/8Evi0=
 github.com/suborbital/vektor v0.5.3-0.20220606154347-af1e678993a8 h1:1GUeXgAL4969UAg0IuZg0tKvYlsxiDd4v/MOwYIKD2U=
 github.com/suborbital/vektor v0.5.3-0.20220606154347-af1e678993a8/go.mod h1:/OSnPYtTDFwGHnoFaBYpWQu1moH1X8Vo/y4BVU3+oWM=
 github.com/twmb/franz-go v1.6.0 h1:yri7YsVBe/k1LKcoZSLILgUI3U14e82qtD9i4VOcs9c=
