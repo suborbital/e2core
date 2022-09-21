@@ -20,8 +20,6 @@ type Options struct {
 
 	BundlePath       string       `env:"E2CORE_BUNDLE_PATH"`
 	RunSchedules     *bool        `env:"E2CORE_RUN_SCHEDULES,default=true"`
-	Headless         *bool        `env:"E2CORE_HEADLESS,default=false"`
-	Wait             *bool        `env:"E2CORE_WAIT,default=false"`
 	ControlPlane     string       `env:"E2CORE_CONTROL_PLANE"`
 	UpstreamAddress  string       `env:"E2CORE_UPSTREAM_ADDRESS"`
 	EnvironmentToken string       `env:"E2CORE_ENV_TOKEN"`
@@ -87,26 +85,6 @@ func UseBundlePath(path string) Modifier {
 	}
 }
 
-// ShouldRunHeadless sets wether Atmo should operate in 'headless' mode.
-func ShouldRunHeadless(headless bool) Modifier {
-	return func(opts *Options) {
-		// only set the pointer if the value is true.
-		if headless {
-			opts.Headless = &headless
-		}
-	}
-}
-
-// ShouldWait sets wether Atmo should wait for a bundle to become available on disk.
-func ShouldWait(wait bool) Modifier {
-	return func(opts *Options) {
-		// only set the pointer if the value is true.
-		if wait {
-			opts.Wait = &wait
-		}
-	}
-}
-
 // AppName sets the app name to be used.
 func AppName(name string) Modifier {
 	return func(opts *Options) {
@@ -161,25 +139,6 @@ func (o *Options) finalize(prefix string) {
 	if o.RunSchedules == nil {
 		if envOpts.RunSchedules != nil {
 			o.RunSchedules = envOpts.RunSchedules
-		}
-	}
-
-	// set Wait if it was not passed as a flag
-	// if Wait is unset but ControlPlane IS set,
-	// Wait is implied to be true.
-	if o.Wait == nil {
-		if o.ControlPlane != "" {
-			wait := true
-			o.Wait = &wait
-		} else if envOpts.Wait != nil {
-			o.Wait = envOpts.Wait
-		}
-	}
-
-	// set Headless if it was not passed as a flag.
-	if o.Headless == nil {
-		if envOpts.Headless != nil {
-			o.Headless = envOpts.Headless
 		}
 	}
 

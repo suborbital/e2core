@@ -15,6 +15,7 @@ import (
 	"github.com/suborbital/e2core/scheduler"
 	"github.com/suborbital/e2core/server/coordinator/executor/mock"
 	"github.com/suborbital/e2core/server/coordinator/sequence"
+	"github.com/suborbital/e2core/syncer"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
 )
@@ -30,7 +31,9 @@ func init() {
 
 	appSource := bundle.NewBundleSource("../../example-project/modules.wasm.zip")
 
-	coord = New(appSource, opts)
+	syncer := syncer.New(opts, appSource)
+
+	coord = New(syncer, opts)
 
 	coord.exec = &mock.Executor{
 		Jobs: map[string]mock.JobFunc{

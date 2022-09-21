@@ -35,7 +35,7 @@ func registerWithControlPlane(opts options.Options) error {
 		selfIPs = detectedIPs
 	}
 
-	registerURL := fmt.Sprintf("%s/api/v1/upstream/register", opts.ControlPlane)
+	registerURL := fmt.Sprintf("http://%s/api/v1/upstream/register", opts.ControlPlane)
 
 	for _, ip := range selfIPs {
 		upstreamURL, err := url.Parse(fmt.Sprintf("http://%s:%s", ip.String(), atmoPort))
@@ -62,7 +62,10 @@ func registerWithControlPlane(opts options.Options) error {
 			return errors.Wrap(err, "failed to Do request")
 		}
 
-		if resp.StatusCode != http.StatusCreated {
+		if resp.StatusCode == http.StatusNotFound {
+			opts.Logger().Info("control plane does not support backend registration")
+			return nil
+		} else if resp.StatusCode != http.StatusCreated {
 			return errors.New("registration request failed: " + resp.Status)
 		}
 	}

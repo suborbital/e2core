@@ -68,8 +68,6 @@ func Start() *cobra.Command {
 
 	cmd.SetVersionTemplate("{{.Version}}\n")
 
-	cmd.Flags().Bool(waitFlag, false, "if passed, E2Core will wait until a bundle becomes available on disk, checking once per second")
-	cmd.Flags().String(appNameFlag, "E2Core", "if passed, it'll be used as E2CORE_APP_NAME, otherwise 'E2Core' will be used")
 	cmd.Flags().String(domainFlag, "", "if passed, it'll be used as E2CORE_DOMAIN and HTTPS will be used, otherwise HTTP will be used")
 	cmd.Flags().Int(httpPortFlag, 8080, "if passed, it'll be used as E2CORE_HTTP_PORT, otherwise '8080' will be used")
 	cmd.Flags().Int(tlsPortFlag, 443, "if passed, it'll be used as E2CORE_TLS_PORT, otherwise '443' will be used")
@@ -78,11 +76,6 @@ func Start() *cobra.Command {
 }
 
 func optionsFromFlags(flags *pflag.FlagSet) ([]options.Modifier, error) {
-	appName, err := flags.GetString(appNameFlag)
-	if err != nil {
-		return nil, errors.Wrap(err, fmt.Sprintf("get string flag '%s' value", appNameFlag))
-	}
-
 	domain, err := flags.GetString(domainFlag)
 	if err != nil {
 		return nil, errors.Wrap(err, fmt.Sprintf("get string flag '%s' value", domainFlag))
@@ -98,13 +91,7 @@ func optionsFromFlags(flags *pflag.FlagSet) ([]options.Modifier, error) {
 		return nil, errors.Wrap(err, fmt.Sprintf("get int flag '%s' value", tlsPortFlag))
 	}
 
-	shouldWait := flags.Changed(waitFlag)
-	shouldRunHeadless := flags.Changed(headlessFlag)
-
 	opts := []options.Modifier{
-		options.ShouldRunHeadless(shouldRunHeadless),
-		options.ShouldWait(shouldWait),
-		options.AppName(appName),
 		options.Domain(domain),
 		options.HTTPPort(httpPort),
 		options.TLSPort(tlsPort),

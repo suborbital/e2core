@@ -13,8 +13,88 @@ import (
 	"github.com/suborbital/vektor/vk"
 )
 
-func (c *Coordinator) vkHandlerForModule(mod tenant.Module) vk.HandlerFunc {
+func (c *Coordinator) vkHandlerForModuleByName() vk.HandlerFunc {
 	return func(r *http.Request, ctx *vk.Ctx) (interface{}, error) {
+		ident := ctx.Params.ByName("ident")
+		namespace := ctx.Params.ByName("namespace")
+		name := ctx.Params.ByName("name")
+
+		tnt := c.syncer.TenantOverview(ident)
+		if tnt == nil {
+			return nil, vk.E(http.StatusNotFound, "tenant not found")
+		}
+
+		var mod *tenant.Module
+
+		for i, m := range tnt.Config.Modules {
+			if m.Namespace == namespace && m.Name == name {
+				mod = &tnt.Config.Modules[i]
+				break
+			}
+		}
+
+		if mod == nil {
+			return nil, vk.E(http.StatusNotFound, "module not found")
+		}
+
+		req, err := request.FromVKRequest(r, ctx)
+		if err != nil {
+			ctx.Log.Error(errors.Wrap(err, "failed to request.FromVKRequest"))
+			return nil, vk.E(http.StatusInternalServerError, "failed to handle request")
+		}
+
+		req.UseSuborbitalHeaders(r, ctx)
+
+		steps := []executable.Executable{
+			{
+				ExecutableMod: executable.ExecutableMod{
+					FQMN: mod.FQMN,
+				},
+			},
+		}
+
+		// a sequence executes the handler's steps and manages its state.
+		seq, err := sequence.New(steps, req, ctx)
+		if err != nil {
+			ctx.Log.Error(errors.Wrap(err, "failed to sequence.New"))
+			return nil, vk.E(http.StatusInternalServerError, "failed to handle request")
+		}
+
+		if err := seq.Execute(c.exec); err != nil {
+			ctx.Log.Error(errors.Wrap(err, "failed to seq.exec"))
+
+			if runErr, isRunErr := err.(scheduler.RunErr); isRunErr {
+				if runErr.Code < 200 || runErr.Code > 599 {
+					// if the Runnable returned an invalid code for HTTP, default to 500.
+					return nil, vk.Err(http.StatusInternalServerError, runErr.Message)
+				}
+
+				return nil, vk.Err(runErr.Code, runErr.Message)
+			}
+
+			return nil, vk.Wrap(http.StatusInternalServerError, err)
+		}
+
+		// handle any response headers that were set by the Runnables.
+		if req.RespHeaders != nil {
+			for head, val := range req.RespHeaders {
+				ctx.RespHeaders.Set(head, val)
+			}
+		}
+
+		return resultFromState(steps, req.State), nil
+	}
+}
+
+func (c *Coordinator) vkHandlerForModuleByRef() vk.HandlerFunc {
+	return func(r *http.Request, ctx *vk.Ctx) (interface{}, error) {
+		ref := ctx.Params.ByName("ref")
+
+		mod := c.syncer.ModuleByRef(ref)
+		if mod == nil {
+			return nil, vk.E(http.StatusNotFound, "module not found")
+		}
+
 		req, err := request.FromVKRequest(r, ctx)
 		if err != nil {
 			ctx.Log.Error(errors.Wrap(err, "failed to request.FromVKRequest"))

@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
 	"github.com/pkg/errors"
@@ -10,9 +9,9 @@ import (
 
 	"github.com/suborbital/appspec/appsource/bundle"
 	"github.com/suborbital/appspec/appsource/client"
-	"github.com/suborbital/e2core/fqfn"
 	"github.com/suborbital/e2core/options"
 	"github.com/suborbital/e2core/server/coordinator"
+	"github.com/suborbital/e2core/syncer"
 	"github.com/suborbital/vektor/vk"
 )
 
@@ -43,8 +42,10 @@ func New(opts ...options.Modifier) (*Server, error) {
 		appSource = client.NewHTTPSource(vOpts.ControlPlane, nil)
 	}
 
+	syncer := syncer.New(vOpts, appSource)
+
 	s := &Server{
-		coordinator: coordinator.New(appSource, vOpts),
+		coordinator: coordinator.New(syncer, vOpts),
 		options:     vOpts,
 	}
 
@@ -106,46 +107,47 @@ func (s *Server) Options() options.Options {
 func (s *Server) inspectRequest(r http.Request) {
 	// we only need to inspect the request
 	// if we're in headless mode.
-	if !*s.options.Headless {
-		return
-	}
+	// 	if !*s.options.Headless {
+	// 		return
+	// 	}
 
-	// if Vektor tells us it cannot handle the headless request (i.e. we have no knowledge of the function in question)
-	// then ask the AppSource to find it, and if successful sync Runnables into Reactr and generate a new Router.
-	if !s.server.CanHandle(r.Method, r.URL.Path) {
-		FQFN, err := fqfn.FromURL(r.URL)
-		if err != nil {
-			s.options.Logger().Debug(errors.Wrap(err, "failed to fqfn.FromURL, likely invalid, request will proceed and fail").Error())
-			return
-		}
+	// 	// if Vektor tells us it cannot handle the headless request (i.e. we have no knowledge of the function in question)
+	// 	// then ask the AppSource to find it, and if successful sync Runnables into Reactr and generate a new Router.
+	// 	if !s.server.CanHandle(r.Method, r.URL.Path) {
+	// 		FQFN, err := fqfn.FromURL(r.URL)
+	// 		if err != nil {
+	// 			s.options.Logger().Debug(errors.Wrap(err, "failed to fqfn.FromURL, likely invalid, request will proceed and fail").Error())
+	// 			return
+	// 		}
 
-		// the Authorization header is passed through to the AppSource, and can be used to authenticate calls.
-		// TODO: implement properly with CredentialSupplier
-		// auth := r.Header.Get("Authorization")
+	// 		// the Authorization header is passed through to the AppSource, and can be used to authenticate calls.
+	// 		// TODO: implement properly with CredentialSupplier
+	// 		// auth := r.Header.Get("Authorization")
 
-		// use the configured global env token for all requests (if available)
-		// if s.options.EnvironmentToken != "" {
-		// 	auth = s.options.EnvironmentToken
-		// }
+	// 		// use the configured global env token for all requests (if available)
+	// 		// if s.options.EnvironmentToken != "" {
+	// 		// 	auth = s.options.EnvironmentToken
+	// 		// }
 
-		if _, err := s.coordinator.App.GetModule(FQFN); err != nil {
-			s.options.Logger().Debug(errors.Wrapf(err, "failed to FindRunnable %s, request will proceed and fail", FQFN).Error())
-			return
-		}
+	// 		if _, err := s.coordinator.App.GetModule(FQFN); err != nil {
+	// 			s.options.Logger().Debug(errors.Wrapf(err, "failed to FindRunnable %s, request will proceed and fail", FQFN).Error())
+	// 			return
+	// 		}
 
-		s.options.Logger().Debug(fmt.Sprintf("found new Runnable %s, will be available at next sync", FQFN))
+	// 		s.options.Logger().Debug(fmt.Sprintf("found new Runnable %s, will be available at next sync", FQFN))
 
-		// re-generate the Router which should now include
-		// the new function as a handler.
-		newRouter, err := s.coordinator.SetupHandlers()
-		if err != nil {
-			s.options.Logger().Error(errors.Wrap(err, "failed to SetupHandlers"))
-		}
+	// 		// re-generate the Router which should now include
+	// 		// the new function as a handler.
+	// 		newRouter, err := s.coordinator.SetupHandlers()
+	// 		if err != nil {
+	// 			s.options.Logger().Error(errors.Wrap(err, "failed to SetupHandlers"))
+	// 		}
 
-		s.server.SwapRouter(newRouter)
+	// 		s.server.SwapRouter(newRouter)
 
-		s.options.Logger().Debug("app sync and router swap completed")
-	}
+	// 		s.options.Logger().Debug("app sync and router swap completed")
+	// 	}
+	// }
 }
 
 func (s *Server) testServer() (*vk.Server, error) {
