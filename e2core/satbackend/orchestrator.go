@@ -2,6 +2,7 @@ package satbackend
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"runtime"
@@ -11,10 +12,9 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/appspec/appsource"
-	"github.com/suborbital/appspec/appsource/client"
 	"github.com/suborbital/e2core/e2core/satbackend/exec"
 	"github.com/suborbital/e2core/options"
+	"github.com/suborbital/e2core/syncer"
 	"github.com/suborbital/vektor/vlog"
 )
 
@@ -23,6 +23,7 @@ const (
 )
 
 type Orchestrator struct {
+	syncer           *syncer.Syncer
 	logger           *vlog.Logger
 	opts             options.Options
 	sats             map[string]*watcher // map of FQFNs to watchers
@@ -31,8 +32,9 @@ type Orchestrator struct {
 	wg               sync.WaitGroup
 }
 
-func New(bundlePath string, opts options.Options) (*Orchestrator, error) {
+func New(opts options.Options, syncer *syncer.Syncer) (*Orchestrator, error) {
 	o := &Orchestrator{
+		syncer:           syncer,
 		logger:           opts.Logger(),
 		opts:             opts,
 		sats:             map[string]*watcher{},
@@ -44,7 +46,11 @@ func New(bundlePath string, opts options.Options) (*Orchestrator, error) {
 }
 
 func (o *Orchestrator) Start(ctx context.Context) error {
-	appSource, errChan := o.setupAppSource()
+	if err := o.syncer.Start(); err != nil {
+		return errors.Wrap(err, "failed to syncer.Start")
+	}
+
+	errChan := o.setupAppSourceServer()
 
 	o.wg.Add(1)
 
@@ -59,7 +65,7 @@ loop:
 			// fall through and reconcile
 		}
 
-		o.reconcileConstellation(appSource)
+		o.reconcileConstellation(o.syncer)
 
 		time.Sleep(time.Second)
 	}
@@ -86,22 +92,18 @@ func (o *Orchestrator) Shutdown() {
 	o.wg.Wait()
 }
 
-func (o *Orchestrator) reconcileConstellation(appSource appsource.AppSource) {
-	ovv, err := appSource.Overview()
-	if err != nil {
-		o.logger.Error(errors.Wrap(err, "failed to app.Overview"))
+func (o *Orchestrator) reconcileConstellation(syncer *syncer.Syncer) {
+	tenants := syncer.ListTenants()
+	if tenants == nil {
+		o.logger.ErrorString("tenants is nil")
 	}
 
 	// mount each handler into the VK group.
-	for ident, version := range ovv.TenantRefs.Identifiers {
-		tnt, err := appSource.TenantOverview(ident)
-		if err != nil {
-			o.logger.Error(errors.Wrapf(err, "failed to app.TenantOverview for %s", ident))
-			return
-		}
-
-		if tnt.Version != version {
-			o.logger.Warn("encountered version mismatch for tenant", ident, "expected", version, "got", tnt.Version)
+	for ident := range tenants {
+		tnt := syncer.TenantOverview(ident)
+		if tnt == nil {
+			o.logger.ErrorString(fmt.Sprintf("failed to syncer.TenantOverview for %s", ident))
+			continue
 		}
 
 		for i := range tnt.Config.Modules {
@@ -193,7 +195,7 @@ func (o *Orchestrator) reconcileConstellation(appSource appsource.AppSource) {
 }
 
 // TODO: implement and use an authSource when creating NewHTTPSource
-func (o *Orchestrator) setupAppSource() (appsource.AppSource, chan error) {
+func (o *Orchestrator) setupAppSourceServer() chan error {
 	// if an external control plane hasn't been set, act as the control plane
 	// but if one has been set, use it (and launch all children with it configured)
 	if o.opts.ControlPlane == options.DefaultControlPlane || o.opts.ControlPlane == "" {
@@ -201,19 +203,12 @@ func (o *Orchestrator) setupAppSource() (appsource.AppSource, chan error) {
 
 		o.logger.Debug("starting AppSource server")
 
-		// the returned appSource is a bundleSource
-		appSource, errChan := startAppSourceServer(o.opts.BundlePath)
+		errChan := startAppSourceServer(o.opts.BundlePath)
 
-		return appSource, errChan
+		return errChan
 	}
 
-	o.logger.Debug("using passthrough AppSource client")
-
-	appSource := client.NewHTTPSource(o.opts.ControlPlane, nil)
-
-	if err := startAppSourceWithRetry(o.logger, appSource); err != nil {
-		log.Fatal(errors.Wrap(err, "failed to startAppSourceHTTPClient"))
-	}
+	o.logger.Debug("registering with control plane")
 
 	if err := registerWithControlPlane(o.opts); err != nil {
 		log.Fatal(errors.Wrap(err, "failed to registerWithControlPlane"))
@@ -221,5 +216,5 @@ func (o *Orchestrator) setupAppSource() (appsource.AppSource, chan error) {
 
 	errChan := make(chan error)
 
-	return appSource, errChan
+	return errChan
 }

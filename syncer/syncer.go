@@ -104,9 +104,15 @@ func (s *syncJob) Run(job scheduler.Job, ctx *scheduler.Ctx) (interface{}, error
 
 		s.overviews[ident] = *tnt
 
+		s.log.Debug("syncing", len(tnt.Config.Modules), "modules for", ident)
+
 		for i, m := range tnt.Config.Modules {
+			s.log.Debug("syncing module:", m.Ref, m.Name, m.Namespace)
+
 			s.modules[m.Ref] = tnt.Config.Modules[i]
 		}
+
+		s.log.Debug("synced tenant", ident, "to version", version)
 	}
 
 	s.log.Debug("completed sync at version", state.SystemVersion)

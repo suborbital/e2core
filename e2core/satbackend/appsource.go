@@ -1,11 +1,8 @@
 package satbackend
 
 import (
-	"time"
-
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/appspec/appsource"
 	"github.com/suborbital/appspec/appsource/bundle"
 	"github.com/suborbital/appspec/appsource/server"
 	"github.com/suborbital/e2core/options"
@@ -13,7 +10,7 @@ import (
 	"github.com/suborbital/vektor/vlog"
 )
 
-func startAppSourceServer(bundlePath string) (appsource.AppSource, chan error) {
+func startAppSourceServer(bundlePath string) chan error {
 	app := bundle.NewBundleSource(bundlePath)
 	opts := options.NewWithModifiers()
 
@@ -42,26 +39,5 @@ func startAppSourceServer(bundlePath string) (appsource.AppSource, chan error) {
 		}
 	}()
 
-	return app, errChan
-}
-
-func startAppSourceWithRetry(log *vlog.Logger, source appsource.AppSource) error {
-	backoffMS := float32(1000)
-
-	var err error
-
-	dvOpts := options.NewWithModifiers()
-
-	for i := 0; i < 10; i++ {
-		if err = source.Start(dvOpts); err != nil {
-			log.Error(errors.Wrap(err, "failed to source.Start, will retry"))
-
-			time.Sleep(time.Millisecond * time.Duration(backoffMS))
-			backoffMS *= 1.4
-		} else {
-			break
-		}
-	}
-
-	return err
+	return errChan
 }

@@ -19,6 +19,7 @@ import (
 type Server struct {
 	coordinator *coordinator.Coordinator
 	server      *vk.Server
+	syncer      *syncer.Syncer
 
 	options *options.Options
 }
@@ -46,6 +47,7 @@ func New(opts ...options.Modifier) (*Server, error) {
 
 	s := &Server{
 		coordinator: coordinator.New(syncer, vOpts),
+		syncer:      syncer,
 		options:     vOpts,
 	}
 
@@ -56,7 +58,6 @@ func New(opts ...options.Modifier) (*Server, error) {
 		vk.UseEnvPrefix("E2CORE"),
 		vk.UseAppName(vOpts.AppName),
 		vk.UseLogger(vOpts.Logger()),
-		vk.UseInspector(s.inspectRequest),
 		vk.UseDomain(vOpts.Domain),
 		vk.UseHTTPPort(vOpts.HTTPPort),
 		vk.UseTLSPort(vOpts.TLSPort),
@@ -101,53 +102,9 @@ func (s *Server) Options() options.Options {
 	return *s.options
 }
 
-// inspectRequest is critical and runs BEFORE every single request that Server receives, which means it must be very efficient
-// and only block the request if it's absolutely needed. It is a no-op unless Server is in headless mode, and even then only
-// does anything if a request is made for a function that we've never seen before. Read on to see what it does.
-func (s *Server) inspectRequest(r http.Request) {
-	// we only need to inspect the request
-	// if we're in headless mode.
-	// 	if !*s.options.Headless {
-	// 		return
-	// 	}
-
-	// 	// if Vektor tells us it cannot handle the headless request (i.e. we have no knowledge of the function in question)
-	// 	// then ask the AppSource to find it, and if successful sync Runnables into Reactr and generate a new Router.
-	// 	if !s.server.CanHandle(r.Method, r.URL.Path) {
-	// 		FQFN, err := fqfn.FromURL(r.URL)
-	// 		if err != nil {
-	// 			s.options.Logger().Debug(errors.Wrap(err, "failed to fqfn.FromURL, likely invalid, request will proceed and fail").Error())
-	// 			return
-	// 		}
-
-	// 		// the Authorization header is passed through to the AppSource, and can be used to authenticate calls.
-	// 		// TODO: implement properly with CredentialSupplier
-	// 		// auth := r.Header.Get("Authorization")
-
-	// 		// use the configured global env token for all requests (if available)
-	// 		// if s.options.EnvironmentToken != "" {
-	// 		// 	auth = s.options.EnvironmentToken
-	// 		// }
-
-	// 		if _, err := s.coordinator.App.GetModule(FQFN); err != nil {
-	// 			s.options.Logger().Debug(errors.Wrapf(err, "failed to FindRunnable %s, request will proceed and fail", FQFN).Error())
-	// 			return
-	// 		}
-
-	// 		s.options.Logger().Debug(fmt.Sprintf("found new Runnable %s, will be available at next sync", FQFN))
-
-	// 		// re-generate the Router which should now include
-	// 		// the new function as a handler.
-	// 		newRouter, err := s.coordinator.SetupHandlers()
-	// 		if err != nil {
-	// 			s.options.Logger().Error(errors.Wrap(err, "failed to SetupHandlers"))
-	// 		}
-
-	// 		s.server.SwapRouter(newRouter)
-
-	// 		s.options.Logger().Debug("app sync and router swap completed")
-	// 	}
-	// }
+// Syncer returns the Syncer that the server was configured with
+func (s *Server) Syncer() *syncer.Syncer {
+	return s.syncer
 }
 
 func (s *Server) testServer() (*vk.Server, error) {

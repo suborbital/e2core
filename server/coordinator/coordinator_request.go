@@ -95,6 +95,8 @@ func (c *Coordinator) vkHandlerForModuleByRef() vk.HandlerFunc {
 			return nil, vk.E(http.StatusNotFound, "module not found")
 		}
 
+		ctx.Log.Debug("found module by ref:", mod.FQMN, mod.Name, mod.Namespace)
+
 		req, err := request.FromVKRequest(r, ctx)
 		if err != nil {
 			ctx.Log.Error(errors.Wrap(err, "failed to request.FromVKRequest"))

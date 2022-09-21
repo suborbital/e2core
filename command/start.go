@@ -53,7 +53,7 @@ func Start() *cobra.Command {
 				return errors.Wrap(err, "server.New")
 			}
 
-			backend, err := satbackend.New(path, server.Options())
+			backend, err := satbackend.New(server.Options(), server.Syncer())
 			if err != nil {
 				return errors.Wrap(err, "failed to satbackend.New")
 			}

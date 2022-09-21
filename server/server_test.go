@@ -262,7 +262,7 @@ func (s *serverTestSuite) serverForBundle(filepath string) (*vk.Server, error) {
 			return nil, errors.Wrap(err, "failed to s.testServer")
 		}
 
-		orchestrator, err := satbackend.New(filepath, server.Options())
+		orchestrator, err := satbackend.New(server.Options(), server.Syncer())
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to orchestrator.New")
 		}
