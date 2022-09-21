@@ -10,7 +10,7 @@ import (
 ////////////////////////////////////////////////////////////////////
 // An FQFN (fully-qualified function name) is a 'globally unique'
 // name for a specific function from a specific application version
-// example: com.suborbital.test#default::get-file@v0.0.1
+// example: com.suborbital.app#default::get-file@v0.0.1
 // i.e. identifier # namespace :: name @ version
 ////////////////////////////////////////////////////////////////////
 
