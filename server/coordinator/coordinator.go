@@ -116,11 +116,11 @@ func (c *Coordinator) SetupHandlers() (*vk.Router, error) {
 }
 
 // CreateConnections establishes all of the connections described in the tenant.
-func (c *Coordinator) createConnections() error {
+func (c *Coordinator) createConnections() {
 	tenants := c.syncer.ListTenants()
 
 	// mount each handler into the VK group.
-	for ident, _ := range tenants {
+	for ident := range tenants {
 		tnt := c.syncer.TenantOverview(ident)
 		if tnt == nil {
 			continue
@@ -173,8 +173,6 @@ func (c *Coordinator) createConnections() error {
 			}
 		}
 	}
-
-	return nil
 }
 
 // TODO: Workflows are not fully implemented, need to add scheduled execution

@@ -6,6 +6,7 @@ import (
 	"github.com/suborbital/vektor/vk"
 )
 
+// nolint
 func (c *Coordinator) authMiddleware() vk.Middleware {
 	return func(r *http.Request, ctx *vk.Ctx) error {
 		if c.opts.EnvironmentToken != "" {

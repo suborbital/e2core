@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/pkg/errors"
+
 	"github.com/suborbital/appspec/appsource"
 	"github.com/suborbital/appspec/tenant"
 	"github.com/suborbital/e2core/options"
