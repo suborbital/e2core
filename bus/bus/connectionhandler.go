@@ -3,7 +3,7 @@ package bus
 import (
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/deltav/bus/bus/withdraw"
+	"github.com/suborbital/e2core/bus/bus/withdraw"
 	"github.com/suborbital/vektor/vlog"
 )
 

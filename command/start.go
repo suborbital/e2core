@@ -7,25 +7,28 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
-	"github.com/suborbital/deltav/deltav"
-	"github.com/suborbital/deltav/deltav/satbackend"
-	"github.com/suborbital/deltav/options"
-	"github.com/suborbital/deltav/server"
-	"github.com/suborbital/deltav/server/release"
+	"github.com/suborbital/appspec/appsource/bundle"
+	"github.com/suborbital/appspec/appsource/client"
+	"github.com/suborbital/e2core/e2core"
+	"github.com/suborbital/e2core/e2core/satbackend"
+	"github.com/suborbital/e2core/options"
+	"github.com/suborbital/e2core/server"
+	"github.com/suborbital/e2core/server/release"
+	"github.com/suborbital/e2core/syncer"
 	"github.com/suborbital/vektor/vlog"
 )
 
-type deltavInfo struct {
-	DeltavVersion string `json:"deltav_version"`
+type e2coreInfo struct {
+	E2CoreVersion string `json:"e2core_version"`
 	ModuleName    string `json:"module_name,omitempty"`
 }
 
 func Start() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "start [bundle-path]",
-		Short:   "start the deltav server",
-		Long:    "starts the deltav server using the provided options",
-		Version: release.DeltavServerDotVersion,
+		Short:   "start the e2core server",
+		Long:    "starts the e2core server using the provided options",
+		Version: release.E2CoreServerDotVersion,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			path := "./modules.wasm.zip"
 			if len(args) > 0 {
@@ -33,8 +36,8 @@ func Start() *cobra.Command {
 			}
 
 			logger := vlog.Default(
-				vlog.AppMeta(deltavInfo{DeltavVersion: release.DeltavServerDotVersion}),
-				vlog.EnvPrefix("DELTAV"),
+				vlog.AppMeta(e2coreInfo{E2CoreVersion: release.E2CoreServerDotVersion}),
+				vlog.EnvPrefix("E2CORE"),
 			)
 
 			opts, err := optionsFromFlags(cmd.Flags())
@@ -48,17 +51,29 @@ func Start() *cobra.Command {
 				options.UseBundlePath(path),
 			)
 
-			server, err := server.New(opts...)
+			vOpts := options.NewWithModifiers(opts...)
+
+			// TODO: implement and use a CredentialSupplier
+			appSource := bundle.NewBundleSource(vOpts.BundlePath)
+			if vOpts.ControlPlane != "" {
+				// the HTTP appsource gets Server's data from a remote server
+				// which can essentially control Server's behaviour.
+				appSource = client.NewHTTPSource(vOpts.ControlPlane, nil)
+			}
+
+			sync := syncer.New(vOpts, appSource)
+
+			srv, err := server.New(sync, vOpts)
 			if err != nil {
 				return errors.Wrap(err, "server.New")
 			}
 
-			backend, err := satbackend.New(path, server.Options())
+			backend, err := satbackend.New(vOpts, sync)
 			if err != nil {
 				return errors.Wrap(err, "failed to satbackend.New")
 			}
 
-			system := deltav.NewSystem(server, backend)
+			system := e2core.NewSystem(srv, backend)
 
 			system.StartAll()
 
@@ -68,21 +83,14 @@ func Start() *cobra.Command {
 
 	cmd.SetVersionTemplate("{{.Version}}\n")
 
-	cmd.Flags().Bool(waitFlag, false, "if passed, DeltaV will wait until a bundle becomes available on disk, checking once per second")
-	cmd.Flags().String(appNameFlag, "DeltaV", "if passed, it'll be used as DELTAV_APP_NAME, otherwise 'DeltaV' will be used")
-	cmd.Flags().String(domainFlag, "", "if passed, it'll be used as DELTAV_DOMAIN and HTTPS will be used, otherwise HTTP will be used")
-	cmd.Flags().Int(httpPortFlag, 8080, "if passed, it'll be used as DELTAV_HTTP_PORT, otherwise '8080' will be used")
-	cmd.Flags().Int(tlsPortFlag, 443, "if passed, it'll be used as DELTAV_TLS_PORT, otherwise '443' will be used")
+	cmd.Flags().String(domainFlag, "", "if passed, it'll be used as E2CORE_DOMAIN and HTTPS will be used, otherwise HTTP will be used")
+	cmd.Flags().Int(httpPortFlag, 8080, "if passed, it'll be used as E2CORE_HTTP_PORT, otherwise '8080' will be used")
+	cmd.Flags().Int(tlsPortFlag, 443, "if passed, it'll be used as E2CORE_TLS_PORT, otherwise '443' will be used")
 
 	return cmd
 }
 
 func optionsFromFlags(flags *pflag.FlagSet) ([]options.Modifier, error) {
-	appName, err := flags.GetString(appNameFlag)
-	if err != nil {
-		return nil, errors.Wrap(err, fmt.Sprintf("get string flag '%s' value", appNameFlag))
-	}
-
 	domain, err := flags.GetString(domainFlag)
 	if err != nil {
 		return nil, errors.Wrap(err, fmt.Sprintf("get string flag '%s' value", domainFlag))
@@ -98,13 +106,7 @@ func optionsFromFlags(flags *pflag.FlagSet) ([]options.Modifier, error) {
 		return nil, errors.Wrap(err, fmt.Sprintf("get int flag '%s' value", tlsPortFlag))
 	}
 
-	shouldWait := flags.Changed(waitFlag)
-	shouldRunHeadless := flags.Changed(headlessFlag)
-
 	opts := []options.Modifier{
-		options.ShouldRunHeadless(shouldRunHeadless),
-		options.ShouldWait(shouldWait),
-		options.AppName(appName),
 		options.Domain(domain),
 		options.HTTPPort(httpPort),
 		options.TLSPort(tlsPort),

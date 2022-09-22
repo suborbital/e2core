@@ -8,8 +8,8 @@ import (
 
 	"github.com/suborbital/appspec/request"
 	"github.com/suborbital/appspec/tenant"
-	"github.com/suborbital/deltav/scheduler"
-	"github.com/suborbital/deltav/server/coordinator/sequence"
+	"github.com/suborbital/e2core/scheduler"
+	"github.com/suborbital/e2core/server/coordinator/sequence"
 	"github.com/suborbital/vektor/vk"
 )
 
@@ -36,7 +36,7 @@ func (c *Coordinator) rtFuncForSchedule(wfl tenant.Workflow) rtFunc {
 		c.log.Info("executing schedule", wfl.Name)
 
 		req := &request.CoordinatedRequest{
-			Method:  deltavMethodSchedule,
+			Method:  e2coreMethodSchedule,
 			URL:     wfl.Name,
 			ID:      uuid.New().String(),
 			Body:    []byte{},

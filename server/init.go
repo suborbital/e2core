@@ -18,7 +18,7 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 
-	"github.com/suborbital/deltav/options"
+	"github.com/suborbital/e2core/options"
 	"github.com/suborbital/vektor/vlog"
 )
 

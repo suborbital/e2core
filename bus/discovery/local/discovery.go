@@ -7,7 +7,7 @@ import (
 
 	"github.com/schollz/peerdiscovery"
 
-	"github.com/suborbital/deltav/bus/bus"
+	"github.com/suborbital/e2core/bus/bus"
 	"github.com/suborbital/vektor/vlog"
 )
 

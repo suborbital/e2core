@@ -8,9 +8,9 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/deltav/bus/bus"
-	"github.com/suborbital/deltav/bus/discovery/local"
-	"github.com/suborbital/deltav/bus/transport/websocket"
+	"github.com/suborbital/e2core/bus/bus"
+	"github.com/suborbital/e2core/bus/discovery/local"
+	"github.com/suborbital/e2core/bus/transport/websocket"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
 )

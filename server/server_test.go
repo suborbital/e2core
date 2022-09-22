@@ -13,9 +13,11 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/suborbital/deltav/deltav/satbackend"
-	"github.com/suborbital/deltav/options"
-	"github.com/suborbital/deltav/signaler"
+	"github.com/suborbital/appspec/appsource/bundle"
+	"github.com/suborbital/e2core/e2core/satbackend"
+	"github.com/suborbital/e2core/options"
+	"github.com/suborbital/e2core/signaler"
+	"github.com/suborbital/e2core/syncer"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
 	"github.com/suborbital/vektor/vtest"
@@ -66,7 +68,7 @@ func (s *serverTestSuite) TestHelloEndpoint() {
 
 	vt := vtest.New(server) //creating fake version of the server that we can send requests to and it will behave same was as if it was the real server.
 
-	req, err := http.NewRequest(http.MethodPost, "/name/default/helloworld-rs", bytes.NewBuffer([]byte("my friend")))
+	req, err := http.NewRequest(http.MethodPost, "/name/com.suborbital.app/default/helloworld-rs", bytes.NewBuffer([]byte("my friend")))
 	if err != nil {
 		s.T().Fatal(err)
 	}
@@ -92,12 +94,12 @@ func (s *serverTestSuite) TestSetAndGetKeyEndpoints() {
 
 	vt := vtest.New(server)
 
-	setReq, err := http.NewRequest(http.MethodPost, "/name/default/cache-set", bytes.NewBuffer([]byte("Suborbital")))
+	setReq, err := http.NewRequest(http.MethodPost, "/name/com.suborbital.app/default/cache-set", bytes.NewBuffer([]byte("Suborbital")))
 	if err != nil {
 		s.T().Fatal(err)
 	}
 
-	getReq, err := http.NewRequest(http.MethodPost, "/name/default/cache-get", bytes.NewBuffer(nil))
+	getReq, err := http.NewRequest(http.MethodPost, "/name/com.suborbital.app/default/cache-get", bytes.NewBuffer(nil))
 	if err != nil {
 		s.T().Fatal(err)
 	}
@@ -126,7 +128,7 @@ func (s *serverTestSuite) TestFileMainMDEndpoint() {
 	}
 
 	vt := vtest.New(server)
-	req, err := http.NewRequest(http.MethodPost, "/name/default/get-file", bytes.NewBuffer(nil))
+	req, err := http.NewRequest(http.MethodPost, "/name/com.suborbital.app/default/get-file", bytes.NewBuffer(nil))
 	if err != nil {
 		s.T().Fatal(err)
 	}
@@ -152,7 +154,7 @@ func (s *serverTestSuite) TestFileMainCSSEndpoint() {
 	}
 
 	vt := vtest.New(server)
-	req, err := http.NewRequest(http.MethodPost, "/name/default/get-file", bytes.NewBuffer(nil))
+	req, err := http.NewRequest(http.MethodPost, "/name/com.suborbital.app/default/get-file", bytes.NewBuffer(nil))
 	if err != nil {
 		s.T().Fatal(err)
 	}
@@ -183,7 +185,7 @@ func (s *serverTestSuite) TestFileMainJSEndpoint() {
 	}
 
 	vt := vtest.New(server)
-	req, err := http.NewRequest(http.MethodPost, "/name/default/get-file", bytes.NewBuffer(nil))
+	req, err := http.NewRequest(http.MethodPost, "/name/com.suborbital.app/default/get-file", bytes.NewBuffer(nil))
 	if err != nil {
 		s.T().Fatal(err)
 	}
@@ -252,7 +254,13 @@ func (s *serverTestSuite) serverForBundle(filepath string) (*vk.Server, error) {
 	if s.ts == nil {
 		logger := vlog.Default(vlog.Level(vlog.LogLevelDebug))
 
-		server, err := New(options.UseBundlePath(filepath), options.UseLogger(logger))
+		opts := options.NewWithModifiers(options.UseBundlePath(filepath), options.UseLogger(logger))
+
+		appSource := bundle.NewBundleSource(opts.BundlePath)
+
+		syncer := syncer.New(opts, appSource)
+
+		server, err := New(syncer, opts)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to New")
 		}
@@ -262,7 +270,7 @@ func (s *serverTestSuite) serverForBundle(filepath string) (*vk.Server, error) {
 			return nil, errors.Wrap(err, "failed to s.testServer")
 		}
 
-		orchestrator, err := satbackend.New(filepath, server.Options())
+		orchestrator, err := satbackend.New(opts, syncer)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to orchestrator.New")
 		}

@@ -10,8 +10,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/deltav/deltav/satbackend/process"
-	"github.com/suborbital/deltav/scheduler"
+	"github.com/suborbital/e2core/e2core/satbackend/process"
+	"github.com/suborbital/e2core/scheduler"
 	"github.com/suborbital/vektor/vlog"
 )
 

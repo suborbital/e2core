@@ -1,7 +1,7 @@
 FROM golang:1.18 as builder
 
-RUN mkdir -p /go/src/github.com/suborbital/deltav
-WORKDIR /go/src/github.com/suborbital/deltav/
+RUN mkdir -p /go/src/github.com/suborbital/e2core
+WORKDIR /go/src/github.com/suborbital/e2core/
 
 # Deps first
 COPY go.mod go.sum ./
@@ -11,22 +11,22 @@ RUN go mod download
 COPY . ./
 RUN go mod vendor
 
-RUN make deltav/static
+RUN make e2core/static
 
 FROM debian:buster-slim
 
-RUN groupadd -g 999 deltav && \
-    useradd -r -u 999 -g deltav deltav && \
-	mkdir -p /home/deltav && \
-	chown -R deltav /home/deltav && \
-	chmod -R 700 /home/deltav
+RUN groupadd -g 999 e2core && \
+    useradd -r -u 999 -g e2core e2core && \
+	mkdir -p /home/e2core && \
+	chown -R e2core /home/e2core && \
+	chmod -R 700 /home/e2core
 
 RUN apt-get update \
 	&& apt-get install -y ca-certificates
 
-# deltav binary
-COPY --from=builder /go/src/github.com/suborbital/deltav/.bin/deltav /usr/local/bin/
+# e2core binary
+COPY --from=builder /go/src/github.com/suborbital/e2core/.bin/e2core /usr/local/bin/
 
-WORKDIR /home/deltav
+WORKDIR /home/e2core
 
-USER deltav
+USER e2core

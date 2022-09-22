@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/suborbital/deltav/bus/testutil"
+	"github.com/suborbital/e2core/bus/testutil"
 )
 
 func TestPodFilter(t *testing.T) {

@@ -3,8 +3,8 @@ package main
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/suborbital/deltav/command"
-	"github.com/suborbital/deltav/server/release"
+	"github.com/suborbital/e2core/command"
+	"github.com/suborbital/e2core/server/release"
 )
 
 func main() {
@@ -20,12 +20,12 @@ func main() {
 
 func rootCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "deltav",
-		Version: release.DeltavServerDotVersion,
+		Use:     "e2core",
+		Version: release.E2CoreServerDotVersion,
 		Long: `
-	Deltav is a secure development kit and server for writing and running untrusted third-party plugins.
+	E2Core is a secure development kit and server for writing and running untrusted third-party plugins.
 	
-	The DeltaV server is responsible for managing and running plugins using simple HTTP, RPC, or streaming interfaces.`,
+	The E2Core server is responsible for managing and running plugins using simple HTTP, RPC, or streaming interfaces.`,
 	}
 
 	return cmd
@@ -34,7 +34,7 @@ func rootCommand() *cobra.Command {
 func modCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "mod",
-		Version: release.DeltavServerDotVersion,
+		Version: release.E2CoreServerDotVersion,
 		Short:   "commands for working with modules",
 		Hidden:  true,
 	}

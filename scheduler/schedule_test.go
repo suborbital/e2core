@@ -3,7 +3,7 @@ package scheduler
 import (
 	"testing"
 
-	"github.com/suborbital/deltav/bus/testutil"
+	"github.com/suborbital/e2core/bus/testutil"
 )
 
 type counterRunner struct {

@@ -11,30 +11,28 @@ import (
 
 const (
 	DefaultControlPlane = "localhost:9090"
-	deltavEnvPrefix     = "DELTAV"
+	e2coreEnvPrefix     = "E2CORE"
 )
 
 // Options defines options for Atmo.
 type Options struct {
 	logger *vlog.Logger
 
-	BundlePath       string       `env:"DELTAV_BUNDLE_PATH"`
-	RunSchedules     *bool        `env:"DELTAV_RUN_SCHEDULES,default=true"`
-	Headless         *bool        `env:"DELTAV_HEADLESS,default=false"`
-	Wait             *bool        `env:"DELTAV_WAIT,default=false"`
-	ControlPlane     string       `env:"DELTAV_CONTROL_PLANE"`
-	UpstreamAddress  string       `env:"DELTAV_UPSTREAM_ADDRESS"`
-	EnvironmentToken string       `env:"DELTAV_ENV_TOKEN"`
-	StaticPeers      string       `env:"DELTAV_PEERS"`
-	AppName          string       `env:"DELTAV_APP_NAME,default=DeltaV"`
-	Domain           string       `env:"DELTAV_DOMAIN"`
-	HTTPPort         int          `env:"DELTAV_HTTP_PORT,default=8080"`
-	TLSPort          int          `env:"DELTAV_TLS_PORT,default=443"`
-	TracerConfig     TracerConfig `env:",prefix=DELTAV_TRACER_"`
+	BundlePath       string       `env:"E2CORE_BUNDLE_PATH"`
+	RunSchedules     *bool        `env:"E2CORE_RUN_SCHEDULES,default=true"`
+	ControlPlane     string       `env:"E2CORE_CONTROL_PLANE"`
+	UpstreamAddress  string       `env:"E2CORE_UPSTREAM_ADDRESS"`
+	EnvironmentToken string       `env:"E2CORE_ENV_TOKEN"`
+	StaticPeers      string       `env:"E2CORE_PEERS"`
+	AppName          string       `env:"E2CORE_APP_NAME,default=E2Core"`
+	Domain           string       `env:"E2CORE_DOMAIN"`
+	HTTPPort         int          `env:"E2CORE_HTTP_PORT,default=8080"`
+	TLSPort          int          `env:"E2CORE_TLS_PORT,default=443"`
+	TracerConfig     TracerConfig `env:",prefix=E2CORE_TRACER_"`
 }
 
 // TracerConfig holds values specific to setting up the tracer. It's only used in proxy mode. All configuration options
-// have a prefix of DELTAV_TRACER_ specified in the parent Options struct.
+// have a prefix of E2CORE_TRACER_ specified in the parent Options struct.
 type TracerConfig struct {
 	TracerType      string           `env:"TYPE,default=none"`
 	ServiceName     string           `env:"SERVICENAME,default=atmo"`
@@ -44,14 +42,14 @@ type TracerConfig struct {
 }
 
 // CollectorConfig holds config values specific to the collector tracer exporter running locally / within your cluster.
-// All the configuration values here have a prefix of DELTAV_TRACER_COLLECTOR_, specified in the top level Options struct,
+// All the configuration values here have a prefix of E2CORE_TRACER_COLLECTOR_, specified in the top level Options struct,
 // and the parent TracerConfig struct.
 type CollectorConfig struct {
 	Endpoint string `env:"ENDPOINT"`
 }
 
 // HoneycombConfig holds config values specific to the honeycomb tracer exporter. All the configuration values here have
-// a prefix of DELTAV_TRACER_HONEYCOMB_, specified in the top level Options struct, and the parent TracerConfig struct.
+// a prefix of E2CORE_TRACER_HONEYCOMB_, specified in the top level Options struct, and the parent TracerConfig struct.
 type HoneycombConfig struct {
 	Endpoint string `env:"ENDPOINT"`
 	APIKey   string `env:"APIKEY"`
@@ -68,7 +66,7 @@ func NewWithModifiers(mods ...Modifier) *Options {
 		mod(opts)
 	}
 
-	opts.finalize(deltavEnvPrefix)
+	opts.finalize(e2coreEnvPrefix)
 
 	return opts
 }
@@ -84,26 +82,6 @@ func UseLogger(logger *vlog.Logger) Modifier {
 func UseBundlePath(path string) Modifier {
 	return func(opts *Options) {
 		opts.BundlePath = path
-	}
-}
-
-// ShouldRunHeadless sets wether Atmo should operate in 'headless' mode.
-func ShouldRunHeadless(headless bool) Modifier {
-	return func(opts *Options) {
-		// only set the pointer if the value is true.
-		if headless {
-			opts.Headless = &headless
-		}
-	}
-}
-
-// ShouldWait sets wether Atmo should wait for a bundle to become available on disk.
-func ShouldWait(wait bool) Modifier {
-	return func(opts *Options) {
-		// only set the pointer if the value is true.
-		if wait {
-			opts.Wait = &wait
-		}
 	}
 }
 
@@ -161,25 +139,6 @@ func (o *Options) finalize(prefix string) {
 	if o.RunSchedules == nil {
 		if envOpts.RunSchedules != nil {
 			o.RunSchedules = envOpts.RunSchedules
-		}
-	}
-
-	// set Wait if it was not passed as a flag
-	// if Wait is unset but ControlPlane IS set,
-	// Wait is implied to be true.
-	if o.Wait == nil {
-		if o.ControlPlane != "" {
-			wait := true
-			o.Wait = &wait
-		} else if envOpts.Wait != nil {
-			o.Wait = envOpts.Wait
-		}
-	}
-
-	// set Headless if it was not passed as a flag.
-	if o.Headless == nil {
-		if envOpts.Headless != nil {
-			o.Headless = envOpts.Headless
 		}
 	}
 

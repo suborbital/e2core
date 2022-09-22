@@ -7,7 +7,7 @@ import (
 
 	"github.com/suborbital/appspec/request"
 	"github.com/suborbital/appspec/tenant/executable"
-	"github.com/suborbital/deltav/scheduler"
+	"github.com/suborbital/e2core/scheduler"
 )
 
 var ErrMissingFQFN = errors.New("executableMod missing FQFN")

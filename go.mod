@@ -1,4 +1,4 @@
-module github.com/suborbital/deltav
+module github.com/suborbital/e2core
 
 go 1.18
 
@@ -13,7 +13,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.7.1
 	github.com/suborbital/appspec v0.0.2-0.20220902180808-a833dcd7ac23
-	github.com/suborbital/sat v0.0.0-20220902180902-a2e39b5ec307
+	github.com/suborbital/sat v0.0.0-20220915170635-f9c83d3c45d5
 	github.com/suborbital/vektor v0.5.3-0.20220606154347-af1e678993a8
 	github.com/twmb/franz-go v1.6.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.32.0

@@ -3,38 +3,36 @@ package coordinator
 import (
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/appspec/appsource"
 	"github.com/suborbital/appspec/capabilities"
-	"github.com/suborbital/appspec/fqmn"
 	"github.com/suborbital/appspec/tenant"
 	"github.com/suborbital/appspec/tenant/executable"
-	"github.com/suborbital/deltav/bus/bus"
-	"github.com/suborbital/deltav/bus/transport/kafka"
-	"github.com/suborbital/deltav/bus/transport/nats"
-	"github.com/suborbital/deltav/bus/transport/websocket"
-	"github.com/suborbital/deltav/options"
-	"github.com/suborbital/deltav/server/coordinator/executor"
+	"github.com/suborbital/e2core/bus/bus"
+	"github.com/suborbital/e2core/bus/transport/kafka"
+	"github.com/suborbital/e2core/bus/transport/nats"
+	"github.com/suborbital/e2core/bus/transport/websocket"
+	"github.com/suborbital/e2core/options"
+	"github.com/suborbital/e2core/server/coordinator/executor"
+	"github.com/suborbital/e2core/syncer"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
 )
 
 const (
-	deltavMethodSchedule = "SCHED"
-	deltavMessageURI     = "/meta/message"
-	DeltavMetricsURI     = "/meta/metrics"
-	DeltavHealthURI      = "/health"
+	e2coreMethodSchedule = "SCHED"
+	e2coreMessageURI     = "/meta/message"
+	E2CoreMetricsURI     = "/meta/metrics"
+	E2CoreHealthURI      = "/health"
 	connectionKeyFormat  = "%s.%d.%s.%s.%s" // ident.version.namespace.connType.connName
 )
 
 // Coordinator is a type that is responsible for converting the directive into
 // usable Vektor handles by coordinating Reactr jobs and meshing when needed.
 type Coordinator struct {
-	App  appsource.AppSource
-	opts *options.Options
+	syncer *syncer.Syncer
+	opts   *options.Options
 
 	log *vlog.Logger
 
@@ -51,15 +49,13 @@ type requestScope struct {
 }
 
 // New creates a coordinator.
-func New(appSource appsource.AppSource, options *options.Options) *Coordinator {
-	var transport *websocket.Transport
-
-	transport = websocket.New()
+func New(syncer *syncer.Syncer, options *options.Options) *Coordinator {
+	transport := websocket.New()
 
 	exec := executor.New(options.Logger(), transport)
 
 	c := &Coordinator{
-		App:         appSource,
+		syncer:      syncer,
 		opts:        options,
 		log:         options.Logger(),
 		exec:        exec,
@@ -73,8 +69,8 @@ func New(appSource appsource.AppSource, options *options.Options) *Coordinator {
 
 // Start allows the Coordinator to bootstrap.
 func (c *Coordinator) Start() error {
-	if err := c.App.Start(c.opts); err != nil {
-		return errors.Wrap(err, "failed to App.Start")
+	if err := c.syncer.Start(); err != nil {
+		return errors.Wrap(err, "failed to syncer.Start")
 	}
 
 	// establish connections defined by the app.
@@ -93,101 +89,41 @@ func (c *Coordinator) SetupHandlers() (*vk.Router, error) {
 	// set a middleware on the root RouteGroup.
 	router.Before(scopeMiddleware)
 
-	// if in headless mode, enable runnable authentication.
-	if *c.opts.Headless {
-		router.Before(c.authMiddleware())
-	}
+	router.POST("/name/:ident/:namespace/:name", c.vkHandlerForModuleByName())
+	router.POST("/ref/:ref", c.vkHandlerForModuleByRef())
 
-	// there are certain edge cases where handlers can be duplicated, let's prevent
-	// that from causing a panic when adding HTTP handlers to the server
-	// ref: https://github.com/suborbital/scn/issues/282
-	added := map[string]bool{}
+	// TODO: implement triggers
+	// switch h.Input.Type {
+	// case tenant.InputTypeRequest:
+	// 	router.Handle(h.Input.Method, h.Input.Resource, c.vkHandlerForDirectiveHandler(h))
+	// case tenant.InputTypeStream:
+	// 	if h.Input.Source == "" || h.Input.Source == tenant.InputSourceServer {
+	// 		router.HandleHTTP(http.MethodGet, h.Input.Resource, c.websocketHandlerForDirectiveHandler(h))
+	// 	} else {
+	// 		c.streamConnectionForDirectiveHandler(h, application)
+	// 	}
+	// }
 
-	ovv, err := c.App.Overview()
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to app.Overview")
-	}
+	router.GET(E2CoreMetricsURI, c.metricsHandler())
 
-	// mount each handler into the VK group.
-	for ident, version := range ovv.TenantRefs.Identifiers {
-		tnt, err := c.App.TenantOverview(ident)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to app.TenantOverview for %s", ident)
-		}
-
-		if tnt.Version != version {
-			c.log.Warn("encountered version mismatch for tenant", ident, "expected", version, "got", tnt.Version)
-		}
-
-		for i := range tnt.Config.Modules {
-			mod := tnt.Config.Modules[i]
-
-			c.log.Debug("mounting module with FQMN", mod.FQMN)
-
-			FQMN, err := fqmn.Parse(mod.FQMN)
-			if err != nil {
-				return nil, errors.Wrap(err, "failed to fqmn.Parse")
-			}
-
-			c.log.Debug("ident", FQMN.Tenant, "ref", FQMN.Ref, "namespace", FQMN.Namespace, "name", FQMN.Name)
-
-			URIs := []string{FQMN.URLPath()}
-			URIs = append(URIs, fmt.Sprintf("/name/%s/%s", FQMN.Namespace, FQMN.Name))
-			URIs = append(URIs, fmt.Sprintf("/ref/%s", FQMN.Ref))
-
-			c.log.Debug("mounting URIs", strings.Join(URIs, ","))
-
-			for _, uri := range URIs {
-				if _, exists := added[uri]; exists {
-					continue
-				}
-
-				router.Handle(http.MethodPost, uri, c.vkHandlerForModule(mod))
-
-				added[uri] = true
-			}
-
-			// TODO: implement triggers
-			// switch h.Input.Type {
-			// case tenant.InputTypeRequest:
-			// 	router.Handle(h.Input.Method, h.Input.Resource, c.vkHandlerForDirectiveHandler(h))
-			// case tenant.InputTypeStream:
-			// 	if h.Input.Source == "" || h.Input.Source == tenant.InputSourceServer {
-			// 		router.HandleHTTP(http.MethodGet, h.Input.Resource, c.websocketHandlerForDirectiveHandler(h))
-			// 	} else {
-			// 		c.streamConnectionForDirectiveHandler(h, application)
-			// 	}
-			// }
-		}
-	}
-
-	router.GET(DeltavMetricsURI, c.metricsHandler())
-
-	router.GET(DeltavHealthURI, c.health())
+	router.GET(E2CoreHealthURI, c.health())
 
 	if c.transport != nil {
-		router.HandleHTTP(http.MethodGet, deltavMessageURI, c.transport.HTTPHandlerFunc())
+		router.HandleHTTP(http.MethodGet, e2coreMessageURI, c.transport.HTTPHandlerFunc())
 	}
 
 	return router, nil
 }
 
 // CreateConnections establishes all of the connections described in the tenant.
-func (c *Coordinator) createConnections() error {
-	ovv, err := c.App.Overview()
-	if err != nil {
-		return errors.Wrap(err, "failed to app.Overview")
-	}
+func (c *Coordinator) createConnections() {
+	tenants := c.syncer.ListTenants()
 
 	// mount each handler into the VK group.
-	for ident, version := range ovv.TenantRefs.Identifiers {
-		tnt, err := c.App.TenantOverview(ident)
-		if err != nil {
-			return errors.Wrapf(err, "failed to app.TenantOverview for %s", ident)
-		}
-
-		if tnt.Version != version {
-			c.log.Warn("encountered version mismatch for tenant", ident, "expected", version, "got", tnt.Version)
+	for ident := range tenants {
+		tnt := c.syncer.TenantOverview(ident)
+		if tnt == nil {
+			continue
 		}
 
 		namespaces := []tenant.NamespaceConfig{tnt.Config.DefaultNamespace}
@@ -237,26 +173,17 @@ func (c *Coordinator) createConnections() error {
 			}
 		}
 	}
-
-	return nil
 }
 
 // TODO: Workflows are not fully implemented, need to add scheduled execution
 func (c *Coordinator) SetupWorkflows(router *vk.Router) error {
-	ovv, err := c.App.Overview()
-	if err != nil {
-		return errors.Wrap(err, "failed to app.Overview")
-	}
+	tenants := c.syncer.ListTenants()
 
 	// mount each handler into the VK group.
-	for ident, version := range ovv.TenantRefs.Identifiers {
-		tnt, err := c.App.TenantOverview(ident)
-		if err != nil {
-			return errors.Wrapf(err, "failed to app.TenantOverview for %s", ident)
-		}
-
-		if tnt.Version != version {
-			c.log.Warn("encountered version mismatch for tenant", ident, "expected", version, "got", tnt.Version)
+	for ident, _ := range tenants {
+		tnt := c.syncer.TenantOverview(ident)
+		if tnt == nil {
+			continue
 		}
 
 		namespaces := []tenant.NamespaceConfig{tnt.Config.DefaultNamespace}

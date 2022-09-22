@@ -43,8 +43,8 @@ jobs:
 
       - name: Build
         run: |
-          make deltav/install
-          make deltav/static
+          make e2core/install
+          make e2core/static
 
       - name: Run test
         run: |
@@ -54,9 +54,9 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        image: [deltav]
+        image: [e2core]
         include:
-          - image: deltav
+          - image: e2core
             dockerfile: Dockerfile
 
     steps:

@@ -7,8 +7,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/deltav/bus/bus"
-	"github.com/suborbital/deltav/bus/transport/nats"
+	"github.com/suborbital/e2core/bus/bus"
+	"github.com/suborbital/e2core/bus/transport/nats"
 	"github.com/suborbital/vektor/vlog"
 )
 
