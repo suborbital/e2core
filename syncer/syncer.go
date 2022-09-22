@@ -70,6 +70,7 @@ func (s *Syncer) Start() error {
 	return nil
 }
 
+// Run runs a sync job
 func (s *syncJob) Run(job scheduler.Job, ctx *scheduler.Ctx) (interface{}, error) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -152,8 +153,30 @@ func (s *Syncer) TenantOverview(ident string) *appsource.TenantOverview {
 	return &ovv
 }
 
-// TenantOverview returns the (possibly nil) TenantOverview for the given tenant ident
-func (s *Syncer) ModuleByRef(ref string) *tenant.Module {
+// GetModuleByName gets a module by its name
+func (s *Syncer) GetModuleByName(ident, namespace, name string) *tenant.Module {
+	s.job.lock.RLock()
+	defer s.job.lock.RUnlock()
+
+	tnt := s.TenantOverview(ident)
+	if tnt == nil {
+		return nil
+	}
+
+	var mod *tenant.Module
+
+	for i, m := range tnt.Config.Modules {
+		if m.Namespace == namespace && m.Name == name {
+			mod = &tnt.Config.Modules[i]
+			break
+		}
+	}
+
+	return mod
+}
+
+// GetModuleByRef gets a module by its ref
+func (s *Syncer) GetModuleByRef(ref string) *tenant.Module {
 	s.job.lock.RLock()
 	defer s.job.lock.RUnlock()
 

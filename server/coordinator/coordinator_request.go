@@ -6,7 +6,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/suborbital/appspec/request"
-	"github.com/suborbital/appspec/tenant"
 	"github.com/suborbital/appspec/tenant/executable"
 	"github.com/suborbital/e2core/scheduler"
 	"github.com/suborbital/e2core/server/coordinator/sequence"
@@ -19,20 +18,7 @@ func (c *Coordinator) vkHandlerForModuleByName() vk.HandlerFunc {
 		namespace := ctx.Params.ByName("namespace")
 		name := ctx.Params.ByName("name")
 
-		tnt := c.syncer.TenantOverview(ident)
-		if tnt == nil {
-			return nil, vk.E(http.StatusNotFound, "tenant not found")
-		}
-
-		var mod *tenant.Module
-
-		for i, m := range tnt.Config.Modules {
-			if m.Namespace == namespace && m.Name == name {
-				mod = &tnt.Config.Modules[i]
-				break
-			}
-		}
-
+		mod := c.syncer.GetModuleByName(ident, namespace, name)
 		if mod == nil {
 			return nil, vk.E(http.StatusNotFound, "module not found")
 		}
@@ -90,7 +76,7 @@ func (c *Coordinator) vkHandlerForModuleByRef() vk.HandlerFunc {
 	return func(r *http.Request, ctx *vk.Ctx) (interface{}, error) {
 		ref := ctx.Params.ByName("ref")
 
-		mod := c.syncer.ModuleByRef(ref)
+		mod := c.syncer.GetModuleByRef(ref)
 		if mod == nil {
 			return nil, vk.E(http.StatusNotFound, "module not found")
 		}
@@ -103,7 +89,9 @@ func (c *Coordinator) vkHandlerForModuleByRef() vk.HandlerFunc {
 			return nil, vk.E(http.StatusInternalServerError, "failed to handle request")
 		}
 
-		req.UseSuborbitalHeaders(r, ctx)
+		if err := req.UseSuborbitalHeaders(r, ctx); err != nil {
+			return nil, vk.E(http.StatusBadRequest, "bad request")
+		}
 
 		steps := []executable.Executable{
 			{

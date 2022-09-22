@@ -7,8 +7,6 @@ import (
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 
-	"github.com/suborbital/appspec/appsource/bundle"
-	"github.com/suborbital/appspec/appsource/client"
 	"github.com/suborbital/e2core/options"
 	"github.com/suborbital/e2core/server/coordinator"
 	"github.com/suborbital/e2core/syncer"
@@ -25,30 +23,18 @@ type Server struct {
 }
 
 // New creates a new Server instance.
-func New(opts ...options.Modifier) (*Server, error) {
-	vOpts := options.NewWithModifiers(opts...)
-
+func New(sync *syncer.Syncer, opts *options.Options) (*Server, error) {
 	// @todo https://github.com/suborbital/e2core/issues/144, the first return value is a function that would close the
 	// tracer in case of a shutdown. Usually that is put in a defer statement. Server doesn't have a graceful shutdown.
-	_, err := setupTracing(vOpts.TracerConfig, vOpts.Logger())
+	_, err := setupTracing(opts.TracerConfig, opts.Logger())
 	if err != nil {
 		return nil, errors.Wrapf(err, "setupTracing(%s, %s, %f)", "atmo", "reporter_uri", 0.04)
 	}
 
-	// TODO: implement and use a CredentialSupplier
-	appSource := bundle.NewBundleSource(vOpts.BundlePath)
-	if vOpts.ControlPlane != "" {
-		// the HTTP appsource gets Server's data from a remote server
-		// which can essentially control Server's behaviour.
-		appSource = client.NewHTTPSource(vOpts.ControlPlane, nil)
-	}
-
-	syncer := syncer.New(vOpts, appSource)
-
 	s := &Server{
-		coordinator: coordinator.New(syncer, vOpts),
-		syncer:      syncer,
-		options:     vOpts,
+		coordinator: coordinator.New(sync, opts),
+		syncer:      sync,
+		options:     opts,
 	}
 
 	// set up the server so that Server can inspect
@@ -56,11 +42,11 @@ func New(opts ...options.Modifier) (*Server, error) {
 	// when needed (during headless mode).
 	s.server = vk.New(
 		vk.UseEnvPrefix("E2CORE"),
-		vk.UseAppName(vOpts.AppName),
-		vk.UseLogger(vOpts.Logger()),
-		vk.UseDomain(vOpts.Domain),
-		vk.UseHTTPPort(vOpts.HTTPPort),
-		vk.UseTLSPort(vOpts.TLSPort),
+		vk.UseAppName(opts.AppName),
+		vk.UseLogger(opts.Logger()),
+		vk.UseDomain(opts.Domain),
+		vk.UseHTTPPort(opts.HTTPPort),
+		vk.UseTLSPort(opts.TLSPort),
 		vk.UseQuietRoutes(
 			coordinator.E2CoreHealthURI,
 			coordinator.E2CoreMetricsURI,

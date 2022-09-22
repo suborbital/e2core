@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -35,7 +36,16 @@ func registerWithControlPlane(opts options.Options) error {
 		selfIPs = detectedIPs
 	}
 
-	registerURL := fmt.Sprintf("http://%s/api/v1/upstream/register", opts.ControlPlane)
+	// golang's URL parsing does strange things if the original parsed string has no scheme, so we have to do some string manipulation
+	registerURLString := fmt.Sprintf("%s/api/v1/upstream/register", opts.ControlPlane)
+	if !strings.HasPrefix(registerURLString, "https") && !strings.HasPrefix(registerURLString, "http") {
+		registerURLString = "http://" + registerURLString
+	}
+
+	registerURL, err := url.Parse(registerURLString)
+	if err != nil {
+		return errors.Wrapf(err, "failed to url.Parse %s", registerURLString)
+	}
 
 	for _, ip := range selfIPs {
 		upstreamURL, err := url.Parse(fmt.Sprintf("http://%s:%s", ip.String(), atmoPort))
@@ -52,7 +62,7 @@ func registerWithControlPlane(opts options.Options) error {
 			return errors.Wrap(err, "failed to Marshal")
 		}
 
-		req, err := http.NewRequest(http.MethodPost, registerURL, bytes.NewBuffer(bodyJSON))
+		req, err := http.NewRequest(http.MethodPost, registerURL.String(), bytes.NewBuffer(bodyJSON))
 		if err != nil {
 			return errors.Wrap(err, "failed to NewRequest")
 		}

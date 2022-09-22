@@ -13,9 +13,11 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/suite"
 
+	"github.com/suborbital/appspec/appsource/bundle"
 	"github.com/suborbital/e2core/e2core/satbackend"
 	"github.com/suborbital/e2core/options"
 	"github.com/suborbital/e2core/signaler"
+	"github.com/suborbital/e2core/syncer"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
 	"github.com/suborbital/vektor/vtest"
@@ -252,7 +254,13 @@ func (s *serverTestSuite) serverForBundle(filepath string) (*vk.Server, error) {
 	if s.ts == nil {
 		logger := vlog.Default(vlog.Level(vlog.LogLevelDebug))
 
-		server, err := New(options.UseBundlePath(filepath), options.UseLogger(logger))
+		opts := options.NewWithModifiers(options.UseBundlePath(filepath), options.UseLogger(logger))
+
+		appSource := bundle.NewBundleSource(opts.BundlePath)
+
+		syncer := syncer.New(opts, appSource)
+
+		server, err := New(syncer, opts)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to New")
 		}
@@ -262,7 +270,7 @@ func (s *serverTestSuite) serverForBundle(filepath string) (*vk.Server, error) {
 			return nil, errors.Wrap(err, "failed to s.testServer")
 		}
 
-		orchestrator, err := satbackend.New(server.Options(), server.Syncer())
+		orchestrator, err := satbackend.New(opts, syncer)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to orchestrator.New")
 		}

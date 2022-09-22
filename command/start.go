@@ -7,11 +7,14 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
+	"github.com/suborbital/appspec/appsource/bundle"
+	"github.com/suborbital/appspec/appsource/client"
 	"github.com/suborbital/e2core/e2core"
 	"github.com/suborbital/e2core/e2core/satbackend"
 	"github.com/suborbital/e2core/options"
 	"github.com/suborbital/e2core/server"
 	"github.com/suborbital/e2core/server/release"
+	"github.com/suborbital/e2core/syncer"
 	"github.com/suborbital/vektor/vlog"
 )
 
@@ -48,17 +51,29 @@ func Start() *cobra.Command {
 				options.UseBundlePath(path),
 			)
 
-			server, err := server.New(opts...)
+			vOpts := options.NewWithModifiers(opts...)
+
+			// TODO: implement and use a CredentialSupplier
+			appSource := bundle.NewBundleSource(vOpts.BundlePath)
+			if vOpts.ControlPlane != "" {
+				// the HTTP appsource gets Server's data from a remote server
+				// which can essentially control Server's behaviour.
+				appSource = client.NewHTTPSource(vOpts.ControlPlane, nil)
+			}
+
+			sync := syncer.New(vOpts, appSource)
+
+			srv, err := server.New(sync, vOpts)
 			if err != nil {
 				return errors.Wrap(err, "server.New")
 			}
 
-			backend, err := satbackend.New(server.Options(), server.Syncer())
+			backend, err := satbackend.New(vOpts, sync)
 			if err != nil {
 				return errors.Wrap(err, "failed to satbackend.New")
 			}
 
-			system := e2core.NewSystem(server, backend)
+			system := e2core.NewSystem(srv, backend)
 
 			system.StartAll()
 

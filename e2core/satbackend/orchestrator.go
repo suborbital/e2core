@@ -25,14 +25,14 @@ const (
 type Orchestrator struct {
 	syncer           *syncer.Syncer
 	logger           *vlog.Logger
-	opts             options.Options
+	opts             *options.Options
 	sats             map[string]*watcher // map of FQFNs to watchers
 	failedPortCounts map[string]int
 	signalChan       chan os.Signal
 	wg               sync.WaitGroup
 }
 
-func New(opts options.Options, syncer *syncer.Syncer) (*Orchestrator, error) {
+func New(opts *options.Options, syncer *syncer.Syncer) (*Orchestrator, error) {
 	o := &Orchestrator{
 		syncer:           syncer,
 		logger:           opts.Logger(),
@@ -210,7 +210,7 @@ func (o *Orchestrator) setupAppSourceServer() chan error {
 
 	o.logger.Debug("registering with control plane")
 
-	if err := registerWithControlPlane(o.opts); err != nil {
+	if err := registerWithControlPlane(*o.opts); err != nil {
 		log.Fatal(errors.Wrap(err, "failed to registerWithControlPlane"))
 	}
 
