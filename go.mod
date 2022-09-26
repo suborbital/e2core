@@ -12,7 +12,7 @@ require (
 	github.com/spf13/cobra v1.4.0
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.8.0
-	github.com/suborbital/appspec v0.0.2-0.20220902180808-a833dcd7ac23
+	github.com/suborbital/appspec v0.0.3
 	github.com/suborbital/sat v0.0.0-20220915170635-f9c83d3c45d5
 	github.com/suborbital/vektor v0.5.3-0.20220606154347-af1e678993a8
 	github.com/twmb/franz-go v1.6.0
