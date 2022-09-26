@@ -10,7 +10,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/reactr/rt"
+	"github.com/suborbital/e2core/scheduler"
 )
 
 var successCount int64 = 0
@@ -21,17 +21,17 @@ var client = http.Client{Timeout: time.Duration(time.Second * 3)}
 func main() {
 	start := time.Now()
 
-	r := rt.New()
+	r := scheduler.New()
 
-	r.Register("loadtest", &loadRunner{}, rt.PoolSize(15))
+	r.Register("loadtest", &loadRunner{}, scheduler.PoolSize(15))
 
-	group := rt.NewGroup()
+	group := scheduler.NewGroup()
 
 	for i := 0; i < 50000; i++ {
 		idx := i
 
 		group.Add(
-			r.Do(rt.NewJob("loadtest", idx)),
+			r.Do(scheduler.NewJob("loadtest", idx)),
 		)
 	}
 
@@ -64,7 +64,7 @@ func main() {
 
 type loadRunner struct{}
 
-func (l *loadRunner) Run(job rt.Job, ctx *rt.Ctx) (interface{}, error) {
+func (l *loadRunner) Run(job scheduler.Job, ctx *scheduler.Ctx) (interface{}, error) {
 	idx := job.Data().(int)
 
 	req, err := http.NewRequest(http.MethodPost, "http://157.230.68.218/com.suborbital.acmeco/default/httpget/v1.0.0", strings.NewReader("connor"))
@@ -92,4 +92,4 @@ func (l *loadRunner) Run(job rt.Job, ctx *rt.Ctx) (interface{}, error) {
 	return nil, nil
 }
 
-func (l *loadRunner) OnChange(_ rt.ChangeEvent) error { return nil }
+func (l *loadRunner) OnChange(_ scheduler.ChangeEvent) error { return nil }

@@ -17,6 +17,6 @@ impl Runnable for SetArray {
 static RUNNABLE: &SetArray = &SetArray{};
 
 #[no_mangle]
-pub extern fn init() {
+pub extern fn _start() {
     use_runnable(RUNNABLE);
 }

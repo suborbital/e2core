@@ -43,24 +43,21 @@ jobs:
 
       - name: Build
         run: |
-          make atmo
-          make atmo/proxy
+          make e2core/install
+          make e2core/static
 
       - name: Run test
         run: |
-          make build
-          make test
+          make test/ci
 
   image:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        image: [atmo, atmo-proxy]
+        image: [e2core]
         include:
-          - image: atmo
+          - image: e2core
             dockerfile: Dockerfile
-          - image: atmo-proxy
-            dockerfile: Dockerfile-proxy
 
     steps:
       - uses: docker/setup-buildx-action@v2

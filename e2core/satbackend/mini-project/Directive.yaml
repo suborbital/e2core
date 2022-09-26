@@ -1,0 +1,16 @@
+identifier: com.suborbital.mini
+appVersion: v0.0.1
+atmoVersion: v0.4.2
+
+authentication:
+  domains:
+    api.github.com:
+      headerType: bearer
+      value: env(GITHUB_TOKEN)
+
+handlers:
+  - type: request
+    resource: /hello
+    method: POST
+    steps:
+      - fn: helloworld-rs

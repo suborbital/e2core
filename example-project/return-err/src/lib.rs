@@ -13,6 +13,6 @@ impl Runnable for ReturnErr {
 static RUNNABLE: &ReturnErr = &ReturnErr{};
 
 #[no_mangle]
-pub extern fn init() {
+pub extern fn _start() {
     use_runnable(RUNNABLE);
 }

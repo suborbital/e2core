@@ -1,45 +1,18 @@
-![SOS_Atmo-Long-FullColour](https://user-images.githubusercontent.com/5942370/134701827-dec2dc05-83e0-4f05-817e-a6ad81946064.png)
+<img width="883" alt="e2core" src="https://user-images.githubusercontent.com/5942370/190490109-2fd7f923-ba01-4675-a07c-3d571e7c314a.png">
 
-Building web services should be simple. Atmo makes it easy to create a powerful server application without needing to worry about scalability, infrastructure, or complex networking.
+**Suborbital E2 Core** is a server and SDK that allows developers to add third-party plugins to any application. Plugins are developed using familiar languages like JavaScript, TypeScript, Go, and Rust, and are executed in a securely sandboxed environment. E2Core can be run within private infrastructure while protecting against potential malicious untrusted code and providing useful capabilities to plugin developers.
 
-Atmo enables you to write small self-contained functions called **Runnables** using a variety of languages, and define your business logic by **declaratively composing** them. Atmo then automatically scales out a **flat network** of instances to handle traffic. Atmo is currently focused on building web services, particularly APIs, and can be used with a variety of architectures including HTTP- and stream-based environments.
+E2 Core is a single statically compiled binary, and can be run on x86 or ARM, containerized or otherwise. It runs as a server, and allows applications to execute plugins using a simple HTTP, RPC, or streaming interface. The admin API makes it simple to manage available plugins, including built-in versioning and namespacing.
 
-## Get started
+Use cases include:
+- Running custom logic within an ETL/ELT pipeline
+- Adding plugins to streaming platforms like NATS or Kafka/Redpanda
+- Allowing users to "write their own webhooks"
+- Allowing third-party developers to render custom UI elements
 
-**✨ To start building with Atmo, visit the [Atmo guide](https://atmo.suborbital.dev) ✨**
+E2 Core pairs with our [Subo CLI](https://github.com/suborbital/subo) for local plugin development and command-line server administration.
 
-Atmo uses a declarative file called the [Directive](https://atmo.suborbital.dev/concepts/the-directive) where you describe your application's behaviour. Because the Directive can describe everything you need to make your application work (including routes, logic, and more), there is no need to write boilerplate ever again.
+**E2 Core is gearing up for its first release, expected in October 2022. This will include extensive documentation and demos, so look out for that!**
 
-With Atmo, you only need to do three things:
-1. Write self-contained, composable functions
-2. Declare how you want Atmo to handle requests by creating a "Directive"
-3. Build and deploy your Runnable bundle
-
-Atmo is a server-side runtime and application framework. It uses a **bundle** containing your Runnables and Directive to automatically run your application.
-
-## Background
-
-Atmo is designed to embody the [SUFA design pattern](https://blog.suborbital.dev/building-a-better-monolith) (Simple, Unified, Function-based Applications). This means you can build your project into a single deployable unit, and Atmo will take care of the server, scaling out its job scheduler, and meshing together auto-scaled instances.
-
-## Contributing
-
-Please read the [contributing guide](./CONTRIBUTING.md) to learn about how you can contribute to Atmo! We welcome all types of contribution.
-
-### External contributions
-
-| Project Name | Description | Author |
-| ------------ | ----------- | ------ |
-| [Atmo Workspace](https://gitlab.com/k33g_org/discovering-atmo/atmo-workspace) | A "freestanding workshop" to discover Atmo easily | [@k33g](https://gitlab.com/k33g) |
-| [Atmo Redis Workspace](https://gitlab.com/k33g_org/discovering-atmo/atmo-redis-workspace) | This project is a running demo of 2 Atmo Runnables using a Redis database | [@k33g](https://gitlab.com/k33g) |
-| [Atmo JSON demo Workspace](https://gitlab.com/k33g_org/discovering-atmo/atmo-json-demo-workspace)  | This project is a running demo of 2 Atmo Runnables serving JSON payloads | [@k33g](https://gitlab.com/k33g) |
-| [Atmo PostgreSQL](https://gitlab.com/k33g_org/discovering-atmo/atmo-postgresql)  | This project is a sandbox with all that you need to start playing with Atmo and PostgreSQL right now without installing anything. And this is its companion blog post: ["Building a CRUD API with Atmo, Rust and PostgreSQL"](https://blog.suborbital.dev/building-a-crud-api-with-atmo-rust-and-postgresql) | [@k33g](https://gitlab.com/k33g) |
-<!-- uncomment to add row | [name](link)  | Description | [@handle](link) |-->
-
-## Status
-Atmo is currently in **beta**
-
-Visit [the Suborbital website](https://suborbital.dev) to sign up for email updates related to new versions of Atmo.
-
-Atmo is built atop [Vektor](https://github.com/suborbital/vektor), [Grav](https://github.com/suborbital/grav), and [Reactr](https://github.com/suborbital/reactr).
-
-Copyright Suborbital contributors 2021.
+### Running locally
+If you'd like to run E2 Core locally, you can run `make e2core/install` and then `e2core start ./example-project/modules.wasm.zip`. Plugins can be executed by calling `POST /name/:identifier/:namespace/:name`, for example `curl -d 'world' localhost:8080/com.suborbital.app/default/helloworld-rs`

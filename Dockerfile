@@ -1,7 +1,7 @@
-FROM golang:1.17 as builder
+FROM golang:1.18 as builder
 
-RUN mkdir -p /go/src/github.com/suborbital/atmo
-WORKDIR /go/src/github.com/suborbital/atmo/
+RUN mkdir -p /go/src/github.com/suborbital/e2core
+WORKDIR /go/src/github.com/suborbital/e2core/
 
 # Deps first
 COPY go.mod go.sum ./
@@ -11,35 +11,22 @@ RUN go mod download
 COPY . ./
 RUN go mod vendor
 
-# lib dance to get things building properly on ARM
-RUN mkdir -p /tmp/wasmerio
-RUN cp -R ./vendor/github.com/wasmerio/wasmer-go/wasmer/packaged/lib/* /tmp/wasmerio/
-RUN ./scripts/copy-libs.sh
-ENV LD_LIBRARY_PATH=/usr/local/lib
-
-RUN go install
+RUN make e2core/static
 
 FROM debian:buster-slim
 
-RUN groupadd -g 999 atmo && \
-    useradd -r -u 999 -g atmo atmo && \
-	mkdir -p /home/atmo && \
-	chown -R atmo /home/atmo && \
-	chmod -R 700 /home/atmo
+RUN groupadd -g 999 e2core && \
+    useradd -r -u 999 -g e2core e2core && \
+	mkdir -p /home/e2core && \
+	chown -R e2core /home/e2core && \
+	chmod -R 700 /home/e2core
 
 RUN apt-get update \
 	&& apt-get install -y ca-certificates
 
-# atmo binary
-COPY --from=builder /go/bin/atmo /usr/local/bin
-# script for choosing the correct library based on architecture
-COPY --from=builder /go/src/github.com/suborbital/atmo/scripts/copy-libs.sh /tmp/wasmerio/copy-libs.sh
-# the wasmer shared libraries
-COPY --from=builder /go/src/github.com/suborbital/atmo/vendor/github.com/wasmerio/wasmer-go/wasmer/packaged/lib/ /tmp/wasmerio/
+# e2core binary
+COPY --from=builder /go/src/github.com/suborbital/e2core/.bin/e2core /usr/local/bin/
 
-RUN /tmp/wasmerio/copy-libs.sh
-ENV LD_LIBRARY_PATH=/usr/local/lib
+WORKDIR /home/e2core
 
-WORKDIR /home/atmo
-
-USER atmo
+USER e2core

@@ -1,44 +1,27 @@
 
-atmo:
-	go build -o .bin/atmo ./main.go
+e2core:
+	go build -o .bin/e2core ./main.go
 
-atmo/proxy:
-	go build -o .bin/atmo-proxy -tags proxy ./main.go
+e2core/install:
+	go install
 
-atmo/proxy/install:
-	go build -o $(HOME)/go/bin/atmo-proxy -tags proxy ./main.go
+e2core/static:
+	go build -o .bin/e2core -tags netgo -ldflags="-extldflags=-static" .
 
-run: atmo
-	ATMO_HTTP_PORT=8080 .bin/atmo $(bundle)
-
-run/proxy: build/proxy
-	ATMO_HTTP_PORT=8080 .bin/atmo-proxy $(bundle)
-
-atmo/docker: docker/dev
-	docker run -v ${PWD}/$(dir):/home/atmo -e ATMO_HTTP_PORT=8080 -p 8080:8080 suborbital/atmo:dev atmo --wait
-
-atmo/proxy/docker: docker/dev/proxy
-	docker run -v ${PWD}/$(dir):/home/atmo -e ATMO_HTTP_PORT=8080 -p 8080:8080 --network=bridge suborbital/atmo-proxy:dev atmo-proxy
-
-atmo/proxy/docker/publish:
-	docker buildx build . -f ./Dockerfile-proxy --platform linux/amd64 -t suborbital/atmo-proxy:dev --push
+e2core/docker: docker/dev
+	docker run -v ${PWD}/$(dir):/home/e2core -e e2core_HTTP_PORT=8080 -p 8080:8080 suborbital/e2core:dev e2core start ./example-project/modules.wasm.zip
 
 docker/dev:
-	docker build . -t suborbital/atmo:dev
-
-docker/dev/proxy:
-	docker build . -f Dockerfile-proxy -t suborbital/atmo-proxy:dev
+	docker build . -t suborbital/e2core:dev
 
 docker/dev/multi:
-	docker buildx build . --platform linux/amd64,linux/arm64 -t atmo:dev
+	docker buildx build . --platform linux/amd64,linux/arm64 -t e2core:dev
 
 docker/publish:
-	docker buildx build . --platform linux/amd64,linux/arm64 -t suborbital/atmo:$(version) --push
-	docker buildx build . -f ./Dockerfile-proxy --platform linux/amd64,linux/arm64 -t suborbital/atmo-proxy:$(version) --push
+	docker buildx build . --platform linux/amd64,linux/arm64 -t suborbital/e2core:$(version) --push
 
 docker/publish/latest:
-	docker buildx build . --platform linux/amd64,linux/arm64 -t suborbital/atmo:latest --push
-	docker buildx build . -f ./Dockerfile-proxy --platform linux/amd64,linux/arm64 -t suborbital/atmo-proxy:latest --push
+	docker buildx build . --platform linux/amd64,linux/arm64 -t suborbital/e2core:latest --push
 
 docker/builder:
 	docker buildx create --use
@@ -47,6 +30,9 @@ example-project:
 	subo build ./example-project --native
 
 test:
+	RUN_SERVER_TESTS=true go test -v --count=1 -p=1 ./...
+
+test/ci:
 	go test -v --count=1 -p=1 ./...
 
 lint:
@@ -68,5 +54,5 @@ mod/replace/reactr:
 mod/replace/vektor:
 	go mod edit -replace github.com/suborbital/vektor=$(HOME)/Workspaces/suborbital/vektor
 
-.PHONY: build atmo atmo/docker docker/dev docker/dev/multi docker/publish docker/builder example-project test lint \
+.PHONY: build e2core e2core/docker docker/dev docker/dev/multi docker/publish docker/builder example-project test lint \
 	lint/fix fix-imports deps
