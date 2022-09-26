@@ -7,9 +7,9 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/appspec/appsource"
 	"github.com/suborbital/appspec/capabilities"
 	"github.com/suborbital/appspec/request"
+	"github.com/suborbital/appspec/system"
 	"github.com/suborbital/appspec/tenant/executable"
 	"github.com/suborbital/e2core/bus/bus"
 	"github.com/suborbital/e2core/bus/discovery/local"
@@ -208,7 +208,7 @@ func (e *meshExecutor) SetSchedule(sched scheduler.Schedule) error {
 
 // Load loads Runnables into the executor's Reactr instance
 // And connects them to the Grav instance (currently unused)
-func (e *meshExecutor) Load(source appsource.AppSource) error {
+func (e *meshExecutor) Load(source system.Source) error {
 	// nothing to do in proxy mode
 
 	return nil
