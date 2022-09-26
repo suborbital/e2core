@@ -58,7 +58,7 @@ func Start() *cobra.Command {
 			if vOpts.ControlPlane != "" {
 				// the HTTP appsource gets Server's data from a remote server
 				// which can essentially control Server's behaviour.
-				appSource = client.NewHTTPSource(vOpts.ControlPlane, nil)
+				appSource = client.NewHTTPSource(vOpts.ControlPlane, NewAuthToken(vOpts.EnvironmentToken))
 			}
 
 			sync := syncer.New(vOpts, appSource)
