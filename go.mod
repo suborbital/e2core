@@ -9,7 +9,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/schollz/peerdiscovery v1.6.12
 	github.com/sethvargo/go-envconfig v0.8.1
-	github.com/spf13/cobra v1.4.0
+	github.com/spf13/cobra v1.5.0
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.8.0
 	github.com/suborbital/appspec v0.0.4-0.20220926160156-36407db9d5e1
