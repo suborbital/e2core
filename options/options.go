@@ -5,6 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sethvargo/go-envconfig"
+	"golang.org/x/exp/slices"
 
 	"github.com/suborbital/vektor/vlog"
 )
@@ -12,12 +13,14 @@ import (
 const (
 	DefaultControlPlane = "localhost:9090"
 	e2coreEnvPrefix     = "E2CORE"
+	FeatureMultiTenant  = "adminV1"
 )
 
 // Options defines options for Atmo.
 type Options struct {
 	logger *vlog.Logger
 
+	Features         []string     `env:"E2CORE_API_FEATURES"`
 	BundlePath       string       `env:"E2CORE_BUNDLE_PATH"`
 	RunSchedules     *bool        `env:"E2CORE_RUN_SCHEDULES,default=true"`
 	ControlPlane     string       `env:"E2CORE_CONTROL_PLANE"`
@@ -162,10 +165,15 @@ func (o *Options) finalize(prefix string) {
 		o.TLSPort = envOpts.TLSPort
 	}
 
+	o.Features = envOpts.Features
 	o.EnvironmentToken = ""
 	o.TracerConfig = TracerConfig{}
 	o.StaticPeers = envOpts.StaticPeers
 
 	o.EnvironmentToken = envOpts.EnvironmentToken
 	o.TracerConfig = envOpts.TracerConfig
+}
+
+func (o *Options) AdminEnabled() bool {
+	return slices.Contains(o.Features, FeatureMultiTenant)
 }

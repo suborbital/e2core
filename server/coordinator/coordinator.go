@@ -9,6 +9,7 @@ import (
 	"github.com/suborbital/appspec/capabilities"
 	"github.com/suborbital/appspec/tenant"
 	"github.com/suborbital/appspec/tenant/executable"
+	"github.com/suborbital/e2core/auth"
 	"github.com/suborbital/e2core/bus/bus"
 	"github.com/suborbital/e2core/bus/transport/kafka"
 	"github.com/suborbital/e2core/bus/transport/nats"
@@ -89,8 +90,16 @@ func (c *Coordinator) SetupHandlers() (*vk.Router, error) {
 	// set a middleware on the root RouteGroup.
 	router.Before(scopeMiddleware)
 
+	if c.opts.AdminEnabled() {
+		authzMw := auth.AuthorizationMiddleware(http.DefaultClient, c.opts.ControlPlane)
+		router.Before(authzMw)
+	}
+
 	router.POST("/name/:ident/:namespace/:name", c.vkHandlerForModuleByName())
-	router.POST("/ref/:ref", c.vkHandlerForModuleByRef())
+	// TODO: Add authorization logic for direct ref calls
+	if !c.opts.AdminEnabled() {
+		router.POST("/ref/:ref", c.vkHandlerForModuleByRef())
+	}
 
 	// TODO: implement triggers
 	// switch h.Input.Type {
