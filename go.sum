@@ -275,8 +275,8 @@ github.com/schollz/peerdiscovery v1.6.12 h1:8N/MEjMSPIwQRjEiyHC1B3goax4INvuRo3ex
 github.com/schollz/peerdiscovery v1.6.12/go.mod h1:fYHOyZQetvFkK+iQbLH/Gll28Fh9WJywIN550GkVMR4=
 github.com/second-state/WasmEdge-go v0.11.0 h1:AJ9N2vzXTKQeut5LPxxUDaAKz/VpNk+OXkGSbLvJRkE=
 github.com/second-state/WasmEdge-go v0.11.0/go.mod h1:HyBf9hVj1sRAjklsjc1Yvs9b5RcmthPG9z99dY78TKg=
-github.com/sethvargo/go-envconfig v0.8.1 h1:Gcy6BxTI3A/fOxyoFVDaXcRrhXM1+9Og4ww03/XK1tY=
-github.com/sethvargo/go-envconfig v0.8.1/go.mod h1:Iz1Gy1Sf3T64TQlJSvee81qDhf7YIlt8GMUX6yyNFs0=
+github.com/sethvargo/go-envconfig v0.8.2 h1:DDUVuG21RMgeB/bn4leclUI/837y6cQCD4w8hb5797k=
+github.com/sethvargo/go-envconfig v0.8.2/go.mod h1:Iz1Gy1Sf3T64TQlJSvee81qDhf7YIlt8GMUX6yyNFs0=
 github.com/shopspring/decimal v0.0.0-20180709203117-cd690d0c9e24/go.mod h1:M+9NzErvs504Cn4c5DxATwIqPbtswREoFCre64PpcG4=
 github.com/shopspring/decimal v1.2.0 h1:abSATXmQEYyShuxI4/vyW3tV1MrKAJzCZ/0zLUXYbsQ=
 github.com/shopspring/decimal v1.2.0/go.mod h1:DKyhrW/HYNuLGql+MJL6WCR6knT2jwCFRcu2hWCYk4o=
