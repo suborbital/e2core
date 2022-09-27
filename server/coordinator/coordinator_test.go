@@ -8,8 +8,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/appspec/appsource/bundle"
 	"github.com/suborbital/appspec/request"
+	"github.com/suborbital/appspec/system/bundle"
 	"github.com/suborbital/appspec/tenant/executable"
 	"github.com/suborbital/e2core/options"
 	"github.com/suborbital/e2core/scheduler"
@@ -29,9 +29,9 @@ func init() {
 		)),
 	)
 
-	appSource := bundle.NewBundleSource("../../example-project/modules.wasm.zip")
+	source := bundle.NewBundleSource("../../example-project/modules.wasm.zip")
 
-	syncer := syncer.New(opts, appSource)
+	syncer := syncer.New(opts, source)
 
 	coord = New(syncer, opts)
 

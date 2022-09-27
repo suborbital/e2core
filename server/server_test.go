@@ -13,7 +13,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/suborbital/appspec/appsource/bundle"
+	"github.com/suborbital/appspec/system/bundle"
 	"github.com/suborbital/e2core/e2core/satbackend"
 	"github.com/suborbital/e2core/options"
 	"github.com/suborbital/e2core/signaler"
@@ -256,9 +256,9 @@ func (s *serverTestSuite) serverForBundle(filepath string) (*vk.Server, error) {
 
 		opts := options.NewWithModifiers(options.UseBundlePath(filepath), options.UseLogger(logger))
 
-		appSource := bundle.NewBundleSource(opts.BundlePath)
+		source := bundle.NewBundleSource(opts.BundlePath)
 
-		syncer := syncer.New(opts, appSource)
+		syncer := syncer.New(opts, source)
 
 		server, err := New(syncer, opts)
 		if err != nil {
