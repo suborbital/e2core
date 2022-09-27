@@ -10,6 +10,7 @@ import (
 	"github.com/suborbital/e2core/server/release"
 	"github.com/suborbital/e2core/signaler"
 	"github.com/suborbital/sat/sat"
+	satMetrics "github.com/suborbital/sat/sat/metrics"
 )
 
 func ModStart() *cobra.Command {
@@ -29,7 +30,7 @@ func ModStart() *cobra.Command {
 				return errors.Wrap(err, "failed to ConfigFromRunnableArg")
 			}
 
-			sat, err := sat.New(config, trace.NewNoopTracerProvider())
+			sat, err := sat.New(config, trace.NewNoopTracerProvider(), satMetrics.SetupNoopMetrics())
 			if err != nil {
 				return errors.Wrap(err, "failed to sat.New")
 			}
