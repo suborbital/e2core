@@ -304,8 +304,8 @@ github.com/suborbital/appspec v0.0.4-0.20220926160156-36407db9d5e1 h1:nUgraeYYib
 github.com/suborbital/appspec v0.0.4-0.20220926160156-36407db9d5e1/go.mod h1:viKHmM+uNDW+3XuZKGhZ3jZmStpomLVANscTNQVO9B0=
 github.com/suborbital/sat v0.0.0-20220926191254-e953fff06141 h1:jnCzmqrQ61ufZpAHBHYhPTDiIaPVAzdTrgxryLeZQ1g=
 github.com/suborbital/sat v0.0.0-20220926191254-e953fff06141/go.mod h1:D3m2/E7EEtU0FFU/Etp/Qe57t5dVZKWX0Wf6+1I6Www=
-github.com/suborbital/vektor v0.5.3-0.20220606154347-af1e678993a8 h1:1GUeXgAL4969UAg0IuZg0tKvYlsxiDd4v/MOwYIKD2U=
-github.com/suborbital/vektor v0.5.3-0.20220606154347-af1e678993a8/go.mod h1:/OSnPYtTDFwGHnoFaBYpWQu1moH1X8Vo/y4BVU3+oWM=
+github.com/suborbital/vektor v0.6.0 h1:HIGsnzFeAHYqHVYl4kcKG1ZNK858eC8xvDq4fcG4ILs=
+github.com/suborbital/vektor v0.6.0/go.mod h1:gYHhFyF94vL/DY3Zxv988zJW3Z7SsLgxvB321UtCNwM=
 github.com/twmb/franz-go v1.6.0 h1:yri7YsVBe/k1LKcoZSLILgUI3U14e82qtD9i4VOcs9c=
 github.com/twmb/franz-go v1.6.0/go.mod h1:xdMwpUIQL/JDKKwerc5qJQG8TU1SNIddfjKJJyqRJIg=
 github.com/twmb/franz-go/pkg/kmsg v1.1.0 h1:csckTxG48q7Tem7ZwMxe2jAb0ehDNglxZccGnpqe4RU=

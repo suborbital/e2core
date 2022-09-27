@@ -14,7 +14,7 @@ require (
 	github.com/stretchr/testify v1.8.0
 	github.com/suborbital/appspec v0.0.4-0.20220926160156-36407db9d5e1
 	github.com/suborbital/sat v0.0.0-20220926191254-e953fff06141
-	github.com/suborbital/vektor v0.5.3-0.20220606154347-af1e678993a8
+	github.com/suborbital/vektor v0.6.0
 	github.com/twmb/franz-go v1.6.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.36.1
 	go.opentelemetry.io/otel v1.10.0
