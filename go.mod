@@ -13,8 +13,8 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.8.0
 	github.com/suborbital/appspec v0.0.4-0.20220926160156-36407db9d5e1
-	github.com/suborbital/sat v0.0.0-20220926191254-e953fff06141
-	github.com/suborbital/vektor v0.5.3-0.20220606154347-af1e678993a8
+	github.com/suborbital/sat v0.1.4
+	github.com/suborbital/vektor v0.6.0
 	github.com/twmb/franz-go v1.6.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.36.1
 	go.opentelemetry.io/otel v1.10.0
@@ -58,6 +58,9 @@ require (
 	github.com/pierrec/lz4/v4 v4.1.15 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/second-state/WasmEdge-go v0.11.0 // indirect
+	github.com/suborbital/atmo v0.4.7 // indirect
+	github.com/suborbital/grav v0.5.1 // indirect
+	github.com/suborbital/reactr v0.15.1 // indirect
 	github.com/twmb/franz-go/pkg/kmsg v1.1.0 // indirect
 	github.com/wasmerio/wasmer-go v1.0.4 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/internal/retry v1.10.0 // indirect
@@ -65,6 +68,7 @@ require (
 	go.opentelemetry.io/proto/otlp v0.19.0 // indirect
 	golang.org/x/crypto v0.0.0-20220926161630-eccd6366d1be // indirect
 	golang.org/x/exp v0.0.0-20220921164117-439092de6870 // indirect
+	golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4 // indirect
 	golang.org/x/net v0.0.0-20220926192436-02166a98028e // indirect
 	golang.org/x/sys v0.0.0-20220926163933-8cfa568d3c25 // indirect
 	golang.org/x/text v0.3.7 // indirect
