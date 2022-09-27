@@ -13,6 +13,8 @@ import (
 	"github.com/suborbital/vektor/vlog"
 )
 
+var EmptyModules = make([]tenant.Module, 0)
+
 // Syncer keeps an in-memory cache of the system state such that the coordinator and orchestrator
 // can get up-to-date information about the world.
 type Syncer struct {
@@ -25,7 +27,7 @@ type syncJob struct {
 	appSource    system.Source
 	state        *system.State
 	tenantIdents map[string]int64
-	overviews    map[string]system.TenantOverview
+	overviews    map[string]*system.TenantOverview
 	modules      map[string]tenant.Module
 
 	log  *vlog.Logger
@@ -43,7 +45,7 @@ func New(opts *options.Options, source system.Source) *Syncer {
 		appSource:    source,
 		state:        &system.State{},
 		tenantIdents: make(map[string]int64),
-		overviews:    make(map[string]system.TenantOverview),
+		overviews:    make(map[string]*system.TenantOverview),
 		modules:      make(map[string]tenant.Module),
 		log:          opts.Logger(),
 		lock:         &sync.RWMutex{},
@@ -104,7 +106,10 @@ func (s *syncJob) Run(job scheduler.Job, ctx *scheduler.Ctx) (interface{}, error
 			return nil, errors.Wrapf(err, "failed to app.TenantOverview for %s", ident)
 		}
 
-		s.overviews[ident] = *tnt
+		if tnt.Config.Modules == nil {
+			tnt.Config.Modules = EmptyModules
+		}
+		s.overviews[ident] = tnt
 
 		s.log.Debug("syncing", len(tnt.Config.Modules), "modules for", ident)
 
@@ -150,7 +155,7 @@ func (s *Syncer) TenantOverview(ident string) *system.TenantOverview {
 
 	ovv := s.job.overviews[ident]
 
-	return &ovv
+	return ovv
 }
 
 // GetModuleByName gets a module by its name
@@ -164,7 +169,6 @@ func (s *Syncer) GetModuleByName(ident, namespace, name string) *tenant.Module {
 	}
 
 	var mod *tenant.Module
-
 	for i, m := range tnt.Config.Modules {
 		if m.Namespace == namespace && m.Name == name {
 			mod = &tnt.Config.Modules[i]
