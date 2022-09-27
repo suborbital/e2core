@@ -6,7 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/appspec/appsource"
+	"github.com/suborbital/appspec/system"
 	"github.com/suborbital/appspec/tenant"
 	"github.com/suborbital/e2core/options"
 	"github.com/suborbital/e2core/scheduler"
@@ -22,10 +22,10 @@ type Syncer struct {
 }
 
 type syncJob struct {
-	appSource    appsource.AppSource
-	state        *appsource.State
+	appSource    system.Source
+	state        *system.State
 	tenantIdents map[string]int64
-	overviews    map[string]appsource.TenantOverview
+	overviews    map[string]system.TenantOverview
 	modules      map[string]tenant.Module
 
 	log  *vlog.Logger
@@ -33,7 +33,7 @@ type syncJob struct {
 }
 
 // New creates a syncer with the given AppSource
-func New(opts *options.Options, source appsource.AppSource) *Syncer {
+func New(opts *options.Options, source system.Source) *Syncer {
 	s := &Syncer{
 		sched: scheduler.New(),
 		opts:  opts,
@@ -41,9 +41,9 @@ func New(opts *options.Options, source appsource.AppSource) *Syncer {
 
 	s.job = &syncJob{
 		appSource:    source,
-		state:        &appsource.State{},
+		state:        &system.State{},
 		tenantIdents: make(map[string]int64),
-		overviews:    make(map[string]appsource.TenantOverview),
+		overviews:    make(map[string]system.TenantOverview),
 		modules:      make(map[string]tenant.Module),
 		log:          opts.Logger(),
 		lock:         &sync.RWMutex{},
@@ -128,7 +128,7 @@ func (s *syncJob) Run(job scheduler.Job, ctx *scheduler.Ctx) (interface{}, error
 func (s *syncJob) OnChange(_ scheduler.ChangeEvent) error { return nil }
 
 // State returns the current system state
-func (s *Syncer) State() *appsource.State {
+func (s *Syncer) State() *system.State {
 	s.job.lock.RLock()
 	defer s.job.lock.RUnlock()
 
@@ -144,7 +144,7 @@ func (s *Syncer) ListTenants() map[string]int64 {
 }
 
 // TenantOverview returns the (possibly nil) TenantOverview for the given tenant ident
-func (s *Syncer) TenantOverview(ident string) *appsource.TenantOverview {
+func (s *Syncer) TenantOverview(ident string) *system.TenantOverview {
 	s.job.lock.RLock()
 	defer s.job.lock.RUnlock()
 
