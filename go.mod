@@ -15,7 +15,7 @@ require (
 	github.com/suborbital/appspec v0.0.4-0.20220926160156-36407db9d5e1
 	github.com/suborbital/sat v0.0.0-20220926191254-e953fff06141
 	github.com/suborbital/vektor v0.5.3-0.20220606154347-af1e678993a8
-	github.com/twmb/franz-go v1.6.0
+	github.com/twmb/franz-go v1.7.1
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.36.1
 	go.opentelemetry.io/otel v1.10.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.10.0
@@ -50,7 +50,7 @@ require (
 	github.com/jackc/pgx/v4 v4.17.2 // indirect
 	github.com/jmoiron/sqlx v1.3.5 // indirect
 	github.com/julienschmidt/httprouter v1.3.0 // indirect
-	github.com/klauspost/compress v1.15.6 // indirect
+	github.com/klauspost/compress v1.15.9 // indirect
 	github.com/kr/pretty v0.2.1 // indirect
 	github.com/nats-io/nats-server/v2 v2.8.4 // indirect
 	github.com/nats-io/nkeys v0.3.0 // indirect
@@ -58,7 +58,7 @@ require (
 	github.com/pierrec/lz4/v4 v4.1.15 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/second-state/WasmEdge-go v0.11.0 // indirect
-	github.com/twmb/franz-go/pkg/kmsg v1.1.0 // indirect
+	github.com/twmb/franz-go/pkg/kmsg v1.2.0 // indirect
 	github.com/wasmerio/wasmer-go v1.0.4 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/internal/retry v1.10.0 // indirect
 	go.opentelemetry.io/otel/metric v0.32.1 // indirect
