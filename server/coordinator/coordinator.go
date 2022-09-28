@@ -91,13 +91,9 @@ func (c *Coordinator) SetupHandlers() (*vk.Router, error) {
 	router.Before(scopeMiddleware)
 
 	if c.opts.AdminEnabled() {
-		authzMw := auth.AuthorizationMiddleware(http.DefaultClient, c.opts.ControlPlane)
-		router.Before(authzMw)
-	}
-
-	router.POST("/name/:ident/:namespace/:name", c.vkHandlerForModuleByName())
-	// TODO: Add authorization logic for direct ref calls
-	if !c.opts.AdminEnabled() {
+		router.POST("/name/:ident/:namespace/:name", auth.AuthorizationMiddleware(http.DefaultClient, c.opts.ControlPlane, c.vkHandlerForModuleByName()))
+	} else {
+		router.POST("/name/:ident/:namespace/:name", c.vkHandlerForModuleByName())
 		router.POST("/ref/:ref", c.vkHandlerForModuleByRef())
 	}
 

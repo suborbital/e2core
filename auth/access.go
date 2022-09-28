@@ -103,16 +103,16 @@ const (
 	AccessExecute       = 8
 )
 
-func AuthorizationMiddleware(client *http.Client, controlplane string) vk.Middleware {
+func AuthorizationMiddleware(client *http.Client, controlplane string, inner vk.HandlerFunc) vk.HandlerFunc {
 	authority := fmt.Sprintf("%s/%s", controlplane, "api/v2/access")
-	return func(req *http.Request, ctx *vk.Ctx) error {
+	return func(req *http.Request, ctx *vk.Ctx) (interface{}, error) {
 		identifier := ctx.Params.ByName("ident")
 		namespace := ctx.Params.ByName("namespace")
 		name := ctx.Params.ByName("name")
 
 		environment, tenant := SplitIdentifier(identifier)
 		if environment == "" {
-			return vk.E(http.StatusBadRequest, "invalid identifier")
+			return vk.E(http.StatusBadRequest, "invalid identifier"), nil
 		}
 
 		buf := bytes.NewBuffer([]byte{})
@@ -124,37 +124,38 @@ func AuthorizationMiddleware(client *http.Client, controlplane string) vk.Middle
 
 		if err := json.NewEncoder(buf).Encode(accessReq); err != nil {
 			ctx.Log.Error(errors.Wrap(err, "serialize authorization request"))
-			return vk.E(http.StatusUnauthorized, "")
+			return vk.E(http.StatusUnauthorized, ""), nil
 		}
 
 		authzReq, err := http.NewRequest(http.MethodPost, authority, buf)
 		if err != nil {
 			ctx.Log.Error(errors.Wrap(err, "create authorization request"))
-			return vk.E(http.StatusUnauthorized, "")
+			return vk.E(http.StatusUnauthorized, ""), nil
 		}
+
 		// pass token along
 		authzReq.Header.Set(http.CanonicalHeaderKey("Authorization"), req.Header.Get(http.CanonicalHeaderKey("Authorization")))
 
 		resp, err := client.Do(authzReq)
 		if err != nil {
 			ctx.Log.Error(errors.Wrap(err, "post authorization request"))
-			return vk.E(http.StatusUnauthorized, "")
+			return vk.E(http.StatusUnauthorized, ""), nil
 		}
 
 		if resp.StatusCode != http.StatusOK {
 			ctx.Log.ErrorString(fmt.Sprintf("Request unauthorized %d", resp.StatusCode))
-			return vk.E(http.StatusForbidden, "")
+			return vk.E(http.StatusForbidden, ""), nil
 		}
 		defer resp.Body.Close()
 
 		var authz *AuthorizationResponse
 		if err = json.NewDecoder(resp.Body).Decode(&authz); err != nil {
 			ctx.Log.Error(errors.Wrap(err, "deserialized authorization response"))
-			return vk.E(http.StatusInternalServerError, "")
+			return vk.E(http.StatusInternalServerError, ""), nil
 		}
 
 		ctx.Context = context.WithValue(ctx.Context, AuthorizationCtxKey, NewAuthorizationContext(authz))
 
-		return nil
+		return inner(req, ctx)
 	}
 }
