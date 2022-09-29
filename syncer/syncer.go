@@ -163,7 +163,7 @@ func (s *Syncer) GetModuleByName(ident, namespace, name string) *tenant.Module {
 	s.job.lock.RLock()
 	defer s.job.lock.RUnlock()
 
-	tnt := s.TenantOverview(ident)
+	tnt := s.job.overviews[ident]
 	if tnt == nil {
 		return nil
 	}
