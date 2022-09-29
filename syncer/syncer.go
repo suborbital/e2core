@@ -74,15 +74,21 @@ func (s *Syncer) Start() error {
 
 // Run runs a sync job
 func (s *syncJob) Run(job scheduler.Job, ctx *scheduler.Ctx) (interface{}, error) {
-	s.lock.Lock()
-	defer s.lock.Unlock()
-
 	state, err := s.appSource.State()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to appSource.State")
 	}
 
 	if state.SystemVersion == s.state.SystemVersion {
+		s.log.Debug(fmt.Sprintf("skipping sync with version match: %d, %d", state.SystemVersion, s.state.SystemVersion))
+		return nil, nil
+	}
+
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	// update arrived between when we awaited the lock and when we acquired it
+	if state.SystemVersion <= s.state.SystemVersion {
 		s.log.Debug(fmt.Sprintf("skipping sync with version match: %d, %d", state.SystemVersion, s.state.SystemVersion))
 		return nil, nil
 	}
