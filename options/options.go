@@ -2,6 +2,8 @@ package options
 
 import (
 	"context"
+	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/sethvargo/go-envconfig"
@@ -20,18 +22,19 @@ const (
 type Options struct {
 	logger *vlog.Logger
 
-	Features         []string     `env:"E2CORE_API_FEATURES"`
-	BundlePath       string       `env:"E2CORE_BUNDLE_PATH"`
-	RunSchedules     *bool        `env:"E2CORE_RUN_SCHEDULES,default=true"`
-	ControlPlane     string       `env:"E2CORE_CONTROL_PLANE"`
-	UpstreamAddress  string       `env:"E2CORE_UPSTREAM_ADDRESS"`
-	EnvironmentToken string       `env:"E2CORE_ENV_TOKEN"`
-	StaticPeers      string       `env:"E2CORE_PEERS"`
-	AppName          string       `env:"E2CORE_APP_NAME,default=E2Core"`
-	Domain           string       `env:"E2CORE_DOMAIN"`
-	HTTPPort         int          `env:"E2CORE_HTTP_PORT,default=8080"`
-	TLSPort          int          `env:"E2CORE_TLS_PORT,default=443"`
-	TracerConfig     TracerConfig `env:",prefix=E2CORE_TRACER_"`
+	Features         []string      `env:"E2CORE_API_FEATURES"`
+	BundlePath       string        `env:"E2CORE_BUNDLE_PATH"`
+	RunSchedules     *bool         `env:"E2CORE_RUN_SCHEDULES,default=true"`
+	ControlPlane     string        `env:"E2CORE_CONTROL_PLANE"`
+	AuthCacheTTL     time.Duration `env:"E2CORE_AUTH_CACHE_TTL,default=10m"`
+	UpstreamAddress  string        `env:"E2CORE_UPSTREAM_ADDRESS"`
+	EnvironmentToken string        `env:"E2CORE_ENV_TOKEN"`
+	StaticPeers      string        `env:"E2CORE_PEERS"`
+	AppName          string        `env:"E2CORE_APP_NAME,default=E2Core"`
+	Domain           string        `env:"E2CORE_DOMAIN"`
+	HTTPPort         int           `env:"E2CORE_HTTP_PORT,default=8080"`
+	TLSPort          int           `env:"E2CORE_TLS_PORT,default=443"`
+	TracerConfig     TracerConfig  `env:",prefix=E2CORE_TRACER_"`
 }
 
 // TracerConfig holds values specific to setting up the tracer. It's only used in proxy mode. All configuration options
@@ -136,7 +139,8 @@ func (o *Options) finalize(prefix string) {
 		return
 	}
 
-	o.ControlPlane = envOpts.ControlPlane
+	o.ControlPlane = strings.TrimSuffix(envOpts.ControlPlane, "/")
+	o.AuthCacheTTL = envOpts.AuthCacheTTL
 
 	// set RunSchedules if it was not passed as a flag.
 	if o.RunSchedules == nil {
