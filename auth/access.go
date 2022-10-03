@@ -6,13 +6,111 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"path/filepath"
 	"strings"
-
-	"github.com/pkg/errors"
+	"time"
 
 	"github.com/suborbital/appspec/system"
+	"github.com/suborbital/e2core/common"
+	"github.com/suborbital/e2core/options"
 	"github.com/suborbital/vektor/vk"
 )
+
+const (
+	AuthorizationCtxKey = "authorization"
+	AccessExecute       = 8
+)
+
+func AuthorizationMiddleware(opts *options.Options, inner vk.HandlerFunc) vk.HandlerFunc {
+	authorizer := NewApiAuthClient(opts)
+	return func(req *http.Request, ctx *vk.Ctx) (interface{}, error) {
+		identifier := ctx.Params.ByName("ident")
+		namespace := ctx.Params.ByName("namespace")
+		name := ctx.Params.ByName("name")
+
+		authz, err := authorizer.Authorize(ExtractAccessToken(req.Header), identifier, namespace, name)
+		if err != nil {
+			ctx.Log.Error(err)
+			return vk.R(http.StatusUnauthorized, ""), nil
+		}
+
+		ctx.Context = context.WithValue(ctx.Context, AuthorizationCtxKey, authz)
+
+		return inner(req, ctx)
+	}
+}
+
+func NewApiAuthClient(opts *options.Options) *AuthzClient {
+	return &AuthzClient{
+		httpClient: &http.Client{
+			Timeout:   20 * time.Second,
+			Transport: http.DefaultTransport,
+		},
+		location: opts.ControlPlane + "/api/v2/access",
+		cache:    NewAuthorizationCache(opts.AuthCacheTTL),
+	}
+}
+
+type AuthzClient struct {
+	location   string
+	httpClient *http.Client
+	cache      *AuthorizationCache
+}
+
+func (client *AuthzClient) Authorize(token system.Credential, identifier, namespace, name string) (*AuthorizationContext, error) {
+	if token == nil {
+		return nil, common.Error(common.ErrAccess, "no credentials provided")
+	}
+
+	environment, tenant := SplitIdentifier(identifier)
+	if environment == "" {
+		return nil, common.Error(common.ErrAccess, "invalid identifier")
+	}
+
+	accessReq := &AuthorizationRequest{
+		Action:   AccessExecute,
+		Resource: []string{environment, tenant, namespace, name},
+	}
+
+	key := filepath.Join(identifier, namespace, name, token.Value())
+
+	return client.cache.Get(key, client.loadAuth(token, accessReq))
+}
+
+func (client *AuthzClient) loadAuth(token system.Credential, req *AuthorizationRequest) func() (*AuthorizationContext, error) {
+	return func() (*AuthorizationContext, error) {
+		buf := bytes.NewBuffer([]byte{})
+		if err := json.NewEncoder(buf).Encode(req); err != nil {
+			return nil, common.Error(err, "serialized authorization request")
+		}
+
+		authzReq, err := http.NewRequest(http.MethodPost, client.location, buf)
+		if err != nil {
+			return nil, common.Error(err, "post authorization request")
+		}
+
+		// pass token along
+		headerVal := fmt.Sprintf("%s %s", token.Scheme(), token.Value())
+		authzReq.Header.Set(http.CanonicalHeaderKey("Authorization"), headerVal)
+
+		resp, err := client.httpClient.Do(authzReq)
+		if err != nil {
+			return nil, common.Error(err, "dispatch remote authz request")
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			return nil, common.Error(common.ErrAccess, "non-200 response %d for authorization service", resp.StatusCode)
+		}
+		defer resp.Body.Close()
+
+		var authz *AuthorizationResponse
+		if err = json.NewDecoder(resp.Body).Decode(&authz); err != nil {
+			return nil, common.Error(err, "deserialized authorization response")
+		}
+
+		return NewAuthorizationContext(authz), nil
+	}
+}
 
 func NewAccessToken(token string) system.Credential {
 	if token != "" {
@@ -38,6 +136,10 @@ func (a AccessToken) Scheme() string {
 
 func (a AccessToken) Value() string {
 	return a.value
+}
+
+func (a AccessToken) String() string {
+	return fmt.Sprintf("%s %s", a.scheme, a.value)
 }
 
 type (
@@ -98,64 +200,19 @@ func (authz *AuthorizationContext) Module() string {
 	return authz.module
 }
 
-const (
-	AuthorizationCtxKey = "authorization"
-	AccessExecute       = 8
-)
+func ExtractAccessToken(header http.Header) system.Credential {
+	authInfo := header.Get(http.CanonicalHeaderKey("Authorization"))
+	if authInfo == "" {
+		return nil
+	}
 
-func AuthorizationMiddleware(client *http.Client, controlplane string, inner vk.HandlerFunc) vk.HandlerFunc {
-	authority := fmt.Sprintf("%s/%s", controlplane, "api/v2/access")
-	return func(req *http.Request, ctx *vk.Ctx) (interface{}, error) {
-		identifier := ctx.Params.ByName("ident")
-		namespace := ctx.Params.ByName("namespace")
-		name := ctx.Params.ByName("name")
+	splitAt := strings.Index(authInfo, " ")
+	if splitAt == 0 {
+		return nil
+	}
 
-		environment, tenant := SplitIdentifier(identifier)
-		if environment == "" {
-			return vk.E(http.StatusBadRequest, "invalid identifier"), nil
-		}
-
-		buf := bytes.NewBuffer([]byte{})
-
-		accessReq := &AuthorizationRequest{
-			Action:   AccessExecute,
-			Resource: []string{environment, tenant, namespace, name},
-		}
-
-		if err := json.NewEncoder(buf).Encode(accessReq); err != nil {
-			ctx.Log.Error(errors.Wrap(err, "serialize authorization request"))
-			return vk.E(http.StatusUnauthorized, ""), nil
-		}
-
-		authzReq, err := http.NewRequest(http.MethodPost, authority, buf)
-		if err != nil {
-			ctx.Log.Error(errors.Wrap(err, "create authorization request"))
-			return vk.E(http.StatusUnauthorized, ""), nil
-		}
-
-		// pass token along
-		authzReq.Header.Set(http.CanonicalHeaderKey("Authorization"), req.Header.Get(http.CanonicalHeaderKey("Authorization")))
-
-		resp, err := client.Do(authzReq)
-		if err != nil {
-			ctx.Log.Error(errors.Wrap(err, "post authorization request"))
-			return vk.E(http.StatusUnauthorized, ""), nil
-		}
-
-		if resp.StatusCode != http.StatusOK {
-			ctx.Log.ErrorString(fmt.Sprintf("Request unauthorized %d", resp.StatusCode))
-			return vk.E(http.StatusForbidden, ""), nil
-		}
-		defer resp.Body.Close()
-
-		var authz *AuthorizationResponse
-		if err = json.NewDecoder(resp.Body).Decode(&authz); err != nil {
-			ctx.Log.Error(errors.Wrap(err, "deserialized authorization response"))
-			return vk.E(http.StatusInternalServerError, ""), nil
-		}
-
-		ctx.Context = context.WithValue(ctx.Context, AuthorizationCtxKey, NewAuthorizationContext(authz))
-
-		return inner(req, ctx)
+	return &AccessToken{
+		scheme: authInfo[:splitAt],
+		value:  authInfo[splitAt+1:],
 	}
 }

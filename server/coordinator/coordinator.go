@@ -91,7 +91,7 @@ func (c *Coordinator) SetupHandlers() (*vk.Router, error) {
 	router.Before(scopeMiddleware)
 
 	if c.opts.AdminEnabled() {
-		router.POST("/name/:ident/:namespace/:name", auth.AuthorizationMiddleware(http.DefaultClient, c.opts.ControlPlane, c.vkHandlerForModuleByName()))
+		router.POST("/name/:ident/:namespace/:name", auth.AuthorizationMiddleware(c.opts, c.vkHandlerForModuleByName()))
 	} else {
 		router.POST("/name/:ident/:namespace/:name", c.vkHandlerForModuleByName())
 		router.POST("/ref/:ref", c.vkHandlerForModuleByRef())
