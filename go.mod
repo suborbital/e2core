@@ -7,6 +7,7 @@ require (
 	github.com/gorilla/websocket v1.5.0
 	github.com/nats-io/nats.go v1.17.0
 	github.com/pkg/errors v0.9.1
+	github.com/plar/go-adaptive-radix-tree v1.0.4
 	github.com/schollz/peerdiscovery v1.6.12
 	github.com/sethvargo/go-envconfig v0.8.1
 	github.com/spf13/cobra v1.5.0
@@ -22,7 +23,7 @@ require (
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.10.0
 	go.opentelemetry.io/otel/sdk v1.10.0
 	go.opentelemetry.io/otel/trace v1.10.0
-	golang.org/x/exp v0.0.0-20220921164117-439092de6870
+	golang.org/x/exp v0.0.0-20221002003631-540bb7301a08
 	golang.org/x/sync v0.0.0-20220929204114-8fcdb60fdcc0
 	google.golang.org/grpc v1.49.0
 )
@@ -57,7 +58,6 @@ require (
 	github.com/nats-io/nkeys v0.3.0 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/pierrec/lz4/v4 v4.1.15 // indirect
-	github.com/plar/go-adaptive-radix-tree v1.0.4 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/second-state/WasmEdge-go v0.11.0 // indirect
 	github.com/twmb/franz-go/pkg/kmsg v1.2.0 // indirect
