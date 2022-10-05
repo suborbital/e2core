@@ -18,7 +18,7 @@ func main() {
 		fmt.Print("Enter a message: ")
 		message := "world"
 
-		// uncomment to make it interactive, don't want to import Subo into Atmo otherwise
+		// uncomment to make it interactive, don't want to import Subo into E2Core otherwise
 		// message, err := input.ReadStdinString()
 		// if err != nil {
 		// 	log.Fatal(errors.Wrap(err, "failed to ReadStdinString"))

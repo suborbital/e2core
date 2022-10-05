@@ -109,7 +109,7 @@ func (s *serverTestSuite) TestSetAndGetKeyEndpoints() {
 
 	vt.Do(getReq, s.T()).
 		AssertStatus(200)
-	// TODO: add central cache to get this test passing: https://github.com/suborbital/atmo/issues/238
+	// TODO: add central cache to get this test passing: https://github.com/suborbital/e2core/issues/238
 	// AssertBodyString("Suborbital")
 
 }
