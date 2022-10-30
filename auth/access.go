@@ -64,10 +64,10 @@ func (client *AuthzClient) Authorize(token system.Credential, identifier, namesp
 
 	key := filepath.Join(identifier, namespace, name, token.Value())
 
-	return client.cache.Get(key, client.loadAuth(token, identifier, namespace, name))
+	return client.cache.Get(key, client.loadAuth(token, identifier))
 }
 
-func (client *AuthzClient) loadAuth(token system.Credential, identifier, namespace, name string) func() (*TenantInfo, error) {
+func (client *AuthzClient) loadAuth(token system.Credential, identifier string) func() (*TenantInfo, error) {
 	return func() (*TenantInfo, error) {
 		authzReq, err := http.NewRequest(http.MethodGet, fmt.Sprintf(client.location, identifier), nil)
 		if err != nil {
