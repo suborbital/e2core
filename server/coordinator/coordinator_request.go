@@ -12,11 +12,20 @@ import (
 	"github.com/suborbital/vektor/vk"
 )
 
+func ReadParam(ctx *vk.Ctx, name string) string {
+	v := ctx.Get(name)
+	if v != nil {
+		return v.(string)
+	}
+
+	return ctx.Params.ByName(name)
+}
+
 func (c *Coordinator) vkHandlerForModuleByName() vk.HandlerFunc {
 	return func(r *http.Request, ctx *vk.Ctx) (interface{}, error) {
-		ident := ctx.Params.ByName("ident")
-		namespace := ctx.Params.ByName("namespace")
-		name := ctx.Params.ByName("name")
+		ident := ReadParam(ctx, "ident")
+		namespace := ReadParam(ctx, "namespace")
+		name := ReadParam(ctx, "name")
 
 		mod := c.syncer.GetModuleByName(ident, namespace, name)
 		if mod == nil {

@@ -1,8 +1,6 @@
 package auth
 
 import (
-	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -16,10 +14,12 @@ import (
 	"github.com/suborbital/vektor/vk"
 )
 
-const (
-	AuthorizationCtxKey = "authorization"
-	AccessExecute       = 8
-)
+type TenantInfo struct {
+	AuthorizedParty string `json:"authorized_party"`
+	Organization    string `json:"organization"`
+	Environment     string `json:"environment"`
+	Tenant          string `json:"tenant"`
+}
 
 func AuthorizationMiddleware(opts *options.Options, inner vk.HandlerFunc) vk.HandlerFunc {
 	authorizer := NewApiAuthClient(opts)
@@ -28,13 +28,13 @@ func AuthorizationMiddleware(opts *options.Options, inner vk.HandlerFunc) vk.Han
 		namespace := ctx.Params.ByName("namespace")
 		name := ctx.Params.ByName("name")
 
-		authz, err := authorizer.Authorize(ExtractAccessToken(req.Header), identifier, namespace, name)
+		tntInfo, err := authorizer.Authorize(ExtractAccessToken(req.Header), identifier, namespace, name)
 		if err != nil {
 			ctx.Log.Error(err)
 			return vk.R(http.StatusUnauthorized, ""), nil
 		}
 
-		ctx.Context = context.WithValue(ctx.Context, AuthorizationCtxKey, authz)
+		ctx.Set("ident", fmt.Sprintf("%s.%s", tntInfo.Environment, tntInfo.Tenant))
 
 		return inner(req, ctx)
 	}
@@ -46,7 +46,7 @@ func NewApiAuthClient(opts *options.Options) *AuthzClient {
 			Timeout:   20 * time.Second,
 			Transport: http.DefaultTransport,
 		},
-		location: opts.ControlPlane + "/api/v2/access",
+		location: opts.ControlPlane + "/api/v2/tenant/%s",
 		cache:    NewAuthorizationCache(opts.AuthCacheTTL),
 	}
 }
@@ -57,34 +57,19 @@ type AuthzClient struct {
 	cache      *AuthorizationCache
 }
 
-func (client *AuthzClient) Authorize(token system.Credential, identifier, namespace, name string) (*AuthorizationContext, error) {
+func (client *AuthzClient) Authorize(token system.Credential, identifier, namespace, name string) (*TenantInfo, error) {
 	if token == nil {
 		return nil, common.Error(common.ErrAccess, "no credentials provided")
 	}
 
-	environment, tenant := SplitIdentifier(identifier)
-	if environment == "" {
-		return nil, common.Error(common.ErrAccess, "invalid identifier")
-	}
-
-	accessReq := &AuthorizationRequest{
-		Action:   AccessExecute,
-		Resource: []string{environment, tenant, namespace, name},
-	}
-
 	key := filepath.Join(identifier, namespace, name, token.Value())
 
-	return client.cache.Get(key, client.loadAuth(token, accessReq))
+	return client.cache.Get(key, client.loadAuth(token, identifier, namespace, name))
 }
 
-func (client *AuthzClient) loadAuth(token system.Credential, req *AuthorizationRequest) func() (*AuthorizationContext, error) {
-	return func() (*AuthorizationContext, error) {
-		buf := bytes.NewBuffer([]byte{})
-		if err := json.NewEncoder(buf).Encode(req); err != nil {
-			return nil, common.Error(err, "serialized authorization request")
-		}
-
-		authzReq, err := http.NewRequest(http.MethodPost, client.location, buf)
+func (client *AuthzClient) loadAuth(token system.Credential, identifier, namespace, name string) func() (*TenantInfo, error) {
+	return func() (*TenantInfo, error) {
+		authzReq, err := http.NewRequest(http.MethodGet, fmt.Sprintf(client.location, identifier), nil)
 		if err != nil {
 			return nil, common.Error(err, "post authorization request")
 		}
@@ -103,12 +88,12 @@ func (client *AuthzClient) loadAuth(token system.Credential, req *AuthorizationR
 		}
 		defer resp.Body.Close()
 
-		var authz *AuthorizationResponse
-		if err = json.NewDecoder(resp.Body).Decode(&authz); err != nil {
+		var claims *TenantInfo
+		if err = json.NewDecoder(resp.Body).Decode(&claims); err != nil {
 			return nil, common.Error(err, "deserialized authorization response")
 		}
 
-		return NewAuthorizationContext(authz), nil
+		return claims, nil
 	}
 }
 
@@ -140,64 +125,6 @@ func (a AccessToken) Value() string {
 
 func (a AccessToken) String() string {
 	return fmt.Sprintf("%s %s", a.scheme, a.value)
-}
-
-type (
-	AuthorizationRequest struct {
-		Action   uint8    `json:"action"`
-		Resource []string `json:"resource"`
-	}
-
-	AuthorizationResponse struct {
-		Identity    string `json:"identity"`
-		Account     string `json:"account"`
-		Environment string `json:"environment"`
-		Tenant      string `json:"tenant"`
-		Path        string `json:"path"`
-	}
-)
-
-func NewAuthorizationContext(response *AuthorizationResponse) *AuthorizationContext {
-	segments := strings.Split(response.Path, "/")
-	return &AuthorizationContext{
-		account:     response.Account,
-		environment: response.Environment,
-		tenant:      response.Tenant,
-		namespace:   segments[0],
-		module:      segments[1],
-	}
-}
-
-type AuthorizationContext struct {
-	account     string
-	environment string
-	tenant      string
-	namespace   string
-	module      string
-}
-
-func (authz *AuthorizationContext) Identity() string {
-	return authz.account
-}
-
-func (authz *AuthorizationContext) Account() string {
-	return authz.account
-}
-
-func (authz *AuthorizationContext) Environment() string {
-	return authz.environment
-}
-
-func (authz *AuthorizationContext) Tenant() string {
-	return authz.tenant
-}
-
-func (authz *AuthorizationContext) Namespace() string {
-	return authz.namespace
-}
-
-func (authz *AuthorizationContext) Module() string {
-	return authz.module
 }
 
 func ExtractAccessToken(header http.Header) system.Credential {

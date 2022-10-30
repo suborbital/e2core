@@ -126,7 +126,6 @@ func (o *Orchestrator) reconcileConstellation(syncer *syncer.Syncer) {
 				uuid, pid, err := exec.Run(
 					cmd,
 					"SAT_HTTP_PORT="+port,
-					"SAT_ENV_TOKEN="+o.opts.EnvironmentToken,
 					"SAT_CONTROL_PLANE="+o.opts.ControlPlane,
 				)
 

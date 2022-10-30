@@ -31,7 +31,7 @@ type AuthorizationCache struct {
 }
 
 // Get fetches a cached result if present; otherwise it executes newFunc to obtain the result.
-func (cache AuthorizationCache) Get(key string, newFunc func() (*AuthorizationContext, error)) (*AuthorizationContext, error) {
+func (cache AuthorizationCache) Get(key string, newFunc func() (*TenantInfo, error)) (*TenantInfo, error) {
 	// register newFunc if not previously known
 	if !cache.cache.Check(key) {
 		_ = cache.cache.Put(key, cache.loadingFunc(newFunc))
@@ -58,7 +58,7 @@ func (cache AuthorizationCache) Get(key string, newFunc func() (*AuthorizationCo
 }
 
 // loadingFun wraps a loader func with an expiringContext loader
-func (cache AuthorizationCache) loadingFunc(inner func() (*AuthorizationContext, error)) func() (*expiringContext, error) {
+func (cache AuthorizationCache) loadingFunc(inner func() (*TenantInfo, error)) func() (*expiringContext, error) {
 	return func() (*expiringContext, error) {
 		ctx, err := inner()
 		if err != nil {
@@ -75,5 +75,5 @@ func (cache AuthorizationCache) loadingFunc(inner func() (*AuthorizationContext,
 // expiringContext wraps a value with an expiry
 type expiringContext struct {
 	exp time.Time
-	ctx *AuthorizationContext
+	ctx *TenantInfo
 }
