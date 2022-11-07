@@ -38,12 +38,11 @@ func TestAuthorizerCache_ConcurrentRequests(t *testing.T) {
 			},
 			handler: func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)
-				_ = json.NewEncoder(w).Encode(&AuthorizationResponse{
-					Identity:    "tester",
-					Account:     "acct",
-					Environment: "env",
-					Tenant:      "123",
-					Path:        "namespace/mod",
+				_ = json.NewEncoder(w).Encode(&TenantInfo{
+					AuthorizedParty: "tester",
+					Organization:    "acct",
+					Environment:     "env",
+					Tenant:          "123",
 				})
 			},
 			assertOpts: func(t *testing.T, actual uint64) bool {
@@ -60,7 +59,7 @@ func TestAuthorizerCache_ConcurrentRequests(t *testing.T) {
 			},
 			handler: func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)
-				_ = json.NewEncoder(w).Encode(&AuthorizationResponse{})
+				_ = json.NewEncoder(w).Encode(&TenantInfo{})
 			},
 			assertOpts: func(t *testing.T, actual uint64) bool {
 				return assert.Equal(t, uint64(0), actual)
@@ -97,7 +96,7 @@ func TestAuthorizerCache_ConcurrentRequests(t *testing.T) {
 
 		authorizer := &AuthzClient{
 			httpClient: svr.Client(),
-			location:   svr.URL,
+			location:   svr.URL + "/api/v2/tenant/%s",
 			cache:      newAuthorizationCache(common.StableTime(time.Now()), 10*time.Minute),
 		}
 
@@ -172,14 +171,13 @@ func TestAuthorizerCache(t *testing.T) {
 			},
 			handler: func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)
-				var authzReq *AuthorizationRequest
-				_ = json.NewDecoder(r.Body).Decode(&authzReq)
-				_ = json.NewEncoder(w).Encode(&AuthorizationResponse{
-					Identity:    "tester",
-					Account:     "acct",
-					Environment: authzReq.Resource[0],
-					Tenant:      authzReq.Resource[1],
-					Path:        strings.Join(authzReq.Resource[2:], "/"),
+				ident := r.RequestURI[strings.LastIndex(r.RequestURI, "/")+1:]
+				env, tenant, _ := strings.Cut(ident, ".")
+				_ = json.NewEncoder(w).Encode(&TenantInfo{
+					AuthorizedParty: "tester",
+					Organization:    "acct",
+					Environment:     env,
+					Tenant:          tenant,
 				})
 			},
 			assertOpts: func(t *testing.T, actual uint64) bool {
@@ -245,14 +243,13 @@ func TestAuthorizerCache(t *testing.T) {
 					w.WriteHeader(http.StatusUnauthorized)
 				} else {
 					w.WriteHeader(http.StatusOK)
-					var authzReq *AuthorizationRequest
-					_ = json.NewDecoder(r.Body).Decode(&authzReq)
-					_ = json.NewEncoder(w).Encode(&AuthorizationResponse{
-						Identity:    "tester",
-						Account:     "acct",
-						Environment: authzReq.Resource[0],
-						Tenant:      authzReq.Resource[1],
-						Path:        strings.Join(authzReq.Resource[2:], "/"),
+					ident := r.RequestURI[strings.LastIndex(r.RequestURI, "/")+1:]
+					env, tenant, _ := strings.Cut(ident, ".")
+					_ = json.NewEncoder(w).Encode(&TenantInfo{
+						AuthorizedParty: "tester",
+						Organization:    "acct",
+						Environment:     env,
+						Tenant:          tenant,
 					})
 				}
 			},
@@ -272,7 +269,7 @@ func TestAuthorizerCache(t *testing.T) {
 
 		authorizer := &AuthzClient{
 			httpClient: svr.Client(),
-			location:   svr.URL,
+			location:   svr.URL + "/api/v2/tenant/%s",
 			cache:      newAuthorizationCache(common.StableTime(time.Now()), 10*time.Minute),
 		}
 
@@ -307,12 +304,11 @@ func TestAuthorizerCache_ExpiringEntry(t *testing.T) {
 			args: args{ttl: 1 * time.Second},
 			handler: func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)
-				_ = json.NewEncoder(w).Encode(&AuthorizationResponse{
-					Identity:    "tester",
-					Account:     "acct",
-					Environment: "env",
-					Tenant:      "123",
-					Path:        "namespace/mod",
+				_ = json.NewEncoder(w).Encode(&TenantInfo{
+					AuthorizedParty: "tester",
+					Organization:    "acct",
+					Environment:     "env",
+					Tenant:          "123",
 				})
 			},
 			assertOpts: func(t *testing.T, actual uint64) bool {
@@ -336,7 +332,7 @@ func TestAuthorizerCache_ExpiringEntry(t *testing.T) {
 
 		authorizer := &AuthzClient{
 			httpClient: svr.Client(),
-			location:   svr.URL,
+			location:   svr.URL + "/api/v2/tenant/%s",
 			cache:      authzCache,
 		}
 

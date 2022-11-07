@@ -9,7 +9,6 @@ import (
 
 	"github.com/suborbital/appspec/appsource/bundle"
 	"github.com/suborbital/appspec/appsource/client"
-	"github.com/suborbital/e2core/auth"
 	"github.com/suborbital/e2core/e2core"
 	"github.com/suborbital/e2core/e2core/satbackend"
 	"github.com/suborbital/e2core/options"
@@ -59,7 +58,7 @@ func Start() *cobra.Command {
 			if vOpts.ControlPlane != "" {
 				// the HTTP appsource gets Server's data from a remote server
 				// which can essentially control Server's behaviour.
-				appSource = client.NewHTTPSource(vOpts.ControlPlane, auth.NewAccessToken(vOpts.EnvironmentToken))
+				appSource = client.NewHTTPSource(vOpts.ControlPlane, nil)
 			}
 
 			sync := syncer.New(vOpts, appSource)
