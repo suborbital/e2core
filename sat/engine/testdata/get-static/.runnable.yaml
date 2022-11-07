@@ -1,0 +1,4 @@
+name: get-static
+namespace: default
+lang: rust
+apiVersion: 0.4.2

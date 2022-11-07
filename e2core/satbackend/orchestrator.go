@@ -50,7 +50,7 @@ func (o *Orchestrator) Start(ctx context.Context) error {
 		return errors.Wrap(err, "failed to syncer.Start")
 	}
 
-	errChan := o.setupAppSourceServer()
+	errChan := o.setupSystemSourceServer()
 
 	o.wg.Add(1)
 
@@ -194,15 +194,15 @@ func (o *Orchestrator) reconcileConstellation(syncer *syncer.Syncer) {
 }
 
 // TODO: implement and use an authSource when creating NewHTTPSource
-func (o *Orchestrator) setupAppSourceServer() chan error {
+func (o *Orchestrator) setupSystemSourceServer() chan error {
 	// if an external control plane hasn't been set, act as the control plane
 	// but if one has been set, use it (and launch all children with it configured)
 	if o.opts.ControlPlane == options.DefaultControlPlane || o.opts.ControlPlane == "" {
 		o.opts.ControlPlane = options.DefaultControlPlane
 
-		o.logger.Debug("starting AppSource server")
+		o.logger.Debug("starting SystemSource server")
 
-		errChan := startAppSourceServer(o.opts.BundlePath)
+		errChan := startSystemSourceServer(o.opts.BundlePath)
 
 		return errChan
 	}

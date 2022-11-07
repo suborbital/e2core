@@ -1,0 +1,4 @@
+name: content-type
+namespace: default
+lang: rust
+apiVersion: 0.14.0

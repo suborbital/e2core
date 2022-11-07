@@ -1,0 +1,14 @@
+import Env from "./env"
+import { getIdent } from "./ffi"
+
+export let info = msg => {
+  Env.logMsg(msg, Env.LogLevelInfo, getIdent())
+}
+
+export let warn = msg => {
+  Env.logMsg(msg, Env.LogLevelWarn, getIdent())
+}
+
+export let error = msg => {
+  Env.logMsg(msg, Env.LogLevelError, getIdent())
+}

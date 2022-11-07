@@ -1,0 +1,4 @@
+name: as-set
+namespace: default
+lang: assemblyscript
+apiVersion: 0.9.1

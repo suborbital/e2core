@@ -1,0 +1,40 @@
+extensions:
+  health_check:
+  pprof:
+  zpages:
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+      http:
+
+processors:
+  batch:
+  memory_limiter:
+    # 75% of maximum memory up to 4G
+    limit_mib: 1536
+    # 25% of limit up to 2G
+    spike_limit_mib: 512
+    check_interval: 5s
+
+exporters:
+  otlp:
+    endpoint: ${ATMO_TRACER_HONEYCOMB_API_ENDPOINT}
+    headers:
+      "x-honeycomb-team":  ${ATMO_TRACER_HONEYCOMB_API_KEY}
+      "x-honeycomb-dataset": ${ATMO_TRACER_HONEYCOMB_DATASET}
+  file:
+    path: ./traces/traces.json
+
+service:
+  extensions: [health_check,pprof,zpages]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp, file]
+    metrics:
+      receivers: [ otlp ]
+      processors: [ memory_limiter, batch ]
+      exporters: [ otlp, file ]

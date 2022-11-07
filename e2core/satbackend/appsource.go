@@ -10,7 +10,7 @@ import (
 	"github.com/suborbital/vektor/vlog"
 )
 
-func startAppSourceServer(bundlePath string) chan error {
+func startSystemSourceServer(bundlePath string) chan error {
 	app := bundle.NewBundleSource(bundlePath)
 	opts := options.NewWithModifiers()
 
@@ -18,7 +18,7 @@ func startAppSourceServer(bundlePath string) chan error {
 
 	router, err := server.NewAppSourceVKRouter(app, opts).GenerateRouter()
 	if err != nil {
-		errChan <- errors.Wrap(err, "failed to NewAppSourceVKRouter.GenerateRouter")
+		errChan <- errors.Wrap(err, "failed to NewSystemSourceVKRouter.GenerateRouter")
 	}
 
 	log := vlog.Default(
@@ -27,7 +27,7 @@ func startAppSourceServer(bundlePath string) chan error {
 
 	server := vk.New(
 		vk.UseLogger(log),
-		vk.UseAppName("AppSource server"),
+		vk.UseAppName("SystemSource server"),
 		vk.UseHTTPPort(9090),
 	)
 

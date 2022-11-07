@@ -1,0 +1,62 @@
+version: "3.9"
+
+services:
+  # Assuming direct control - Harbinger
+  collector:
+    image: "otel/opentelemetry-collector"
+    container_name: harbinger
+    environment:
+      - ATMO_TRACER_HONEYCOMB_API_KEY
+      - ATMO_TRACER_HONEYCOMB_API_ENDPOINT
+      - ATMO_TRACER_HONEYCOMB_DATASET
+    # 4317 / 4318 are otlp receiver default ports for grpc and http
+    # see https://github.com/open-telemetry/opentelemetry-collector/blob/main/receiver/otlpreceiver/README.md
+    ports:
+      - "8000:5000"
+
+        # otel grpc
+      - "4317:4317"
+
+        # otel http
+      - "4318:4318"
+
+        # zpages
+      - "55679:55679"
+
+        # pprof
+      - "1777:1777"
+
+        # health check
+      - "13133:13133"
+
+        # otlp receiver again?
+      - "55681:55681"
+
+        # prometheus
+      - "8888:8888"
+    volumes:
+      - ./otel-config.yaml:/etc/otel/config.yaml:ro
+      - ./traces:/traces:rw
+
+  linter:
+    container_name: "sat_linter"
+    image: "golangci/golangci-lint:v1.45.2-alpine"
+    volumes:
+      - .:/app
+      - vendor:/app/vendor/
+    working_dir: /app
+    command: golangci-lint run ./...
+
+  lintfixer:
+    container_name: "sat_lintfixer"
+    build:
+      context: .
+      dockerfile: ./ops/Dockerfile-gci
+    volumes:
+      - .:/app:rw
+      - vendor:/app/vendor/
+    working_dir: /app
+    command: ./ops/gci.sh
+
+volumes:
+  vendor:

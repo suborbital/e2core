@@ -7,8 +7,9 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
-	"github.com/suborbital/appspec/appsource/bundle"
-	"github.com/suborbital/appspec/appsource/client"
+	"github.com/suborbital/appspec/system/bundle"
+	"github.com/suborbital/appspec/system/client"
+	"github.com/suborbital/e2core/auth"
 	"github.com/suborbital/e2core/e2core"
 	"github.com/suborbital/e2core/e2core/satbackend"
 	"github.com/suborbital/e2core/options"
@@ -54,14 +55,14 @@ func Start() *cobra.Command {
 			vOpts := options.NewWithModifiers(opts...)
 
 			// TODO: implement and use a CredentialSupplier
-			appSource := bundle.NewBundleSource(vOpts.BundlePath)
+			systemSource := bundle.NewBundleSource(vOpts.BundlePath)
 			if vOpts.ControlPlane != "" {
-				// the HTTP appsource gets Server's data from a remote server
+				// the HTTP system source gets Server's data from a remote server
 				// which can essentially control Server's behaviour.
-				appSource = client.NewHTTPSource(vOpts.ControlPlane, nil)
+				systemSource = client.NewHTTPSource(vOpts.ControlPlane, auth.NewAccessToken(vOpts.EnvironmentToken))
 			}
 
-			sync := syncer.New(vOpts, appSource)
+			sync := syncer.New(vOpts, systemSource)
 
 			srv, err := server.New(sync, vOpts)
 			if err != nil {

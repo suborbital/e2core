@@ -1,0 +1,59 @@
+// GENERATED FILE; DO NOT EDIT
+
+import Memory from "runtime/unsafe/memory"
+import WasmI32 from "runtime/unsafe/wasmi32"
+import { allocateBytes } from "runtime/dataStructures"
+import Conv from "runtime/unsafe/conv"
+
+import Bytes from "bytes"
+
+import Env from "suborbital/env"
+import FFI from "suborbital/ffi"
+import Lib from "./lib"
+
+@disableGC
+let bytesOfExt = (ptr, size) => {
+  let bytes = allocateBytes(size)
+  Memory.copy(WasmI32.add(bytes, 8n), ptr, size)
+  WasmI32.toGrain(bytes): (Bytes)
+}
+
+@disableGC
+export let run_e = (ptr, size, ident) => {
+  let ident = Conv.toInt32(ident)
+
+  Memory.incRef(WasmI32.fromGrain(FFI.setIdent))
+  Memory.incRef(WasmI32.fromGrain(ident))
+  FFI.setIdent(ident)
+
+  let bytes = bytesOfExt(ptr, size)
+
+  Memory.incRef(WasmI32.fromGrain(Lib.run))
+  let result = Lib.run(bytes)
+  match (result) {
+    Ok(bytes) => {
+      Memory.incRef(WasmI32.fromGrain(Env.returnResult))
+      Memory.incRef(WasmI32.fromGrain(bytes))
+      Env.returnResult(bytes, ident)
+    },
+    Err((code, msg)) => {
+      Memory.incRef(WasmI32.fromGrain(Env.returnError))
+      Memory.incRef(WasmI32.fromGrain(code))
+      Memory.incRef(WasmI32.fromGrain(msg))
+      Env.returnError(code, msg, ident)
+    },
+  }
+
+  Memory.decRef(WasmI32.fromGrain(result))
+  void
+}
+
+@disableGC
+export let allocate = size => {
+  Memory.malloc(size)
+}
+
+@disableGC
+export let deallocate = (ptr, _) => {
+  Memory.free(ptr)
+}

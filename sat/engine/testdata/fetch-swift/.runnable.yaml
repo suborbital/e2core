@@ -1,0 +1,4 @@
+name: fetch-swift
+namespace: default
+lang: swift
+apiVersion: 0.3.0

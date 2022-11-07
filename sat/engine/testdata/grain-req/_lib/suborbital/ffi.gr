@@ -1,0 +1,57 @@
+import Memory from "runtime/unsafe/memory"
+import DataStructures from "runtime/dataStructures"
+import WasmI32 from "runtime/unsafe/wasmi32"
+import Conv from "runtime/unsafe/conv"
+import Bytes from "bytes"
+import { ne as (!=) } from "int32"
+import { getFfiResult } from "./env"
+
+let mut currentIdent = 0l
+
+export let setIdent = ident => {
+  currentIdent = ident
+}
+
+export let getIdent = () => {
+  currentIdent
+}
+
+@disableGC
+export let rec ffiResult = size => {
+  let mut wasmSize = Conv.fromInt32(size)
+  let mut isErr = false
+  if (WasmI32.ltS(wasmSize, 0n)) {
+    wasmSize = WasmI32.sub(0n, wasmSize)
+    isErr = true
+  }
+
+  let bytes = DataStructures.allocateBytes(wasmSize)
+  let resultPtr = Conv.toInt32(WasmI32.add(bytes, 8n))
+
+  Memory.incRef(WasmI32.fromGrain(getFfiResult))
+  Memory.incRef(WasmI32.fromGrain(currentIdent))
+  let code = getFfiResult(resultPtr, currentIdent)
+
+  Memory.incRef(WasmI32.fromGrain((!=)))
+  let bytes = if (code != 0l) {
+    Memory.decRef(WasmI32.fromGrain(bytes))
+    Memory.incRef(WasmI32.fromGrain(Bytes.empty))
+    Bytes.empty
+  } else {
+    WasmI32.toGrain(bytes): (Bytes)
+  }
+
+  let result = if (isErr) {
+    Memory.incRef(WasmI32.fromGrain(Err))
+    Memory.incRef(WasmI32.fromGrain(bytes))
+    Err(bytes)
+  } else {
+    Memory.incRef(WasmI32.fromGrain(Ok))
+    Memory.incRef(WasmI32.fromGrain(bytes))
+    Ok(bytes)
+  }
+
+  Memory.decRef(WasmI32.fromGrain(ffiResult))
+  Memory.decRef(WasmI32.fromGrain(size))
+  result
+}

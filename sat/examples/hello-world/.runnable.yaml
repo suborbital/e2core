@@ -1,0 +1,6 @@
+name: hello-world
+namespace: default
+lang: rust
+version: ""
+apiVersion: 0.12.0
+fqfnUri: ""

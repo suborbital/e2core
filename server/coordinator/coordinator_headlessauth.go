@@ -32,7 +32,7 @@ func (c *Coordinator) authMiddleware() vk.Middleware {
 		// }
 
 		// if len(module.TokenHash) > 0 {
-		// 	providedHash := appsource.TokenHash(auth)
+		// 	providedHash := system source.TokenHash(auth)
 
 		// 	if subtle.ConstantTimeCompare(module.TokenHash, providedHash) != 1 {
 		// 		ctx.Log.Error(errors.New("provided authorization header does not match module's token hash"))

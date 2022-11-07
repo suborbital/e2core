@@ -1,0 +1,4 @@
+name: hello-swift
+namespace: default
+lang: swift
+apiVersion: 0.4.2

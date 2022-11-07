@@ -1,0 +1,6 @@
+name: panic-at-the-disco
+namespace: default
+lang: rust
+version: ""
+apiVersion: 0.13.1
+fqfnUri: ""

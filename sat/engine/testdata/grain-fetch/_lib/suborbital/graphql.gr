@@ -1,0 +1,7 @@
+import Env from "./env"
+import { getIdent, ffiResult } from "./ffi"
+
+export let query = (endpoint, body) => {
+  let resultSize = Env.graphqlQuery(endpoint, body, getIdent())
+  ffiResult(resultSize)
+}
