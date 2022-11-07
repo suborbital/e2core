@@ -374,16 +374,34 @@ func (h *hub) sendTunneledMessage(capability string, msg Message) error {
 
 	// iterate a reasonable number of times to find a connection that's not removed or dead
 	for i := 0; i < tunnelRetryCount; i++ {
-		h.lock.RLock()
-		uuid := balancer.Next()
-		handler, exists := h.meshConnections[uuid]
-		h.lock.RUnlock()
 
-		if exists && handler.Conn != nil {
+		// wrap this in a function to avoid any sloppy mutex issues
+		handler, err := func() (*connectionHandler, error) {
+			h.lock.RLock()
+			defer h.lock.RUnlock()
+
+			uuid := balancer.Next()
+			if uuid == "" {
+				return nil, ErrTunnelNotEstablished
+			}
+
+			handler, exists := h.meshConnections[uuid]
+			if !exists {
+				return nil, ErrTunnelNotEstablished
+			}
+
+			return handler, nil
+		}()
+
+		if err != nil {
+			continue
+		}
+
+		if handler.Conn != nil {
 			if err := handler.Send(msg); err != nil {
 				h.log.Error(errors.Wrap(err, "[grav] failed to SendMsg on tunneled connection, will remove"))
 			} else {
-				h.log.Debug("[grav] tunneled to", uuid)
+				h.log.Debug("[grav] tunneled to", handler.UUID)
 				return nil
 			}
 		}
