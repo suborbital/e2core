@@ -1,0 +1,19 @@
+version: "3.9"
+services:
+  linter:
+    container_name: "e2core_linter"
+    image: "golangci/golangci-lint:v1.49.0-alpine"
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: golangci-lint run -v ./...
+
+  lintfixer:
+    container_name: "e2core_lintfixer"
+    build:
+      context: .
+      dockerfile: ./ops/Dockerfile-gci
+    volumes:
+      - .:/app:rw
+    working_dir: /app
+    command: ./ops/gci.sh
