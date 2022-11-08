@@ -2,7 +2,7 @@ version: "3.9"
 services:
   linter:
     container_name: "e2core_linter"
-    image: "golangci/golangci-lint:v1.49.0-alpine"
+    image: "golangci/golangci-lint:v1.50.1-alpine"
     volumes:
       - .:/app
     working_dir: /app
