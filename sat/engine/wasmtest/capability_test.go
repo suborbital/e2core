@@ -4,6 +4,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/suborbital/appspec/capabilities"
 	"github.com/suborbital/e2core/sat/api"
 	"github.com/suborbital/e2core/sat/engine"
@@ -19,9 +21,10 @@ func TestDisabledHTTP(t *testing.T) {
 	e := engine.NewWithAPI(api)
 
 	// test a WASM module that is loaded directly instead of through the bundle
-	doWasm, _ := e.RegisterFromFile("wasm", "../testdata/fetch/fetch.wasm")
+	doWasm, err := e.RegisterFromFile("wasm", "../testdata/fetch/fetch.wasm")
+	require.NoError(t, err, "registerfrom file failed for fetch.wasm")
 
-	_, err := doWasm("https://1password.com").Then()
+	_, err = doWasm("https://1password.com").Then()
 	if err != nil {
 		if err.Error() != `{"code":1,"message":"capability is not enabled"}` {
 			t.Error("received incorrect error", err.Error())
@@ -55,9 +58,10 @@ func TestDisabledGraphQL(t *testing.T) {
 
 	e := engine.NewWithAPI(api)
 
-	e.RegisterFromFile("rs-graphql", "../testdata/rs-graphql/rs-graphql.wasm")
+	_, err := e.RegisterFromFile("rs-graphql", "../testdata/rs-graphql/rs-graphql.wasm")
+	require.NoError(t, err, "registerfrom file failed for rs-graphql.wasm")
 
-	_, err := e.Do(scheduler.NewJob("rs-graphql", nil)).Then()
+	_, err = e.Do(scheduler.NewJob("rs-graphql", nil)).Then()
 	if err != nil {
 		if err.Error() != `{"code":1,"message":"capability is not enabled"}` {
 			t.Error("received incorrect error ", err.Error())

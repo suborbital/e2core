@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	"github.com/stretchr/testify/require"
 
 	"github.com/suborbital/appspec/capabilities"
 	"github.com/suborbital/appspec/request"
@@ -20,7 +21,8 @@ func TestASEcho(t *testing.T) {
 	e := engine.New()
 
 	// test a WASM module that is loaded directly instead of through the bundle
-	doWasm, _ := e.RegisterFromFile("as-echo", "../testdata/as-echo/as-echo.wasm")
+	doWasm, err := e.RegisterFromFile("as-echo", "../testdata/as-echo/as-echo.wasm")
+	require.NoError(t, err, "registerfrom file failed for as-echo.wasm")
 
 	res, err := doWasm("from AssemblyScript!").Then()
 	if err != nil {
@@ -39,7 +41,8 @@ func TestASFetch(t *testing.T) {
 	e := engine.New()
 
 	// test a WASM module that is loaded directly instead of through the bundle
-	doWasm, _ := e.RegisterFromFile("as-fetch", "../testdata/as-fetch/as-fetch.wasm")
+	doWasm, err := e.RegisterFromFile("as-fetch", "../testdata/as-fetch/as-fetch.wasm")
+	require.NoError(t, err, "registerfrom file failed for as-fetch.wasm")
 
 	res, err := doWasm("https://1password.com").Then()
 	if err != nil {
@@ -74,9 +77,10 @@ func TestASGraphql(t *testing.T) {
 	e := engine.NewWithAPI(api)
 
 	// test a WASM module that is loaded directly instead of through the bundle
-	e.RegisterFromFile("as-graphql", "../testdata/as-graphql/as-graphql.wasm")
+	doWasm, err := e.RegisterFromFile("as-graphql", "../testdata/as-graphql/as-graphql.wasm")
+	require.NoError(t, err, "registerfrom file failed for as-graphql.wasm")
 
-	res, err := e.Do(scheduler.NewJob("as-graphql", nil)).Then()
+	res, err := doWasm(nil).Then()
 	if err != nil {
 		t.Error(errors.Wrap(err, "failed to Then"))
 		return
@@ -91,7 +95,8 @@ func TestASLargeData(t *testing.T) {
 	e := engine.New()
 
 	// test a WASM module that is loaded directly instead of through the bundle
-	doWasm, _ := e.RegisterFromFile("as-echo", "../testdata/as-echo/as-echo.wasm")
+	doWasm, err := e.RegisterFromFile("as-echo", "../testdata/as-echo/as-echo.wasm")
+	require.NoError(t, err, "registerfrom file failed for as-echo.wasm")
 
 	res, err := doWasm(largeInput).Then()
 	if err != nil {
@@ -107,7 +112,8 @@ func TestASLargeData(t *testing.T) {
 func TestASRunnerWithRequest(t *testing.T) {
 	e := engine.New()
 
-	doWasm, _ := e.RegisterFromFile("wasm", "../testdata/as-req/as-req.wasm")
+	doWasm, err := e.RegisterFromFile("wasm", "../testdata/as-req/as-req.wasm")
+	require.NoError(t, err, "registerfrom file failed for as-req.wasm")
 
 	body := testBody{
 		Username: "cohix",
