@@ -86,7 +86,7 @@ func (e *Executor) Do(jobType string, req *request.CoordinatedRequest, ctx *vk.C
 	return result, err
 }
 
-// UseGrav sets a Bus instance to use (in case one was not provided initially)
+// UseBus sets a Bus instance to use (in case one was not provided initially)
 func (e *Executor) UseBus(b *bus.Bus) {
 	e.bus = b
 	e.pod = b.Connect()
@@ -140,7 +140,7 @@ func (e *Executor) SetSchedule(sched scheduler.Schedule) error {
 	return nil
 }
 
-// Metrics returns the executor's Reactr isntance's internal metrics.
+// Metrics returns the executor's Reactr instance's internal metrics.
 func (e *Executor) Metrics() (*scheduler.ScalerMetrics, error) {
 	if e.engine == nil {
 		return nil, ErrExecutorNotConfigured
