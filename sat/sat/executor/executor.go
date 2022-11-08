@@ -5,8 +5,6 @@ package executor
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
-	"time"
 
 	"github.com/pkg/errors"
 
@@ -15,7 +13,6 @@ import (
 	"github.com/suborbital/appspec/tenant"
 	"github.com/suborbital/appspec/tenant/executable"
 	"github.com/suborbital/e2core/bus/bus"
-	"github.com/suborbital/e2core/options"
 	"github.com/suborbital/e2core/scheduler"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
@@ -152,32 +149,4 @@ func (e *Executor) Metrics() (*scheduler.ScalerMetrics, error) {
 	metrics := e.engine.Metrics()
 
 	return &metrics, nil
-}
-
-func connectStaticPeers(log *vlog.Logger, g *bus.Bus, opts *options.Options) {
-	if strings.TrimSpace(opts.StaticPeers) == "" {
-		return
-	}
-
-	epts := strings.Split(opts.StaticPeers, ",")
-
-	for _, e := range epts {
-		log.Debug("connecting to static peer", e)
-
-		var err error
-
-		for i := 0; i < 10; i++ {
-			if err = g.ConnectEndpoint(e); err != nil {
-				log.Error(errors.Wrapf(err, "failed to ConnectEndpoint %s, will retry", e))
-
-				time.Sleep(time.Second * 3)
-			} else {
-				break
-			}
-		}
-
-		if err != nil {
-			log.Error(errors.Wrap(err, "failed to ConnectEndpoint, retries exceeded"))
-		}
-	}
 }

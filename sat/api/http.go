@@ -22,8 +22,6 @@ const (
 )
 
 const (
-	contentTypeJSON        = "application/json"
-	contentTypeTextPlain   = "text/plain"
 	contentTypeOctetStream = "application/octet-stream"
 )
 
