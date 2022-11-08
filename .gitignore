@@ -18,6 +18,7 @@
 .bin
 target/
 *.wasm
+!sat/engine/testdata/**/*.wasm
 node_modules
 .idea
 *.iml
