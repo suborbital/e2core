@@ -5,10 +5,9 @@ import (
 	"testing"
 
 	"github.com/suborbital/appspec/capabilities"
-	"github.com/suborbital/e2core/scheduler"
-
 	"github.com/suborbital/e2core/sat/api"
 	"github.com/suborbital/e2core/sat/engine"
+	"github.com/suborbital/e2core/scheduler"
 )
 
 func TestDisabledHTTP(t *testing.T) {

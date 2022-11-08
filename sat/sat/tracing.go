@@ -9,10 +9,9 @@ import (
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/sdk/trace"
 
+	"github.com/suborbital/e2core/sat/sat/options"
 	"github.com/suborbital/go-kit/observability"
 	"github.com/suborbital/vektor/vlog"
-
-	"github.com/suborbital/e2core/sat/sat/options"
 )
 
 // SetupTracing configure open telemetry to be used with otel exporter. Returns a tracer closer func and an error.

@@ -11,9 +11,8 @@ import (
 	"go.opentelemetry.io/otel/metric/instrument"
 	"go.opentelemetry.io/otel/metric/unit"
 
-	"github.com/suborbital/go-kit/observability"
-
 	"github.com/suborbital/e2core/sat/sat/options"
+	"github.com/suborbital/go-kit/observability"
 )
 
 const (

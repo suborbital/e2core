@@ -2,9 +2,8 @@ package wasmtest
 
 import (
 	"github.com/suborbital/appspec/capabilities"
-	"github.com/suborbital/vektor/vlog"
-
 	"github.com/suborbital/e2core/sat/engine/runtime"
+	"github.com/suborbital/vektor/vlog"
 )
 
 type testBody struct {

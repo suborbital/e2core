@@ -4,9 +4,8 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/suborbital/appspec/tenant"
-	"github.com/suborbital/e2core/scheduler"
-
 	"github.com/suborbital/e2core/sat/api"
+	"github.com/suborbital/e2core/scheduler"
 )
 
 // Engine is a Webassembly job scheduler with configurable host APIs

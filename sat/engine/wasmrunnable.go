@@ -12,11 +12,10 @@ import (
 	"github.com/suborbital/appspec/request"
 	"github.com/suborbital/appspec/tenant"
 	"github.com/suborbital/appspec/tenant/executable"
-	"github.com/suborbital/e2core/scheduler"
-	"github.com/suborbital/e2core/server/coordinator/sequence"
-
 	"github.com/suborbital/e2core/sat/api"
 	"github.com/suborbital/e2core/sat/engine/runtime"
+	"github.com/suborbital/e2core/scheduler"
+	"github.com/suborbital/e2core/server/coordinator/sequence"
 )
 
 var (

@@ -19,9 +19,8 @@ import (
 	"github.com/suborbital/appspec/tenant"
 	"github.com/suborbital/e2core/fqfn"
 	"github.com/suborbital/e2core/options"
-	"github.com/suborbital/vektor/vlog"
-
 	satOptions "github.com/suborbital/e2core/sat/sat/options"
+	"github.com/suborbital/vektor/vlog"
 )
 
 var useStdin bool

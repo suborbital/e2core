@@ -10,9 +10,8 @@ import (
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/sdk/trace"
 
-	"github.com/suborbital/vektor/vtest"
-
 	"github.com/suborbital/e2core/sat/sat/metrics"
+	"github.com/suborbital/vektor/vtest"
 )
 
 func TestEchoRequest(t *testing.T) {

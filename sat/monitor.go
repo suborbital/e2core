@@ -6,10 +6,9 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/vektor/vlog"
-
 	"github.com/suborbital/e2core/sat/sat"
 	"github.com/suborbital/e2core/sat/sat/process"
+	"github.com/suborbital/vektor/vlog"
 )
 
 type ProcFileMonitor struct {

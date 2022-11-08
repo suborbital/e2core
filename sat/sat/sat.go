@@ -15,14 +15,13 @@ import (
 	"github.com/suborbital/e2core/bus/bus"
 	"github.com/suborbital/e2core/bus/discovery/local"
 	"github.com/suborbital/e2core/bus/transport/websocket"
-	"github.com/suborbital/e2core/scheduler"
-	"github.com/suborbital/vektor/vk"
-	"github.com/suborbital/vektor/vlog"
-
 	wruntime "github.com/suborbital/e2core/sat/engine/runtime"
 	"github.com/suborbital/e2core/sat/sat/executor"
 	"github.com/suborbital/e2core/sat/sat/metrics"
 	"github.com/suborbital/e2core/sat/sat/process"
+	"github.com/suborbital/e2core/scheduler"
+	"github.com/suborbital/vektor/vk"
+	"github.com/suborbital/vektor/vlog"
 )
 
 const (

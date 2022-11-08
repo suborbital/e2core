@@ -5,7 +5,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/suborbital/appspec/tenant"
-
 	"github.com/suborbital/e2core/sat/api"
 	"github.com/suborbital/e2core/sat/engine/runtime"
 )

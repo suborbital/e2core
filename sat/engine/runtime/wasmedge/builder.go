@@ -8,6 +8,7 @@ package runtimewasmedge
 import (
 	"github.com/pkg/errors"
 	"github.com/second-state/WasmEdge-go/wasmedge"
+
 	"github.com/suborbital/appspec/tenant"
 	"github.com/suborbital/e2core/sat/api"
 	"github.com/suborbital/e2core/sat/engine/runtime"

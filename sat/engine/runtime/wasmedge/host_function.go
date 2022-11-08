@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"github.com/second-state/WasmEdge-go/wasmedge"
+
 	"github.com/suborbital/e2core/sat/engine/runtime"
 )
 

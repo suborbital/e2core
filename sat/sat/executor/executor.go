@@ -13,12 +13,11 @@ import (
 	"github.com/suborbital/appspec/tenant"
 	"github.com/suborbital/appspec/tenant/executable"
 	"github.com/suborbital/e2core/bus/bus"
+	"github.com/suborbital/e2core/sat/api"
+	"github.com/suborbital/e2core/sat/engine"
 	"github.com/suborbital/e2core/scheduler"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
-
-	"github.com/suborbital/e2core/sat/api"
-	"github.com/suborbital/e2core/sat/engine"
 )
 
 var (

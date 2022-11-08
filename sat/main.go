@@ -9,11 +9,10 @@ import (
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/trace"
 
-	"github.com/suborbital/e2core/signaler"
-
 	"github.com/suborbital/e2core/sat/sat"
 	"github.com/suborbital/e2core/sat/sat/metrics"
 	"github.com/suborbital/e2core/sat/sat/options"
+	"github.com/suborbital/e2core/signaler"
 )
 
 func main() {

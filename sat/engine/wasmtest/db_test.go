@@ -14,10 +14,9 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 
 	"github.com/suborbital/appspec/capabilities"
-	"github.com/suborbital/vektor/vlog"
-
 	"github.com/suborbital/e2core/sat/api"
 	"github.com/suborbital/e2core/sat/engine"
+	"github.com/suborbital/vektor/vlog"
 )
 
 func setupPostgresContainer(ctx context.Context, schema string) (testcontainers.Container, string, error) {

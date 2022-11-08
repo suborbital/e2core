@@ -3,9 +3,8 @@ package api
 import (
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/e2core/scheduler"
-
 	"github.com/suborbital/e2core/sat/engine/runtime"
+	"github.com/suborbital/e2core/scheduler"
 )
 
 func (d *defaultAPI) DBExecHandler() runtime.HostFn {
