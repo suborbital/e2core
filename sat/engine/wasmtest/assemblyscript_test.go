@@ -14,6 +14,7 @@ import (
 	"github.com/suborbital/appspec/request"
 	"github.com/suborbital/e2core/sat/api"
 	"github.com/suborbital/e2core/sat/engine"
+	"github.com/suborbital/e2core/scheduler"
 )
 
 func TestASEcho(t *testing.T) {
