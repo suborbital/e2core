@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/sdk/trace"
 
 	"github.com/suborbital/e2core/sat/sat/metrics"
@@ -16,10 +17,8 @@ import (
 
 func TestEchoRequest(t *testing.T) {
 	sat, tp, err := satForFile("../examples/hello-echo/hello-echo.wasm")
-	if err != nil {
-		t.Error(errors.Wrap(err, "failed to satForFile"))
-		return
-	}
+	require.NoError(t, err)
+
 	ctx, ctxCloser := context.WithTimeout(context.Background(), time.Second)
 	defer ctxCloser()
 	defer tp.Shutdown(ctx)
@@ -36,10 +35,8 @@ func TestEchoRequest(t *testing.T) {
 
 func TestEchoGetRequest(t *testing.T) {
 	sat, tp, err := satForFile("../examples/hello-echo/hello-echo.wasm")
-	if err != nil {
-		t.Error(errors.Wrap(err, "failed to satForFile"))
-		return
-	}
+	require.NoError(t, err)
+
 	ctx, ctxCloser := context.WithTimeout(context.Background(), time.Second)
 	defer ctxCloser()
 	defer tp.Shutdown(ctx)
@@ -55,10 +52,8 @@ func TestEchoGetRequest(t *testing.T) {
 
 func TestErrorRequest(t *testing.T) {
 	sat, tp, err := satForFile("../examples/return-err/return-err.wasm")
-	if err != nil {
-		t.Error(errors.Wrap(err, "failed to satForFile"))
-		return
-	}
+	require.NoError(t, err)
+
 	ctx, ctxCloser := context.WithTimeout(context.Background(), time.Second)
 	defer ctxCloser()
 	defer tp.Shutdown(ctx)
@@ -75,10 +70,8 @@ func TestErrorRequest(t *testing.T) {
 
 func TestPanicRequest(t *testing.T) {
 	sat, tp, err := satForFile("../examples/panic-at-the-disco/panic-at-the-disco.wasm")
-	if err != nil {
-		t.Error(errors.Wrap(err, "failed to satForFile"))
-		return
-	}
+	require.NoError(t, err)
+
 	ctx, ctxCloser := context.WithTimeout(context.Background(), time.Second)
 	defer ctxCloser()
 	defer tp.Shutdown(ctx)

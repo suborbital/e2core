@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/suborbital/appspec/system/bundle"
@@ -66,7 +67,7 @@ func (s *serverTestSuite) TestHelloEndpoint() {
 		return
 	}
 
-	vt := vtest.New(server) //creating fake version of the server that we can send requests to and it will behave same was as if it was the real server.
+	vt := vtest.New(server) // creating fake version of the server that we can send requests to and it will behave same was as if it was the real server.
 
 	req, err := http.NewRequest(http.MethodPost, "/name/com.suborbital.app/default/helloworld-rs", bytes.NewBuffer([]byte("my friend")))
 	if err != nil {
@@ -148,23 +149,16 @@ func (s *serverTestSuite) TestFileMainCSSEndpoint() {
 	}
 
 	server, err := s.serverForBundle("../example-project/modules.wasm.zip")
-	if err != nil {
-		s.T().Error(errors.Wrap(err, "failed to s.serverForBundle"))
-		return
-	}
+	require.NoErrorf(s.T(), err, "error from serverForBundle for example project/modules.wasm.zip: %s", err.Error())
 
 	vt := vtest.New(server)
 	req, err := http.NewRequest(http.MethodPost, "/name/com.suborbital.app/default/get-file", bytes.NewBuffer(nil))
-	if err != nil {
-		s.T().Fatal(err)
-	}
+	require.NoError(s.T(), err)
 
 	req.Header.Add("X-Suborbital-State", `{"file": "css/main.css"}`)
 
 	data, err := os.ReadFile("../example-project/static/css/main.css")
-	if err != nil {
-		s.T().Fatal(err)
-	}
+	require.NoErrorf(s.T(), err, "os.ReadFile(../example-project/static/css/main.css): %s", err.Error())
 
 	vt.Do(req, s.T()).
 		AssertStatus(200).

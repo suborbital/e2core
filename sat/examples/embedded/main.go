@@ -10,8 +10,8 @@ import (
 
 // If you are using a control plane server, set the following environment variables before running
 //
-//	SAT_CONTROL_PLANE={Control Plane URL}
-//	SAT_ENV_TOKEN={Environment token}
+// SAT_CONTROL_PLANE={Control Plane URL}
+// SAT_ENV_TOKEN={Environment token}
 //
 // If you are using a control plane server, pass the FQFN as the Runnable Arg (like below)
 // See also https://docs.suborbital.dev/compute/concepts/fully-qualified-function-names
