@@ -1,0 +1,19 @@
+{
+  "name": "as-graphql",
+  "version": "",
+  "description": "",
+  "main": "src/index.ts",
+  "scripts": {
+    "test": "node tests",
+    "asbuild": "./node_modules/assemblyscript/bin/asc src/index.ts --target release --use abort=src/index/abort"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "assemblyscript": "0.19.16"
+  },
+  "dependencies": {
+    "@assemblyscript/loader": "0.19.16",
+    "@suborbital/suborbital": "file:../../../api/assemblyscript"
+  }
+}

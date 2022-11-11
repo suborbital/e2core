@@ -1,0 +1,11 @@
+import Bytes from "bytes"
+import Result from "result"
+import GraphQL from "suborbital/graphql"
+
+export let run = _input => {
+  let result = GraphQL.query(
+    "https://api.github.com/graphql",
+    "{ repository (owner: \"suborbital\", name: \"reactr\") { name, nameWithOwner }}",
+  )
+  Result.mapErr(msg => (1l, Bytes.toString(msg)), result)
+}

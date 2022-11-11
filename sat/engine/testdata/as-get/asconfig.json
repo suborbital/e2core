@@ -1,0 +1,12 @@
+{
+  "targets": {
+    "release": {
+      "binaryFile": "as-get.wasm",
+      "optimizeLevel": 3,
+      "shrinkLevel": 1,
+      "converge": false,
+      "noAssert": false
+    }
+  },
+  "options": {}
+}

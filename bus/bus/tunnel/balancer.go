@@ -59,6 +59,10 @@ func (b *Balancer) Next() string {
 	b.lock.Lock()
 	defer b.lock.Unlock()
 
+	if len(b.uuids) == 0 {
+		return ""
+	}
+
 	uuid := b.uuids[b.index]
 
 	if b.index >= len(b.uuids)-1 {

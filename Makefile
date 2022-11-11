@@ -36,10 +36,10 @@ test/ci:
 	go test -v --count=1 -p=1 ./...
 
 lint:
-	golangci-lint run ./...
+	docker compose -f docker-compose-util.yaml up linter
 
-lint/fix:
-	golangci-lint run --fix ./...
+lintfixer:
+	docker compose -f docker-compose-util.yaml up lintfixer
 
 loadtest:
 	go run ./testingsupport/load/load-tester.go

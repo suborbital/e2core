@@ -1,0 +1,6 @@
+name: return-err
+namespace: default
+lang: rust
+version: ""
+apiVersion: 0.13.1
+fqfnUri: ""

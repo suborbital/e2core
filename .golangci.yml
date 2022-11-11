@@ -10,7 +10,6 @@ output:
 linters:
   disable-all: true
   enable:
-    - deadcode
     - gci
     - unparam
     - unused
@@ -30,5 +29,3 @@ linters-settings:
       - standard
       - default
       - prefix(github.com/suborbital)
-  godot:
-    scope: all

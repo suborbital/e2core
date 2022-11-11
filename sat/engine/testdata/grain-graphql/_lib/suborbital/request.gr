@@ -1,0 +1,48 @@
+import Result from "result"
+import Bytes from "bytes"
+
+import Env from "./env"
+import { ffiResult, getIdent } from "./ffi"
+
+let getField = (fieldType, key) => {
+  let size = Env.requestGetField(fieldType, key, getIdent())
+  ffiResult(size)
+}
+
+export let method = () => {
+  let result = getField(Env.FieldTypeMeta, "method")
+  Bytes.toString(Result.unwrap(result))
+}
+
+export let url = () => {
+  let result = getField(Env.FieldTypeMeta, "url")
+  Bytes.toString(Result.unwrap(result))
+}
+
+export let id = () => {
+  let result = getField(Env.FieldTypeMeta, "id")
+  Bytes.toString(Result.unwrap(result))
+}
+
+export let body = () => {
+  getField(Env.FieldTypeMeta, "body")
+}
+
+export let bodyField = key => {
+  let result = getField(Env.FieldTypeBody, key)
+  Bytes.toString(Result.unwrap(result))
+}
+
+export let header = key => {
+  let result = getField(Env.FieldTypeHeader, key)
+  Bytes.toString(Result.unwrap(result))
+}
+
+export let urlParam = key => {
+  let result = getField(Env.FieldTypeParams, key)
+  Bytes.toString(Result.unwrap(result))
+}
+
+export let state = key => {
+  getField(Env.FieldTypeState, key)
+}

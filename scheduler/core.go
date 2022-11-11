@@ -40,8 +40,8 @@ func newCore(log *vlog.Logger) *core {
 func (c *core) do(job *Job) *Result {
 	result := newResult(job.UUID())
 
-	worker := c.scaler.findWorker(job.jobType)
-	if worker == nil {
+	jobWorker := c.scaler.findWorker(job.jobType)
+	if jobWorker == nil {
 		result.sendErr(fmt.Errorf("failed to getWorker for jobType %q", job.jobType))
 		return result
 	}
@@ -49,7 +49,7 @@ func (c *core) do(job *Job) *Result {
 	go func() {
 		job.result = result
 
-		worker.schedule(job)
+		jobWorker.schedule(job)
 	}()
 
 	return result

@@ -112,3 +112,14 @@ func (s *Server) testServer() (*vk.Server, error) {
 
 	return s.server, nil
 }
+
+func (s *Server) Shutdown(ctx context.Context) error {
+	s.coordinator.Shutdown()
+
+	// err := s.server.StopCtx(ctx)
+	// if err != nil {
+	// 	return errors.Wrap(err, "http.Server.StopCtx")
+	// }
+
+	return nil
+}

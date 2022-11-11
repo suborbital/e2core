@@ -39,7 +39,7 @@ func newWorker(runner Runnable, doFunc coreDoFunc, opts workerOpts) *worker {
 		options:           opts,
 		doFunc:            doFunc,
 		targetThreadCount: opts.poolSize,
-		threads:           []*workThread{},
+		threads:           make([]*workThread, 0),
 		lock:              &sync.RWMutex{},
 		reconcile:         &singleflight.Group{},
 		rate:              newRateTracker(),

@@ -45,7 +45,7 @@ func Setup() *Signaler {
 	return s
 }
 
-// start starts the given task on a goroutine using the global context
+// Start starts the given task on a goroutine using the global context
 func (s *Signaler) Start(task func(context.Context) error) {
 	s.group.Add(1)
 
@@ -60,7 +60,7 @@ func (s *Signaler) Start(task func(context.Context) error) {
 	}()
 }
 
-// ManualShutdown triggers an artifical shutdown and then calls Wait with the given timeout
+// ManualShutdown triggers an artificial shutdown and then calls Wait with the given timeout
 func (s *Signaler) ManualShutdown(timeout time.Duration) error {
 	s.signalChan <- os.Kill
 

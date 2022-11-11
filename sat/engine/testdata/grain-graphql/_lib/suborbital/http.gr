@@ -1,0 +1,43 @@
+import Map from "map"
+import Bytes from "bytes"
+
+import Env, { fetchUrl } from "./env"
+import { ffiResult, getIdent } from "./ffi"
+
+let renderHeaderString = headers => {
+  let mut rendered = ""
+  Map.forEach(
+    (key, val) => {
+      rendered = rendered ++ "::" ++ key ++ ":" ++ val
+    },
+    headers,
+  )
+  rendered
+}
+
+let doRequest = (method, url, body, headers) => {
+  let url = match (headers) {
+    Some(headers) => url ++ renderHeaderString(headers),
+    None => url,
+  }
+
+  let resultSize = fetchUrl(method, url, body, getIdent())
+
+  ffiResult(resultSize)
+}
+
+export let get = (url, headers) => {
+  doRequest(Env.HttpMethodGet, url, Bytes.empty, headers)
+}
+
+export let post = (url, body, headers) => {
+  doRequest(Env.HttpMethodPost, url, body, headers)
+}
+
+export let patch = (url, body, headers) => {
+  doRequest(Env.HttpMethodPatch, url, body, headers)
+}
+
+export let delete = (url, headers) => {
+  doRequest(Env.HttpMethodDelete, url, Bytes.empty, headers)
+}

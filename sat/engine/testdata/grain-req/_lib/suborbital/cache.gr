@@ -1,0 +1,14 @@
+import Result from "result"
+
+import Env from "./env"
+import { getIdent, ffiResult } from "./ffi"
+
+export let get = key => {
+  let size = Env.cacheGet(key, getIdent())
+  Result.toOption(ffiResult(size))
+}
+
+export let set = (key, value, ttl) => {
+  let size = Env.cacheSet(key, value, ttl, getIdent())
+  Result.map(bytes => void, ffiResult(size))
+}

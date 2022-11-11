@@ -8,7 +8,7 @@ As mentioned up top, `constd` is an experiment built on two other experiments:
 - Atmo proxy mode, designed to mesh with a constellation
 
 ## Build and run constd
-> You'll need Go and Docker to run Sat and ConstD, and you'll need to clone the [Sat](https://github.com/suborbital/sat) and [Atmo](https://github.com/suborbital/atmo) repos.
+> You'll need Go and Docker to run Sat and ConstD, and you'll need to clone the [Sat](https://github.com/suborbital/e2core/sat) and [Atmo](https://github.com/suborbital/atmo) repos.
 
 To get started, build Atmo proxy. In the Atmo repo, run:
 ```bash

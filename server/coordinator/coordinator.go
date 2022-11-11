@@ -120,6 +120,19 @@ func (c *Coordinator) SetupHandlers() (*vk.Router, error) {
 	return router, nil
 }
 
+func (c *Coordinator) Shutdown() {
+	c.log.Warn("cooordinator is going down")
+	for bk, b := range c.connections {
+		c.log.Info("stopping connection", bk)
+		_ = b.Stop()
+	}
+
+	for pk, p := range c.handlerPods {
+		c.log.Info("disconnecting from pod", pk)
+		p.Disconnect()
+	}
+}
+
 // CreateConnections establishes all of the connections described in the tenant.
 func (c *Coordinator) createConnections() {
 	tenants := c.syncer.ListTenants()

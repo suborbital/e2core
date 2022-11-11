@@ -1,0 +1,6 @@
+name: rust-urlquery
+namespace: default
+lang: rust
+version: ""
+apiVersion: 0.14.0
+fqfnUri: ""

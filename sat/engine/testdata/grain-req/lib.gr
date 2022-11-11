@@ -1,0 +1,12 @@
+import Bytes from "bytes"
+import Result from "result"
+import Request from "suborbital/request"
+
+export let run = input => {
+  let input = Bytes.toString(input)
+  let hello = Request.state("hello")
+  match (hello) {
+    Ok(bytes) => Ok(Bytes.concat(Bytes.fromString("hello "), bytes)),
+    Err(err) => Err((1l, Bytes.toString(err))),
+  }
+}

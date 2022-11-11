@@ -2,10 +2,11 @@ package server
 
 import (
 	"bytes"
-	"fmt"
+	"context"
+	"io"
 	"net/http"
+	"net/http/httptest"
 	"os"
-	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -20,7 +21,6 @@ import (
 	"github.com/suborbital/e2core/syncer"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
-	"github.com/suborbital/vektor/vtest"
 )
 
 type serverTestSuite struct {
@@ -29,198 +29,206 @@ type serverTestSuite struct {
 	o        *satbackend.Orchestrator
 	signaler *signaler.Signaler
 	lock     sync.Mutex
+
+	shouldRun bool
+}
+
+// HandleStats will write a nice summary at the end after the teardown function.
+func (s *serverTestSuite) HandleStats(suiteName string, stats *suite.SuiteInformation) {
+	s.T().Logf("Stats for suite '%s' ran in %s", suiteName, stats.End.Sub(stats.Start))
+	verdict := ""
+
+	s.T().Logf("length of the teststats: %d", len(stats.TestStats))
+
+	for testName, info := range stats.TestStats {
+		verdict = "FAIL"
+		if info.Passed {
+			verdict = "PASS"
+		}
+		s.T().Logf("%s -- %s ran in %s", verdict, testName, info.End.Sub(info.Start))
+	}
 }
 
 // SetupSuite sets up the entire suite
 func (s *serverTestSuite) SetupSuite() {
-	if shouldRun := os.Getenv("RUN_SERVER_TESTS"); shouldRun != "true" {
-		fmt.Println("skipping server test")
-		return
+	if shouldRun := os.Getenv("RUN_SERVER_TESTS"); shouldRun == "true" {
+		s.T().Logf("Suite Setup: Server tests will be run")
+		s.shouldRun = true
+	} else {
+		s.T().Log("Suite Setup: Server tests will not be run")
 	}
 
-	fmt.Println("SETUP")
+	err := s.serverForBundle("../example-project/modules.wasm.zip")
+	s.Require().NoError(err)
+
+	err = s.ts.TestStart()
+	s.Require().NoError(err)
 }
 
-// TearDownSuite tears everything down
 func (s *serverTestSuite) TearDownSuite() {
-	if shouldRun := os.Getenv("RUN_SERVER_TESTS"); shouldRun != "true" {
-		fmt.Println("skipping server test")
-		return
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	if s.o != nil {
+		s.T().Log("starting shutdown of orchestrator")
+		s.o.Shutdown()
+		s.T().Log("shutdown completed of orchestrator")
+
+		s.o = nil
 	}
 
-	fmt.Println("TEARDOWN")
+	if s.signaler != nil {
+		s.T().Log("starting shutdown of signaler")
 
-	s.signaler.ManualShutdown(time.Second)
+		err := s.signaler.ManualShutdown(time.Second)
+		s.Require().NoError(err)
+
+		s.T().Log("shutdown completed of signaler")
+
+		s.signaler = nil
+	}
+
+	if s.ts != nil {
+		s.T().Log("starting shutdown of test server")
+
+		ctx, cxl := context.WithTimeout(context.Background(), time.Second)
+		defer cxl()
+		err := s.ts.StopCtx(ctx)
+		s.Require().NoError(err)
+
+		s.T().Log("shutdown of test server completed")
+	}
+
+	time.Sleep(3 * time.Second)
+}
+
+func (s *serverTestSuite) AfterTest(_, testName string) {
+	s.T().Logf("%s finished running", testName)
 }
 
 // curl -d 'my friend' localhost:8080/hello.
 func (s *serverTestSuite) TestHelloEndpoint() {
-	if shouldRun := os.Getenv("RUN_SERVER_TESTS"); shouldRun != "true" {
-		fmt.Println("skipping server test")
-		return
+	if !s.shouldRun {
+		s.T().Skip("Skipping")
 	}
 
-	server, err := s.serverForBundle("../example-project/modules.wasm.zip")
-	if err != nil {
-		s.T().Error(errors.Wrap(err, "failed to s.serverForBundle"))
-		return
-	}
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/name/com.suborbital.app/default/helloworld-rs", bytes.NewBuffer([]byte("my friend")))
 
-	vt := vtest.New(server) //creating fake version of the server that we can send requests to and it will behave same was as if it was the real server.
+	s.ts.ServeHTTP(w, req)
 
-	req, err := http.NewRequest(http.MethodPost, "/name/com.suborbital.app/default/helloworld-rs", bytes.NewBuffer([]byte("my friend")))
-	if err != nil {
-		s.T().Fatal(err)
-	}
+	resultBody, err := io.ReadAll(w.Result().Body)
+	s.Require().NoError(err)
 
-	vt.Do(req, s.T()).
-		AssertStatus(200).
-		AssertBodyString("hello my friend")
+	s.Equal(http.StatusOK, w.Result().StatusCode)
+	s.Equal([]byte(`hello my friend`), resultBody)
 }
 
 // curl -d 'name' localhost:8080/set/name
 // curl localhost:8080/get/name.
 func (s *serverTestSuite) TestSetAndGetKeyEndpoints() {
-	if shouldRun := os.Getenv("RUN_SERVER_TESTS"); shouldRun != "true" {
-		fmt.Println("skipping server test")
-		return
+	if !s.shouldRun {
+		s.T().Skip("Skipping")
 	}
 
-	server, err := s.serverForBundle("../example-project/modules.wasm.zip")
-	if err != nil {
-		s.T().Error(errors.Wrap(err, "failed to s.serverForBundle"))
-		return
-	}
+	setW := httptest.NewRecorder()
+	getW := httptest.NewRecorder()
 
-	vt := vtest.New(server)
+	setReq := httptest.NewRequest(http.MethodPost, "/name/com.suborbital.app/default/cache-set", bytes.NewBuffer([]byte("Suborbital")))
+	getReq := httptest.NewRequest(http.MethodPost, "/name/com.suborbital.app/default/cache-get", bytes.NewBuffer(nil))
 
-	setReq, err := http.NewRequest(http.MethodPost, "/name/com.suborbital.app/default/cache-set", bytes.NewBuffer([]byte("Suborbital")))
-	if err != nil {
-		s.T().Fatal(err)
-	}
+	s.ts.ServeHTTP(setW, setReq)
+	s.Equal(http.StatusOK, setW.Result().StatusCode)
 
-	getReq, err := http.NewRequest(http.MethodPost, "/name/com.suborbital.app/default/cache-get", bytes.NewBuffer(nil))
-	if err != nil {
-		s.T().Fatal(err)
-	}
+	s.ts.ServeHTTP(getW, getReq)
+	s.Equal(http.StatusOK, getW.Result().StatusCode)
 
-	vt.Do(setReq, s.T()).
-		AssertStatus(200)
-
-	vt.Do(getReq, s.T()).
-		AssertStatus(200)
 	// TODO: add central cache to get this test passing: https://github.com/suborbital/e2core/issues/238
 	// AssertBodyString("Suborbital")
-
 }
 
 // curl localhost:8080/file/main.md.
 func (s *serverTestSuite) TestFileMainMDEndpoint() {
-	if shouldRun := os.Getenv("RUN_SERVER_TESTS"); shouldRun != "true" {
-		fmt.Println("skipping server test")
-		return
+	if !s.shouldRun {
+		s.T().Skip("Skipping")
 	}
 
-	server, err := s.serverForBundle("../example-project/modules.wasm.zip")
-	if err != nil {
-		s.T().Error(errors.Wrap(err, "failed to s.serverForBundle"))
-		return
-	}
+	w := httptest.NewRecorder()
 
-	vt := vtest.New(server)
-	req, err := http.NewRequest(http.MethodPost, "/name/com.suborbital.app/default/get-file", bytes.NewBuffer(nil))
-	if err != nil {
-		s.T().Fatal(err)
-	}
-
+	req := httptest.NewRequest(http.MethodPost, "/name/com.suborbital.app/default/get-file", bytes.NewBuffer(nil))
 	req.Header.Add("X-Suborbital-State", `{"file": "main.md"}`)
 
-	vt.Do(req, s.T()).
-		AssertStatus(200).
-		AssertBodyString("## hello")
+	s.ts.ServeHTTP(w, req)
+
+	responseBody, err := io.ReadAll(w.Result().Body)
+	s.Require().NoError(err)
+
+	s.Equal(http.StatusOK, w.Result().StatusCode)
+	s.Equal([]byte(`## hello`), responseBody)
 }
 
 // curl localhost:8080/file/css/main.css.
 func (s *serverTestSuite) TestFileMainCSSEndpoint() {
-	if shouldRun := os.Getenv("RUN_SERVER_TESTS"); shouldRun != "true" {
-		fmt.Println("skipping server test")
-		return
+	if !s.shouldRun {
+		s.T().Skip("Skipping")
 	}
 
-	server, err := s.serverForBundle("../example-project/modules.wasm.zip")
-	if err != nil {
-		s.T().Error(errors.Wrap(err, "failed to s.serverForBundle"))
-		return
-	}
+	w := httptest.NewRecorder()
 
-	vt := vtest.New(server)
-	req, err := http.NewRequest(http.MethodPost, "/name/com.suborbital.app/default/get-file", bytes.NewBuffer(nil))
-	if err != nil {
-		s.T().Fatal(err)
-	}
-
+	req := httptest.NewRequest(http.MethodPost, "/name/com.suborbital.app/default/get-file", bytes.NewBuffer(nil))
 	req.Header.Add("X-Suborbital-State", `{"file": "css/main.css"}`)
 
 	data, err := os.ReadFile("../example-project/static/css/main.css")
-	if err != nil {
-		s.T().Fatal(err)
-	}
+	s.Require().NoError(err)
 
-	vt.Do(req, s.T()).
-		AssertStatus(200).
-		AssertBody(data)
+	s.ts.ServeHTTP(w, req)
+
+	responseBody, err := io.ReadAll(w.Result().Body)
+	s.Require().NoError(err)
+
+	s.Equal(http.StatusOK, w.Result().StatusCode)
+	s.Equal(data, responseBody)
 }
 
 // curl localhost:8080/file/js/app/main.js.
 func (s *serverTestSuite) TestFileMainJSEndpoint() {
-	if shouldRun := os.Getenv("RUN_SERVER_TESTS"); shouldRun != "true" {
-		fmt.Println("skipping server test")
-		return
+	if !s.shouldRun {
+		s.T().Skip("Skipping")
 	}
 
-	server, err := s.serverForBundle("../example-project/modules.wasm.zip")
-	if err != nil {
-		s.T().Error(errors.Wrap(err, "failed to s.serverForBundle"))
-		return
-	}
+	w := httptest.NewRecorder()
 
-	vt := vtest.New(server)
-	req, err := http.NewRequest(http.MethodPost, "/name/com.suborbital.app/default/get-file", bytes.NewBuffer(nil))
-	if err != nil {
-		s.T().Fatal(err)
-	}
-
+	req := httptest.NewRequest(http.MethodPost, "/name/com.suborbital.app/default/get-file", bytes.NewBuffer(nil))
 	req.Header.Add("X-Suborbital-State", `{"file": "js/app/main.js"}`)
 
 	data, err := os.ReadFile("../example-project/static/js/app/main.js")
-	if err != nil {
-		s.T().Fatal(err)
-	}
+	s.Require().NoError(err)
 
-	vt.Do(req, s.T()).
-		AssertStatus(200).
-		AssertBody(data)
+	s.ts.ServeHTTP(w, req)
+
+	responseBody, err := io.ReadAll(w.Result().Body)
+	s.Require().NoError(err)
+
+	s.Equal(http.StatusOK, w.Result().StatusCode)
+	s.Equal(data, responseBody)
 }
 
 // curl -d 'https://github.com' localhost:8080/fetch | grep "grav".
 func (s *serverTestSuite) TestFetchEndpoint() {
-	if shouldRun := os.Getenv("RUN_SERVER_TESTS"); shouldRun != "true" {
-		fmt.Println("skipping server test")
-		return
+	if !s.shouldRun {
+		s.T().Skip("Skipping")
 	}
 
-	server, err := s.serverForBundle("../example-project/modules.wasm.zip")
-	if err != nil {
-		s.T().Error(errors.Wrap(err, "failed to s.serverForBundle"))
-		return
-	}
+	w := httptest.NewRecorder()
 
-	vt := vtest.New(server)
-	req, err := http.NewRequest(http.MethodPost, "/workflow/com.suborbital.app/default/fetch", bytes.NewBuffer([]byte("https://github.com")))
-	if err != nil {
-		s.T().Fatal(err)
-	}
-	resp := vt.Do(req, s.T())
+	req := httptest.NewRequest(http.MethodPost, "/workflow/com.suborbital.app/default/fetch", bytes.NewBuffer([]byte("https://github.com")))
+
+	s.ts.ServeHTTP(w, req)
+
+	responseBody, err := io.ReadAll(w.Result().Body)
+	s.Require().NoError(err)
+
+	bodyString := string(responseBody)
 
 	// Check the response for these "Repositories", "People" and "Sponsoring" keywords to ensure that the correct HTML
 	// has been loaded.
@@ -230,63 +238,57 @@ func (s *serverTestSuite) TestFetchEndpoint() {
 		"Sponsoring",
 	}
 
-	s.T().Run("contains", func(t *testing.T) {
-		for _, r := range ar {
-			s.T().Run(r, func(t *testing.T) {
-				if !strings.Contains(string(resp.Body), r) {
-					s.T().Errorf("Couldn't find %s in the response", r)
-				}
-			})
-		}
-	})
+	for _, r := range ar {
+		s.Containsf(bodyString, r, "responsebody (%s) did not contain string (%s)", responseBody, r)
+	}
 }
 
-// nolint
-func (s *serverTestSuite) serverForBundle(filepath string) (*vk.Server, error) {
-	if shouldRun := os.Getenv("RUN_SERVER_TESTS"); shouldRun != "true" {
-		fmt.Println("skipping server test")
-		return nil, nil
+// serverForBundle creates a new test server based on the module reachable with filepath, assigns it to a struct level
+// unexported property (s.ts), and starts it.
+//
+// To tear down the server we use the AfterTest(suiteName, testName string) method where we still have access to the
+// server that's running currently.
+func (s *serverTestSuite) serverForBundle(filepath string) error {
+	if !s.shouldRun {
+		s.T().Skip("Skipping")
 	}
 
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
-	if s.ts == nil {
-		logger := vlog.Default(vlog.Level(vlog.LogLevelDebug))
+	logger := vlog.Default(vlog.Level(vlog.LogLevelInfo))
 
-		opts := options.NewWithModifiers(options.UseBundlePath(filepath), options.UseLogger(logger))
+	opts := options.NewWithModifiers(options.UseBundlePath(filepath), options.UseLogger(logger))
 
-		source := bundle.NewBundleSource(opts.BundlePath)
+	source := bundle.NewBundleSource(opts.BundlePath)
 
-		syncer := syncer.New(opts, source)
+	syncR := syncer.New(opts, source)
 
-		server, err := New(syncer, opts)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to New")
-		}
-
-		testServer, err := server.testServer()
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to s.testServer")
-		}
-
-		orchestrator, err := satbackend.New(opts, syncer)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to orchestrator.New")
-		}
-
-		signaler := signaler.Setup()
-
-		signaler.Start(orchestrator.Start)
-
-		time.Sleep(time.Second * 3)
-
-		s.o = orchestrator
-		s.ts = testServer
-		s.signaler = signaler
+	server, err := New(syncR, opts)
+	if err != nil {
+		return errors.Wrap(err, "failed to New")
 	}
 
-	return s.ts, nil
+	testServer, err := server.testServer()
+	if err != nil {
+		return errors.Wrap(err, "failed to s.testServer")
+	}
+
+	orchestrator, err := satbackend.New(opts, syncR)
+	if err != nil {
+		return errors.Wrap(err, "failed to orchestrator.New")
+	}
+
+	sig := signaler.Setup()
+	sig.Start(orchestrator.Start)
+
+	time.Sleep(time.Second * 3)
+
+	s.o = orchestrator
+	s.ts = testServer
+	s.signaler = sig
+
+	return nil
 }
 
 func TestServerTestSuite(t *testing.T) {

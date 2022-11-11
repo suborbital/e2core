@@ -1,0 +1,69 @@
+builds:
+  - <<: &build_defaults
+      id: sat
+      main: .
+      binary: sat
+      env:
+        - CGO_ENABLED=1
+      goos:
+        - linux
+        - darwin
+      goarch:
+        - amd64
+        - arm64
+      tags:
+        - netgo
+        - wasmtime
+      overrides:
+        - goos: linux
+          goarch: amd64
+          goamd64: v1
+          env:
+            - CGO_ENABLED=1
+            - CC=x86_64-linux-gnu-gcc
+            - CXX=x86_64-linux-gnu-g++
+          ldflags:
+            - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}
+            - -extldflags "-static"
+        - goos: linux
+          goarch: arm64
+          env:
+            - CGO_ENABLED=1
+            - CC=aarch64-linux-gnu-gcc
+            - CXX=aarch64-linux-gnu-g++
+          ldflags:
+            - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}
+            - -extldflags "-static"
+        - goos: darwin
+          goarch: amd64
+          goamd64: v1
+          env:
+            - CGO_ENABLED=1
+            - CC=o64-clang
+            - CXX=o64-clang++
+        - goos: darwin
+          goarch: arm64
+          env:
+            - CGO_ENABLED=1
+            - CC=oa64-clang
+            - CXX=oa64-clang++
+  - <<: *build_defaults
+    id: constd
+    main: ./constd
+    binary: constd
+
+changelog:
+  skip: true
+
+checksum:
+  name_template: 'checksums.txt'
+
+archives:
+  - id: sat
+    name_template: 'sat-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
+    builds:
+      - sat
+  - id: constd
+    name_template: 'constd-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
+    builds:
+      - constd

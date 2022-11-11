@@ -34,7 +34,7 @@ type scaler struct {
 
 func newScaler(log *vlog.Logger) *scaler {
 	s := &scaler{
-		workers:   map[string]*worker{},
+		workers:   make(map[string]*worker),
 		log:       log,
 		lock:      &sync.RWMutex{},
 		startOnce: &sync.Once{},
@@ -51,22 +51,22 @@ func (s *scaler) startAutoscaler() {
 			for {
 				s.lock.RLock()
 
-				for _, worker := range s.workers {
-					m := worker.metrics()
+				for _, jobWorker := range s.workers {
+					m := jobWorker.metrics()
 
 					// if job queue is double thread pool size, double the thread count
 					// until it reaches autoscaleMax, and reverse when job queue is half
 					if m.JobCount > m.ThreadCount*2 || m.JobRate > float64(m.ThreadCount*2) {
-						if m.ThreadCount*2 <= worker.options.autoscaleMax {
-							worker.setThreadCount(m.ThreadCount * 2)
+						if m.ThreadCount*2 <= jobWorker.options.autoscaleMax {
+							jobWorker.setThreadCount(m.ThreadCount * 2)
 						} else {
-							worker.setThreadCount(worker.options.autoscaleMax)
+							jobWorker.setThreadCount(jobWorker.options.autoscaleMax)
 						}
 					} else if m.JobCount < m.ThreadCount/2 && m.JobRate < float64(m.ThreadCount/2) {
-						if m.ThreadCount/2 > worker.options.poolSize {
-							worker.setThreadCount(m.ThreadCount / 2)
+						if m.ThreadCount/2 > jobWorker.options.poolSize {
+							jobWorker.setThreadCount(m.ThreadCount / 2)
 						} else {
-							worker.setThreadCount(worker.options.poolSize)
+							jobWorker.setThreadCount(jobWorker.options.poolSize)
 						}
 					}
 				}

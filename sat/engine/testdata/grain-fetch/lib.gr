@@ -1,0 +1,8 @@
+import Bytes from "bytes"
+import Result from "result"
+import Http from "suborbital/http"
+
+export let run = input => {
+  let input = Bytes.toString(input)
+  Result.mapErr(msg => (1l, Bytes.toString(msg)), Http.get(input, None))
+}
