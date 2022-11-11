@@ -29,7 +29,7 @@ func New(opts ...OptionsModifier) *Bus {
 
 	options := newOptionsWithModifiers(opts...)
 
-	g := &Bus{
+	b := &Bus{
 		NodeUUID:  nodeUUID,
 		BelongsTo: options.BelongsTo,
 		Interests: options.Interests,
@@ -38,59 +38,59 @@ func New(opts ...OptionsModifier) *Bus {
 	}
 
 	// the hub handles coordinating the transport and discovery plugins
-	g.hub = initHub(nodeUUID, options, g.Connect)
+	b.hub = initHub(nodeUUID, options, b.Connect)
 
-	return g
+	return b
 }
 
 // Connect creates a new connection (pod) to the bus
-func (g *Bus) Connect() *Pod {
+func (b *Bus) Connect() *Pod {
 	opts := &podOpts{WantsReplay: false}
 
-	return g.connectWithOpts(opts)
+	return b.connectWithOpts(opts)
 }
 
 // ConnectWithReplay creates a new connection (pod) to the bus
 // and replays recent messages when the pod sets its onFunc
-func (g *Bus) ConnectWithReplay() *Pod {
+func (b *Bus) ConnectWithReplay() *Pod {
 	opts := &podOpts{WantsReplay: true}
 
-	return g.connectWithOpts(opts)
+	return b.connectWithOpts(opts)
 }
 
 // ConnectEndpoint uses the configured transport to connect the bus to an external endpoint
-func (g *Bus) ConnectEndpoint(endpoint string) error {
-	return g.hub.connectEndpoint(endpoint, "")
+func (b *Bus) ConnectEndpoint(endpoint string) error {
+	return b.hub.connectEndpoint(endpoint, "")
 }
 
 // ConnectBridgeTopic connects the Bus instance to a particular topic on the connected bridge
-func (g *Bus) ConnectBridgeTopic(topic string) error {
-	return g.hub.connectBridgeTopic(topic)
+func (b *Bus) ConnectBridgeTopic(topic string) error {
+	return b.hub.connectBridgeTopic(topic)
 }
 
 // Tunnel sends a message to a specific connection that has advertised it has the required capability.
 // This bypasses the main Bus bus, which is why it isn't a method on Pod.
 // Messages are load balanced between the connections that advertise the capability in question.
-func (g *Bus) Tunnel(capability string, msg Message) error {
-	return g.hub.sendTunneledMessage(capability, msg)
+func (b *Bus) Tunnel(capability string, msg Message) error {
+	return b.hub.sendTunneledMessage(capability, msg)
 }
 
 // Withdraw cancels discovery, sends withdraw messages to all peers,
 // and returns when all peers have acknowledged the withdraw
-func (g *Bus) Withdraw() error {
-	return g.hub.withdraw()
+func (b *Bus) Withdraw() error {
+	return b.hub.withdraw()
 }
 
 // Stop stops Bus's meshing entirely, causing all connections to peers to close.
 // It is reccomended to call `Withdraw` first to give peers notice and stop recieving messages
-func (g *Bus) Stop() error {
-	return g.hub.stop()
+func (b *Bus) Stop() error {
+	return b.hub.stop()
 }
 
-func (g *Bus) connectWithOpts(opts *podOpts) *Pod {
-	pod := newPod(g.bus.busChan, opts)
+func (b *Bus) connectWithOpts(opts *podOpts) *Pod {
+	pod := newPod(b.bus.busChan, opts)
 
-	g.bus.addPod(pod)
+	b.bus.addPod(pod)
 
 	return pod
 }
