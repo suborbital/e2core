@@ -65,7 +65,7 @@ func (w *watcher) scaleDown() error {
 	// we use the range to get a semi-random instance
 	// and then immediately return so that we only terminate one
 	for p := range w.instances {
-		w.log.Debug("scaling down, terminating instance on port", p, "(", w.instances[p].fqfn, ")")
+		w.log.Debug("[watcher.scaleDown] scaling down, terminating instance on port", p, "(", w.instances[p].fqfn, ")")
 
 		return w.terminateInstance(p)
 	}
@@ -76,11 +76,11 @@ func (w *watcher) scaleDown() error {
 func (w *watcher) terminate() error {
 	var err error
 	for p, instance := range w.instances {
-		w.log.Debug(fmt.Sprintf("terminating instance on port %s", p))
+		w.log.Debug(fmt.Sprintf("[watcher.terminate] terminating instance on port %s", p))
 
 		err = w.terminateInstance(p)
 		if err != nil {
-			w.log.Warn("could not terminate instance", instance.fqfn, err.Error())
+			w.log.Warn("[watcher.terminate] could not terminate instance", instance.fqfn, err.Error())
 		}
 	}
 
@@ -95,7 +95,7 @@ func (w *watcher) terminateInstance(p string) error {
 	}
 
 	if err := syscall.Kill(inst.pid, syscall.SIGTERM); err != nil {
-		w.log.Warn("syscall.Kill for pid %d failed, will delete procfile", inst.pid)
+		w.log.Warn("[watcher.terminateInstance]syscall.Kill for pid %d failed, will delete procfile", inst.pid)
 
 		if err := process.Delete(inst.uuid); err != nil {
 			return errors.Wrapf(err, "failed to process.Delete for port %s / fqfn %s", p, inst.fqfn)
@@ -104,7 +104,7 @@ func (w *watcher) terminateInstance(p string) error {
 
 	delete(w.instances, p)
 
-	w.log.Debug(fmt.Sprintf("successfully terminated instance on port %s (%s)", p, inst.fqfn))
+	w.log.Debug(fmt.Sprintf("[watcher.terminateInstance] successfully terminated instance on port %s (%s)", p, inst.fqfn))
 
 	return nil
 }

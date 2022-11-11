@@ -80,7 +80,7 @@ func (s *syncJob) Run(job scheduler.Job, ctx *scheduler.Ctx) (interface{}, error
 	}
 
 	if state.SystemVersion == s.state.SystemVersion {
-		s.log.Debug(fmt.Sprintf("skipping sync with version match: %d, %d", state.SystemVersion, s.state.SystemVersion))
+		s.log.Debug(fmt.Sprintf("[syncJob.Run] skipping sync with version match: %d, %d", state.SystemVersion, s.state.SystemVersion))
 		return nil, nil
 	}
 
@@ -89,11 +89,11 @@ func (s *syncJob) Run(job scheduler.Job, ctx *scheduler.Ctx) (interface{}, error
 
 	// update arrived between when we awaited the lock and when we acquired it
 	if state.SystemVersion <= s.state.SystemVersion {
-		s.log.Debug(fmt.Sprintf("skipping sync with version match: %d, %d", state.SystemVersion, s.state.SystemVersion))
+		s.log.Debug(fmt.Sprintf("[syncJob.Run] skipping sync with version match: %d, %d", state.SystemVersion, s.state.SystemVersion))
 		return nil, nil
 	}
 
-	s.log.Debug(fmt.Sprintf("running sync with version mismatch: %d, %d", state.SystemVersion, s.state.SystemVersion))
+	s.log.Debug(fmt.Sprintf("[syncJob.Run] running sync with version mismatch: %d, %d", state.SystemVersion, s.state.SystemVersion))
 
 	ovv, err := s.systemSource.Overview()
 	if err != nil {
@@ -117,18 +117,18 @@ func (s *syncJob) Run(job scheduler.Job, ctx *scheduler.Ctx) (interface{}, error
 		}
 		s.overviews[ident] = tnt
 
-		s.log.Debug("syncing", len(tnt.Config.Modules), "modules for", ident)
+		s.log.Debug("[syncJob.Run] syncing", len(tnt.Config.Modules), "modules for", ident)
 
 		for i, m := range tnt.Config.Modules {
-			s.log.Debug("syncing module:", m.Ref, m.Name, m.Namespace)
+			s.log.Debug("[syncJob.Run] syncing module:", m.Ref, m.Name, m.Namespace)
 
 			s.modules[m.Ref] = tnt.Config.Modules[i]
 		}
 
-		s.log.Debug("synced tenant", ident, "to version", version)
+		s.log.Debug("[syncJob.Run] synced tenant", ident, "to version", version)
 	}
 
-	s.log.Debug("completed sync at version", state.SystemVersion)
+	s.log.Debug("[syncJob.Run] completed sync at version", state.SystemVersion)
 
 	s.state = state
 	s.tenantIdents = ovv.TenantRefs.Identifiers

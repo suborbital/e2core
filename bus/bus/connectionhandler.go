@@ -25,10 +25,10 @@ func (c *connectionHandler) Start() {
 	go func() {
 		<-withdrawChan
 
-		c.Log.Debug("[grav] sending withdraw and disconnecting")
+		c.Log.Debug("[connectionHandler.Start] sending withdraw and disconnecting")
 
 		if err := c.Conn.SendWithdraw(&Withdraw{}); err != nil {
-			c.Log.Error(errors.Wrapf(err, "[grav] failed to SendWithdraw to connection %s", c.UUID))
+			c.Log.Error(errors.Wrapf(err, "[connectionHandler.Start] failed to SendWithdraw to connection %s", c.UUID))
 			c.ErrChan <- err
 		}
 
@@ -40,17 +40,17 @@ func (c *connectionHandler) Start() {
 			msg, withdraw, err := c.Conn.ReadMsg()
 			if err != nil {
 				if !(c.Signaler.SelfWithdrawn() || c.Signaler.PeerWithdrawn()) {
-					c.Log.Error(errors.Wrapf(err, "[grav] failed to ReadMsg from connection %s", c.UUID))
+					c.Log.Error(errors.Wrapf(err, "[connectionHandler.Start] failed to ReadMsg from connection %s", c.UUID))
 					c.ErrChan <- err
 				} else {
-					c.Log.Debug("[grav] failed to ReadMsg from withdrawn connection, ignoring:", err.Error())
+					c.Log.Debug("[connectionHandler.Start] failed to ReadMsg from withdrawn connection, ignoring:", err.Error())
 				}
 
 				return
 			}
 
 			if withdraw != nil {
-				c.Log.Debug("[grav] peer has withdrawn, disconnecting")
+				c.Log.Debug("[connectionHandler.Start] peer has withdrawn, disconnecting")
 
 				c.Signaler.SetPeerWithdrawn()
 
@@ -80,7 +80,7 @@ func (c *connectionHandler) Send(msg Message) error {
 // Close stops outgoing messages and closes the underlying connection
 func (c *connectionHandler) Close() error {
 	if err := c.Conn.Close(); err != nil {
-		return errors.Wrap(err, "[grav] failed to Conn.Close")
+		return errors.Wrap(err, "[connectionHandler.Close] failed to Conn.Close")
 	}
 
 	return nil
