@@ -706,8 +706,8 @@ github.com/schollz/peerdiscovery v1.6.12/go.mod h1:fYHOyZQetvFkK+iQbLH/Gll28Fh9W
 github.com/seccomp/libseccomp-golang v0.9.1/go.mod h1:GbW5+tmTXfcxTToHLXlScSlAvWlF4P2Ca7zGrPiEpWo=
 github.com/second-state/WasmEdge-go v0.11.2 h1:4RZhxKvay9uBM9uzE0jrB/26t1ncQG3LbNQOooKjrHA=
 github.com/second-state/WasmEdge-go v0.11.2/go.mod h1:HyBf9hVj1sRAjklsjc1Yvs9b5RcmthPG9z99dY78TKg=
-github.com/sethvargo/go-envconfig v0.8.1 h1:Gcy6BxTI3A/fOxyoFVDaXcRrhXM1+9Og4ww03/XK1tY=
-github.com/sethvargo/go-envconfig v0.8.1/go.mod h1:Iz1Gy1Sf3T64TQlJSvee81qDhf7YIlt8GMUX6yyNFs0=
+github.com/sethvargo/go-envconfig v0.8.2 h1:DDUVuG21RMgeB/bn4leclUI/837y6cQCD4w8hb5797k=
+github.com/sethvargo/go-envconfig v0.8.2/go.mod h1:Iz1Gy1Sf3T64TQlJSvee81qDhf7YIlt8GMUX6yyNFs0=
 github.com/shopspring/decimal v0.0.0-20180709203117-cd690d0c9e24/go.mod h1:M+9NzErvs504Cn4c5DxATwIqPbtswREoFCre64PpcG4=
 github.com/shopspring/decimal v1.2.0 h1:abSATXmQEYyShuxI4/vyW3tV1MrKAJzCZ/0zLUXYbsQ=
 github.com/shopspring/decimal v1.2.0/go.mod h1:DKyhrW/HYNuLGql+MJL6WCR6knT2jwCFRcu2hWCYk4o=
@@ -763,8 +763,8 @@ github.com/suborbital/appspec v0.0.4-0.20220926160156-36407db9d5e1 h1:nUgraeYYib
 github.com/suborbital/appspec v0.0.4-0.20220926160156-36407db9d5e1/go.mod h1:viKHmM+uNDW+3XuZKGhZ3jZmStpomLVANscTNQVO9B0=
 github.com/suborbital/go-kit v0.0.3 h1:J3KwNZYZDff+jNwqnmHJNrOgM/IHNwbJj7yThh1CU5o=
 github.com/suborbital/go-kit v0.0.3/go.mod h1:BgsNga5S7b7/G8WHUa2KRupMcILULhDqEYIUxZtB/d0=
-github.com/suborbital/vektor v0.5.3-0.20220706142315-ee5378e49e18 h1:/3WpyJOB2tORxXdeyywcqdvqp4GTm9N7o83G2jzOkS0=
-github.com/suborbital/vektor v0.5.3-0.20220706142315-ee5378e49e18/go.mod h1:JpvhjNSRo6yRZv8JBrd0Pld83yVTuYNCQXkmUSbAUXk=
+github.com/suborbital/vektor v0.6.1 h1:Goh/274fy03WVleUrbqq4+6Q+B+B3zuQLmm9blqNn3M=
+github.com/suborbital/vektor v0.6.1/go.mod h1:TpoxB7PN6CRnhG9J6JDElxXG7vVkbJsvLEOzbJdJ2+4=
 github.com/syndtr/gocapability v0.0.0-20170704070218-db04d3cc01c8/go.mod h1:hkRG7XYTFWNJGYcbNJQlaLq0fg1yr4J4t/NcTQtrfww=
 github.com/syndtr/gocapability v0.0.0-20180916011248-d98352740cb2/go.mod h1:hkRG7XYTFWNJGYcbNJQlaLq0fg1yr4J4t/NcTQtrfww=
 github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635/go.mod h1:hkRG7XYTFWNJGYcbNJQlaLq0fg1yr4J4t/NcTQtrfww=
