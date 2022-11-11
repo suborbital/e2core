@@ -164,7 +164,9 @@ func (s *Sat) Start(ctx context.Context) error {
 }
 
 func (s *Sat) Shutdown() error {
-	// stop Grav with a 3s delay between Withdraw and Stop (to allow in-flight requests to drain)
+	s.log.Info("sat shutting down")
+
+	// stop Bus with a 3s delay between Withdraw and Stop (to allow in-flight requests to drain)
 	// s.vektor.Stop isn't called until all connections are ready to close (after said delay)
 	// this is needed to ensure a safe withdraw from the constellation/mesh
 	if s.transport != nil {
