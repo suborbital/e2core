@@ -35,7 +35,7 @@ func newPodConnection(id int64, pod *Pod) *podConnection {
 		next:         nil,
 		messageChan:  msgChan,
 		feedbackChan: feedbackChan,
-		failed:       []Message{},
+		failed:       make([]Message, 0),
 		lock:         &sync.RWMutex{},
 		connected:    true,
 	}
@@ -113,7 +113,7 @@ func (p *podConnection) flushFailed() {
 	}
 
 	if len(p.failed) > 0 {
-		p.failed = []Message{}
+		p.failed = make([]Message, 0)
 	}
 }
 

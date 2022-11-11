@@ -66,7 +66,7 @@ func New(log *vlog.Logger, transport *websocket.Transport) *meshExecutor {
 		bus:       b,
 		pod:       b.Connect(),
 		log:       log,
-		callbacks: map[string]bus.MsgFunc{},
+		callbacks: make(map[string]bus.MsgFunc),
 		cbLock:    sync.RWMutex{},
 	}
 

@@ -34,7 +34,7 @@ type scaler struct {
 
 func newScaler(log *vlog.Logger) *scaler {
 	s := &scaler{
-		workers:   map[string]*worker{},
+		workers:   make(map[string]*worker),
 		log:       log,
 		lock:      &sync.RWMutex{},
 		startOnce: &sync.Once{},
