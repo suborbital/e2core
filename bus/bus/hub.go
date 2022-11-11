@@ -473,8 +473,9 @@ func (h *hub) withdraw() error {
 }
 
 func (h *hub) stop() error {
-	var lastErr error
+	h.log.Info("[hub] stopping")
 
+	var lastErr error
 	for _, c := range h.meshConnections {
 		if err := c.Conn.Close(); err != nil {
 			lastErr = err
