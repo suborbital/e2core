@@ -93,9 +93,9 @@ func (s *serverTestSuite) TestHelloEndpoint() {
 	s.Require().NoError(err)
 
 	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/name/com.suborbital.app/default/helloworld-rs", bytes.NewBuffer([]byte("my friend")))
 
-	req, err := http.NewRequest(http.MethodPost, "/name/com.suborbital.app/default/helloworld-rs", bytes.NewBuffer([]byte("my friend")))
-	s.Require().NoError(err)
+	time.Sleep(5 * time.Second)
 
 	s.ts.ServeHTTP(w, req)
 
@@ -116,17 +116,11 @@ func (s *serverTestSuite) TestSetAndGetKeyEndpoints() {
 	err := s.serverForBundle("../example-project/modules.wasm.zip")
 	s.Require().NoError(err)
 
-	err = s.ts.TestStart()
-	s.Require().NoError(err)
-
 	setW := httptest.NewRecorder()
 	getW := httptest.NewRecorder()
 
-	setReq, err := http.NewRequest(http.MethodPost, "/name/com.suborbital.app/default/cache-set", bytes.NewBuffer([]byte("Suborbital")))
-	s.Require().NoError(err)
-
-	getReq, err := http.NewRequest(http.MethodPost, "/name/com.suborbital.app/default/cache-get", bytes.NewBuffer(nil))
-	s.Require().NoError(err)
+	setReq := httptest.NewRequest(http.MethodPost, "/name/com.suborbital.app/default/cache-set", bytes.NewBuffer([]byte("Suborbital")))
+	getReq := httptest.NewRequest(http.MethodPost, "/name/com.suborbital.app/default/cache-get", bytes.NewBuffer(nil))
 
 	s.ts.ServeHTTP(setW, setReq)
 	s.Equal(http.StatusOK, setW.Result().StatusCode)
@@ -149,8 +143,7 @@ func (s *serverTestSuite) TestFileMainMDEndpoint() {
 
 	w := httptest.NewRecorder()
 
-	req, err := http.NewRequest(http.MethodPost, "/name/com.suborbital.app/default/get-file", bytes.NewBuffer(nil))
-	s.Require().NoError(err)
+	req := httptest.NewRequest(http.MethodPost, "/name/com.suborbital.app/default/get-file", bytes.NewBuffer(nil))
 
 	req.Header.Add("X-Suborbital-State", `{"file": "main.md"}`)
 
@@ -174,8 +167,7 @@ func (s *serverTestSuite) TestFileMainCSSEndpoint() {
 
 	w := httptest.NewRecorder()
 
-	req, err := http.NewRequest(http.MethodPost, "/name/com.suborbital.app/default/get-file", bytes.NewBuffer(nil))
-	s.Require().NoError(err)
+	req := httptest.NewRequest(http.MethodPost, "/name/com.suborbital.app/default/get-file", bytes.NewBuffer(nil))
 
 	req.Header.Add("X-Suborbital-State", `{"file": "css/main.css"}`)
 
@@ -202,8 +194,7 @@ func (s *serverTestSuite) TestFileMainJSEndpoint() {
 
 	w := httptest.NewRecorder()
 
-	req, err := http.NewRequest(http.MethodPost, "/name/com.suborbital.app/default/get-file", bytes.NewBuffer(nil))
-	s.Require().NoError(err)
+	req := httptest.NewRequest(http.MethodPost, "/name/com.suborbital.app/default/get-file", bytes.NewBuffer(nil))
 
 	req.Header.Add("X-Suborbital-State", `{"file": "js/app/main.js"}`)
 
@@ -230,8 +221,7 @@ func (s *serverTestSuite) TestFetchEndpoint() {
 
 	w := httptest.NewRecorder()
 
-	req, err := http.NewRequest(http.MethodPost, "/workflow/com.suborbital.app/default/fetch", bytes.NewBuffer([]byte("https://github.com")))
-	s.Require().NoError(err)
+	req := httptest.NewRequest(http.MethodPost, "/workflow/com.suborbital.app/default/fetch", bytes.NewBuffer([]byte("https://github.com")))
 
 	s.ts.ServeHTTP(w, req)
 
