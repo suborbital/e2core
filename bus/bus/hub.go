@@ -305,6 +305,11 @@ func (h *hub) addTopicConnection(connection BridgeConnection, topic string) {
 	h.bridgeConnections[topic] = connection
 }
 
+// removeMeshConnection removes an entry from the known list of connections. This is called from
+// scanFailedMeshConnections which will scan for failed connections, close them, populate the list, and for each element
+// of the list call this method.
+//
+// That means actually closing the connections is done in scanFailedMeshConnections, and we don't need to do it here.
 func (h *hub) removeMeshConnection(uuid string) {
 	h.lock.Lock()
 	defer h.lock.Unlock()
