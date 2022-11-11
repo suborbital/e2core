@@ -19,7 +19,7 @@ type watcher struct {
 
 func newWatcher(scheduleFunc func(*Job) *Result) *watcher {
 	w := &watcher{
-		schedules:    map[string]Schedule{},
+		schedules:    make(map[string]Schedule),
 		scheduleFunc: scheduleFunc,
 		lock:         sync.RWMutex{},
 		startOnce:    sync.Once{},
