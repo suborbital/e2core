@@ -82,7 +82,7 @@ func (b *Bus) Withdraw() error {
 }
 
 // Stop stops Bus's meshing entirely, causing all connections to peers to close.
-// It is reccomended to call `Withdraw` first to give peers notice and stop recieving messages
+// It is recommended to call `Withdraw` first to give peers notice and stop receiving messages
 func (b *Bus) Stop() error {
 	return b.hub.stop()
 }
