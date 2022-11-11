@@ -58,8 +58,6 @@ func (s *serverTestSuite) SetupSuite() {
 		s.T().Log("Suite Setup: Server tests will not be run")
 	}
 
-	s.shouldRun = true
-
 	err := s.serverForBundle("../example-project/modules.wasm.zip")
 	s.Require().NoError(err)
 
