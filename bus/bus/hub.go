@@ -450,7 +450,7 @@ func (h *hub) withdraw() error {
 				case <-doneChan:
 					count--
 				default:
-					//continue
+					// continue
 				}
 			}
 
@@ -464,7 +464,7 @@ func (h *hub) withdraw() error {
 	// return when either the withdraw is complete or we timed out
 	select {
 	case <-doneChan:
-		//cool, done
+		// cool, done
 	case <-timeoutChan:
 		return ErrWaitTimeout
 	}
