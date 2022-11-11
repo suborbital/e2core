@@ -33,10 +33,10 @@ func New() *Scheduler {
 
 // NewWithLogger returns a Scheduler with a custom logger
 func NewWithLogger(log *vlog.Logger) *Scheduler {
-	core := newCore(log)
+	c := newCore(log)
 
 	r := &Scheduler{
-		core: core,
+		core: c,
 		log:  log,
 	}
 
