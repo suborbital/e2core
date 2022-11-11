@@ -340,7 +340,7 @@ func (h *hub) connectionExists(uuid string) bool {
 func (h *hub) scanFailedMeshConnections() {
 	for {
 		// we don't want to edit the `meshConnections` map while in the loop, so do it after
-		toRemove := []string{}
+		toRemove := make([]string, 0)
 
 		// for each connection, check if it has errored or if its peer has withdrawn,
 		// and in either case close it and remove it from circulation
