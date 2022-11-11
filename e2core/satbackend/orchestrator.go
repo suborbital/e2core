@@ -39,6 +39,7 @@ func New(opts *options.Options, syncer *syncer.Syncer) (*Orchestrator, error) {
 		opts:             opts,
 		sats:             map[string]*watcher{},
 		failedPortCounts: map[string]int{},
+		signalChan:       make(chan os.Signal),
 		wg:               sync.WaitGroup{},
 	}
 
