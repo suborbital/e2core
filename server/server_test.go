@@ -2,6 +2,7 @@ package server
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -12,11 +13,11 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/suite"
+	"github.com/suborbital/e2core/signaler"
 
 	"github.com/suborbital/appspec/system/bundle"
 	"github.com/suborbital/e2core/e2core/satbackend"
 	"github.com/suborbital/e2core/options"
-	"github.com/suborbital/e2core/signaler"
 	"github.com/suborbital/e2core/syncer"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
@@ -29,12 +30,11 @@ type serverTestSuite struct {
 	signaler *signaler.Signaler
 	lock     sync.Mutex
 
-	testStart time.Time
 	shouldRun bool
 }
 
 // HandleStats will write a nice summary at the end after the teardown function.
-func (s *serverTestSuite) NOHandleStats(suiteName string, stats *suite.SuiteInformation) {
+func (s *serverTestSuite) HandleStats(suiteName string, stats *suite.SuiteInformation) {
 	s.T().Logf("Stats for suite '%s' ran in %s", suiteName, stats.End.Sub(stats.Start))
 	verdict := ""
 
@@ -59,28 +59,53 @@ func (s *serverTestSuite) SetupSuite() {
 	}
 
 	s.shouldRun = true
+
+	err := s.serverForBundle("../example-project/modules.wasm.zip")
+	s.Require().NoError(err)
+
+	err = s.ts.TestStart()
+	s.Require().NoError(err)
 }
 
-func (s *serverTestSuite) AfterTest(_, testName string) {
+func (s *serverTestSuite) TearDownSuite() {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
-	if s.ts != nil {
-		err := s.ts.Stop()
-		if err != nil {
-			s.T().Logf("%s: shutting down server failed: %s", testName, err.Error())
-		}
+	if s.o != nil {
+		s.T().Log("starting shutdown of orchestrator")
+		s.o.Shutdown()
+		s.T().Log("shutdown completed of orchestrator")
 
-		s.ts = nil
+		s.o = nil
 	}
 
 	if s.signaler != nil {
+		s.T().Log("starting shutdown of signaler")
+
 		err := s.signaler.ManualShutdown(time.Second)
-		if err != nil {
-			s.T().Logf("%s: shutting down signaler failed: %s", testName, err.Error())
-		}
+		s.Require().NoError(err)
+
+		s.T().Log("shutdown completed of signaler")
+
 		s.signaler = nil
 	}
+
+	if s.ts != nil {
+		s.T().Log("starting shutdown of test server")
+
+		ctx, cxl := context.WithTimeout(context.Background(), time.Second)
+		defer cxl()
+		err := s.ts.StopCtx(ctx)
+		s.Require().NoError(err)
+
+		s.T().Log("shutdown of test server completed")
+	}
+
+	time.Sleep(3 * time.Second)
+}
+
+func (s *serverTestSuite) AfterTest(_, testName string) {
+	s.T().Logf("%s finished running", testName)
 }
 
 // curl -d 'my friend' localhost:8080/hello.
@@ -89,13 +114,8 @@ func (s *serverTestSuite) TestHelloEndpoint() {
 		s.T().Skip("Skipping")
 	}
 
-	err := s.serverForBundle("../example-project/modules.wasm.zip")
-	s.Require().NoError(err)
-
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodPost, "/name/com.suborbital.app/default/helloworld-rs", bytes.NewBuffer([]byte("my friend")))
-
-	time.Sleep(5 * time.Second)
 
 	s.ts.ServeHTTP(w, req)
 
@@ -112,9 +132,6 @@ func (s *serverTestSuite) TestSetAndGetKeyEndpoints() {
 	if !s.shouldRun {
 		s.T().Skip("Skipping")
 	}
-
-	err := s.serverForBundle("../example-project/modules.wasm.zip")
-	s.Require().NoError(err)
 
 	setW := httptest.NewRecorder()
 	getW := httptest.NewRecorder()
@@ -138,13 +155,9 @@ func (s *serverTestSuite) TestFileMainMDEndpoint() {
 		s.T().Skip("Skipping")
 	}
 
-	err := s.serverForBundle("../example-project/modules.wasm.zip")
-	s.Require().NoError(err)
-
 	w := httptest.NewRecorder()
 
 	req := httptest.NewRequest(http.MethodPost, "/name/com.suborbital.app/default/get-file", bytes.NewBuffer(nil))
-
 	req.Header.Add("X-Suborbital-State", `{"file": "main.md"}`)
 
 	s.ts.ServeHTTP(w, req)
@@ -162,13 +175,9 @@ func (s *serverTestSuite) TestFileMainCSSEndpoint() {
 		s.T().Skip("Skipping")
 	}
 
-	err := s.serverForBundle("../example-project/modules.wasm.zip")
-	s.Require().NoError(err, "error from serverForBundle for example project/modules.wasm.zip: %s")
-
 	w := httptest.NewRecorder()
 
 	req := httptest.NewRequest(http.MethodPost, "/name/com.suborbital.app/default/get-file", bytes.NewBuffer(nil))
-
 	req.Header.Add("X-Suborbital-State", `{"file": "css/main.css"}`)
 
 	data, err := os.ReadFile("../example-project/static/css/main.css")
@@ -189,13 +198,9 @@ func (s *serverTestSuite) TestFileMainJSEndpoint() {
 		s.T().Skip("Skipping")
 	}
 
-	err := s.serverForBundle("../example-project/modules.wasm.zip")
-	s.Require().NoError(err)
-
 	w := httptest.NewRecorder()
 
 	req := httptest.NewRequest(http.MethodPost, "/name/com.suborbital.app/default/get-file", bytes.NewBuffer(nil))
-
 	req.Header.Add("X-Suborbital-State", `{"file": "js/app/main.js"}`)
 
 	data, err := os.ReadFile("../example-project/static/js/app/main.js")
@@ -215,9 +220,6 @@ func (s *serverTestSuite) TestFetchEndpoint() {
 	if !s.shouldRun {
 		s.T().Skip("Skipping")
 	}
-
-	err := s.serverForBundle("../example-project/modules.wasm.zip")
-	s.Require().NoError(err)
 
 	w := httptest.NewRecorder()
 
@@ -243,7 +245,11 @@ func (s *serverTestSuite) TestFetchEndpoint() {
 	}
 }
 
-// nolint
+// serverForBundle creates a new test server based on the module reachable with filepath, assigns it to a struct level
+// unexported property (s.ts), and starts it.
+//
+// To tear down the server we use the AfterTest(suiteName, testName string) method where we still have access to the
+// server that's running currently.
 func (s *serverTestSuite) serverForBundle(filepath string) error {
 	if !s.shouldRun {
 		s.T().Skip("Skipping")
@@ -276,7 +282,6 @@ func (s *serverTestSuite) serverForBundle(filepath string) error {
 	}
 
 	sig := signaler.Setup()
-
 	sig.Start(orchestrator.Start)
 
 	time.Sleep(time.Second * 3)
