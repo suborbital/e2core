@@ -5,9 +5,9 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/appspec/request"
-	"github.com/suborbital/appspec/tenant/executable"
 	"github.com/suborbital/e2core/scheduler"
+	"github.com/suborbital/systemspec/request"
+	"github.com/suborbital/systemspec/tenant/executable"
 )
 
 var ErrMissingFQFN = errors.New("executableMod missing FQFN")

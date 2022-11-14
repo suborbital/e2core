@@ -3,8 +3,8 @@ package api
 import (
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/appspec/capabilities"
 	"github.com/suborbital/e2core/sat/engine/runtime"
+	"github.com/suborbital/systemspec/capabilities"
 )
 
 type logScope struct {

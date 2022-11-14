@@ -13,9 +13,9 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 
-	"github.com/suborbital/appspec/capabilities"
 	"github.com/suborbital/e2core/sat/api"
 	"github.com/suborbital/e2core/sat/engine"
+	"github.com/suborbital/systemspec/capabilities"
 	"github.com/suborbital/vektor/vlog"
 )
 

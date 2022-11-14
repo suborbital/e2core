@@ -17,7 +17,7 @@ require (
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.8.1
-	github.com/suborbital/appspec v0.0.4-0.20220926160156-36407db9d5e1
+	github.com/suborbital/systemspec v0.0.4-0.20220926160156-36407db9d5e1
 	github.com/suborbital/go-kit v0.0.3
 	github.com/suborbital/vektor v0.5.3-0.20220706142315-ee5378e49e18
 	github.com/testcontainers/testcontainers-go v0.13.0
@@ -84,6 +84,7 @@ require (
 	github.com/pierrec/lz4/v4 v4.1.17 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
+	github.com/suborbital/systemspec v0.0.4-0.20221110151314-6f88d906ff6a // indirect
 	github.com/twmb/franz-go/pkg/kmsg v1.2.0 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/internal/retry v1.11.1 // indirect

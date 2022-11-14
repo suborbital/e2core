@@ -37,12 +37,14 @@ type Message interface {
 	Timestamp() time.Time
 	// Raw data of message
 	Data() []byte
-	// Unmarshal the message's data into a struct
-	UnmarshalData(interface{}) error
 	// Marshal the message itself to encoded bytes (JSON or otherwise)
 	Marshal() ([]byte, error)
 	// Unmarshal encoded Message into object
 	Unmarshal([]byte) error
+	// MarshalMetadata marshals the message's metadata to encoded bytes (JSON or otherwise)
+	MarshalMetadata() ([]byte, error)
+	// UnmarshalMetadata encoded metadata into object
+	UnmarshalMetadata([]byte) error
 }
 
 // NewMsg creates a new Message with the built-in `_message` type
@@ -68,6 +70,22 @@ func NewMsgReplyTo(ticket MsgReceipt, msgType string, data []byte) Message {
 func MsgFromBytes(bytes []byte) (Message, error) {
 	m := &_message{}
 	if err := m.Unmarshal(bytes); err != nil {
+		return nil, err
+	}
+
+	return m, nil
+}
+
+// MsgFromDataAndMeta returns a default _message that has been constructed from raw data and metadata.
+// Should only be used if the default _message type is being used.
+func MsgFromDataAndMeta(data []byte, metadata []byte) (Message, error) {
+	m := &_message{
+		Payload: _payload{
+			Data: data,
+		},
+	}
+
+	if err := m.UnmarshalMetadata(metadata); err != nil {
 		return nil, err
 	}
 
@@ -152,10 +170,6 @@ func (m *_message) Data() []byte {
 	return m.Payload.Data
 }
 
-func (m *_message) UnmarshalData(target interface{}) error {
-	return json.Unmarshal(m.Payload.Data, target)
-}
-
 func (m *_message) Marshal() ([]byte, error) {
 	bytes, err := json.Marshal(m)
 	if err != nil {
@@ -167,4 +181,18 @@ func (m *_message) Marshal() ([]byte, error) {
 
 func (m *_message) Unmarshal(bytes []byte) error {
 	return json.Unmarshal(bytes, m)
+}
+
+func (m *_message) MarshalMetadata() ([]byte, error) {
+	bytes, err := json.Marshal(m.Meta)
+	if err != nil {
+		return nil, err
+	}
+
+	return bytes, nil
+}
+
+// UnmarshalMetadata unmarshals the provided JSON bytes into the message's metadata
+func (m *_message) UnmarshalMetadata(bytes []byte) error {
+	return json.Unmarshal(bytes, &m.Meta)
 }

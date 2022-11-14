@@ -6,7 +6,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/suborbital/appspec/request"
+	"github.com/suborbital/systemspec/request"
 )
 
 // Job describes a job to be done

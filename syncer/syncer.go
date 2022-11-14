@@ -6,10 +6,10 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/appspec/system"
-	"github.com/suborbital/appspec/tenant"
 	"github.com/suborbital/e2core/options"
 	"github.com/suborbital/e2core/scheduler"
+	"github.com/suborbital/systemspec/system"
+	"github.com/suborbital/systemspec/tenant"
 	"github.com/suborbital/vektor/vlog"
 )
 

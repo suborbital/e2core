@@ -3,7 +3,7 @@ package api
 import (
 	"context"
 
-	"github.com/suborbital/appspec/request"
+	"github.com/suborbital/systemspec/request"
 )
 
 type ctxKey int

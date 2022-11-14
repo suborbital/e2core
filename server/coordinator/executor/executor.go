@@ -7,14 +7,14 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/appspec/capabilities"
-	"github.com/suborbital/appspec/request"
-	"github.com/suborbital/appspec/system"
-	"github.com/suborbital/appspec/tenant/executable"
 	"github.com/suborbital/e2core/bus/bus"
 	"github.com/suborbital/e2core/bus/discovery/local"
 	"github.com/suborbital/e2core/bus/transport/websocket"
 	"github.com/suborbital/e2core/scheduler"
+	"github.com/suborbital/systemspec/capabilities"
+	"github.com/suborbital/systemspec/request"
+	"github.com/suborbital/systemspec/system"
+	"github.com/suborbital/systemspec/tenant/executable"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
 )

@@ -5,7 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/appspec/tenant/executable"
+	"github.com/suborbital/systemspec/tenant/executable"
 )
 
 // runGroup runs a group of functions

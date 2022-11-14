@@ -1,6 +1,7 @@
 package sat
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -12,22 +13,16 @@ import (
 	"github.com/sethvargo/go-envconfig"
 	"gopkg.in/yaml.v2"
 
-	"github.com/suborbital/appspec/capabilities"
-	"github.com/suborbital/appspec/fqmn"
-	"github.com/suborbital/appspec/system"
-	"github.com/suborbital/appspec/system/client"
-	"github.com/suborbital/appspec/tenant"
 	"github.com/suborbital/e2core/fqfn"
 	"github.com/suborbital/e2core/options"
 	satOptions "github.com/suborbital/e2core/sat/sat/options"
+	"github.com/suborbital/systemspec/capabilities"
+	"github.com/suborbital/systemspec/fqmn"
+	"github.com/suborbital/systemspec/system"
+	"github.com/suborbital/systemspec/system/client"
+	"github.com/suborbital/systemspec/tenant"
 	"github.com/suborbital/vektor/vlog"
 )
-
-var useStdin bool
-
-func init() {
-	flag.BoolVar(&useStdin, "stdin", false, "read stdin as input, return output to stdout and then terminate")
-}
 
 type Config struct {
 	RunnableArg     string
@@ -36,8 +31,8 @@ type Config struct {
 	Module          *tenant.Module
 	Identifier      string
 	CapConfig       capabilities.CapabilityConfig
+	Connections     []tenant.Connection
 	Port            int
-	UseStdin        bool
 	ControlPlaneUrl string
 	EnvToken        string
 	Logger          *vlog.Logger
@@ -172,6 +167,13 @@ func ConfigFromRunnableArg(runnableArg string) (*Config, error) {
 		logger.Debug("configuring", jobType)
 	}
 
+	conns := []tenant.Connection{}
+	if opts.Connections != "" {
+		if err := json.Unmarshal([]byte(opts.Connections), &conns); err != nil {
+			return nil, errors.Wrap(err, "failed to Unmarshal connections JSON")
+		}
+	}
+
 	// finally, put it all together
 	c := &Config{
 		RunnableArg:     runnableArg,
@@ -180,8 +182,8 @@ func ConfigFromRunnableArg(runnableArg string) (*Config, error) {
 		Module:          module,
 		Identifier:      FQMN.Identifier,
 		CapConfig:       caps,
+		Connections:     conns,
 		Port:            portInt,
-		UseStdin:        useStdin,
 		ControlPlaneUrl: controlPlane,
 		Logger:          logger,
 		TracerConfig:    opts.TracerConfig,

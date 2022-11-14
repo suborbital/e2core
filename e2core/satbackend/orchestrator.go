@@ -2,6 +2,7 @@ package satbackend
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -126,6 +127,11 @@ func (o *Orchestrator) reconcileConstellation(syncer *syncer.Syncer) {
 			continue
 		}
 
+		defaultConnectionsJSON, err := json.Marshal(tnt.Config.DefaultNamespace.Connections)
+		if err != nil {
+			o.logger.ErrorString("failed to json.Marshal Connections config, will continue")
+		}
+
 		for i := range tnt.Config.Modules {
 			module := tnt.Config.Modules[i]
 
@@ -147,6 +153,7 @@ func (o *Orchestrator) reconcileConstellation(syncer *syncer.Syncer) {
 					cmd,
 					"SAT_HTTP_PORT="+port,
 					"SAT_CONTROL_PLANE="+o.opts.ControlPlane,
+					"SAT_CONNECTIONS"+connectionsEnv,
 				)
 
 				if err != nil {

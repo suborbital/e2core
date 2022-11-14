@@ -6,9 +6,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/appspec/capabilities"
-	"github.com/suborbital/appspec/tenant"
-	"github.com/suborbital/appspec/tenant/executable"
 	"github.com/suborbital/e2core/auth"
 	"github.com/suborbital/e2core/bus/bus"
 	"github.com/suborbital/e2core/bus/transport/kafka"
@@ -17,6 +14,9 @@ import (
 	"github.com/suborbital/e2core/options"
 	"github.com/suborbital/e2core/server/coordinator/executor"
 	"github.com/suborbital/e2core/syncer"
+	"github.com/suborbital/systemspec/capabilities"
+	"github.com/suborbital/systemspec/tenant"
+	"github.com/suborbital/systemspec/tenant/executable"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
 )
@@ -155,7 +155,7 @@ func (c *Coordinator) createConnections() {
 
 				if conn.Type == tenant.ConnectionTypeNATS {
 					natsKey := fmt.Sprintf(connectionKeyFormat, tnt.Identifier, tnt.Version, ns.Name, tenant.InputSourceNATS, conn.Name)
-					config := conn.Config.(*tenant.NATSConnection)
+					config := tenant.NATSConfigFromMap(conn.Config)
 
 					address := capabilities.AugmentedValFromEnv(config.ServerAddress)
 
@@ -172,7 +172,7 @@ func (c *Coordinator) createConnections() {
 					}
 				} else if conn.Type == tenant.ConnectionTypeKafka {
 					kafkaKey := fmt.Sprintf(connectionKeyFormat, tnt.Identifier, tnt.Version, ns.Name, tenant.InputSourceKafka, conn.Name)
-					config := conn.Config.(*tenant.KafkaConnection)
+					config := tenant.KafkaConfigFromMap(conn.Config)
 
 					address := capabilities.AugmentedValFromEnv(config.BrokerAddress)
 
