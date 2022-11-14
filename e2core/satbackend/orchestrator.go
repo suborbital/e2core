@@ -135,6 +135,11 @@ func (o *Orchestrator) reconcileConstellation(syncer *syncer.Syncer) {
 		for i := range tnt.Config.Modules {
 			module := tnt.Config.Modules[i]
 
+			connectionsEnv := ""
+			if module.Namespace == "default" {
+				connectionsEnv = string(defaultConnectionsJSON)
+			}
+
 			o.logger.Debug("[orchestrator.reconcileConstellation] reconciling", module.FQMN)
 
 			if _, exists := o.sats[module.FQMN]; !exists {
