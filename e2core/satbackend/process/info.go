@@ -12,17 +12,17 @@ import (
 // Info is a struct that is written to a file that describes our own process
 type Info struct {
 	Port int    `json:"port"`
-	FQFN string `json:"fqfn"`
+	FQMN string `json:"fqmn"`
 	PID  int    `json:"pid"`
 }
 
 // NewInfo creates an Info for the current process
-func NewInfo(port int, FQFN string) *Info {
+func NewInfo(port int, FQMN string) *Info {
 	pid := os.Getpid()
 
 	p := &Info{
 		Port: port,
-		FQFN: FQFN,
+		FQMN: FQMN,
 		PID:  pid,
 	}
 

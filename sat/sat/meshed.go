@@ -71,7 +71,7 @@ func (s *Sat) handleFnResult(msg bus.Message, result interface{}, fnErr error) {
 
 	// package everything up and shuttle it back to the parent (e2core)
 	fnr := &sequence.FnResult{
-		FQFN:     msg.Type(),
+		FQMN:     msg.Type(),
 		Key:      step.Exec.ExecutableMod.Key(), // to support groups, we'll need to find the correct CallableFn in the list
 		Response: resp,
 		RunErr:   runErr,

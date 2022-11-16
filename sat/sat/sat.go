@@ -33,7 +33,7 @@ const (
 
 // Sat is a sat server with annoyingly terse field names (because it's smol)
 type Sat struct {
-	jobName string // the job name / FQFN
+	jobName string // the job name / FQMN
 
 	config    *Config
 	vektor    *vk.Server
@@ -198,7 +198,7 @@ func (s *Sat) setupBus() error {
 	// configure Bus to join the mesh for its appropriate application
 	// and broadcast its "interest" (i.e. the loaded function)
 	opts := []bus.OptionsModifier{
-		bus.UseBelongsTo(s.config.Identifier),
+		bus.UseBelongsTo(s.config.Tenant),
 		bus.UseInterests(s.config.JobType),
 		bus.UseLogger(s.config.Logger),
 		bus.UseMeshTransport(s.transport),

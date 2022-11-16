@@ -10,7 +10,7 @@ import (
 	"github.com/suborbital/systemspec/tenant/executable"
 )
 
-var ErrMissingFQFN = errors.New("executableMod missing FQFN")
+var ErrMissingFQMN = errors.New("executableMod missing FQMN")
 
 func (seq *Sequence) ExecSingleMod(mod executable.ExecutableMod) (*FnResult, error) {
 	start := time.Now()
@@ -19,7 +19,7 @@ func (seq *Sequence) ExecSingleMod(mod executable.ExecutableMod) (*FnResult, err
 	}()
 
 	if mod.FQMN == "" {
-		return nil, ErrMissingFQFN
+		return nil, ErrMissingFQMN
 	}
 
 	var runErr scheduler.RunErr
@@ -52,7 +52,7 @@ func (seq *Sequence) ExecSingleMod(mod executable.ExecutableMod) (*FnResult, err
 	}
 
 	result := &FnResult{
-		FQFN:     mod.FQMN,
+		FQMN:     mod.FQMN,
 		Key:      mod.Key(),
 		Response: cResponse,
 		RunErr:   runErr,

@@ -35,7 +35,7 @@ type Step struct {
 }
 
 type FnResult struct {
-	FQFN     string                       `json:"fqfn"`
+	FQMN     string                       `json:"fqmn"`
 	Key      string                       `json:"key"`
 	Response *request.CoordinatedResponse `json:"response"`
 	RunErr   scheduler.RunErr             `json:"runErr"`  // runErr is an error returned from a Runnable.
@@ -219,11 +219,11 @@ func (seq *Sequence) HandleStepErrs(results []FnResult, step executable.Executab
 		}
 
 		if err := step.ShouldReturn(result.RunErr.Code); err != nil {
-			seq.log.Error(errors.Wrapf(err, "returning after error from %s", result.FQFN))
+			seq.log.Error(errors.Wrapf(err, "returning after error from %s", result.FQMN))
 
 			return result.RunErr
 		} else {
-			seq.log.Debug("continuing after error from", result.FQFN)
+			seq.log.Debug("continuing after error from", result.FQMN)
 			seq.req.State[result.Key] = []byte(result.RunErr.Error())
 		}
 	}
