@@ -8,14 +8,14 @@ import (
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/appspec/request"
-	"github.com/suborbital/appspec/system/bundle"
-	"github.com/suborbital/appspec/tenant/executable"
 	"github.com/suborbital/e2core/options"
 	"github.com/suborbital/e2core/scheduler"
 	"github.com/suborbital/e2core/server/coordinator/executor/mock"
 	"github.com/suborbital/e2core/server/coordinator/sequence"
 	"github.com/suborbital/e2core/syncer"
+	"github.com/suborbital/systemspec/request"
+	"github.com/suborbital/systemspec/system/bundle"
+	"github.com/suborbital/systemspec/tenant/executable"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
 )

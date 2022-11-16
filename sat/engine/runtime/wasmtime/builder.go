@@ -4,9 +4,9 @@ import (
 	"github.com/bytecodealliance/wasmtime-go"
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/appspec/tenant"
 	"github.com/suborbital/e2core/sat/api"
 	"github.com/suborbital/e2core/sat/engine/runtime"
+	"github.com/suborbital/systemspec/tenant"
 )
 
 // WasmtimeBuilder is a Wasmer implementation of the instanceBuilder interface

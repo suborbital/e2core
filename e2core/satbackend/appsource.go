@@ -3,9 +3,9 @@ package satbackend
 import (
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/appspec/system/bundle"
-	"github.com/suborbital/appspec/system/server"
 	"github.com/suborbital/e2core/options"
+	"github.com/suborbital/systemspec/system/bundle"
+	"github.com/suborbital/systemspec/system/server"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
 )

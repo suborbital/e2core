@@ -18,6 +18,8 @@ type Options struct {
 
 	TracerConfig  TracerConfig  `env:",prefix=SAT_TRACER_"`
 	MetricsConfig MetricsConfig `env:",prefix=SAT_METRICS_"`
+
+	Connections string `env:"SAT_CONNECTIONS"`
 }
 
 // ControlPlane is a struct, so we can use a pointer, so we can check whether it's been set in config. If set, it holds

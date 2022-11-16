@@ -1,6 +1,6 @@
 package sat
 
-import "github.com/suborbital/appspec/system"
+import "github.com/suborbital/systemspec/system"
 
 var _ system.Credential = (*AuthToken)(nil)
 

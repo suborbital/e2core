@@ -6,26 +6,29 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/trace"
 
-	"github.com/suborbital/appspec/tenant"
 	"github.com/suborbital/e2core/bus/bus"
 	"github.com/suborbital/e2core/bus/discovery/local"
+	"github.com/suborbital/e2core/bus/transport/kafka"
+	"github.com/suborbital/e2core/bus/transport/nats"
 	"github.com/suborbital/e2core/bus/transport/websocket"
 	wruntime "github.com/suborbital/e2core/sat/engine/runtime"
 	"github.com/suborbital/e2core/sat/sat/executor"
 	"github.com/suborbital/e2core/sat/sat/metrics"
 	"github.com/suborbital/e2core/sat/sat/process"
 	"github.com/suborbital/e2core/scheduler"
+	"github.com/suborbital/systemspec/tenant"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
 )
 
 const (
-	MsgTypeAtmoFnResult = "atmo.fnresult"
+	MsgTypeSuborbitalResult = "suborbital.result"
 )
 
 // Sat is a sat server with annoyingly terse field names (because it's smol)
@@ -37,6 +40,7 @@ type Sat struct {
 	bus       *bus.Bus
 	transport *websocket.Transport
 	exec      *executor.Executor
+	runnable  *tenant.WasmModuleRef
 	log       *vlog.Logger
 	tracer    trace.Tracer
 	metrics   metrics.Metrics
@@ -96,14 +100,10 @@ func New(config *Config, traceProvider trace.TracerProvider, mtx metrics.Metrics
 		config:    config,
 		transport: transport,
 		exec:      exec,
+		runnable:  runnable,
 		log:       config.Logger,
 		tracer:    traceProvider.Tracer("sat"),
 		metrics:   mtx,
-	}
-
-	// no need to continue setup if we're in stdin mode, so return here
-	if config.UseStdin {
-		return sat, nil
 	}
 
 	// Grav and Vektor will be started on call to s.Start()
@@ -144,8 +144,8 @@ func (s *Sat) Start(ctx context.Context) error {
 	}()
 
 	if s.transport != nil {
-		if err := s.setupGrav(); err != nil {
-			return errors.Wrap(err, "failed to setupGrav")
+		if err := s.setupBus(); err != nil {
+			return errors.Wrap(err, "failed to setupBus")
 		}
 	}
 
@@ -194,23 +194,86 @@ func (s *Sat) Shutdown() error {
 	return nil
 }
 
-func (s *Sat) setupGrav() error {
-	// configure Grav to join the mesh for its appropriate application
+func (s *Sat) setupBus() error {
+	// configure Bus to join the mesh for its appropriate application
 	// and broadcast its "interest" (i.e. the loaded function)
-	s.bus = bus.New(
+	opts := []bus.OptionsModifier{
 		bus.UseBelongsTo(s.config.Identifier),
 		bus.UseInterests(s.config.JobType),
 		bus.UseLogger(s.config.Logger),
 		bus.UseMeshTransport(s.transport),
 		bus.UseDiscovery(local.New()),
 		bus.UseEndpoint(fmt.Sprintf("%d", s.config.Port), "/meta/message"),
-	)
+	}
+
+	bridging := false
+
+	if len(s.config.Connections) > 0 {
+		var bridge bus.BridgeTransport
+		var err error
+
+		for _, c := range s.config.Connections {
+			if c.Type == tenant.ConnectionTypeKafka {
+				config := tenant.KafkaConfigFromMap(c.Config)
+
+				bridge, err = kafka.New(config.BrokerAddress)
+				if err != nil {
+					return errors.Wrap(err, "failed to kafka.New")
+				}
+			} else if c.Type == tenant.ConnectionTypeNATS {
+				config := tenant.NATSConfigFromMap(c.Config)
+
+				bridge, err = nats.New(config.ServerAddress)
+				if err != nil {
+					return errors.Wrap(err, "failed to nats.New")
+				}
+			}
+		}
+
+		if bridge != nil {
+			bridging = true
+			opts = append(opts, bus.UseBridgeTransport(bridge))
+		}
+	}
+
+	s.bus = bus.New(opts...)
+
+	// trim fqmn://, replcace @ with - and replace / with .
+	topic := strings.Replace(strings.Replace(strings.TrimPrefix(s.config.JobType, "fqmn://"), "@", "-", -1), "/", ".", -1)
+	replyTopic := fmt.Sprintf("%s-reply", topic)
+
+	if bridging {
+		if err := s.bus.ConnectBridgeTopic(topic); err != nil {
+			return errors.Wrapf(err, "failed to ConnectBridgeTopic for %s", topic)
+		}
+
+		if err := s.bus.ConnectBridgeTopic(replyTopic); err != nil {
+			return errors.Wrapf(err, "failed to ConnectBridgeTopic for %s", replyTopic)
+		}
+	}
 
 	// set up the Executor to listen for jobs and handle them
 	s.exec.UseBus(s.bus)
 
 	if err := s.exec.ListenAndRun(s.config.JobType, s.handleFnResult); err != nil {
 		return errors.Wrap(err, "executor.ListenAndRun")
+	}
+
+	if bridging {
+		if err := s.exec.Register(
+			topic,
+			s.runnable,
+			scheduler.Autoscale(24),
+			scheduler.MaxRetries(0),
+			scheduler.RetrySeconds(0),
+			scheduler.PreWarm(),
+		); err != nil {
+			return errors.Wrap(err, "failed to exec.Register")
+		}
+
+		if err := s.exec.ListenAndRun(topic, s.handleBridgedResult); err != nil {
+			return errors.Wrap(err, "executor.ListenAndRun")
+		}
 	}
 
 	if err := connectStaticPeers(s.config.Logger, s.bus); err != nil {

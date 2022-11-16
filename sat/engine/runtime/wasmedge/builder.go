@@ -9,9 +9,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/second-state/WasmEdge-go/wasmedge"
 
-	"github.com/suborbital/appspec/tenant"
 	"github.com/suborbital/e2core/sat/api"
 	"github.com/suborbital/e2core/sat/engine/runtime"
+	"github.com/suborbital/systemspec/tenant"
 )
 
 // WasmEdgeBuilder is a WasmEdge implementation of the instanceBuilder interface

@@ -7,8 +7,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
-	"github.com/suborbital/appspec/system/bundle"
-	"github.com/suborbital/appspec/system/client"
 	"github.com/suborbital/e2core/auth"
 	"github.com/suborbital/e2core/e2core"
 	"github.com/suborbital/e2core/e2core/satbackend"
@@ -16,6 +14,8 @@ import (
 	"github.com/suborbital/e2core/server"
 	"github.com/suborbital/e2core/server/release"
 	"github.com/suborbital/e2core/syncer"
+	"github.com/suborbital/systemspec/system/bundle"
+	"github.com/suborbital/systemspec/system/client"
 	"github.com/suborbital/vektor/vlog"
 )
 

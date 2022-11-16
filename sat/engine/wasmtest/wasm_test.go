@@ -1,8 +1,8 @@
 package wasmtest
 
 import (
-	"github.com/suborbital/appspec/capabilities"
 	"github.com/suborbital/e2core/sat/engine/runtime"
+	"github.com/suborbital/systemspec/capabilities"
 	"github.com/suborbital/vektor/vlog"
 )
 

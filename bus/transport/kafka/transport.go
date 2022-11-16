@@ -10,7 +10,9 @@ import (
 	"github.com/suborbital/vektor/vlog"
 )
 
-// Transport is a transport that connects Grav nodes via kafka
+const busMetadataHeaderKey = "bus.metadata"
+
+// Transport is a transport that connects bus nodes via kafka
 type Transport struct {
 	opts *bus.BridgeOptions
 	log  *vlog.Logger
@@ -56,6 +58,8 @@ func (t *Transport) ConnectTopic(topic string) (bus.BridgeConnection, error) {
 		return nil, errors.Wrap(err, "failed to NewClient")
 	}
 
+	t.log.Info("[bridge-kafka] connected to topic", topic)
+
 	conn := &Conn{
 		topic: topic,
 		log:   t.log,
@@ -70,12 +74,24 @@ func (c *Conn) Start(pod *bus.Pod) {
 	c.pod = pod
 
 	c.pod.OnType(c.topic, func(msg bus.Message) error {
-		msgBytes, err := msg.Marshal()
+		metadataBytes, err := msg.MarshalMetadata()
 		if err != nil {
-			return errors.Wrap(err, "failed to Marshal message")
+			return errors.Wrap(err, "failed to MarshalMetadata message")
 		}
 
-		record := &kgo.Record{Topic: c.topic, Value: msgBytes}
+		// construct a record that contains the message payload
+		// and store the Bus metadata (message UUID, etc) in a header
+		record := &kgo.Record{
+			Topic: c.topic,
+			Value: msg.Data(),
+			Headers: []kgo.RecordHeader{
+				{
+					Key:   busMetadataHeaderKey,
+					Value: metadataBytes,
+				},
+			},
+		}
+
 		if err := c.conn.ProduceSync(context.Background(), record).FirstErr(); err != nil {
 			return errors.Wrap(err, "failed to ProduceSync")
 		}
@@ -97,11 +113,20 @@ func (c *Conn) Start(pod *bus.Pod) {
 
 				c.log.Debug("[bridge-kafka] recieved message via", c.topic)
 
-				msg, err := bus.MsgFromBytes(record.Value)
-				if err != nil {
-					c.log.Debug(errors.Wrap(err, "[bridge-kafka] failed to MsgFromBytes, falling back to raw data").Error())
+				var msg bus.Message
 
+				metaHeader := findMetaHeaderValue(busMetadataHeaderKey, record.Headers)
+				if metaHeader == nil {
+					// if there's no metadata, create a brand new message
 					msg = bus.NewMsg(c.topic, record.Value)
+				} else {
+					reconstructedMsg, err := bus.MsgFromDataAndMeta(record.Value, metaHeader)
+					if err != nil {
+						c.log.Debug(errors.Wrap(err, "[bridge-kafka] failed to MsgFromDataAndMeta").Error())
+						continue
+					}
+
+					msg = reconstructedMsg
 				}
 
 				// send to the Grav instance
@@ -109,6 +134,17 @@ func (c *Conn) Start(pod *bus.Pod) {
 			}
 		}
 	}()
+}
+
+// findMetaHeaderValue returns the value of the header with the given key, or nil if it's not found
+func findMetaHeaderValue(key string, headers []kgo.RecordHeader) []byte {
+	for i, h := range headers {
+		if h.Key == key {
+			return headers[i].Value
+		}
+	}
+
+	return nil
 }
 
 // Close closes the underlying connection

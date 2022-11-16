@@ -7,10 +7,10 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 
-	"github.com/suborbital/appspec/request"
 	"github.com/suborbital/e2core/sat/sat/executor"
 	"github.com/suborbital/e2core/sat/sat/metrics"
 	"github.com/suborbital/e2core/scheduler"
+	"github.com/suborbital/systemspec/request"
 	"github.com/suborbital/vektor/vk"
 )
 

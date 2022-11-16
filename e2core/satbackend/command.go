@@ -8,7 +8,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/appspec/tenant"
+	"github.com/suborbital/systemspec/tenant"
 )
 
 // modStartCommand returns the command and the port string

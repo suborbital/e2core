@@ -4,10 +4,10 @@
 package engine
 
 import (
-	"github.com/suborbital/appspec/tenant"
 	"github.com/suborbital/e2core/sat/api"
 	"github.com/suborbital/e2core/sat/engine/runtime"
 	runtimewasmer "github.com/suborbital/e2core/sat/engine/runtime/wasmer"
+	"github.com/suborbital/systemspec/tenant"
 )
 
 func runtimeBuilder(ref *tenant.WasmModuleRef, api api.HostAPI) runtime.RuntimeBuilder {

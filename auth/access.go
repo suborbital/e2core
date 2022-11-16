@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/suborbital/appspec/system"
 	"github.com/suborbital/e2core/common"
 	"github.com/suborbital/e2core/options"
+	"github.com/suborbital/systemspec/system"
 	"github.com/suborbital/vektor/vk"
 )
 
