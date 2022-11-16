@@ -13,7 +13,6 @@ import (
 	"github.com/sethvargo/go-envconfig"
 	"gopkg.in/yaml.v2"
 
-	"github.com/suborbital/e2core/fqfn"
 	"github.com/suborbital/e2core/options"
 	satOptions "github.com/suborbital/e2core/sat/sat/options"
 	"github.com/suborbital/systemspec/capabilities"
@@ -29,7 +28,7 @@ type Config struct {
 	JobType         string
 	PrettyName      string
 	Module          *tenant.Module
-	Identifier      string
+	Tenant          string
 	CapConfig       capabilities.CapabilityConfig
 	Connections     []tenant.Connection
 	Port            int
@@ -69,6 +68,7 @@ func ConfigFromRunnableArg(runnableArg string) (*Config, error) {
 	)
 
 	var module *tenant.Module
+	var FQMN fqmn.FQMN
 
 	opts, err := satOptions.Resolve(envconfig.OsLookuper())
 	if err != nil {
@@ -103,7 +103,7 @@ func ConfigFromRunnableArg(runnableArg string) (*Config, error) {
 		}
 
 		runnableArg = tmpFile
-	} else if FQMN, err := fqmn.Parse(runnableArg); err == nil {
+	} else if FQMN, err = fqmn.Parse(runnableArg); err == nil {
 		if useControlPlane {
 			logger.Debug("fetching module from control plane")
 
@@ -145,13 +145,11 @@ func ConfigFromRunnableArg(runnableArg string) (*Config, error) {
 	// set some defaults in the case we're not running in an application
 	portInt, _ := strconv.Atoi(string(opts.Port))
 	jobType := strings.TrimSuffix(filepath.Base(runnableArg), ".wasm")
-	FQMN := fqfn.Parse(jobType)
 	prettyName := jobType
 
 	// modify configuration if we ARE running as part of an application
 	if module != nil && module.FQMN != "" {
 		jobType = module.FQMN
-		FQMN = fqfn.Parse(module.FQMN)
 
 		prettyName = fmt.Sprintf("%s-%s", jobType, opts.ProcUUID[:6])
 
@@ -162,7 +160,7 @@ func ConfigFromRunnableArg(runnableArg string) (*Config, error) {
 		)
 
 		logger.Debug("configuring", jobType)
-		logger.Debug("joining app", FQMN.Identifier)
+		logger.Debug("joining tenant", FQMN.Tenant)
 	} else {
 		logger.Debug("configuring", jobType)
 	}
@@ -180,7 +178,7 @@ func ConfigFromRunnableArg(runnableArg string) (*Config, error) {
 		JobType:         jobType,
 		PrettyName:      prettyName,
 		Module:          module,
-		Identifier:      FQMN.Identifier,
+		Tenant:          FQMN.Tenant,
 		CapConfig:       caps,
 		Connections:     conns,
 		Port:            portInt,

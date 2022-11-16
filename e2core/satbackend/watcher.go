@@ -22,15 +22,15 @@ type MetricsResponse struct {
 	Scheduler scheduler.ScalerMetrics `json:"scheduler"`
 }
 
-// watcher watches a "replicaSet" of Sats for a single FQFN
+// watcher watches a "replicaSet" of Sats for a single FQMN
 type watcher struct {
-	fqfn      string
+	fqmn      string
 	instances map[string]*instance
 	log       *vlog.Logger
 }
 
 type instance struct {
-	fqfn    string
+	fqmn    string
 	metrics *MetricsResponse
 	uuid    string
 	pid     int
@@ -42,19 +42,19 @@ type watcherReport struct {
 	failedPorts  []string
 }
 
-// newWatcher creates a new watcher instance for the given fqfn
-func newWatcher(fqfn string, log *vlog.Logger) *watcher {
+// newWatcher creates a new watcher instance for the given fqmn
+func newWatcher(fqmn string, log *vlog.Logger) *watcher {
 	return &watcher{
-		fqfn:      fqfn,
+		fqmn:      fqmn,
 		instances: map[string]*instance{},
 		log:       log,
 	}
 }
 
 // add inserts a new instance to the watched pool.
-func (w *watcher) add(fqfn, port, uuid string, pid int) {
+func (w *watcher) add(fqmn, port, uuid string, pid int) {
 	w.instances[port] = &instance{
-		fqfn: fqfn,
+		fqmn: fqmn,
 		uuid: uuid,
 		pid:  pid,
 	}
@@ -65,7 +65,7 @@ func (w *watcher) scaleDown() error {
 	// we use the range to get a semi-random instance
 	// and then immediately return so that we only terminate one
 	for p := range w.instances {
-		w.log.Debug("[watcher.scaleDown] scaling down, terminating instance on port", p, "(", w.instances[p].fqfn, ")")
+		w.log.Debug("[watcher.scaleDown] scaling down, terminating instance on port", p, "(", w.instances[p].fqmn, ")")
 
 		return w.terminateInstance(p)
 	}
@@ -80,7 +80,7 @@ func (w *watcher) terminate() error {
 
 		err = w.terminateInstance(p)
 		if err != nil {
-			w.log.Warn("[watcher.terminate] could not terminate instance", instance.fqfn, err.Error())
+			w.log.Warn("[watcher.terminate] could not terminate instance", instance.fqmn, err.Error())
 		}
 	}
 
@@ -98,13 +98,13 @@ func (w *watcher) terminateInstance(p string) error {
 		w.log.Warn("[watcher.terminateInstance]syscall.Kill for pid %d failed, will delete procfile", inst.pid)
 
 		if err := process.Delete(inst.uuid); err != nil {
-			return errors.Wrapf(err, "failed to process.Delete for port %s / fqfn %s", p, inst.fqfn)
+			return errors.Wrapf(err, "failed to process.Delete for port %s / fqmn %s", p, inst.fqmn)
 		}
 	}
 
 	delete(w.instances, p)
 
-	w.log.Debug(fmt.Sprintf("[watcher.terminateInstance] successfully terminated instance on port %s (%s)", p, inst.fqfn))
+	w.log.Debug(fmt.Sprintf("[watcher.terminateInstance] successfully terminated instance on port %s (%s)", p, inst.fqmn))
 
 	return nil
 }

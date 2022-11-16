@@ -27,7 +27,7 @@ type Orchestrator struct {
 	syncer           *syncer.Syncer
 	logger           *vlog.Logger
 	opts             *options.Options
-	sats             map[string]*watcher // map of FQFNs to watchers
+	sats             map[string]*watcher // map of FQMNs to watchers
 	failedPortCounts map[string]int
 	signalChan       chan os.Signal
 	wg               sync.WaitGroup

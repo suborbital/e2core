@@ -16,19 +16,19 @@ func (c *Coordinator) authMiddleware() vk.Middleware {
 		}
 
 		// TODO: restore the ability to have dynamic auth
-		// FQFN, err := fqfn.FromURL(r.URL)
+		// FQMN, err := fqmn.FromURL(r.URL)
 		// if err != nil {
-		// 	ctx.Log.Debug(errors.Wrap(err, "failed to fqfn.FromURL, skipping headless auth"))
+		// 	ctx.Log.Debug(errors.Wrap(err, "failed to fqmn.FromURL, skipping headless auth"))
 		// 	return nil
 		// }
 
 		// auth := r.Header.Get("Authorization")
 
 		// // we call GetModule, which by now should have the module cached, so it'll be fast.
-		// module, err := c.App.GetModule(FQFN)
+		// module, err := c.App.GetModule(FQMN)
 		// if err != nil {
 		// 	ctx.Log.Error(errors.Wrap(err, "failed to GetModule"))
-		// 	return vk.E(http.StatusBadRequest, "invalid FQFN URI")
+		// 	return vk.E(http.StatusBadRequest, "invalid FQMN URI")
 		// }
 
 		// if len(module.TokenHash) > 0 {
