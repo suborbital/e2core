@@ -97,7 +97,7 @@ func (c *Coordinator) SetupHandlers() (*vk.Router, error) {
 		router.POST("/ref/:ref", c.vkHandlerForModuleByRef())
 	}
 
-	// TODO: implement triggers
+	// TODO: implement workflow triggers
 	// switch h.Input.Type {
 	// case tenant.InputTypeRequest:
 	// 	router.Handle(h.Input.Method, h.Input.Resource, c.vkHandlerForDirectiveHandler(h))

@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -27,7 +28,7 @@ import (
 )
 
 const (
-	MsgTypeAtmoFnResult = "atmo.fnresult"
+	MsgTypeSuborbitalResult = "suborbital.result"
 )
 
 // Sat is a sat server with annoyingly terse field names (because it's smol)
@@ -39,6 +40,7 @@ type Sat struct {
 	bus       *bus.Bus
 	transport *websocket.Transport
 	exec      *executor.Executor
+	runnable  *tenant.WasmModuleRef
 	log       *vlog.Logger
 	tracer    trace.Tracer
 	metrics   metrics.Metrics
@@ -98,6 +100,7 @@ func New(config *Config, traceProvider trace.TracerProvider, mtx metrics.Metrics
 		config:    config,
 		transport: transport,
 		exec:      exec,
+		runnable:  runnable,
 		log:       config.Logger,
 		tracer:    traceProvider.Tracer("sat"),
 		metrics:   mtx,
@@ -206,36 +209,46 @@ func (s *Sat) setupBus() error {
 	bridging := false
 
 	if len(s.config.Connections) > 0 {
+		var bridge bus.BridgeTransport
+		var err error
+
 		for _, c := range s.config.Connections {
 			if c.Type == tenant.ConnectionTypeKafka {
 				config := tenant.KafkaConfigFromMap(c.Config)
 
-				bridge, err := kafka.New(config.BrokerAddress)
+				bridge, err = kafka.New(config.BrokerAddress)
 				if err != nil {
 					return errors.Wrap(err, "failed to kafka.New")
 				}
-
-				bridging = true
-				opts = append(opts, bus.UseBridgeTransport(bridge))
 			} else if c.Type == tenant.ConnectionTypeNATS {
 				config := tenant.NATSConfigFromMap(c.Config)
 
-				bridge, err := nats.New(config.ServerAddress)
+				bridge, err = nats.New(config.ServerAddress)
 				if err != nil {
 					return errors.Wrap(err, "failed to nats.New")
 				}
-
-				bridging = true
-				opts = append(opts, bus.UseBridgeTransport(bridge))
 			}
+		}
+
+		if bridge != nil {
+			bridging = true
+			opts = append(opts, bus.UseBridgeTransport(bridge))
 		}
 	}
 
 	s.bus = bus.New(opts...)
 
+	// trim fqmn://, replcace @ with - and replace / with .
+	topic := strings.Replace(strings.Replace(strings.TrimPrefix(s.config.JobType, "fqmn://"), "@", "-", -1), "/", ".", -1)
+	replyTopic := fmt.Sprintf("%s-reply", topic)
+
 	if bridging {
-		if err := s.bus.ConnectBridgeTopic(s.config.JobType); err != nil {
-			return errors.Wrap(err, "failed to ConnectBridgeTopic")
+		if err := s.bus.ConnectBridgeTopic(topic); err != nil {
+			return errors.Wrapf(err, "failed to ConnectBridgeTopic for %s", topic)
+		}
+
+		if err := s.bus.ConnectBridgeTopic(replyTopic); err != nil {
+			return errors.Wrapf(err, "failed to ConnectBridgeTopic for %s", replyTopic)
 		}
 	}
 
@@ -244,6 +257,23 @@ func (s *Sat) setupBus() error {
 
 	if err := s.exec.ListenAndRun(s.config.JobType, s.handleFnResult); err != nil {
 		return errors.Wrap(err, "executor.ListenAndRun")
+	}
+
+	if bridging {
+		if err := s.exec.Register(
+			topic,
+			s.runnable,
+			scheduler.Autoscale(24),
+			scheduler.MaxRetries(0),
+			scheduler.RetrySeconds(0),
+			scheduler.PreWarm(),
+		); err != nil {
+			return errors.Wrap(err, "failed to exec.Register")
+		}
+
+		if err := s.exec.ListenAndRun(topic, s.handleBridgedResult); err != nil {
+			return errors.Wrap(err, "executor.ListenAndRun")
+		}
 	}
 
 	if err := connectStaticPeers(s.config.Logger, s.bus); err != nil {

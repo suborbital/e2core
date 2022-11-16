@@ -2,6 +2,8 @@ package sat
 
 import (
 	"encoding/json"
+	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/attribute"
@@ -113,6 +115,41 @@ func (s *Sat) handleFnResult(msg bus.Message, result interface{}, fnErr error) {
 	s.sendNextStep(msg, seq, req, ctx)
 }
 
+// handleBridgedResult is mounted onto exec.ListenAndRun...
+// when a bridged peer sends us a job, it is executed by Reactr and then
+// the result is passed into this function for handling
+func (s *Sat) handleBridgedResult(msg bus.Message, result interface{}, fnErr error) {
+	ctx := vk.NewCtx(s.log, nil, nil)
+
+	spanCtx, span := s.tracer.Start(ctx.Context, "handleBridgedResult", trace.WithAttributes(
+		attribute.String("request_id", ctx.RequestID()),
+	))
+	defer span.End()
+
+	ctx.Context = spanCtx
+
+	// start evaluating the result of the function call
+	var resp []byte
+	var execErr error
+
+	if fnErr != nil {
+		if fnRunErr, isRunErr := fnErr.(scheduler.RunErr); isRunErr {
+			ctx.Log.ErrorString("stopping execution after error returned from", msg.Type(), ":", fnRunErr.Error())
+			return
+		} else {
+			ctx.Log.ErrorString("stopping execution after error failed execution of", msg.Type(), ":", execErr.Error())
+			return
+		}
+	} else {
+		resp = result.([]byte)
+	}
+
+	if err := s.sendBridgedResult(resp, ctx); err != nil {
+		ctx.Log.Error(errors.Wrap(err, "failed to sendFnResult"))
+		return
+	}
+}
+
 func (s *Sat) sendFnResult(result *sequence.FnResult, ctx *vk.Ctx) error {
 	span := trace.SpanFromContext(ctx.Context)
 	defer span.End()
@@ -122,11 +159,27 @@ func (s *Sat) sendFnResult(result *sequence.FnResult, ctx *vk.Ctx) error {
 		return errors.Wrap(err, "failed to Marshal function result")
 	}
 
-	respMsg := bus.NewMsgWithParentID(MsgTypeAtmoFnResult, ctx.RequestID(), fnrJSON)
+	respMsg := bus.NewMsgWithParentID(MsgTypeSuborbitalResult, ctx.RequestID(), fnrJSON)
 
-	ctx.Log.Debug("function", s.jobName, "completed, sending result message", respMsg.UUID())
+	ctx.Log.Debug("function", s.jobName, "completed, sending meshed result message", respMsg.UUID())
 
 	if s.exec.Send(respMsg) == nil {
+		return errors.New("failed to Send fnResult")
+	}
+
+	return nil
+}
+
+func (s *Sat) sendBridgedResult(resultBytes []byte, ctx *vk.Ctx) error {
+	// trim fqmn://, replcace @ with - and replace / with .
+	topic := strings.Replace(strings.Replace(strings.TrimPrefix(s.config.JobType, "fqmn://"), "@", "-", -1), "/", ".", -1)
+	replyTopic := fmt.Sprintf("%s-reply", topic)
+
+	bridgeMsg := bus.NewMsgWithParentID(replyTopic, ctx.RequestID(), resultBytes)
+
+	ctx.Log.Debug("function", s.jobName, "completed, sending bridged result message", bridgeMsg.UUID())
+
+	if s.exec.Send(bridgeMsg) == nil {
 		return errors.New("failed to Send fnResult")
 	}
 

@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	MsgTypeAtmoFnResult = "atmo.fnresult"
+	MsgTypeSuborbitalResult = "suborbital.result"
 )
 
 var (
@@ -71,7 +71,7 @@ func New(log *vlog.Logger, transport *websocket.Transport) *meshExecutor {
 	}
 
 	// funnel all result messages to their respective sequence callbacks
-	e.pod.OnType(MsgTypeAtmoFnResult, func(msg bus.Message) error {
+	e.pod.OnType(MsgTypeSuborbitalResult, func(msg bus.Message) error {
 		e.cbLock.RLock()
 		defer e.cbLock.RUnlock()
 

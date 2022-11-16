@@ -54,33 +54,30 @@ func (o *Orchestrator) Start(ctx context.Context) error {
 
 	errChan := o.setupSystemSourceServer()
 
-	o.logger.Warn("[orchestrator.start] adding one to delta")
 	o.wg.Add(1)
 
 	var err error
 
-	o.logger.Warn("[orchestrator.start] creating a ticker")
 	ticker := time.NewTicker(time.Second)
 loop:
 	for {
 		select {
 		case <-ctx.Done():
-			o.logger.Warn("[orchestrator.start] ctx done called, breaking out of loop")
+			o.logger.Warn("[orchestrator.start] received on done chan")
 			// if context timeout reached or we manually cancelled the context
 			break loop
 
 		case <-o.signalChan:
-			o.logger.Warn("[orchestrator.start] something fron signal chan")
+			o.logger.Warn("[orchestrator.start] received on signal chan")
 			// if anything gets sent in the signal channel
 			break loop
 
 		case err = <-errChan:
-			o.logger.Warn("[orchestrator.start] something from error chan")
+			o.logger.Warn("[orchestrator.start] received on error chan")
 			// if there's an error
 			break loop
 
 		case <-ticker.C:
-			o.logger.Warn("[orchestrator.start] a message from ticker")
 			// each second do this
 			o.reconcileConstellation(o.syncer)
 		}
@@ -113,7 +110,7 @@ func (o *Orchestrator) Shutdown() {
 }
 
 func (o *Orchestrator) reconcileConstellation(syncer *syncer.Syncer) {
-	o.logger.Warn("[orchestrator.reconcileConstellation] reconciling...")
+	o.logger.Debug("[orchestrator.reconcileConstellation] reconciling...")
 	tenants := syncer.ListTenants()
 	if tenants == nil {
 		o.logger.ErrorString("[orchestrator.reconcileConstellation] tenants is nil")
@@ -135,11 +132,6 @@ func (o *Orchestrator) reconcileConstellation(syncer *syncer.Syncer) {
 		for i := range tnt.Config.Modules {
 			module := tnt.Config.Modules[i]
 
-			connectionsEnv := ""
-			if module.Namespace == "default" {
-				connectionsEnv = string(defaultConnectionsJSON)
-			}
-
 			o.logger.Debug("[orchestrator.reconcileConstellation] reconciling", module.FQMN)
 
 			if _, exists := o.sats[module.FQMN]; !exists {
@@ -153,12 +145,17 @@ func (o *Orchestrator) reconcileConstellation(syncer *syncer.Syncer) {
 
 				cmd, port := modStartCommand(module)
 
+				connectionsEnv := ""
+				if module.Namespace == "default" {
+					connectionsEnv = string(defaultConnectionsJSON)
+				}
+
 				// repeat forever in case the command does error out
 				uuid, pid, err := exec.Run(
 					cmd,
 					"SAT_HTTP_PORT="+port,
 					"SAT_CONTROL_PLANE="+o.opts.ControlPlane,
-					"SAT_CONNECTIONS"+connectionsEnv,
+					"SAT_CONNECTIONS="+connectionsEnv,
 				)
 
 				if err != nil {

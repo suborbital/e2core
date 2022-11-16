@@ -58,6 +58,8 @@ func (t *Transport) ConnectTopic(topic string) (bus.BridgeConnection, error) {
 		return nil, errors.Wrap(err, "failed to NewClient")
 	}
 
+	t.log.Info("[bridge-kafka] connected to topic", topic)
+
 	conn := &Conn{
 		topic: topic,
 		log:   t.log,
