@@ -1,6 +1,6 @@
 
 atmo:
-	go build -o .bin/atmo ./main.go
+	go build -tags wasmtime,netgo -o .bin/atmo -ldflags="-extldflags=-static" ./main.go
 
 atmo/proxy:
 	go build -o .bin/atmo-proxy -tags proxy ./main.go
