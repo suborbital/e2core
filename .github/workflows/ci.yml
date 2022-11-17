@@ -73,6 +73,23 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  test-release-bin:
+    needs: [test, image, lint]
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/goreleaser/goreleaser-cross:v1.19
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v3
+        with:
+          version: latest
+          args: release --rm-dist --snapshot
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   release-image:
     if: startsWith(github.ref, 'refs/tags/v')
     needs: [test, image, lint]
