@@ -1,7 +1,6 @@
 dotVersionFiles:
-  - example-project/Directive.yaml
-  - e2core/release/version.go
+  - server/release/version.go
 
 preMakeTargets:
   - build
-  - test
+  - test/ci
