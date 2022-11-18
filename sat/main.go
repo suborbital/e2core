@@ -8,9 +8,9 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/suborbital/e2core/foundation/signaler"
 	"github.com/suborbital/e2core/sat/sat"
 	"github.com/suborbital/e2core/sat/sat/metrics"
-	"github.com/suborbital/e2core/signaler"
 )
 
 func main() {

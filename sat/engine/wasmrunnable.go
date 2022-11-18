@@ -8,10 +8,10 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/suborbital/e2core/e2core/coordinator/sequence"
+	"github.com/suborbital/e2core/foundation/scheduler"
 	"github.com/suborbital/e2core/sat/api"
 	"github.com/suborbital/e2core/sat/engine/runtime"
-	"github.com/suborbital/e2core/scheduler"
-	"github.com/suborbital/e2core/server/coordinator/sequence"
 	"github.com/suborbital/systemspec/fqmn"
 	"github.com/suborbital/systemspec/request"
 	"github.com/suborbital/systemspec/tenant"

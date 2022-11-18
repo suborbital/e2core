@@ -9,9 +9,9 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 
-	"github.com/suborbital/e2core/bus/bus"
-	"github.com/suborbital/e2core/scheduler"
-	"github.com/suborbital/e2core/server/coordinator/sequence"
+	"github.com/suborbital/e2core/e2core/coordinator/sequence"
+	"github.com/suborbital/e2core/foundation/bus/bus"
+	"github.com/suborbital/e2core/foundation/scheduler"
 	"github.com/suborbital/systemspec/request"
 	"github.com/suborbital/vektor/vk"
 )

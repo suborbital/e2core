@@ -3,8 +3,8 @@ package main
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/suborbital/e2core/command"
-	"github.com/suborbital/e2core/server/release"
+	"github.com/suborbital/e2core/e2core/command"
+	"github.com/suborbital/e2core/e2core/release"
 )
 
 func main() {

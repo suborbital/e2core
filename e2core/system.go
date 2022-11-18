@@ -3,8 +3,9 @@ package e2core
 import (
 	"time"
 
-	"github.com/suborbital/e2core/server"
-	"github.com/suborbital/e2core/signaler"
+	"github.com/suborbital/e2core/e2core/backend"
+	"github.com/suborbital/e2core/e2core/server"
+	"github.com/suborbital/e2core/foundation/signaler"
 )
 
 const (
@@ -14,13 +15,13 @@ const (
 // System describes a E2Core system, which is comprised of a server and a backend
 type System struct {
 	Server  *server.Server
-	Backend Backend
+	Backend backend.Backend
 
 	signaler *signaler.Signaler
 }
 
 // NewSystem creates a new System with the provided server and backend
-func NewSystem(server *server.Server, backend Backend) *System {
+func NewSystem(server *server.Server, backend backend.Backend) *System {
 	s := &System{
 		Server:   server,
 		Backend:  backend,
@@ -30,7 +31,7 @@ func NewSystem(server *server.Server, backend Backend) *System {
 	return s
 }
 
-// StartAll starts the Server and the Backend, if they are configured
+// StartAll starts the Server and the backend.Backend, if they are configured
 func (s *System) StartAll() {
 	if s.Server != nil {
 		s.signaler.Start(s.Server.Start)
@@ -48,7 +49,7 @@ func (s *System) StartServer() {
 	}
 }
 
-// StartBackend starts the Backend if it is configured
+// StartBackend starts the backend.Backend if it is configured
 func (s *System) StartBackend() {
 	if s.Backend != nil {
 		s.signaler.Start(s.Backend.Start)

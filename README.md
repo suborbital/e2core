@@ -12,7 +12,7 @@ Use cases include:
 
 E2 Core pairs with our [Subo CLI](https://github.com/suborbital/subo) for local plugin development and command-line server administration.
 
-**E2 Core is gearing up for its first release, expected in October 2022. This will include extensive documentation and demos, so look out for that!**
+**E2 Core is still new, and not fully documented. We are striving to include extensive documentation and demos, so look out for that!**
 
 ### Running locally
-If you'd like to run E2 Core locally, you can run `make e2core/install` and then `e2core start ./example-project/modules.wasm.zip`. Plugins can be executed by calling `POST /name/:identifier/:namespace/:name`, for example `curl -d 'world' localhost:8080/com.suborbital.app/default/helloworld-rs`
+If you'd like to run E2 Core locally, you can run `make e2core/install` and then `e2core start ./example-project/modules.wasm.zip`. Plugins can be executed by calling `POST /name/:identifier/:namespace/:name`, for example `curl -d 'world' localhost:8080/name/com.suborbital.app/default/helloworld-rs`

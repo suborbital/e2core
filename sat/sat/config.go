@@ -13,7 +13,7 @@ import (
 	"github.com/sethvargo/go-envconfig"
 	"gopkg.in/yaml.v2"
 
-	"github.com/suborbital/e2core/options"
+	"github.com/suborbital/e2core/e2core/options"
 	satOptions "github.com/suborbital/e2core/sat/sat/options"
 	"github.com/suborbital/systemspec/capabilities"
 	"github.com/suborbital/systemspec/fqmn"

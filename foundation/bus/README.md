@@ -1,0 +1,5 @@
+Bus is an embedded distributed messaging library for Go applications. Bus allows interconnected components of your system to communicate effectively in a reliable, asynchronous manner. HTTP and RPC are hard to scale well in modern distributed systems, so we created Bus to add a performant and resilient messaging system to various distributed environments.
+
+Bus's main purpose is to act as a flexible abstraction that allows your application to discover and communicate using a variety of protocols without needing to re-write any code.
+
+Bus messages can be sent in-process (such as between Goroutines), or to other nodes via **transport plugins** such as [Websocket](./transport/websocket/README.md) and [NATS](./transport/nats/README.md). Transport plugins extend the core Bus bus to become a networked distributed messaging system. Bus nodes can also be configured to automatically discover each other using **discovery plugins**. Bus can operate as a decentralized mesh or integrate with centralized streaming platforms, making it extremely flexible.

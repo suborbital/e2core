@@ -3,8 +3,8 @@ package engine
 import (
 	"github.com/pkg/errors"
 
+	"github.com/suborbital/e2core/foundation/scheduler"
 	"github.com/suborbital/e2core/sat/api"
-	"github.com/suborbital/e2core/scheduler"
 	"github.com/suborbital/systemspec/tenant"
 )
 

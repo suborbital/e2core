@@ -10,7 +10,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/e2core/scheduler"
+	"github.com/suborbital/e2core/foundation/scheduler"
 )
 
 var successCount int64 = 0
