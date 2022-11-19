@@ -10,10 +10,8 @@ services:
 
   lintfixer:
     container_name: "e2core_lintfixer"
-    build:
-      context: .
-      dockerfile: ./ops/Dockerfile-gci
+    image: "golangci/golangci-lint:v1.50.1-alpine"
     volumes:
-      - .:/app:rw
+      - .:/app
     working_dir: /app
-    command: ./ops/gci.sh
+    command: golangci-lint run -v --fix ./...
