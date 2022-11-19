@@ -11,7 +11,7 @@ require (
 	github.com/nats-io/nats.go v1.19.1
 	github.com/pkg/errors v0.9.1
 	github.com/plar/go-adaptive-radix-tree v1.0.4
-	github.com/schollz/peerdiscovery v1.6.12
+	github.com/schollz/peerdiscovery v1.6.14
 	github.com/second-state/WasmEdge-go v0.11.2
 	github.com/sethvargo/go-envconfig v0.8.1
 	github.com/spf13/cobra v1.6.1
@@ -92,8 +92,8 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v0.33.0 // indirect
 	go.opentelemetry.io/proto/otlp v0.19.0 // indirect
 	golang.org/x/crypto v0.1.0 // indirect
-	golang.org/x/net v0.1.0 // indirect
-	golang.org/x/sys v0.1.0 // indirect
+	golang.org/x/net v0.2.0 // indirect
+	golang.org/x/sys v0.2.0 // indirect
 	golang.org/x/text v0.4.0 // indirect
 	golang.org/x/time v0.0.0-20220224211638-0e9765cccd65 // indirect
 	google.golang.org/genproto v0.0.0-20221107162902-2d387536bcdd // indirect
