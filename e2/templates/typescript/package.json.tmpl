@@ -1,0 +1,21 @@
+{
+  "name": "{{ .Name }}",
+  "description": "",
+  "version": "{{ .Version }}",
+  "dependencies": {
+    "@suborbital/runnable": "^{{ .APIVersion }}",
+    "fastestsmallesttextencoderdecoder-encodeinto": "^1.0.22"
+  },
+  "devDependencies": {
+    "@types/node": "^15.12.1",
+    "ts-loader": "^9.2.3",
+    "ts-node": "^10.0.0",
+    "typescript": "^4.3.5",
+    "webpack": "^5.38.1",
+    "webpack-cli": "^4.7.2"
+  },
+  "scripts": {
+    "prebuild": "webpack",
+    "build": "javy build/index.js -o {{ .Name }}.wasm"
+  }
+}

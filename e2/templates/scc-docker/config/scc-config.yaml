@@ -1,0 +1,24 @@
+networkRules: &networkRules
+  allowIPs: false
+  allowPrivate: false
+  allowHTTP: true
+  blockedDomains:
+    - "*.cluster.local"
+    - "scc-controlplane-service"
+    - "scc-builder-service"
+
+capabilities:
+  logger:
+    enabled: true
+  http:
+    enabled: true
+    rules: *networkRules
+  graphql:
+    enabled: true
+    rules: *networkRules
+  cache:
+    enabled: false
+  file:
+    enabled: false
+  db:
+    enabled: false

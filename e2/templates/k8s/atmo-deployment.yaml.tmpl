@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: {{ .Identifier }}-deployment
+  namespace: suborbital
+  labels:
+    app: atmo
+
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: atmo
+
+  template:
+    metadata:
+      labels:
+        app: atmo
+
+    spec:
+      containers:
+        - name: atmo
+          image: {{ .ImageName }}
+          command: ["atmo"]
+
+          ports:
+            - containerPort: 8080
+            - containerPort: 443
+
+          env:
+            - name: ATMO_DOMAIN
+              value: {{ .Domain }}
+            
+            - name: ATMO_HTTP_PORT
+              value: "8080"
+            
+            - name: ATMO_LOG_LEVEL
+              value: "info"
+
+            - name: APP_VERSION
+              value: {{ .AppVersion }}

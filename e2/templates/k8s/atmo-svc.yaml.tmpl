@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: {{ .Identifier }}-svc
+  namespace: suborbital
+
+spec:
+  selector:
+    app: atmo
+
+  ports:
+    - port: 80
+      targetPort: 8080
+      name: http
+
+    - port: 443
+      targetPort: 443
+      name: https
+
+  type: LoadBalancer

@@ -1,3 +1,4 @@
+include ./e2/e2.mk
 
 e2core:
 	go build -o .bin/e2core ./main.go

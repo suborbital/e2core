@@ -1,0 +1,19 @@
+{
+  "name": "{{ .Name }}",
+  "version": "{{ .Version }}",
+  "description": "",
+  "main": "src/index.ts",
+  "scripts": {
+    "test": "node tests",
+    "asbuild": "asc src/index.ts --target release --use abort=src/index/abort"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "assemblyscript": "^0.19"
+  },
+  "dependencies": {
+    "@assemblyscript/loader": "^0.19",
+    "@suborbital/suborbital": "^{{ .APIVersion }}"
+  }
+}

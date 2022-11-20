@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: scc-atmo-deployment
+  namespace: suborbital
+  labels:
+    app: scc-atmo
+
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: scc-atmo
+
+  template:
+    metadata:
+      labels:
+        app: scc-atmo
+
+    spec:
+      containers:
+        - name: atmo
+          image: suborbital/atmo:v0.4.7
+          command: ["atmo"]
+
+          ports:
+            - containerPort: 8080
+
+          env:
+            - name: ATMO_HTTP_PORT
+              value: "8080"
+            
+            - name: ATMO_LOG_LEVEL
+              value: "info"
+
+            - name: ATMO_CONTROL_PLANE
+              value: "scc-controlplane-service:8081"
+            
+            - name: ATMO_HEADLESS
+              value: "true"
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: suborbital
+  name: scc-atmo-service
+spec:
+  selector:
+    app: scc-atmo
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080

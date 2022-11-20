@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "resolveJsonModule": true,
+    "allowJs": true,
+    "strict": true,
+    "target": "es2019",
+    "module": "es2020",
+    "moduleResolution": "node",
+    "outDir": "dist/",
+    "rootDir": "src/",
+    "types": [
+      "node",
+    ],
+    "lib": [
+      "es2019"
+    ]
+  },
+  "include": ["src/**/*"]
+}
