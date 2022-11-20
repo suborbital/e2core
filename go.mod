@@ -9,6 +9,7 @@ require (
 	github.com/google/go-github/v41 v41.0.0
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/websocket v1.5.0
+	github.com/hashicorp/go-version v1.6.0
 	github.com/lib/pq v1.10.7
 	github.com/nats-io/nats.go v1.19.1
 	github.com/pelletier/go-toml v1.8.1
