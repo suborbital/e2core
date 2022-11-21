@@ -13,7 +13,6 @@ builds:
         - arm64
       tags:
         - netgo
-        - wasmtime
       overrides:
         - goos: linux
           goarch: amd64
