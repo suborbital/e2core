@@ -706,8 +706,8 @@ github.com/schollz/peerdiscovery v1.6.14/go.mod h1:+FA57pNrVa/3+QiVGrGnFxntIrSr2
 github.com/seccomp/libseccomp-golang v0.9.1/go.mod h1:GbW5+tmTXfcxTToHLXlScSlAvWlF4P2Ca7zGrPiEpWo=
 github.com/second-state/WasmEdge-go v0.11.2 h1:4RZhxKvay9uBM9uzE0jrB/26t1ncQG3LbNQOooKjrHA=
 github.com/second-state/WasmEdge-go v0.11.2/go.mod h1:HyBf9hVj1sRAjklsjc1Yvs9b5RcmthPG9z99dY78TKg=
-github.com/sethvargo/go-envconfig v0.8.1 h1:Gcy6BxTI3A/fOxyoFVDaXcRrhXM1+9Og4ww03/XK1tY=
-github.com/sethvargo/go-envconfig v0.8.1/go.mod h1:Iz1Gy1Sf3T64TQlJSvee81qDhf7YIlt8GMUX6yyNFs0=
+github.com/sethvargo/go-envconfig v0.8.3 h1:dXyUrDCJvCm3ybP7yNpiux93qoSORvuH23bdsgFfiJ0=
+github.com/sethvargo/go-envconfig v0.8.3/go.mod h1:Iz1Gy1Sf3T64TQlJSvee81qDhf7YIlt8GMUX6yyNFs0=
 github.com/shopspring/decimal v0.0.0-20180709203117-cd690d0c9e24/go.mod h1:M+9NzErvs504Cn4c5DxATwIqPbtswREoFCre64PpcG4=
 github.com/shopspring/decimal v1.2.0 h1:abSATXmQEYyShuxI4/vyW3tV1MrKAJzCZ/0zLUXYbsQ=
 github.com/shopspring/decimal v1.2.0/go.mod h1:DKyhrW/HYNuLGql+MJL6WCR6knT2jwCFRcu2hWCYk4o=
