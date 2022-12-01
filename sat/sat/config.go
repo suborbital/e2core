@@ -24,7 +24,7 @@ import (
 )
 
 type Config struct {
-	RunnableArg     string
+	ModuleArg       string
 	JobType         string
 	PrettyName      string
 	Module          *tenant.Module
@@ -56,12 +56,12 @@ func ConfigFromArgs() (*Config, error) {
 		return nil, errors.New("missing argument: module (path, URL or FQMN)")
 	}
 
-	runnableArg := args[0]
+	moduleArg := args[0]
 
-	return ConfigFromRunnableArg(runnableArg)
+	return ConfigFromModuleArg(moduleArg)
 }
 
-func ConfigFromRunnableArg(runnableArg string) (*Config, error) {
+func ConfigFromModuleArg(moduleArg string) (*Config, error) {
 	logger := vlog.Default(
 		vlog.EnvPrefix("SAT"),
 		vlog.AppMeta(satInfo{SatVersion: SatDotVersion}),
@@ -72,7 +72,7 @@ func ConfigFromRunnableArg(runnableArg string) (*Config, error) {
 
 	opts, err := satOptions.Resolve(envconfig.OsLookuper())
 	if err != nil {
-		return nil, errors.Wrap(err, "configFromRunnableArg options.Resolve")
+		return nil, errors.Wrap(err, "ConfigFromModuleArg options.Resolve")
 	}
 
 	// first, determine if we need to connect to a control plane
@@ -95,21 +95,21 @@ func ConfigFromRunnableArg(runnableArg string) (*Config, error) {
 	}
 
 	// next, handle the module arg being a URL, an FQMN, or a path on disk
-	if isURL(runnableArg) {
+	if isURL(moduleArg) {
 		logger.Debug("fetching module from URL")
-		tmpFile, err := downloadFromURL(runnableArg)
+		tmpFile, err := downloadFromURL(moduleArg)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to downloadFromURL")
 		}
 
-		runnableArg = tmpFile
-	} else if FQMN, err = fqmn.Parse(runnableArg); err == nil {
+		moduleArg = tmpFile
+	} else if FQMN, err = fqmn.Parse(moduleArg); err == nil {
 		if useControlPlane {
 			logger.Debug("fetching module from control plane")
 
-			cpModule, err := appClient.GetModule(runnableArg)
+			cpModule, err := appClient.GetModule(moduleArg)
 			if err != nil {
-				return nil, errors.Wrap(err, "failed to FindRunnable")
+				return nil, errors.Wrap(err, "failed to GetModule")
 			}
 
 			module = cpModule
@@ -123,12 +123,12 @@ func ConfigFromRunnableArg(runnableArg string) (*Config, error) {
 			caps = *rendered
 		}
 	} else {
-		diskRunnable, err := findModuleDotYaml(runnableArg)
+		diskModule, err := findModuleDotYaml(moduleArg)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to findRunnable")
+			return nil, errors.Wrap(err, "failed to findModuleDotYaml")
 		}
 
-		if diskRunnable != nil {
+		if diskModule != nil {
 			if opts.Ident != nil && opts.Version != nil {
 				FQMN, err := fqmn.FromParts(opts.Ident.Data, module.Namespace, module.Name, opts.Version.Data)
 				if err != nil {
@@ -139,12 +139,12 @@ func ConfigFromRunnableArg(runnableArg string) (*Config, error) {
 			}
 		}
 
-		module = diskRunnable
+		module = diskModule
 	}
 
 	// set some defaults in the case we're not running in an application
 	portInt, _ := strconv.Atoi(string(opts.Port))
-	jobType := strings.TrimSuffix(filepath.Base(runnableArg), ".wasm")
+	jobType := strings.TrimSuffix(filepath.Base(moduleArg), ".wasm")
 	prettyName := jobType
 
 	// modify configuration if we ARE running as part of an application
@@ -174,7 +174,7 @@ func ConfigFromRunnableArg(runnableArg string) (*Config, error) {
 
 	// finally, put it all together
 	c := &Config{
-		RunnableArg:     runnableArg,
+		ModuleArg:       moduleArg,
 		JobType:         jobType,
 		PrettyName:      prettyName,
 		Module:          module,
@@ -192,22 +192,22 @@ func ConfigFromRunnableArg(runnableArg string) (*Config, error) {
 	return c, nil
 }
 
-func findModuleDotYaml(runnableArg string) (*tenant.Module, error) {
-	filename := filepath.Base(runnableArg)
-	moduleFilepath := strings.Replace(runnableArg, filename, ".module.yml", -1)
+func findModuleDotYaml(moduleArg string) (*tenant.Module, error) {
+	filename := filepath.Base(moduleArg)
+	moduleFilepath := strings.Replace(moduleArg, filename, ".module.yml", -1)
 
 	if _, err := os.Stat(moduleFilepath); err != nil {
 		// .module.yaml doesn't exist, don't bother returning error
 		return nil, nil
 	}
 
-	runnableBytes, err := os.ReadFile(moduleFilepath)
+	moduleBytes, err := os.ReadFile(moduleFilepath)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to ReadFile")
 	}
 
 	module := &tenant.Module{}
-	if err := yaml.Unmarshal(runnableBytes, module); err != nil {
+	if err := yaml.Unmarshal(moduleBytes, module); err != nil {
 		return nil, errors.Wrap(err, "failed to Unmarshal")
 	}
 

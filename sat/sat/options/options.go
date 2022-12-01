@@ -23,17 +23,17 @@ type Options struct {
 }
 
 // ControlPlane is a struct, so we can use a pointer, so we can check whether it's been set in config. If set, it holds
-// address where the control plane is located so Sat can pull runnables from there.
+// address where the control plane is located so Sat can pull modules from there.
 type ControlPlane struct {
 	Address string `env:"SAT_CONTROL_PLANE"`
 }
 
-// Ident holds the runnable ident. It's a struct, so we can optionally have it set to nil. Config uses it.
+// Ident holds the module ident. It's a struct, so we can optionally have it set to nil. Config uses it.
 type Ident struct {
 	Data string `env:"SAT_RUNNABLE_IDENT"`
 }
 
-// Version holds the runnable version. It's a struct, so we can optionally have it set to nil. Config uses it.
+// Version holds the module version. It's a struct, so we can optionally have it set to nil. Config uses it.
 type Version struct {
 	Data string `env:"SAT_RUNNABLE_VERSION"`
 }

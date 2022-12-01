@@ -9,7 +9,7 @@ import (
 	"github.com/suborbital/vektor/vk"
 )
 
-// Exec takes input bytes, executes the loaded Runnable, and returns the result
+// Exec takes input bytes, executes the loaded module, and returns the result
 func (s *Sat) Exec(input []byte) (*request.CoordinatedResponse, error) {
 	ctx := vk.NewCtx(s.log, nil, nil)
 

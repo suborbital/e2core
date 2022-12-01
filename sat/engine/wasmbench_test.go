@@ -7,7 +7,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func BenchmarkRunnable(b *testing.B) {
+func BenchmarkModule(b *testing.B) {
 	e := New()
 
 	doWasm, _ := e.RegisterFromFile("wasm", "./testdata/hello-echo/hello-echo.wasm")
@@ -24,7 +24,7 @@ func BenchmarkRunnable(b *testing.B) {
 	}
 }
 
-func BenchmarkSwiftRunnable(b *testing.B) {
+func BenchmarkSwiftModule(b *testing.B) {
 	e := New()
 
 	doWasm, _ := e.RegisterFromFile("wasm", "./testdata/hello-swift/hello-swift.wasm")

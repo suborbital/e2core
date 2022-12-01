@@ -78,7 +78,7 @@ func (w *InstanceBuilder) internals() (*wasmtime.Module, *wasmtime.Engine, *wasm
 			return nil, nil, nil, errors.Wrap(err, "failed to DefineWasi")
 		}
 
-		// mount the Runnable API
+		// mount the module API
 		addHostFns(linker, w.hostFns...)
 
 		w.module = mod

@@ -90,7 +90,7 @@ func (e *Executor) UseBus(b *bus.Bus) {
 	e.pod = b.Connect()
 }
 
-// Register registers a Runnable.
+// Register registers a module.
 func (e *Executor) Register(jobType string, ref *tenant.WasmModuleRef, opts ...scheduler.Option) error {
 	if e.engine == nil {
 		return ErrExecutorNotConfigured

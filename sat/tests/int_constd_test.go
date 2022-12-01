@@ -43,7 +43,7 @@ func (i *ConstDIntegrationSuite) SetupSuite() {
 	}
 
 	constdWorkingDir := filepath.Join(dir, "../constd/example-project")
-	exampleZip := filepath.Join(constdWorkingDir, "runnables.wasm.zip")
+	exampleZip := filepath.Join(constdWorkingDir, "modules.wasm.zip")
 	constdExecPath := filepath.Join(dir, "../.bin/constd")
 
 	ctx, cancel := context.WithCancel(context.Background())
