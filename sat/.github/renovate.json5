@@ -1,9 +1,0 @@
-{
-  enabledManagers: ["github-actions", "gomod"],
-  postUpdateOptions: [
-    "gomodTidy", // go mod tidy
-    "gomodUpdateImportPaths",
-  ],
-  extends: ["group:opentelemetry-goMonorepo"],
-  ignorePaths: ["examples/**", "constd/example-project/**"],
-}
