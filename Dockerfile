@@ -30,3 +30,4 @@ COPY --from=builder /go/src/github.com/suborbital/e2core/.bin/e2core /usr/local/
 WORKDIR /home/e2core
 
 USER e2core
+CMD ["/usr/local/bin/e2core", "start"]
