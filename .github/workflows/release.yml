@@ -1,0 +1,31 @@
+name: release
+
+on:
+  pull_request:
+    branches:
+      - rc-v*
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          repository: suborbital/subo
+          ref: main
+          path: subo
+      - uses: actions/setup-go@v3
+
+      - run: make subo/dev
+        working-directory: subo
+      - run: rm -rf subo
+
+      - uses: actions/checkout@v3
+      - name: Get release version
+        id: version
+        run: |
+          version=${GITHUB_REF_NAME#rc-}
+          echo $version
+          echo v=$version >> $GITHUB_OUTPUT
+      - name: subo create release ${{ steps.version.outputs.v }} ${{ steps.version.outputs.v }} --dryrun
+        run: $GOPATH/bin/subo create release ${{ steps.version.outputs.v }} ${{ steps.version.outputs.v }} --dryrun
