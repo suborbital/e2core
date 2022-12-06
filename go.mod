@@ -23,13 +23,13 @@ require (
 	github.com/testcontainers/testcontainers-go v0.13.0
 	github.com/twmb/franz-go v1.9.1
 	github.com/wasmerio/wasmer-go v1.0.4
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.36.4
-	go.opentelemetry.io/otel v1.11.1
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.37.0
+	go.opentelemetry.io/otel v1.11.2
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.11.1
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.11.1
-	go.opentelemetry.io/otel/metric v0.33.0
+	go.opentelemetry.io/otel/metric v0.34.0
 	go.opentelemetry.io/otel/sdk v1.11.1
-	go.opentelemetry.io/otel/trace v1.11.1
+	go.opentelemetry.io/otel/trace v1.11.2
 	golang.org/x/exp v0.0.0-20221205204356-47842c84f3db
 	golang.org/x/sync v0.1.0
 	google.golang.org/grpc v1.51.0
