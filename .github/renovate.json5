@@ -1,7 +1,11 @@
 {
   enabledManagers: ["github-actions", "gomod"],
   postUpdateOptions: ["gomodTidy", "gomodUpdateImportPaths"],
-  ignorePaths: ["example-project/**"],
+  ignorePaths: [
+    "example-project/**",
+    "sat/examples/**",
+    "sat/engine/testdata/**",
+  ],
   packageRules: [
     {
       extends: "monorepo:opentelemetry-go",

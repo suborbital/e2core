@@ -44,15 +44,5 @@ lintfixer:
 loadtest:
 	go run ./testingsupport/load/load-tester.go
 
-deps:
-	go get -u -d ./...
-	go mod vendor
-
-mod/replace/reactr:
-	go mod edit -replace github.com/suborbital/reactr=$(HOME)/Workspaces/suborbital/reactr
-
-mod/replace/vektor:
-	go mod edit -replace github.com/suborbital/vektor=$(HOME)/Workspaces/suborbital/vektor
-
 .PHONY: build e2core e2core/docker docker/dev docker/dev/multi docker/publish docker/builder example-project test lint \
-	lint/fix fix-imports deps
+	lint/fix fix-imports

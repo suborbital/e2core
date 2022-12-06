@@ -13,8 +13,8 @@ RUN make sat/static
 
 
 FROM gcr.io/distroless/static-debian11
-COPY ./ops/passwd /etc/passwd
 COPY --from=builder /go/sat/.bin/sat /usr/local/bin/
+RUN echo "sat:*:0:0:sat:/tmp:*" >> /etc/passwd
 
 ENV PATH=/usr/local/bin
 USER sat
