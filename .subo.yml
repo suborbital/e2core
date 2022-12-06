@@ -1,5 +1,5 @@
 dotVersionFiles:
-  - server/release/version.go
+  - e2core/release/version.go
 
 preMakeTargets:
   - build
