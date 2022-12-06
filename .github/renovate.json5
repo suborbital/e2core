@@ -8,7 +8,11 @@
   ],
   packageRules: [
     {
-      extends: "monorepo:opentelemetry-go",
+      matchSourceUrls: [
+        "https://github.com/open-telemetry/opentelemetry-go",
+        "https://github.com/open-telemetry/opentelemetry-go-contrib",
+      ],
+      groupName: "opentelemetry-go monorepo",
       enabled: false,
     },
   ],
