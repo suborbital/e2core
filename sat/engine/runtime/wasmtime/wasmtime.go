@@ -1,4 +1,4 @@
-package runtimewasmtime
+package wasmtime
 
 import (
 	"github.com/bytecodealliance/wasmtime-go"
@@ -7,12 +7,12 @@ import (
 	"github.com/suborbital/e2core/sat/engine/runtime"
 )
 
-type WasmtimeInstance struct {
+type Instance struct {
 	inst  wasmtime.Instance
 	store *wasmtime.Store
 }
 
-func (w *WasmtimeInstance) Call(fn string, args ...interface{}) (interface{}, error) {
+func (w *Instance) Call(fn string, args ...interface{}) (interface{}, error) {
 	wasmFunc := w.inst.GetExport(w.store, fn)
 
 	if wasmFunc == nil {
@@ -28,7 +28,7 @@ func (w *WasmtimeInstance) Call(fn string, args ...interface{}) (interface{}, er
 }
 
 // ReadMemory reads memory from the instance
-func (w *WasmtimeInstance) ReadMemory(pointer int32, size int32) []byte {
+func (w *Instance) ReadMemory(pointer int32, size int32) []byte {
 	memory := w.inst.GetExport(w.store, "memory").Memory()
 
 	if memory == nil {
@@ -45,7 +45,7 @@ func (w *WasmtimeInstance) ReadMemory(pointer int32, size int32) []byte {
 }
 
 // WriteMemory writes memory into the instance
-func (w *WasmtimeInstance) WriteMemory(data []byte) (int32, error) {
+func (w *Instance) WriteMemory(data []byte) (int32, error) {
 	lengthOfInput := len(data)
 
 	allocateResult, err := w.Call("allocate", lengthOfInput)
@@ -61,7 +61,7 @@ func (w *WasmtimeInstance) WriteMemory(data []byte) (int32, error) {
 }
 
 // WriteMemoryAtLocation writes memory at the given location
-func (w *WasmtimeInstance) WriteMemoryAtLocation(pointer int32, data []byte) {
+func (w *Instance) WriteMemoryAtLocation(pointer int32, data []byte) {
 	memory := w.inst.GetExport(w.store, "memory").Memory()
 
 	if memory == nil {
@@ -75,12 +75,12 @@ func (w *WasmtimeInstance) WriteMemoryAtLocation(pointer int32, data []byte) {
 }
 
 // Deallocate deallocates memory in the instance
-func (w *WasmtimeInstance) Deallocate(pointer int32, length int) {
+func (w *Instance) Deallocate(pointer int32, length int) {
 	w.Call("deallocate", pointer, length)
 }
 
 // Close closes the instance
-func (w *WasmtimeInstance) Close() {
+func (w *Instance) Close() {
 	// Wasmtime relies on golang garbage collector to clean up cgo allocations.
 	// This makes the API simpler as you don't need to explicitly close anything.
 	//

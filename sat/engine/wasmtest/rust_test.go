@@ -10,8 +10,8 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/suborbital/e2core/foundation/scheduler"
-	"github.com/suborbital/e2core/sat/api"
 	"github.com/suborbital/e2core/sat/engine"
+	"github.com/suborbital/e2core/sat/engine/runtime/api"
 	"github.com/suborbital/systemspec/capabilities"
 	"github.com/suborbital/systemspec/request"
 )

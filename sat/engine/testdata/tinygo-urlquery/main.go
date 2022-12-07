@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/suborbital/e2core/sat/api/tinygo/runnable"
-	"github.com/suborbital/e2core/sat/api/tinygo/runnable/req"
+	"github.com/suborbital/e2core/sat/engine/runtime/api/tinygo/runnable"
+	"github.com/suborbital/e2core/sat/engine/runtime/api/tinygo/runnable/req"
 )
 
 type TinygoQueryparam struct{}

@@ -3,11 +3,11 @@ package main
 import (
 	"fmt"
 
-	"github.com/suborbital/e2core/sat/api/tinygo/runnable"
-	"github.com/suborbital/e2core/sat/api/tinygo/runnable/db"
-	"github.com/suborbital/e2core/sat/api/tinygo/runnable/db/query"
-	"github.com/suborbital/e2core/sat/api/tinygo/runnable/errors"
-	"github.com/suborbital/e2core/sat/api/tinygo/runnable/log"
+	"github.com/suborbital/e2core/sat/engine/runtime/api/tinygo/runnable"
+	"github.com/suborbital/e2core/sat/engine/runtime/api/tinygo/runnable/db"
+	"github.com/suborbital/e2core/sat/engine/runtime/api/tinygo/runnable/db/query"
+	"github.com/suborbital/e2core/sat/engine/runtime/api/tinygo/runnable/errors"
+	"github.com/suborbital/e2core/sat/engine/runtime/api/tinygo/runnable/log"
 )
 
 type TinygoDb struct{}

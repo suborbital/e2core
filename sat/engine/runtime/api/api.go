@@ -48,15 +48,10 @@ func (d *defaultAPI) HostFunctions() []runtime.HostFn {
 		d.AddFFIVariableHandler(),
 		d.FetchURLHandler(),
 		d.GraphQLQueryHandler(),
-		d.CacheSetHandler(),
-		d.CacheGetHandler(),
 		d.LogMsgHandler(),
 		d.RequestGetFieldHandler(),
 		d.RequestSetFieldHandler(),
 		d.RespSetHeaderHandler(),
-		d.GetStaticFileHandler(),
-		d.DBExecHandler(),
-		d.AbortHandler(),
 		d.GetSecretValueHandler(),
 	}
 

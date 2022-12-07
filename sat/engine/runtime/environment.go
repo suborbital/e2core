@@ -29,7 +29,7 @@ var internalLogger = vlog.Default()
 // WasmEnvironment is an environment in which Wasm instances run
 type WasmEnvironment struct {
 	UUID    string
-	builder RuntimeBuilder
+	builder WasmtimeBuilder
 
 	availableInstances chan *WasmInstance
 
@@ -37,7 +37,7 @@ type WasmEnvironment struct {
 }
 
 // NewEnvironment creates a new environment with a pool of available wasmInstances
-func NewEnvironment(builder RuntimeBuilder) *WasmEnvironment {
+func NewEnvironment(builder WasmtimeBuilder) *WasmEnvironment {
 	e := &WasmEnvironment{
 		UUID:               uuid.New().String(),
 		builder:            builder,

@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/suborbital/e2core/sat/api/tinygo/runnable"
-	"github.com/suborbital/e2core/sat/api/tinygo/runnable/file"
+	"github.com/suborbital/e2core/sat/engine/runtime/api/tinygo/runnable"
+	"github.com/suborbital/e2core/sat/engine/runtime/api/tinygo/runnable/file"
 )
 
 type TinygoGetStatic struct{}
