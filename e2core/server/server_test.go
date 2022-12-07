@@ -58,7 +58,7 @@ func (s *serverTestSuite) SetupSuite() {
 		s.T().Log("Suite Setup: Server tests will not be run")
 	}
 
-	err := s.serverForBundle("../example-project/modules.wasm.zip")
+	err := s.serverForBundle("../../example-project/modules.wasm.zip")
 	s.Require().NoError(err)
 
 	err = s.ts.TestStart()
@@ -122,95 +122,6 @@ func (s *serverTestSuite) TestHelloEndpoint() {
 
 	s.Equal(http.StatusOK, w.Result().StatusCode)
 	s.Equal([]byte(`hello my friend`), resultBody)
-}
-
-// curl -d 'name' localhost:8080/set/name
-// curl localhost:8080/get/name.
-func (s *serverTestSuite) TestSetAndGetKeyEndpoints() {
-	if !s.shouldRun {
-		s.T().Skip("Skipping")
-	}
-
-	setW := httptest.NewRecorder()
-	getW := httptest.NewRecorder()
-
-	setReq := httptest.NewRequest(http.MethodPost, "/name/com.suborbital.app/default/cache-set", bytes.NewBuffer([]byte("Suborbital")))
-	getReq := httptest.NewRequest(http.MethodPost, "/name/com.suborbital.app/default/cache-get", bytes.NewBuffer(nil))
-
-	s.ts.ServeHTTP(setW, setReq)
-	s.Equal(http.StatusOK, setW.Result().StatusCode)
-
-	s.ts.ServeHTTP(getW, getReq)
-	s.Equal(http.StatusOK, getW.Result().StatusCode)
-
-	// TODO: add central cache to get this test passing: https://github.com/suborbital/e2core/issues/238
-	// AssertBodyString("Suborbital")
-}
-
-// curl localhost:8080/file/main.md.
-func (s *serverTestSuite) TestFileMainMDEndpoint() {
-	if !s.shouldRun {
-		s.T().Skip("Skipping")
-	}
-
-	w := httptest.NewRecorder()
-
-	req := httptest.NewRequest(http.MethodPost, "/name/com.suborbital.app/default/get-file", bytes.NewBuffer(nil))
-	req.Header.Add("X-Suborbital-State", `{"file": "main.md"}`)
-
-	s.ts.ServeHTTP(w, req)
-
-	responseBody, err := io.ReadAll(w.Result().Body)
-	s.Require().NoError(err)
-
-	s.Equal(http.StatusOK, w.Result().StatusCode)
-	s.Equal([]byte(`## hello`), responseBody)
-}
-
-// curl localhost:8080/file/css/main.css.
-func (s *serverTestSuite) TestFileMainCSSEndpoint() {
-	if !s.shouldRun {
-		s.T().Skip("Skipping")
-	}
-
-	w := httptest.NewRecorder()
-
-	req := httptest.NewRequest(http.MethodPost, "/name/com.suborbital.app/default/get-file", bytes.NewBuffer(nil))
-	req.Header.Add("X-Suborbital-State", `{"file": "css/main.css"}`)
-
-	data, err := os.ReadFile("../example-project/static/css/main.css")
-	s.Require().NoError(err)
-
-	s.ts.ServeHTTP(w, req)
-
-	responseBody, err := io.ReadAll(w.Result().Body)
-	s.Require().NoError(err)
-
-	s.Equal(http.StatusOK, w.Result().StatusCode)
-	s.Equal(data, responseBody)
-}
-
-// curl localhost:8080/file/js/app/main.js.
-func (s *serverTestSuite) TestFileMainJSEndpoint() {
-	if !s.shouldRun {
-		s.T().Skip("Skipping")
-	}
-
-	w := httptest.NewRecorder()
-
-	req := httptest.NewRequest(http.MethodPost, "/name/com.suborbital.app/default/get-file", bytes.NewBuffer(nil))
-	req.Header.Add("X-Suborbital-State", `{"file": "js/app/main.js"}`)
-
-	data, err := os.ReadFile("../example-project/static/js/app/main.js")
-	s.Require().NoError(err)
-
-	s.ts.ServeHTTP(w, req)
-
-	responseBody, err := io.ReadAll(w.Result().Body)
-	s.Require().NoError(err)
-
-	s.Equal(http.StatusOK, w.Result().StatusCode)
-	s.Equal(data, responseBody)
 }
 
 // curl -d 'https://github.com' localhost:8080/fetch | grep "grav".
