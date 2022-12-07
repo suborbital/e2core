@@ -4,15 +4,12 @@ go 1.19
 
 require (
 	github.com/bytecodealliance/wasmtime-go v1.0.0
-	github.com/docker/go-connections v0.4.0
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/websocket v1.5.0
-	github.com/lib/pq v1.10.7
 	github.com/nats-io/nats.go v1.19.1
 	github.com/pkg/errors v0.9.1
 	github.com/plar/go-adaptive-radix-tree v1.0.4
 	github.com/schollz/peerdiscovery v1.6.14
-	github.com/second-state/WasmEdge-go v0.11.2
 	github.com/sethvargo/go-envconfig v0.8.3
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/pflag v1.0.5
@@ -22,7 +19,6 @@ require (
 	github.com/suborbital/vektor v0.5.3
 	github.com/testcontainers/testcontainers-go v0.13.0
 	github.com/twmb/franz-go v1.9.1
-	github.com/wasmerio/wasmer-go v1.0.4
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.36.4
 	go.opentelemetry.io/otel v1.11.1
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.11.1
@@ -48,6 +44,7 @@ require (
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/docker/distribution v2.7.1+incompatible // indirect
 	github.com/docker/docker v20.10.11+incompatible // indirect
+	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/felixge/httpsnoop v1.0.3 // indirect
 	github.com/go-logr/logr v1.2.3 // indirect
@@ -70,6 +67,7 @@ require (
 	github.com/jmoiron/sqlx v1.3.5 // indirect
 	github.com/julienschmidt/httprouter v1.3.0 // indirect
 	github.com/klauspost/compress v1.15.12 // indirect
+	github.com/lib/pq v1.10.7 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/moby/sys/mount v0.2.0 // indirect
 	github.com/moby/sys/mountinfo v0.5.0 // indirect
