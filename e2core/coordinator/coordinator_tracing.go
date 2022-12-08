@@ -20,18 +20,21 @@ type Values struct {
 }
 
 func (c *Coordinator) openTelemetryHandler() vk.Middleware {
-	return func(r *http.Request, ctx *vk.Ctx) error {
-		tracedCtx, span := otel.GetTracerProvider().Tracer("").Start(ctx.Context, "coordinator.openTelemetryHandler")
+	return func(inner vk.HandlerFunc) vk.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request, ctx *vk.Ctx) error {
+			tracedCtx, span := otel.GetTracerProvider().Tracer("").Start(ctx.Context, "coordinator.openTelemetryHandler")
+			defer span.End()
 
-		ctx.Context = tracedCtx
+			ctx.Context = tracedCtx
 
-		v := Values{
-			TraceID:   span.SpanContext().TraceID().String(),
-			Now:       time.Now().UTC(),
-			RequestID: ctx.RequestID(),
+			v := Values{
+				TraceID:   span.SpanContext().TraceID().String(),
+				Now:       time.Now().UTC(),
+				RequestID: ctx.RequestID(),
+			}
+
+			ctx.Set(traceKey, v)
+			return inner(w, r, ctx)
 		}
-
-		ctx.Set(traceKey, v)
-		return nil
 	}
 }

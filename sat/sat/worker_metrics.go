@@ -14,17 +14,17 @@ type WorkerMetricsResponse struct {
 }
 
 func (s *Sat) workerMetricsHandler() vk.HandlerFunc {
-	return func(r *http.Request, ctx *vk.Ctx) (interface{}, error) {
+	return func(w http.ResponseWriter, r *http.Request, ctx *vk.Ctx) error {
 		metrics, err := s.exec.Metrics()
 		if err != nil {
 			ctx.Log.Error(errors.Wrap(err, "failed to exec.Metrics"))
-			return nil, vk.E(http.StatusInternalServerError, "unknown error")
+			return vk.E(http.StatusInternalServerError, "unknown error")
 		}
 
 		resp := &WorkerMetricsResponse{
 			Scheduler: *metrics,
 		}
 
-		return resp, nil
+		return vk.RespondJSON(ctx.Context, w, resp, http.StatusOK)
 	}
 }

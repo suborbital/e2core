@@ -85,10 +85,10 @@ func (c *Coordinator) SetupHandlers() (*vk.Router, error) {
 	router := vk.NewRouter(c.log, "")
 
 	// start by adding the otel handler to the stack.
-	router.Before(c.openTelemetryHandler())
+	router.WithMiddlewares(c.openTelemetryHandler())
 
 	// set a middleware on the root RouteGroup.
-	router.Before(scopeMiddleware)
+	router.WithMiddlewares(scopeMiddleware)
 
 	if c.opts.AdminEnabled() {
 		router.POST("/name/:ident/:namespace/:name", auth.AuthorizationMiddleware(c.opts, c.vkHandlerForModuleByName()))
@@ -260,12 +260,14 @@ func resultFromState(steps []executable.Executable, state map[string][]byte) []b
 	return nil
 }
 
-func scopeMiddleware(r *http.Request, ctx *vk.Ctx) error {
-	scope := requestScope{
-		RequestID: ctx.RequestID(),
+func scopeMiddleware(inner vk.HandlerFunc) vk.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request, ctx *vk.Ctx) error {
+		scope := requestScope{
+			RequestID: ctx.RequestID(),
+		}
+
+		ctx.UseScope(scope)
+
+		return inner(w, r, ctx)
 	}
-
-	ctx.UseScope(scope)
-
-	return nil
 }

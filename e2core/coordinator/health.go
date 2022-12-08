@@ -7,7 +7,7 @@ import (
 )
 
 func (c *Coordinator) health() vk.HandlerFunc {
-	return func(request *http.Request, ctx *vk.Ctx) (interface{}, error) {
-		return map[string]bool{"healthy": true}, nil
+	return func(w http.ResponseWriter, r *http.Request, ctx *vk.Ctx) error {
+		return vk.RespondJSON(ctx.Context, w, map[string]bool{"healthy": true}, http.StatusOK)
 	}
 }
