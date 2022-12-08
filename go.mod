@@ -10,7 +10,7 @@ require (
 	github.com/lib/pq v1.10.7
 	github.com/nats-io/nats.go v1.19.1
 	github.com/pkg/errors v0.9.1
-	github.com/plar/go-adaptive-radix-tree v1.0.4
+	github.com/plar/go-adaptive-radix-tree v1.0.5
 	github.com/schollz/peerdiscovery v1.6.14
 	github.com/second-state/WasmEdge-go v0.11.2
 	github.com/sethvargo/go-envconfig v0.8.3
