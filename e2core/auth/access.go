@@ -23,20 +23,20 @@ type TenantInfo struct {
 
 func AuthorizationMiddleware(opts *options.Options, inner vk.HandlerFunc) vk.HandlerFunc {
 	authorizer := NewApiAuthClient(opts)
-	return func(req *http.Request, ctx *vk.Ctx) (interface{}, error) {
+	return func(w http.ResponseWriter, r *http.Request, ctx *vk.Ctx) error {
 		identifier := ctx.Params.ByName("ident")
 		namespace := ctx.Params.ByName("namespace")
 		name := ctx.Params.ByName("name")
 
-		tntInfo, err := authorizer.Authorize(ExtractAccessToken(req.Header), identifier, namespace, name)
+		tntInfo, err := authorizer.Authorize(ExtractAccessToken(r.Header), identifier, namespace, name)
 		if err != nil {
 			ctx.Log.Error(err)
-			return vk.R(http.StatusUnauthorized, ""), nil
+			return vk.E(http.StatusUnauthorized, "")
 		}
 
 		ctx.Set("ident", fmt.Sprintf("%s.%s", tntInfo.Environment, tntInfo.Tenant))
 
-		return inner(req, ctx)
+		return inner(w, r, ctx)
 	}
 }
 

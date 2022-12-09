@@ -15,7 +15,7 @@ import (
 )
 
 func (s *Sat) handler(exec *executor.Executor) vk.HandlerFunc {
-	return func(r *http.Request, ctx *vk.Ctx) (interface{}, error) {
+	return func(w http.ResponseWriter, r *http.Request, ctx *vk.Ctx) error {
 		spanCtx, span := s.tracer.Start(ctx.Context, "vkhandler", trace.WithAttributes(
 			attribute.String("request_id", ctx.RequestID()),
 		))
@@ -28,7 +28,7 @@ func (s *Sat) handler(exec *executor.Executor) vk.HandlerFunc {
 		req, err := request.FromVKRequest(r, ctx)
 		if err != nil {
 			ctx.Log.Error(errors.Wrap(err, "failed to FromVKRequest"))
-			return nil, vk.E(http.StatusInternalServerError, "unknown error")
+			return vk.E(http.StatusInternalServerError, "unknown error")
 		}
 
 		t := metrics.NewTimer()
@@ -42,18 +42,18 @@ func (s *Sat) handler(exec *executor.Executor) vk.HandlerFunc {
 				// should find a better way to determine if a RunErr is "non-nil"
 				if runErr.Code != 0 || runErr.Message != "" {
 					s.log.Debug("fn", s.jobName, "returned an error")
-					return nil, vk.E(runErr.Code, runErr.Message)
+					return vk.E(runErr.Code, runErr.Message)
 				}
 			}
 
 			s.log.Error(errors.Wrap(err, "failed to exec.Do"))
-			return nil, vk.E(http.StatusInternalServerError, "unknown error")
+			return vk.E(http.StatusInternalServerError, "unknown error")
 		}
 		s.metrics.FunctionTime.Record(spanCtx, t.Observe(), attribute.String("id", req.ID))
 
 		if result == nil {
 			s.log.Debug("fn", s.jobName, "returned a nil result")
-			return nil, nil
+			return nil
 		}
 
 		resp := result.(*request.CoordinatedResponse)
@@ -62,6 +62,6 @@ func (s *Sat) handler(exec *executor.Executor) vk.HandlerFunc {
 			ctx.RespHeaders.Set(headerKey, headerValue)
 		}
 
-		return resp.Output, nil
+		return vk.RespondBytes(ctx.Context, w, resp.Output, http.StatusOK)
 	}
 }
