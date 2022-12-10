@@ -1,6 +1,6 @@
 package main
 
-import "github.com/suborbital/e2core/sat/api/tinygo/runnable"
+import "github.com/suborbital/e2core/sat/engine/runtime/api/tinygo/runnable"
 
 type Hello struct{}
 

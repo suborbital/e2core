@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/suborbital/e2core/sat/api/tinygo/runnable"
-	"github.com/suborbital/e2core/sat/api/tinygo/runnable/resp"
+	"github.com/suborbital/e2core/sat/engine/runtime/api/tinygo/runnable"
+	"github.com/suborbital/e2core/sat/engine/runtime/api/tinygo/runnable/resp"
 )
 
 type TinygoResp struct{}

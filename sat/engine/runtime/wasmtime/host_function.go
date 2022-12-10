@@ -1,8 +1,6 @@
-package runtimewasmtime
+package wasmtime
 
 import (
-	"fmt"
-
 	"github.com/bytecodealliance/wasmtime-go"
 	"github.com/pkg/errors"
 
@@ -57,11 +55,5 @@ func addHostFns(linker *wasmtime.Linker, fns ...runtime.HostFn) {
 
 		// this can return an error but there's nothing we can do about it
 		_ = linker.FuncNew("env", fn.Name, fnType, wasmtimeFunc)
-
-		// add swift params and mount swift variation
-		params = append(params, i32Type, i32Type)
-		swiftFnType := wasmtime.NewFuncType(params, returns)
-
-		_ = linker.FuncNew("env", fmt.Sprintf("%s_swift", fn.Name), swiftFnType, wasmtimeFunc)
 	}
 }

@@ -10,8 +10,8 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/suborbital/e2core/foundation/scheduler"
-	"github.com/suborbital/e2core/sat/api"
 	"github.com/suborbital/e2core/sat/engine"
+	"github.com/suborbital/e2core/sat/engine/runtime/api"
 	"github.com/suborbital/systemspec/capabilities"
 	"github.com/suborbital/systemspec/request"
 )
@@ -352,33 +352,6 @@ func TestWasmLargeDataGroupWithPool(t *testing.T) {
 
 	if err := grp.Wait(); err != nil {
 		t.Error("group returned an error")
-	}
-}
-
-func TestWasmFileGetStatic(t *testing.T) {
-	config := capabilities.DefaultCapabilityConfig()
-	config.File = fileConfig
-
-	api, _ := api.NewWithConfig(config)
-
-	e := engine.NewWithAPI(api)
-
-	e.RegisterFromFile("get-static", "../testdata/get-static/get-static.wasm")
-
-	getJob := scheduler.NewJob("get-static", "important.md")
-
-	res, err := e.Do(getJob).Then()
-	if err != nil {
-		t.Error(errors.Wrap(err, "failed to Do get-static job"))
-		return
-	}
-
-	result := string(res.([]byte))
-
-	expected := "# Hello, World\n\nContents are very important"
-
-	if result != expected {
-		t.Error("failed, got:\n", result, "\nexpeted:\n", expected)
 	}
 }
 

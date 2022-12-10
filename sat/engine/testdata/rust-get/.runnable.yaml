@@ -1,4 +1,0 @@
-name: rust-get
-namespace: default
-lang: rust
-apiVersion: 0.2.5

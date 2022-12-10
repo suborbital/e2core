@@ -18,8 +18,8 @@ type WasmInstance struct {
 	errChan    chan error
 }
 
-// RuntimeBuilder is a factory-style interface that can build Wasm runtimes
-type RuntimeBuilder interface {
+// WasmtimeBuilder is a factory-style interface that can build Wasm runtimes
+type WasmtimeBuilder interface {
 	New() (RuntimeInstance, error)
 }
 

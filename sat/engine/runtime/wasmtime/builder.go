@@ -1,16 +1,16 @@
-package runtimewasmtime
+package wasmtime
 
 import (
 	"github.com/bytecodealliance/wasmtime-go"
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/e2core/sat/api"
 	"github.com/suborbital/e2core/sat/engine/runtime"
+	"github.com/suborbital/e2core/sat/engine/runtime/api"
 	"github.com/suborbital/systemspec/tenant"
 )
 
-// WasmtimeBuilder is a Wasmer implementation of the instanceBuilder interface
-type WasmtimeBuilder struct {
+// InstanceBuilder is a Wasmer implementation of the instanceBuilder interface
+type InstanceBuilder struct {
 	ref     *tenant.WasmModuleRef
 	hostFns []runtime.HostFn
 	module  *wasmtime.Module
@@ -18,17 +18,17 @@ type WasmtimeBuilder struct {
 	linker  *wasmtime.Linker
 }
 
-// NewBuilder creates a new WasmtimeBuilder
-func NewBuilder(ref *tenant.WasmModuleRef, api api.HostAPI) runtime.RuntimeBuilder {
-	w := &WasmtimeBuilder{
+// NewBuilder creates a new InstanceBuilder
+func NewBuilder(ref *tenant.WasmModuleRef, api api.HostAPI) *InstanceBuilder {
+	b := &InstanceBuilder{
 		ref:     ref,
 		hostFns: api.HostFunctions(),
 	}
 
-	return w
+	return b
 }
 
-func (w *WasmtimeBuilder) New() (runtime.RuntimeInstance, error) {
+func (w *InstanceBuilder) New() (runtime.RuntimeInstance, error) {
 	module, engine, linker, err := w.internals()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to internals")
@@ -44,7 +44,7 @@ func (w *WasmtimeBuilder) New() (runtime.RuntimeInstance, error) {
 		return nil, errors.Wrap(err, "failed to linker.Instantiate")
 	}
 
-	inst := &WasmtimeInstance{
+	inst := &Instance{
 		inst:  *wasmTimeInst,
 		store: store,
 	}
@@ -62,7 +62,7 @@ func (w *WasmtimeBuilder) New() (runtime.RuntimeInstance, error) {
 	return inst, nil
 }
 
-func (w *WasmtimeBuilder) internals() (*wasmtime.Module, *wasmtime.Engine, *wasmtime.Linker, error) {
+func (w *InstanceBuilder) internals() (*wasmtime.Module, *wasmtime.Engine, *wasmtime.Linker, error) {
 	if w.module == nil {
 		engine := wasmtime.NewEngine()
 

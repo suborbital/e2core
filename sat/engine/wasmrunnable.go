@@ -10,8 +10,9 @@ import (
 
 	"github.com/suborbital/e2core/e2core/coordinator/sequence"
 	"github.com/suborbital/e2core/foundation/scheduler"
-	"github.com/suborbital/e2core/sat/api"
 	"github.com/suborbital/e2core/sat/engine/runtime"
+	"github.com/suborbital/e2core/sat/engine/runtime/api"
+	"github.com/suborbital/e2core/sat/engine/runtime/wasmtime"
 	"github.com/suborbital/systemspec/fqmn"
 	"github.com/suborbital/systemspec/request"
 	"github.com/suborbital/systemspec/tenant"
@@ -48,7 +49,7 @@ func newRunnerFromFile(filepath string, api api.HostAPI) (*wasmRunner, error) {
 
 // newRunnerFromRef creates a wasmRunner from a moduleRef
 func newRunnerFromRef(ref *tenant.WasmModuleRef, api api.HostAPI) *wasmRunner {
-	builder := runtimeBuilder(ref, api)
+	builder := wasmtime.NewBuilder(ref, api)
 
 	environment := runtime.NewEnvironment(builder)
 
