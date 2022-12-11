@@ -66,15 +66,8 @@ func (d *dispatcher) Execute(seq *sequence.Sequence) error {
 		resultChan <- result
 	}
 
-	d.lock.Lock()
-	d.callbacks[seq.ParentID()] = cb
-	d.lock.Unlock()
-
-	defer func() {
-		d.lock.Lock()
-		delete(d.callbacks, seq.ParentID())
-		d.lock.Unlock()
-	}()
+	d.addCallback(seq.ParentID(), cb)
+	defer d.removeCallback(seq.ParentID())
 
 	firstStep := seq.NextStep()
 	if firstStep == nil {
@@ -163,4 +156,18 @@ func (d *dispatcher) onMsgHandler() bus.MsgFunc {
 
 		return nil
 	}
+}
+
+func (d *dispatcher) addCallback(parentID string, cb callback) {
+	d.lock.Lock()
+	defer d.lock.Unlock()
+
+	d.callbacks[parentID] = cb
+}
+
+func (d *dispatcher) removeCallback(parentID string) {
+	d.lock.Lock()
+	defer d.lock.Unlock()
+
+	delete(d.callbacks, parentID)
 }
