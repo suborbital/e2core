@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/pkg/errors"
+
 	"github.com/suborbital/e2core/e2core/sequence"
 	"github.com/suborbital/systemspec/request"
 	"github.com/suborbital/systemspec/tenant"
@@ -39,9 +40,7 @@ func (s *Server) executePluginByNameHandler() vk.HandlerFunc {
 			return vk.E(http.StatusInternalServerError, "failed to handle request")
 		}
 
-		dispatcher := newDispatcher(ctx.Log, s.bus.Connect(), seq)
-
-		if err := dispatcher.Execute(); err != nil {
+		if err := s.dispatcher.Execute(seq); err != nil {
 			ctx.Log.Error(errors.Wrap(err, "failed to Execute"))
 			return vk.E(http.StatusInternalServerError, "failed to execute plugin")
 		}
@@ -87,9 +86,7 @@ func (s *Server) executePluginByRefHandler() vk.HandlerFunc {
 			return vk.E(http.StatusInternalServerError, "failed to handle request")
 		}
 
-		dispatcher := newDispatcher(ctx.Log, s.bus.Connect(), seq)
-
-		if err := dispatcher.Execute(); err != nil {
+		if err := s.dispatcher.Execute(seq); err != nil {
 			ctx.Log.Error(errors.Wrap(err, "failed to Execute"))
 			return vk.E(http.StatusInternalServerError, "failed to execute plugin")
 		}
@@ -165,9 +162,7 @@ func (s *Server) executeWorkflowHandler() vk.HandlerFunc {
 			return vk.E(http.StatusInternalServerError, "failed to handle request")
 		}
 
-		dispatcher := newDispatcher(ctx.Log, s.bus.Connect(), seq)
-
-		if err := dispatcher.Execute(); err != nil {
+		if err := s.dispatcher.Execute(seq); err != nil {
 			ctx.Log.Error(errors.Wrap(err, "failed to Execute"))
 			return vk.E(http.StatusInternalServerError, "failed to execute plugin")
 		}

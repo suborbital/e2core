@@ -4,8 +4,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/suborbital/vektor/vk"
 	"go.opentelemetry.io/otel"
+
+	"github.com/suborbital/vektor/vk"
 )
 
 type requestScope struct {

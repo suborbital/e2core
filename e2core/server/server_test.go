@@ -180,10 +180,7 @@ func (s *serverTestSuite) serverForBundle(filepath string) error {
 		return errors.Wrap(err, "failed to New")
 	}
 
-	testServer, err := server.testServer()
-	if err != nil {
-		return errors.Wrap(err, "failed to s.testServer")
-	}
+	testServer := server.testServer()
 
 	orchestrator, err := satbackend.New(opts, syncR)
 	if err != nil {

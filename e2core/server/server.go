@@ -22,7 +22,8 @@ type Server struct {
 	server *vk.Server
 	syncer *syncer.Syncer
 
-	bus *bus.Bus
+	bus        *bus.Bus
+	dispatcher *dispatcher
 
 	options *options.Options
 }
@@ -60,11 +61,14 @@ func New(sync *syncer.Syncer, opts *options.Options) (*Server, error) {
 		}),
 	)
 
+	d := newDispatcher(opts.Logger(), b.Connect())
+
 	server := &Server{
-		server:  s,
-		syncer:  sync,
-		options: opts,
-		bus:     b,
+		server:     s,
+		syncer:     sync,
+		options:    opts,
+		bus:        b,
+		dispatcher: d,
 	}
 
 	router := vk.NewRouter(opts.Logger(), "")
@@ -110,6 +114,6 @@ func (s *Server) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-func (s *Server) testServer() (*vk.Server, error) {
-	return s.server, nil
+func (s *Server) testServer() *vk.Server {
+	return s.server
 }
