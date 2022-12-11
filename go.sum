@@ -761,6 +761,10 @@ github.com/suborbital/go-kit v0.0.3 h1:J3KwNZYZDff+jNwqnmHJNrOgM/IHNwbJj7yThh1CU
 github.com/suborbital/go-kit v0.0.3/go.mod h1:BgsNga5S7b7/G8WHUa2KRupMcILULhDqEYIUxZtB/d0=
 github.com/suborbital/systemspec v0.0.5 h1:GLsgWa+hi9M8Swq3wmmKXhdTUZSSggYO95gS+Yp6xzE=
 github.com/suborbital/systemspec v0.0.5/go.mod h1:mM5aE5n6gfEEFOLc9FtfpOnEzcJJpdLeb//IayVoJKo=
+github.com/suborbital/systemspec v0.0.6-0.20221210220034-b863dfb31eda h1:uVy1ngKF+go/uOcljJ19+zviVjTttdQpKrTGU9k44Uk=
+github.com/suborbital/systemspec v0.0.6-0.20221210220034-b863dfb31eda/go.mod h1:RWa+aupFeP6KS/LiXB6QlutFkL5cTk1p/w02K1ReJRA=
+github.com/suborbital/systemspec v0.0.6-0.20221211152302-bf4882fff0c1 h1:WQN1jCn8mHpEBJfPPQgL/Gv3qdJPMQcHlK4UPpuwpm0=
+github.com/suborbital/systemspec v0.0.6-0.20221211152302-bf4882fff0c1/go.mod h1:RWa+aupFeP6KS/LiXB6QlutFkL5cTk1p/w02K1ReJRA=
 github.com/suborbital/vektor v0.6.1 h1:Goh/274fy03WVleUrbqq4+6Q+B+B3zuQLmm9blqNn3M=
 github.com/suborbital/vektor v0.6.1/go.mod h1:TpoxB7PN6CRnhG9J6JDElxXG7vVkbJsvLEOzbJdJ2+4=
 github.com/syndtr/gocapability v0.0.0-20170704070218-db04d3cc01c8/go.mod h1:hkRG7XYTFWNJGYcbNJQlaLq0fg1yr4J4t/NcTQtrfww=

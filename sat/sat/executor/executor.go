@@ -15,7 +15,6 @@ import (
 	"github.com/suborbital/systemspec/capabilities"
 	"github.com/suborbital/systemspec/request"
 	"github.com/suborbital/systemspec/tenant"
-	"github.com/suborbital/systemspec/tenant/executable"
 	"github.com/suborbital/vektor/vk"
 	"github.com/suborbital/vektor/vlog"
 )
@@ -100,12 +99,6 @@ func (e *Executor) Register(jobType string, ref *tenant.WasmModuleRef, opts ...s
 	e.engine.Register(jobType, ref, opts...)
 
 	return nil
-}
-
-// DesiredStepState calculates the state as it should be for a particular step's 'with' clause.
-func (e *Executor) DesiredStepState(step executable.Executable, req *request.CoordinatedRequest) (map[string][]byte, error) {
-	// this is no longer needed in the Executor, will be removed from e2core in the future
-	return nil, ErrDesiredStateNotGenerated
 }
 
 // ListenAndRun sets up the executor's Reactr instance to listen for messages and execute the associated job.

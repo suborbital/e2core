@@ -38,7 +38,7 @@ func Start() *cobra.Command {
 
 			logger := vlog.Default(
 				vlog.AppMeta(e2coreInfo{E2CoreVersion: release.E2CoreServerDotVersion}),
-				vlog.EnvPrefix("E2CORE"),
+				vlog.EnvPrefix("E2CORE_"),
 			)
 
 			opts, err := optionsFromFlags(cmd.Flags())

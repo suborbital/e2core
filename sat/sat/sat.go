@@ -27,10 +27,6 @@ import (
 	"github.com/suborbital/vektor/vlog"
 )
 
-const (
-	MsgTypeSuborbitalResult = "suborbital.result"
-)
-
 // Sat is a sat server with annoyingly terse field names (because it's smol)
 type Sat struct {
 	jobName string // the job name / FQMN

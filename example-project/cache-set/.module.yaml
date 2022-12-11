@@ -1,4 +1,0 @@
-name: cache-set
-namespace: default
-lang: rust
-apiVersion: 0.12.0
