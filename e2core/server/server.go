@@ -41,7 +41,7 @@ func New(sync *syncer.Syncer, opts *options.Options) (*Server, error) {
 	// each request to trigger Router re-generation
 	// when needed (during headless mode).
 	s.server = vk.New(
-		vk.UseEnvPrefix("E2CORE"),
+		vk.UseEnvPrefix("E2CORE_"),
 		vk.UseAppName(opts.AppName),
 		vk.UseLogger(opts.Logger()),
 		vk.UseDomain(opts.Domain),

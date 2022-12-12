@@ -14,7 +14,7 @@ import (
 
 const (
 	DefaultControlPlane = "localhost:9090"
-	e2coreEnvPrefix     = "E2CORE"
+	e2coreEnvPrefix     = "E2CORE_"
 	FeatureMultiTenant  = "adminV1"
 )
 

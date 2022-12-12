@@ -63,7 +63,7 @@ func ConfigFromArgs() (*Config, error) {
 
 func ConfigFromRunnableArg(runnableArg string) (*Config, error) {
 	logger := vlog.Default(
-		vlog.EnvPrefix("SAT"),
+		vlog.EnvPrefix("SAT_"),
 		vlog.AppMeta(satInfo{SatVersion: SatDotVersion}),
 	)
 
@@ -155,7 +155,7 @@ func ConfigFromRunnableArg(runnableArg string) (*Config, error) {
 
 		// replace the logger with something more detailed
 		logger = vlog.Default(
-			vlog.EnvPrefix("SAT"),
+			vlog.EnvPrefix("SAT_"),
 			vlog.AppMeta(app{prettyName}),
 		)
 

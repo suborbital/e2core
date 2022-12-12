@@ -111,7 +111,7 @@ func New(config *Config, traceProvider trace.TracerProvider, mtx metrics.Metrics
 		vk.UseLogger(config.Logger),
 		vk.UseAppName(config.PrettyName),
 		vk.UseHTTPPort(config.Port),
-		vk.UseEnvPrefix("SAT"),
+		vk.UseEnvPrefix("SAT_"),
 		vk.UseQuietRoutes("/meta/metrics"),
 	)
 
