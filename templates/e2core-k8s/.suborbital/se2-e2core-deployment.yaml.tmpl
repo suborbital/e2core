@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: se2-e2core-deployment
+  namespace: suborbital
+  labels:
+    app: se2-e2core
+
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: se2-e2core
+
+  template:
+    metadata:
+      labels:
+        app: se2-e2core
+
+    spec:
+      containers:
+        - name: e2core
+          image: suborbital/e2core:{{ .E2CoreTag }}
+          command: ["e2core start"]
+
+          ports:
+            - containerPort: 8080
+
+          env:
+            - name: E2CORE_HTTP_PORT
+              value: "8080"
+            
+            - name: E2CORE_LOG_LEVEL
+              value: "info"
+
+            - name: E2CORE_CONTROL_PLANE
+              value: "se2-controlplane-service:8081"
+            
+            - name: E2CORE_API_FEATURES
+              value: "adminV1"
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: suborbital
+  name: se2-e2core-service
+spec:
+  selector:
+    app: se2-e2core
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
