@@ -206,7 +206,7 @@ func ExecTmplDir(cwd, name, templatesPath, tmplName string, templateData interfa
 
 // downloadZip downloads a ZIP from a particular branch of the repo.
 func downloadZip(repo, branch, targetPath string) (string, error) {
-	// If downloading from a tag, use full v0.0.0 format.
+	// If downloading from a tag, use full v0.0.0 format, do not normalize.
 	url := fmt.Sprintf("https://github.com/%s/archive/%s.zip", repo, branch)
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)
@@ -223,7 +223,7 @@ func downloadZip(repo, branch, targetPath string) (string, error) {
 		return "", fmt.Errorf("response was non-200: %d", resp.StatusCode)
 	}
 
-	filepathVar := filepath.Join(targetPath, fmt.Sprintf("e2core-%s.zip", normalizeBranch(branch)))
+	filepathVar := filepath.Join(targetPath, fmt.Sprintf("e2core-%s.zip", strings.ReplaceAll(normalizeBranch(branch), "/", "-")))
 
 	// Check if the zip already exists, and delete it if it does.
 	if _, err := os.Stat(filepathVar); err == nil {
