@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+
 	"github.com/suborbital/e2core/e2/util"
 )
 

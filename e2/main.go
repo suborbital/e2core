@@ -4,6 +4,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+
 	"github.com/suborbital/e2core/e2/command"
 	"github.com/suborbital/e2core/e2/util"
 	"github.com/suborbital/e2core/e2core/release"
