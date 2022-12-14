@@ -1,4 +1,4 @@
-package coordinator
+package server
 
 import (
 	"net/http"
@@ -8,6 +8,22 @@ import (
 
 	"github.com/suborbital/vektor/vk"
 )
+
+type requestScope struct {
+	RequestID string `json:"request_id"`
+}
+
+func scopeMiddleware(inner vk.HandlerFunc) vk.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request, ctx *vk.Ctx) error {
+		scope := requestScope{
+			RequestID: ctx.RequestID(),
+		}
+
+		ctx.UseScope(scope)
+
+		return inner(w, r, ctx)
+	}
+}
 
 // traceKey is how request values are stored/retrieved.
 const traceKey string = "traceValues"
@@ -19,7 +35,7 @@ type Values struct {
 	RequestID string
 }
 
-func (c *Coordinator) openTelemetryHandler() vk.Middleware {
+func (s *Server) openTelemetryMiddleware() vk.Middleware {
 	return func(inner vk.HandlerFunc) vk.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request, ctx *vk.Ctx) error {
 			tracedCtx, span := otel.GetTracerProvider().Tracer("").Start(ctx.Context, "coordinator.openTelemetryHandler")

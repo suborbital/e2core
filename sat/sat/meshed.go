@@ -9,7 +9,8 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 
-	"github.com/suborbital/e2core/e2core/coordinator/sequence"
+	"github.com/suborbital/e2core/e2core/sequence"
+	"github.com/suborbital/e2core/e2core/server"
 	"github.com/suborbital/e2core/foundation/bus/bus"
 	"github.com/suborbital/e2core/foundation/scheduler"
 	"github.com/suborbital/systemspec/request"
@@ -38,7 +39,7 @@ func (s *Sat) handleFnResult(msg bus.Message, result interface{}, fnErr error) {
 
 	ctx.Context = spanCtx
 
-	seq, err := sequence.FromJSON(req.SequenceJSON, req, ctx)
+	seq, err := sequence.FromJSON(req.SequenceJSON, req)
 	if err != nil {
 		s.log.Error(errors.Wrap(err, "failed to sequence.FromJSON"))
 		return
@@ -70,9 +71,8 @@ func (s *Sat) handleFnResult(msg bus.Message, result interface{}, fnErr error) {
 	}
 
 	// package everything up and shuttle it back to the parent (e2core)
-	fnr := &sequence.FnResult{
+	fnr := &sequence.ExecResult{
 		FQMN:     msg.Type(),
-		Key:      step.Exec.ExecutableMod.Key(), // to support groups, we'll need to find the correct CallableFn in the list
 		Response: resp,
 		RunErr:   runErr,
 		ExecErr: func() string {
@@ -95,13 +95,10 @@ func (s *Sat) handleFnResult(msg bus.Message, result interface{}, fnErr error) {
 		return
 	}
 
-	if err = seq.HandleStepErrs([]sequence.FnResult{*fnr}, step.Exec); err != nil {
+	if err = seq.HandleStepResults([]sequence.ExecResult{*fnr}); err != nil {
 		ctx.Log.Error(err)
 		return
 	}
-
-	// load the results into the request state
-	seq.HandleStepResults([]sequence.FnResult{*fnr})
 
 	// prepare for the next step in the chain to be executed
 	stepJSON, err := seq.StepsJSON()
@@ -150,7 +147,7 @@ func (s *Sat) handleBridgedResult(msg bus.Message, result interface{}, fnErr err
 	}
 }
 
-func (s *Sat) sendFnResult(result *sequence.FnResult, ctx *vk.Ctx) error {
+func (s *Sat) sendFnResult(result *sequence.ExecResult, ctx *vk.Ctx) error {
 	span := trace.SpanFromContext(ctx.Context)
 	defer span.End()
 
@@ -159,7 +156,7 @@ func (s *Sat) sendFnResult(result *sequence.FnResult, ctx *vk.Ctx) error {
 		return errors.Wrap(err, "failed to Marshal function result")
 	}
 
-	respMsg := bus.NewMsgWithParentID(MsgTypeSuborbitalResult, ctx.RequestID(), fnrJSON)
+	respMsg := bus.NewMsgWithParentID(server.MsgTypeSuborbitalResult, ctx.RequestID(), fnrJSON)
 
 	ctx.Log.Debug("function", s.jobName, "completed, sending meshed result message", respMsg.UUID())
 
@@ -202,11 +199,11 @@ func (s *Sat) sendNextStep(_ bus.Message, seq *sequence.Sequence, req *request.C
 		return
 	}
 
-	nextMsg := bus.NewMsgWithParentID(nextStep.Exec.FQMN, ctx.RequestID(), reqJSON)
+	nextMsg := bus.NewMsgWithParentID(nextStep.FQMN, ctx.RequestID(), reqJSON)
 
-	ctx.Log.Debug("sending next message", nextStep.Exec.FQMN, nextMsg.UUID())
+	ctx.Log.Debug("sending next message", nextStep.FQMN, nextMsg.UUID())
 
-	if err := s.bus.Tunnel(nextStep.Exec.FQMN, nextMsg); err != nil {
+	if err := s.bus.Tunnel(nextStep.FQMN, nextMsg); err != nil {
 		// nothing much we can do here
 		ctx.Log.Error(errors.Wrap(err, "failed to Tunnel nextMsg"))
 	}

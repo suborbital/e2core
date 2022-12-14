@@ -47,6 +47,8 @@ type Pod struct {
 
 	*messageFilter // the embedded messageFilter controls which messages reach the onFunc
 
+	tunnelFunc func(string, Message) error
+
 	opts *podOpts
 
 	dead *atomic.Value
@@ -58,13 +60,14 @@ type podOpts struct {
 }
 
 // newPod creates a new Pod
-func newPod(busChan MsgChan, opts *podOpts) *Pod {
+func newPod(busChan MsgChan, tunnel func(string, Message) error, opts *podOpts) *Pod {
 	p := &Pod{
 		onFuncLock:    sync.RWMutex{},
 		messageChan:   make(chan Message, defaultPodChanSize),
 		feedbackChan:  make(chan Message, defaultPodChanSize),
 		busChan:       busChan,
 		messageFilter: newMessageFilter(),
+		tunnelFunc:    tunnel,
 		opts:          opts,
 		dead:          &atomic.Value{},
 	}
@@ -98,6 +101,12 @@ func (p *Pod) Send(msg Message) *MsgReceipt {
 	}
 
 	return t
+}
+
+// Tunnel bypasses the pod's normal 'Send' and uses the bus itself to tunnel to a specific peer
+// if a transport is enabled. If not, it's a no-op.
+func (p *Pod) Tunnel(capability string, msg Message) error {
+	return p.tunnelFunc(capability, msg)
 }
 
 // ReplyTo sends a response to a message. The reply message's ticket is returned.

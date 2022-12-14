@@ -88,7 +88,7 @@ func (b *Bus) Stop() error {
 }
 
 func (b *Bus) connectWithOpts(opts *podOpts) *Pod {
-	pod := newPod(b.bus.busChan, opts)
+	pod := newPod(b.bus.busChan, b.Tunnel, opts)
 
 	b.bus.addPod(pod)
 

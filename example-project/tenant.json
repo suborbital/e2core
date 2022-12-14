@@ -1,32 +1,9 @@
 {
     "identifier": "com.suborbital.app",
     "specVersion": 1,
-    "tenantVersion": 14,
+    "tenantVersion": 15,
     "defaultNamespace": {
         "name": "default",
-        "workflows": [
-            {
-                "name": "fetch",
-                "steps": [
-                    {
-                        "executableMod": {
-                            "fqmn": "/name/default/modify-url"
-                        },
-                        "ForEach": null
-                    },
-                    {
-                        "executableMod": {
-                            "fqmn": "/name/default/fetch-test",
-                            "with": {
-                                "url": "modify-url"
-                            }
-                        },
-                        "ForEach": null
-                    }
-                ],
-                "triggers": null
-            }
-        ],
         "capabilities": {
             "logger": {
                 "enabled": true
