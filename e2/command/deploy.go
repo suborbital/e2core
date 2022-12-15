@@ -3,6 +3,7 @@ package command
 import (
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -15,14 +16,17 @@ import (
 )
 
 type deployData struct {
-	E2CoreTag        string
-	EnvToken         string
-	BuilderDomain    string
+	Identifier string
+	ImageName  string
+	EnvToken   string
+	Domain     string
+	AppVersion string
+
 	StorageClassName string
 }
 
-const defaultRepo string = "suborbital/e2core"
-const defaultBranch = "v" + release.E2CoreServerDotVersion
+const defaultRepo string = "suborbital/templates"
+const defaultBranch = "main"
 
 // DeployCommand returns the SE2 deploy command.
 func DeployCommand() *cobra.Command {
@@ -91,11 +95,13 @@ func DeployCommand() *cobra.Command {
 				}
 
 				data := deployData{
-					E2CoreTag: "v" + release.E2CoreServerDotVersion,
-					EnvToken:  envToken,
+					Identifier: path.Base(workingDirectory),
+					ImageName:  "suborbital/e2core:v" + release.E2CoreServerDotVersion,
+					Domain:     "prd.suborbital.network", // TODO
+					EnvToken:   envToken,
 				}
 
-				templateName := "e2core-k8s"
+				templateName := "k8s"
 
 				data.StorageClassName, err = getStorageClass()
 				if err != nil {
