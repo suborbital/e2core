@@ -25,9 +25,9 @@ func ModStart() *cobra.Command {
 				path = args[0]
 			}
 
-			config, err := sat.ConfigFromRunnableArg(path)
+			config, err := sat.ConfigFromModuleArg(path)
 			if err != nil {
-				return errors.Wrap(err, "failed to ConfigFromRunnableArg")
+				return errors.Wrap(err, "failed to ConfigFromModuleArg")
 			}
 
 			traceProvider, err := sat.SetupTracing(config.TracerConfig, config.Logger)

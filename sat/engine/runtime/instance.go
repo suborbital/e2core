@@ -50,7 +50,7 @@ func (w *WasmInstance) Call(fn string, args ...interface{}) (interface{}, error)
 	return w.runtime.Call(fn, args...)
 }
 
-// ExecutionResult gets the runnable's execution results
+// ExecutionResult gets the module's execution results
 func (w *WasmInstance) ExecutionResult() ([]byte, error) {
 	// determine if the instance called return_result or return_error
 	select {

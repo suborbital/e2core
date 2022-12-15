@@ -36,7 +36,7 @@ type Sat struct {
 	bus       *bus.Bus
 	transport *websocket.Transport
 	exec      *executor.Executor
-	runnable  *tenant.WasmModuleRef
+	module    *tenant.WasmModuleRef
 	log       *vlog.Logger
 	tracer    trace.Tracer
 	metrics   metrics.Metrics
@@ -57,21 +57,21 @@ func New(config *Config, traceProvider trace.TracerProvider, mtx metrics.Metrics
 		return nil, errors.Wrap(err, "failed to executor.New")
 	}
 
-	var runnable *tenant.WasmModuleRef
+	var module *tenant.WasmModuleRef
 	if config.Module != nil && len(config.Module.WasmRef.Data) > 0 {
-		runnable = tenant.NewWasmModuleRef(config.Module.WasmRef.Name, config.Module.WasmRef.FQMN, config.Module.WasmRef.Data)
+		module = tenant.NewWasmModuleRef(config.Module.WasmRef.Name, config.Module.WasmRef.FQMN, config.Module.WasmRef.Data)
 	} else {
-		ref, err := refFromFilename("", "", config.RunnableArg)
+		ref, err := refFromFilename("", "", config.ModuleArg)
 		if err != nil {
 			return nil, errors.Wrap(err, "faild to refFromFilename")
 		}
 
-		runnable = ref
+		module = ref
 	}
 
 	err = exec.Register(
 		config.JobType,
-		runnable,
+		module,
 		scheduler.Autoscale(24),
 		scheduler.MaxRetries(0),
 		scheduler.RetrySeconds(0),
@@ -96,7 +96,7 @@ func New(config *Config, traceProvider trace.TracerProvider, mtx metrics.Metrics
 		config:    config,
 		transport: transport,
 		exec:      exec,
-		runnable:  runnable,
+		module:    module,
 		log:       config.Logger,
 		tracer:    traceProvider.Tracer("sat"),
 		metrics:   mtx,
@@ -258,7 +258,7 @@ func (s *Sat) setupBus() error {
 	if bridging {
 		if err := s.exec.Register(
 			topic,
-			s.runnable,
+			s.module,
 			scheduler.Autoscale(24),
 			scheduler.MaxRetries(0),
 			scheduler.RetrySeconds(0),

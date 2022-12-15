@@ -20,7 +20,7 @@ var (
 	ErrDesiredStateNotGenerated = errors.New("desired state was not generated")
 )
 
-// wasmRunner represents a wasm-based runnable
+// wasmRunner represents a Wasm module
 type wasmRunner struct {
 	env *runtime.WasmEnvironment
 }
@@ -73,7 +73,7 @@ func (w *wasmRunner) Run(job scheduler.Job, ctx *scheduler.Ctx) (interface{}, er
 		// if it's not a request, treat it as normal data
 		bytes, bytesErr := interfaceToBytes(job.Data())
 		if bytesErr != nil {
-			return nil, errors.Wrap(bytesErr, "failed to parse job for Wasm Runnable")
+			return nil, errors.Wrap(bytesErr, "failed to parse job for Wasm module")
 		}
 
 		jobBytes = bytes
@@ -111,7 +111,7 @@ func (w *wasmRunner) Run(job scheduler.Job, ctx *scheduler.Ctx) (interface{}, er
 			return
 		}
 
-		// execute the Runnable's Run function, passing the input data and ident
+		// execute the module's Run function, passing the input data and ident
 		// set runErr but don't return because the ExecutionResult error should also be grabbed
 		_, callErr = instance.Call("run_e", inPointer, int32(len(jobBytes)), ident)
 
@@ -131,7 +131,7 @@ func (w *wasmRunner) Run(job scheduler.Job, ctx *scheduler.Ctx) (interface{}, er
 	}
 
 	if callErr != nil {
-		// if the runnable didn't return an explicit runErr, still check to see if there was an
+		// if the module didn't return an explicit runErr, still check to see if there was an
 		// error executing the module in the first place. It's posslble for both to be non-nil
 		// in which case returning the runErr takes precedence, which is why it's checked first.
 		return nil, errors.Wrap(callErr, "wasm execution error")
@@ -149,7 +149,7 @@ func (w *wasmRunner) Run(job scheduler.Job, ctx *scheduler.Ctx) (interface{}, er
 	return output, nil
 }
 
-// OnChange runs when a worker starts using this Runnable
+// OnChange runs when a worker starts using this module
 func (w *wasmRunner) OnChange(evt scheduler.ChangeEvent) error {
 	switch evt {
 	case scheduler.ChangeTypeStart:

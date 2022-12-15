@@ -104,7 +104,7 @@ func (d *defaultAPI) fetchUrl(method int32, urlPointer int32, urlSize int32, bod
 		}
 
 		if resp.StatusCode > 299 {
-			runtime.InternalLogger().Debug("runnable's http request returned non-200 response:", resp.StatusCode)
+			runtime.InternalLogger().Debug("module's http request returned non-200 response:", resp.StatusCode)
 			return nil, fmt.Errorf("%d: %s", resp.StatusCode, string(respBytes))
 		}
 

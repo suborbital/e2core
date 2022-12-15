@@ -30,13 +30,13 @@ func TestDisabledHTTP(t *testing.T) {
 			t.Error("received incorrect error", err.Error())
 		}
 	} else {
-		t.Error("runnable should have failed")
+		t.Error("module should have failed")
 	}
 }
 
 func TestDisabledGraphQL(t *testing.T) {
 	// bail out if GitHub auth is not set up (i.e. in Travis)
-	// we want the Runnable to fail because graphql is disabled,
+	// we want the module to fail because graphql is disabled,
 	// not because auth isn't set up correctly
 	if _, ok := os.LookupEnv("GITHUB_TOKEN"); !ok {
 		return
@@ -67,6 +67,6 @@ func TestDisabledGraphQL(t *testing.T) {
 			t.Error("received incorrect error ", err.Error())
 		}
 	} else {
-		t.Error("runnable should have produced an error")
+		t.Error("module should have produced an error")
 	}
 }

@@ -51,14 +51,14 @@ func (i *IntegrationSuite) SetupSuite() {
 			},
 			ExposedPorts: []string{"8080:8080"},
 			Cmd: []string{
-				"sat", "/runnables/hello-echo/hello-echo.wasm",
+				"sat", "/module/hello-echo/hello-echo.wasm",
 			},
 			Mounts: []tc.ContainerMount{
 				{
 					Source: tc.DockerBindMountSource{
 						HostPath: satWorkingDir,
 					},
-					Target: tc.ContainerMountTarget("/runnables"),
+					Target: tc.ContainerMountTarget("/module"),
 				},
 			},
 			AutoRemove: true,

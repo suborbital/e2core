@@ -87,7 +87,7 @@ func TestPanicRequest(t *testing.T) {
 }
 
 func satForFile(filepath string) (*Sat, *trace.TracerProvider, error) {
-	config, err := ConfigFromRunnableArg(filepath)
+	config, err := ConfigFromModuleArg(filepath)
 	if err != nil {
 		return nil, nil, err
 	}

@@ -2,7 +2,7 @@ package runtime
 
 type innerFunc func(args ...interface{}) (interface{}, error)
 
-// HostFn describes a host function callable from within a Runnable module
+// HostFn describes a host function callable from within a module module
 type HostFn struct {
 	Name     string
 	ArgCount int
