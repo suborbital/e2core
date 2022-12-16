@@ -15,7 +15,6 @@ jobs:
         uses: lycheeverse/lychee-action@v1.5.4
         with:
           args: --verbose --no-progress -t 5 --exclude-mail --exclude=local.suborbital.network *.md docs/**/*.md
+          fail: true
         env:
-          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
-      - name: Fail if there were link errors
-        run: exit ${{ steps.lychee.outputs.exit_code }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
