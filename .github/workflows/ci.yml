@@ -32,51 +32,14 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
-
       - run: go mod download
 
-      - name: Build
-        run: |
-          make e2core/install
-          make e2core/static
-
-      - name: Run test
-        run: |
-          make test/ci
+      - run: make e2core/install
+      - run: make e2core/static
+      - run: make test/ci
 
   image:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: docker/setup-buildx-action@v2
-      - name: Build e2core image
-        uses: docker/build-push-action@v3
-        with:
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          push: false
-          tags: suborbital/e2core:dev
-
-  release-bin:
-    if: startsWith(github.ref, 'refs/tags/v')
-    needs: [test, image, lint]
-    runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/goreleaser/goreleaser-cross:v1.19
-
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v4
-        with:
-          version: latest
-          args: release --rm-dist
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  release-image:
-    if: startsWith(github.ref, 'refs/tags/v')
-    needs: [test, image, lint]
+    needs: [test, lint]
     runs-on: ubuntu-latest
 
     steps:
@@ -102,7 +65,17 @@ jobs:
           flavor: |
             latest=auto
 
+      - name: Build e2core image
+        uses: docker/build-push-action@v3
+        with:
+          cache-from: type=gha
+          load: true
+          push: false
+          tags: suborbital/e2core:dev
+      - run: docker run --rm suborbital/e2core:dev /usr/local/bin/e2core -v
+
       - name: Build and push e2core image
+        if: ${{ startsWith(github.ref, 'refs/tags/v') }}
         uses: docker/build-push-action@v3
         with:
           cache-from: type=gha
@@ -111,3 +84,21 @@ jobs:
           push: true
           tags: ${{ steps.docker_meta.outputs.tags }}
           labels: ${{ steps.docker_meta.outputs.labels }}
+
+  release-bin:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [test, lint]
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/goreleaser/goreleaser-cross:v1.19
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v4
+        with:
+          version: latest
+          args: release --rm-dist
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
