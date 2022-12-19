@@ -2,7 +2,7 @@
 
 package ffi
 
-// #include <reactr.h>
+// #include <plugin.h>
 import "C"
 
 func result(size int32) ([]byte, HostErr) {
@@ -17,7 +17,7 @@ func result(size int32) ([]byte, HostErr) {
 	}
 
 	result := make([]byte, allocSize)
-	resultPtr, _ := rawSlicePointer(result)
+	resultPtr, _ := unsafeSlicePointer(result)
 
 	if code := C.get_ffi_result(resultPtr, Ident()); code != 0 {
 		return nil, NewHostError("unknown error returned from host")
@@ -31,8 +31,8 @@ func result(size int32) ([]byte, HostErr) {
 }
 
 func addVar(name, value string) {
-	namePtr, nameSize := rawSlicePointer([]byte(name))
-	valuePtr, valueSize := rawSlicePointer([]byte(value))
+	namePtr, nameSize := unsafeSlicePointer([]byte(name))
+	valuePtr, valueSize := unsafeSlicePointer([]byte(value))
 
 	C.add_ffi_var(namePtr, nameSize, valuePtr, valueSize, Ident())
 }

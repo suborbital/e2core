@@ -2,12 +2,12 @@
 
 package ffi
 
-// #include <reactr.h>
+// #include <plugin.h>
 import "C"
 
 func RespSetHeader(key, value string) {
-	keyPtr, keySize := rawSlicePointer([]byte(key))
-	valPtr, valSize := rawSlicePointer([]byte(value))
+	keyPtr, keySize := unsafeSlicePointer([]byte(key))
+	valPtr, valSize := unsafeSlicePointer([]byte(value))
 
 	C.resp_set_header(keyPtr, keySize, valPtr, valSize, Ident())
 }

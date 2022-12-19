@@ -31,7 +31,7 @@ func deallocate(pointer uintptr, size int32) {
 	arr = nil // I think this is sufficient to mark the slice for garbage collection
 }
 
-func rawSlicePointer(slice []byte) (unsafe.Pointer, int32) {
+func unsafeSlicePointer(slice []byte) (unsafe.Pointer, int32) {
 	header := (*reflect.SliceHeader)(unsafe.Pointer(&slice))
 
 	return unsafe.Pointer(header.Data), int32(len(slice))

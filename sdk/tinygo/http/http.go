@@ -3,9 +3,9 @@
 package http
 
 import (
-	"github.com/suborbital/reactr/api/tinygo/runnable/internal/ffi"
+	"github.com/suborbital/e2core/sdk/tinygo/internal/ffi"
 
-	"github.com/suborbital/reactr/api/tinygo/runnable/http/method"
+	"github.com/suborbital/e2core/sdk/tinygo/http/method"
 )
 
 func GET(url string, headers map[string]string) ([]byte, error) {

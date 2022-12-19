@@ -2,13 +2,13 @@
 
 package ffi
 
-// #include <reactr.h>
+// #include <plugin.h>
 import "C"
 import (
 	"reflect"
 	"unsafe"
 
-	"github.com/suborbital/reactr/api/tinygo/runnable/errors"
+	"github.com/suborbital/e2core/sdk/tinygo/errors"
 )
 
 //export run_e
@@ -21,14 +21,14 @@ func run_e(rawdata uintptr, size int32, ident int32) {
 	inputHeader.Len = uintptr(size)
 	inputHeader.Cap = uintptr(size)
 
-	result, err := runnable_.Run(input)
+	result, err := plugin_.Run(input)
 
 	if err != nil {
 		returnError(err, ident)
 		return
 	}
 
-	resPtr, resLen := rawSlicePointer(result)
+	resPtr, resLen := unsafeSlicePointer(result)
 
 	C.return_result(resPtr, resLen, ident)
 }
@@ -46,7 +46,7 @@ func returnError(err error, ident int32) {
 		code = int32(e.Code)
 	}
 
-	errPtr, errLen := rawSlicePointer([]byte(err.Error()))
+	errPtr, errLen := unsafeSlicePointer([]byte(err.Error()))
 
 	C.return_error(code, errPtr, errLen, ident)
 }

@@ -3,7 +3,7 @@
 package resp
 
 import (
-	"github.com/suborbital/reactr/api/tinygo/runnable/internal/ffi"
+	"github.com/suborbital/e2core/sdk/tinygo/internal/ffi"
 )
 
 func SetHeader(key, value string) {
