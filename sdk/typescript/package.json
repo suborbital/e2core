@@ -1,0 +1,22 @@
+{
+  "name": "@suborbital/runnable",
+  "version": "0.15.1",
+  "description": "Suborbital's Runnable API for JavaScript/TypeScript",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc --project .",
+    "format": "prettier . --write",
+    "check-format": "prettier . --check",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "team@suborbital.dev",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/suborbital/reactr/issues"
+  },
+  "homepage": "https://github.com/suborbital/reactr#readme",
+  "devDependencies": {
+    "prettier": "^2.5.1",
+    "typescript": "^4.5.5"
+  }
+}

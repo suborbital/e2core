@@ -1,0 +1,17 @@
+[package]
+name = "suborbital-macro"
+version = "0.15.1"
+edition = "2018"
+authors = ["cohix <connorjhicks@gmail.com>", "Florian Fromm <flrn.frmm@gmail.com>"]
+description = "Macro for setting up a Runnable"
+license = "Apache-2.0"
+repository = "https://github.com/suborbital/reactr"
+homepage = "https://suborbital.dev"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+proc-macro = true
+
+[dependencies]
+syn = "1.0.80"
+quote = "1.0.10"

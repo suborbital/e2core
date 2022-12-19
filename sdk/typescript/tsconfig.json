@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "module": "CommonJS",
+    "target": "es2020",
+    "declaration": true,
+    "outDir": "./dist",
+    "experimentalDecorators": true,
+    "allowJs": true
+  },
+  "include": ["src/**/*", "test/**/*"]
+}
