@@ -1,9 +1,9 @@
 package main
 
 import (
-	"github.com/suborbital/e2core/sat/engine/runtime/api/tinygo/runnable"
-	"github.com/suborbital/e2core/sat/engine/runtime/api/tinygo/runnable/log"
-	"github.com/suborbital/e2core/sat/engine/runtime/api/tinygo/runnable/req"
+	"github.com/suborbital/e2core/sdk/tinygo"
+	"github.com/suborbital/e2core/sdk/tinygo/log"
+	"github.com/suborbital/e2core/sdk/tinygo/req"
 )
 
 type TinygoReq struct{}
@@ -20,5 +20,5 @@ func (h TinygoReq) Run(input []byte) ([]byte, error) {
 
 // initialize runnable, do not edit //
 func main() {
-	runnable.Use(TinygoReq{})
+	tinygo.Use(TinygoReq{})
 }

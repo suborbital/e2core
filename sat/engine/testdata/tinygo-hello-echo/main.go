@@ -1,6 +1,6 @@
 package main
 
-import "github.com/suborbital/e2core/sat/engine/runtime/api/tinygo/runnable"
+import "github.com/suborbital/e2core/sdk/tinygo"
 
 type Hello struct{}
 
@@ -9,5 +9,5 @@ func (h Hello) Run(input []byte) ([]byte, error) {
 }
 
 func main() {
-	runnable.Use(Hello{})
+	tinygo.Use(Hello{})
 }

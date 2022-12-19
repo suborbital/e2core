@@ -1,18 +1,15 @@
 package main
 
 import (
-	"github.com/suborbital/e2core/sat/engine/runtime/api/tinygo/runnable"
-	"github.com/suborbital/e2core/sat/engine/runtime/api/tinygo/runnable/http"
-	"github.com/suborbital/e2core/sat/engine/runtime/api/tinygo/runnable/log"
+	"github.com/suborbital/e2core/sdk/tinygo"
+	"github.com/suborbital/e2core/sdk/tinygo/http"
+	"github.com/suborbital/e2core/sdk/tinygo/log"
 )
 
 type TinygoHttpGet struct{}
 
 func (h TinygoHttpGet) Run(input []byte) ([]byte, error) {
-	headers := map[string]string{}
-	headers["foo"] = "bar"
-
-	res, err := http.POST(string(input), []byte("foobar"), headers)
+	res, err := http.GET(string(input), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -24,5 +21,5 @@ func (h TinygoHttpGet) Run(input []byte) ([]byte, error) {
 
 // initialize runnable, do not edit //
 func main() {
-	runnable.Use(TinygoHttpGet{})
+	tinygo.Use(TinygoHttpGet{})
 }

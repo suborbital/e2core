@@ -1,5 +1,7 @@
 module vendor.suborbital.network/tinygo-resp
 
-require github.com/suborbital/reactr v0.15.1
+replace github.com/suborbital/e2core => ../../../../
 
-go 1.17
+require github.com/suborbital/e2core v0.5.1
+
+go 1.19

@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/suborbital/e2core/sat/engine/runtime/api/tinygo/runnable"
-	"github.com/suborbital/e2core/sat/engine/runtime/api/tinygo/runnable/req"
+	"github.com/suborbital/e2core/sdk/tinygo"
+	"github.com/suborbital/e2core/sdk/tinygo/req"
 )
 
 type TinygoQueryparam struct{}
@@ -15,5 +15,5 @@ func (h TinygoQueryparam) Run(input []byte) ([]byte, error) {
 
 // initialize runnable, do not edit //
 func main() {
-	runnable.Use(TinygoQueryparam{})
+	tinygo.Use(TinygoQueryparam{})
 }
