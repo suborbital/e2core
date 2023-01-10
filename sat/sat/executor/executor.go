@@ -10,8 +10,8 @@ import (
 
 	"github.com/suborbital/e2core/foundation/bus/bus"
 	"github.com/suborbital/e2core/foundation/scheduler"
-	"github.com/suborbital/e2core/sat/engine"
-	"github.com/suborbital/e2core/sat/engine/runtime/api"
+	"github.com/suborbital/e2core/sat/engine2"
+	"github.com/suborbital/e2core/sat/engine2/api"
 	"github.com/suborbital/systemspec/capabilities"
 	"github.com/suborbital/systemspec/request"
 	"github.com/suborbital/systemspec/tenant"
@@ -28,9 +28,8 @@ var (
 // Executor is a facade over Grav and Reactr that allows executing local OR remote
 // functions with a single call, ensuring there is no difference between them to the caller.
 type Executor struct {
-	engine   *engine.Engine
-	bus      *bus.Bus
-	capCache map[string]*capabilities.Capabilities
+	engine *engine2.Engine
+	bus    *bus.Bus
 
 	pod *bus.Pod
 
@@ -38,16 +37,17 @@ type Executor struct {
 }
 
 // New creates an Executor
-func New(log *vlog.Logger, config capabilities.CapabilityConfig) (*Executor, error) {
-	api, err := api.NewWithConfig(config)
+func New(log *vlog.Logger, config capabilities.CapabilityConfig, jobType string, ref *tenant.WasmModuleRef, opts ...scheduler.Option) (*Executor, error) {
+	api, err := api.NewWithConfig(log, config)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to NewWithConfig")
 	}
 
+	engine := engine2.New(jobType, ref, api, opts...)
+
 	e := &Executor{
-		log:      log,
-		engine:   engine.NewWithAPI(api),
-		capCache: make(map[string]*capabilities.Capabilities),
+		log:    log,
+		engine: engine,
 	}
 
 	return e, nil
@@ -90,17 +90,6 @@ func (e *Executor) UseBus(b *bus.Bus) {
 	e.pod = b.Connect()
 }
 
-// Register registers a module.
-func (e *Executor) Register(jobType string, ref *tenant.WasmModuleRef, opts ...scheduler.Option) error {
-	if e.engine == nil {
-		return ErrExecutorNotConfigured
-	}
-
-	e.engine.Register(jobType, ref, opts...)
-
-	return nil
-}
-
 // ListenAndRun sets up the executor's Reactr instance to listen for messages and execute the associated job.
 func (e *Executor) ListenAndRun(msgType string, run func(bus.Message, interface{}, error)) error {
 	if e.engine == nil {
@@ -119,17 +108,6 @@ func (e *Executor) Send(msg bus.Message) *bus.MsgReceipt {
 	}
 
 	return e.pod.Send(msg)
-}
-
-// SetSchedule adds a Schedule to the executor's Reactr instance.
-func (e *Executor) SetSchedule(sched scheduler.Schedule) error {
-	if e.engine == nil {
-		return ErrExecutorNotConfigured
-	}
-
-	e.engine.Schedule(sched)
-
-	return nil
 }
 
 // Metrics returns the executor's Reactr instance's internal metrics.

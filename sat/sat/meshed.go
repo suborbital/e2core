@@ -24,11 +24,11 @@ func (s *Sat) handleFnResult(msg bus.Message, result interface{}, fnErr error) {
 	// first unmarshal the request and sequence information
 	req, err := request.FromJSON(msg.Data())
 	if err != nil {
-		s.log.Error(errors.Wrap(err, "failed to request.FromJSON"))
+		s.config.Logger.Error(errors.Wrap(err, "failed to request.FromJSON"))
 		return
 	}
 
-	ctx := vk.NewCtx(s.log, nil, nil)
+	ctx := vk.NewCtx(s.config.Logger, nil, nil)
 	ctx.UseRequestID(req.ID)
 	ctx.UseScope(loggerScope{req.ID})
 
@@ -41,7 +41,7 @@ func (s *Sat) handleFnResult(msg bus.Message, result interface{}, fnErr error) {
 
 	seq, err := sequence.FromJSON(req.SequenceJSON, req)
 	if err != nil {
-		s.log.Error(errors.Wrap(err, "failed to sequence.FromJSON"))
+		s.config.Logger.Error(errors.Wrap(err, "failed to sequence.FromJSON"))
 		return
 	}
 
@@ -116,7 +116,7 @@ func (s *Sat) handleFnResult(msg bus.Message, result interface{}, fnErr error) {
 // when a bridged peer sends us a job, it is executed by Reactr and then
 // the result is passed into this function for handling
 func (s *Sat) handleBridgedResult(msg bus.Message, result interface{}, fnErr error) {
-	ctx := vk.NewCtx(s.log, nil, nil)
+	ctx := vk.NewCtx(s.config.Logger, nil, nil)
 
 	spanCtx, span := s.tracer.Start(ctx.Context, "handleBridgedResult", trace.WithAttributes(
 		attribute.String("request_id", ctx.RequestID()),
@@ -160,7 +160,7 @@ func (s *Sat) sendFnResult(result *sequence.ExecResult, ctx *vk.Ctx) error {
 
 	ctx.Log.Debug("function", s.jobName, "completed, sending meshed result message", respMsg.UUID())
 
-	if s.exec.Send(respMsg) == nil {
+	if s.pod.Send(respMsg) == nil {
 		return errors.New("failed to Send fnResult")
 	}
 
@@ -176,7 +176,7 @@ func (s *Sat) sendBridgedResult(resultBytes []byte, ctx *vk.Ctx) error {
 
 	ctx.Log.Debug("function", s.jobName, "completed, sending bridged result message", bridgeMsg.UUID())
 
-	if s.exec.Send(bridgeMsg) == nil {
+	if s.pod.Send(bridgeMsg) == nil {
 		return errors.New("failed to Send fnResult")
 	}
 

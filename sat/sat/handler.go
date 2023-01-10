@@ -8,13 +8,13 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/suborbital/e2core/foundation/scheduler"
-	"github.com/suborbital/e2core/sat/sat/executor"
+	"github.com/suborbital/e2core/sat/engine2"
 	"github.com/suborbital/e2core/sat/sat/metrics"
 	"github.com/suborbital/systemspec/request"
 	"github.com/suborbital/vektor/vk"
 )
 
-func (s *Sat) handler(exec *executor.Executor) vk.HandlerFunc {
+func (s *Sat) handler(engine *engine2.Engine) vk.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request, ctx *vk.Ctx) error {
 		spanCtx, span := s.tracer.Start(ctx.Context, "vkhandler", trace.WithAttributes(
 			attribute.String("request_id", ctx.RequestID()),
@@ -35,24 +35,25 @@ func (s *Sat) handler(exec *executor.Executor) vk.HandlerFunc {
 
 		var runErr scheduler.RunErr
 
-		result, err := exec.Do(s.jobName, req, ctx, nil)
+		result, err := engine.Do(scheduler.NewJob(s.jobName, req)).Then()
 		if err != nil {
 			if errors.As(err, &runErr) {
 				// runErr would be an actual error returned from a function
 				// should find a better way to determine if a RunErr is "non-nil"
 				if runErr.Code != 0 || runErr.Message != "" {
-					s.log.Debug("fn", s.jobName, "returned an error")
+					s.config.Logger.Debug("fn", s.jobName, "returned an error")
 					return vk.E(runErr.Code, runErr.Message)
 				}
 			}
 
-			s.log.Error(errors.Wrap(err, "failed to exec.Do"))
+			s.config.Logger.Error(errors.Wrap(err, "failed to exec.Do"))
 			return vk.E(http.StatusInternalServerError, "unknown error")
 		}
+
 		s.metrics.FunctionTime.Record(spanCtx, t.Observe(), attribute.String("id", req.ID))
 
 		if result == nil {
-			s.log.Debug("fn", s.jobName, "returned a nil result")
+			s.config.Logger.Debug("fn", s.jobName, "returned a nil result")
 			return nil
 		}
 
