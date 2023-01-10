@@ -8,7 +8,7 @@ import (
 )
 
 type HostAPI interface {
-	HostFunctions() []HostFn
+	HostFunctions() []runtime.HostFn
 }
 
 type defaultAPI struct {

@@ -49,7 +49,6 @@ func (d *defaultAPI) HostFunctions() []HostFn {
 		d.GetFFIResultHandler(),
 		d.AddFFIVariableHandler(),
 		d.FetchURLHandler(),
-		d.GraphQLQueryHandler(),
 		d.LogMsgHandler(),
 		d.RequestGetFieldHandler(),
 		d.RequestSetFieldHandler(),
