@@ -1,9 +1,6 @@
 package engine2
 
 import (
-	"io"
-	"os"
-
 	"github.com/pkg/errors"
 
 	"github.com/suborbital/e2core/e2core/sequence"
@@ -22,25 +19,6 @@ var (
 // wasmRunner represents a Wasm module
 type wasmRunner struct {
 	pool *runtime.InstancePool
-}
-
-// newRunnerFromFile returns a new *wasmRunner
-func newRunnerFromFile(filepath string, api api.HostAPI) (*wasmRunner, error) {
-	file, err := os.Open(filepath)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to Open")
-	}
-
-	data, err := io.ReadAll(file)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to ReadAll")
-	}
-
-	ref := tenant.NewWasmModuleRef("", "", data)
-
-	runner := newRunnerFromRef(ref, api)
-
-	return runner, nil
 }
 
 // newRunnerFromRef creates a wasmRunner from a moduleRef

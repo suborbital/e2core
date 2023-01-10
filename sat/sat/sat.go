@@ -96,7 +96,7 @@ func New(config *Config, traceProvider trace.TracerProvider, mtx metrics.Metrics
 
 	// if a transport is configured, enable bus and metrics endpoints, otherwise enable server mode
 	if config.ControlPlaneUrl != "" {
-		sat.transport = websocket.New()
+		sat.setupBus()
 
 		sat.vektor.HandleHTTP(http.MethodGet, "/meta/message", sat.transport.HTTPHandlerFunc())
 		sat.vektor.GET("/meta/metrics", sat.workerMetricsHandler())
@@ -123,12 +123,6 @@ func (s *Sat) Start(ctx context.Context) error {
 			vektorError <- err
 		}
 	}()
-
-	if s.transport != nil {
-		if err := s.setupBus(); err != nil {
-			return errors.Wrap(err, "failed to setupBus")
-		}
-	}
 
 	select {
 	case <-ctx.Done():
@@ -175,7 +169,9 @@ func (s *Sat) Shutdown() error {
 	return nil
 }
 
-func (s *Sat) setupBus() error {
+func (s *Sat) setupBus() {
+	s.transport = websocket.New()
+
 	// configure Bus to join the mesh for its appropriate application
 	// and broadcast its "interest" (i.e. the loaded function)
 	opts := []bus.OptionsModifier{
@@ -191,8 +187,6 @@ func (s *Sat) setupBus() error {
 	s.pod = s.bus.Connect()
 
 	s.engine.ListenAndRun(s.bus.Connect(), s.config.JobType, s.handleFnResult)
-
-	return nil
 }
 
 // testStart returns Sat's internal server for testing purposes
