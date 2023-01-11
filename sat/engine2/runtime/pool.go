@@ -29,8 +29,9 @@ type InstancePool struct {
 // NewInstancePool creates a new InstancePool
 func NewInstancePool(ref *tenant.WasmModuleRef, api api.HostAPI) *InstancePool {
 	b := &InstancePool{
-		ref:     ref,
-		hostFns: api.HostFunctions(),
+		availableInstances: make(chan *instance.Instance, 64),
+		ref:                ref,
+		hostFns:            api.HostFunctions(),
 	}
 
 	return b

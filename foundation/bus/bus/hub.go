@@ -127,12 +127,12 @@ func (h *hub) discoveryHandler() func(endpoint string, uuid string) {
 
 		// this reduces the number of extraneous outgoing handshakes that get attempted.
 		if h.connectionExists(uuid) {
-			h.log.Debug("[hub.discoveryHandler] encountered duplicate connection, discarding")
+			h.log.Debug("[hub.discoveryHandler] encountered duplicate connection", uuid, ", discarding")
 			return
 		}
 
 		if err := h.connectEndpoint(endpoint, uuid); err != nil {
-			h.log.Error(errors.Wrap(err, "[hub.discoveryHandler] failed to connectEndpoint for discovered peer"))
+			h.log.Error(errors.Wrapf(err, "[hub.discoveryHandler] failed to connectEndpoint for discovered peer %s", uuid))
 		}
 	}
 }

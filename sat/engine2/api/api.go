@@ -53,7 +53,6 @@ func (d *defaultAPI) HostFunctions() []HostFn {
 		d.RequestGetFieldHandler(),
 		d.RequestSetFieldHandler(),
 		d.RespSetHeaderHandler(),
-		d.GetSecretValueHandler(),
 	}
 
 	return fns

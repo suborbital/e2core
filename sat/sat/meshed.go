@@ -50,8 +50,6 @@ func (s *Sat) handleFnResult(msg bus.Message, result interface{}, fnErr error) {
 		return
 	}
 
-	step.Completed = true
-
 	// start evaluating the result of the function call
 	resp := &request.CoordinatedResponse{}
 	var runErr scheduler.RunErr
@@ -121,7 +119,7 @@ func (s *Sat) sendFnResult(result *sequence.ExecResult, ctx *vk.Ctx) error {
 
 	respMsg := bus.NewMsgWithParentID(server.MsgTypeSuborbitalResult, ctx.RequestID(), fnrJSON)
 
-	ctx.Log.Debug("function", s.jobName, "completed, sending meshed result message", respMsg.UUID())
+	ctx.Log.Debug("function", s.config.JobType, "completed, sending meshed result message", respMsg.UUID())
 
 	if s.pod.Send(respMsg) == nil {
 		return errors.New("failed to Send fnResult")

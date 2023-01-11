@@ -26,7 +26,7 @@ func (s *Sat) Exec(input []byte) (*request.CoordinatedResponse, error) {
 		State:       map[string][]byte{},
 	}
 
-	result, err := s.engine.Do(scheduler.NewJob(s.jobName, req)).Then()
+	result, err := s.engine.Do(scheduler.NewJob(s.config.JobType, req)).Then()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to exec")
 	}

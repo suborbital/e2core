@@ -23,10 +23,10 @@ type wasmRunner struct {
 
 // newRunnerFromRef creates a wasmRunner from a moduleRef
 func newRunnerFromRef(ref *tenant.WasmModuleRef, api api.HostAPI) *wasmRunner {
-	environment := runtime.NewInstancePool(ref, api)
+	pool := runtime.NewInstancePool(ref, api)
 
 	r := &wasmRunner{
-		pool: environment,
+		pool: pool,
 	}
 
 	return r

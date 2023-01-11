@@ -35,13 +35,18 @@ func (s *Sat) handler(engine *engine2.Engine) vk.HandlerFunc {
 
 		var runErr scheduler.RunErr
 
-		result, err := engine.Do(scheduler.NewJob(s.jobName, req)).Then()
+		if !engine.IsRegistered(s.config.JobType) {
+			s.config.Logger.ErrorString("module", s.config.JobType, "is not registered")
+			return vk.E(http.StatusInternalServerError, "unknown error")
+		}
+
+		result, err := engine.Do(scheduler.NewJob(s.config.JobType, req)).Then()
 		if err != nil {
 			if errors.As(err, &runErr) {
 				// runErr would be an actual error returned from a function
 				// should find a better way to determine if a RunErr is "non-nil"
 				if runErr.Code != 0 || runErr.Message != "" {
-					s.config.Logger.Debug("fn", s.jobName, "returned an error")
+					s.config.Logger.Debug("fn", s.config.JobType, "returned an error")
 					return vk.E(runErr.Code, runErr.Message)
 				}
 			}
@@ -53,7 +58,7 @@ func (s *Sat) handler(engine *engine2.Engine) vk.HandlerFunc {
 		s.metrics.FunctionTime.Record(spanCtx, t.Observe(), attribute.String("id", req.ID))
 
 		if result == nil {
-			s.config.Logger.Debug("fn", s.jobName, "returned a nil result")
+			s.config.Logger.Debug("fn", s.config.JobType, "returned a nil result")
 			return nil
 		}
 

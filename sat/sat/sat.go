@@ -14,7 +14,6 @@ import (
 	"github.com/suborbital/e2core/foundation/bus/bus"
 	"github.com/suborbital/e2core/foundation/bus/discovery/local"
 	"github.com/suborbital/e2core/foundation/bus/transport/websocket"
-	"github.com/suborbital/e2core/foundation/scheduler"
 	"github.com/suborbital/e2core/sat/engine2"
 	"github.com/suborbital/e2core/sat/engine2/api"
 	"github.com/suborbital/e2core/sat/sat/metrics"
@@ -25,8 +24,6 @@ import (
 
 // Sat is a sat server with annoyingly terse field names (because it's smol)
 type Sat struct {
-	jobName string // the job name / FQMN
-
 	config    *Config
 	vektor    *vk.Server
 	bus       *bus.Bus
@@ -41,13 +38,12 @@ type loggerScope struct {
 	RequestID string `json:"request_id"`
 }
 
-// New initializes Reactr, Vektor, and Grav in a Sat instance
-// if config.UseStdin is true, only Reactr will be created
+// New initializes a Sat instance
 // if traceProvider is nil, the default NoopTraceProvider will be used
 func New(config *Config, traceProvider trace.TracerProvider, mtx metrics.Metrics) (*Sat, error) {
 	var module *tenant.WasmModuleRef
 
-	if config.Module != nil && len(config.Module.WasmRef.Data) > 0 {
+	if config.Module != nil && config.Module.WasmRef != nil && len(config.Module.WasmRef.Data) > 0 {
 		module = config.Module.WasmRef
 	} else {
 		ref, err := refFromFilename("", "", config.ModuleArg)
@@ -63,22 +59,13 @@ func New(config *Config, traceProvider trace.TracerProvider, mtx metrics.Metrics
 		return nil, errors.Wrap(err, "failed to NewWithConfig")
 	}
 
-	engine := engine2.New(
-		config.JobType,
-		module,
-		api,
-		scheduler.Autoscale(24),
-		scheduler.MaxRetries(0),
-		scheduler.RetrySeconds(0),
-		scheduler.PreWarm(),
-	)
+	engine := engine2.New(config.JobType, module, api)
 
 	if traceProvider == nil {
 		traceProvider = trace.NewNoopTracerProvider()
 	}
 
 	sat := &Sat{
-		jobName: config.JobType,
 		config:  config,
 		engine:  engine,
 		tracer:  traceProvider.Tracer("sat"),
@@ -96,7 +83,7 @@ func New(config *Config, traceProvider trace.TracerProvider, mtx metrics.Metrics
 
 	// if a transport is configured, enable bus and metrics endpoints, otherwise enable server mode
 	if config.ControlPlaneUrl != "" {
-		sat.setupBus()
+		sat.transport = websocket.New()
 
 		sat.vektor.HandleHTTP(http.MethodGet, "/meta/message", sat.transport.HTTPHandlerFunc())
 		sat.vektor.GET("/meta/metrics", sat.workerMetricsHandler())
@@ -121,6 +108,12 @@ func (s *Sat) Start(ctx context.Context) error {
 	go func() {
 		if err := s.vektor.Start(); err != nil {
 			vektorError <- err
+		}
+	}()
+
+	go func() {
+		if s.transport != nil {
+			s.setupBus()
 		}
 	}()
 
@@ -170,8 +163,6 @@ func (s *Sat) Shutdown() error {
 }
 
 func (s *Sat) setupBus() {
-	s.transport = websocket.New()
-
 	// configure Bus to join the mesh for its appropriate application
 	// and broadcast its "interest" (i.e. the loaded function)
 	opts := []bus.OptionsModifier{
