@@ -8,10 +8,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/suborbital/e2core/e2core/options"
-	"github.com/suborbital/e2core/foundation/common"
 	"github.com/suborbital/systemspec/system"
 	"github.com/suborbital/vektor/vk"
+
+	"github.com/suborbital/e2core/e2core/options"
+	"github.com/suborbital/e2core/foundation/common"
 )
 
 type TenantInfo struct {
@@ -34,7 +35,7 @@ func AuthorizationMiddleware(opts *options.Options, inner vk.HandlerFunc) vk.Han
 			return vk.E(http.StatusUnauthorized, "")
 		}
 
-		ctx.Set("ident", fmt.Sprintf("%s.%s", tntInfo.Environment, tntInfo.Tenant))
+		ctx.Set("ident", tntInfo.Tenant)
 
 		return inner(w, r, ctx)
 	}
