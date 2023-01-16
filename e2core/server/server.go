@@ -7,14 +7,13 @@ import (
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 
-	"github.com/suborbital/vektor/vk"
-
 	"github.com/suborbital/e2core/e2core/auth"
 	"github.com/suborbital/e2core/e2core/options"
 	"github.com/suborbital/e2core/e2core/syncer"
 	"github.com/suborbital/e2core/foundation/bus/bus"
 	"github.com/suborbital/e2core/foundation/bus/discovery/local"
 	"github.com/suborbital/e2core/foundation/bus/transport/websocket"
+	"github.com/suborbital/vektor/vk"
 )
 
 const E2CoreHealthURI = "/health"

@@ -8,11 +8,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/suborbital/systemspec/system"
-	"github.com/suborbital/vektor/vk"
-
 	"github.com/suborbital/e2core/e2core/options"
 	"github.com/suborbital/e2core/foundation/common"
+	"github.com/suborbital/systemspec/system"
+	"github.com/suborbital/vektor/vk"
 )
 
 type TenantInfo struct {
