@@ -1,5 +1,5 @@
 module vendor.suborbital.dev/tinygo-hello-echo
 
-require github.com/suborbital/reactr v0.14.0
+require github.com/suborbital/reactr v0.15.1
 
-go 1.17
+go 1.19

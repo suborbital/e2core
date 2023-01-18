@@ -30,6 +30,8 @@ dependencies = [
 [[package]]
 name = "suborbital"
 version = "0.15.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5dd3e7791d77a63fc55bc9b585e82bd670db5b5ce90d17179c68f67fffaba74d"
 dependencies = [
  "suborbital-macro",
 ]
@@ -37,6 +39,8 @@ dependencies = [
 [[package]]
 name = "suborbital-macro"
 version = "0.15.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "474864f23ed87273293d6783f1fc09a97173333c3c4825db1b3cf19b81579978"
 dependencies = [
  "quote",
  "syn",

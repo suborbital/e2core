@@ -1,9 +1,9 @@
 package main
 
 import (
-	"github.com/suborbital/e2core/sat/engine/runtime/api/tinygo/runnable"
-	"github.com/suborbital/e2core/sat/engine/runtime/api/tinygo/runnable/http"
-	"github.com/suborbital/e2core/sat/engine/runtime/api/tinygo/runnable/log"
+	"github.com/suborbital/reactr/api/tinygo/runnable"
+	"github.com/suborbital/reactr/api/tinygo/runnable/http"
+	"github.com/suborbital/reactr/api/tinygo/runnable/log"
 )
 
 type TinygoHttpGet struct{}
