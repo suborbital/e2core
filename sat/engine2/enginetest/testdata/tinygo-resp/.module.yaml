@@ -1,0 +1,6 @@
+name: tinygo-resp
+namespace: default
+lang: tinygo
+version: ""
+apiVersion: 0.15.1
+fqfnUri: ""
