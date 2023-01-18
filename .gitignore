@@ -19,7 +19,7 @@
 target/
 *.wasm
 !sat/engine/testdata/**/*.wasm
-!sat/engine2/testdata/**/*.wasm
+!sat/engine2/enginetest/testdata/**/*.wasm
 !sat/examples/**/*.wasm
 node_modules
 .idea
