@@ -1,0 +1,5 @@
+name: tinygo-hello-echo
+namespace: default
+lang: tinygo
+apiVersion: 0.12.0
+

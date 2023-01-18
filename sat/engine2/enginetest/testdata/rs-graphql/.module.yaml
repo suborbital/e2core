@@ -1,0 +1,5 @@
+name: rs-graphql
+namespace: default
+lang: rust
+version: ""
+apiVersion: 0.10.0

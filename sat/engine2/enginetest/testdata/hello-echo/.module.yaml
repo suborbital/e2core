@@ -1,0 +1,4 @@
+name: hello-echo
+namespace: default
+lang: rust
+apiVersion: 0.2.5
