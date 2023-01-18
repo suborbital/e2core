@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+
 	"github.com/suborbital/e2core/foundation/scheduler"
 	"github.com/suborbital/e2core/sat/engine2"
 	"github.com/suborbital/e2core/sat/engine2/api"
