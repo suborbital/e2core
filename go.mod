@@ -18,7 +18,7 @@ require (
 	github.com/suborbital/systemspec v0.0.6-0.20221214172802-9e73130024e4
 	github.com/suborbital/vektor v0.7.0
 	github.com/testcontainers/testcontainers-go v0.17.0
-	github.com/twmb/franz-go v1.11.0
+	github.com/twmb/franz-go v1.11.1
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.36.4
 	go.opentelemetry.io/otel v1.11.1
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.11.1
