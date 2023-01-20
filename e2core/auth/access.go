@@ -34,7 +34,7 @@ func AuthorizationMiddleware(opts *options.Options, inner vk.HandlerFunc) vk.Han
 			return vk.E(http.StatusUnauthorized, "")
 		}
 
-		ctx.Set("ident", fmt.Sprintf("%s.%s", tntInfo.Environment, tntInfo.Tenant))
+		ctx.Set("ident", tntInfo.Tenant)
 
 		return inner(w, r, ctx)
 	}

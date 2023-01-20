@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 
+	"github.com/suborbital/e2core/e2core/auth"
 	"github.com/suborbital/e2core/e2core/options"
 	"github.com/suborbital/e2core/e2core/syncer"
 	"github.com/suborbital/e2core/foundation/bus/bus"
@@ -75,10 +76,14 @@ func New(sync *syncer.Syncer, opts *options.Options) (*Server, error) {
 
 	router.WithMiddlewares(server.openTelemetryMiddleware())
 	router.WithMiddlewares(scopeMiddleware)
+	if opts.AdminEnabled() {
+		router.POST("/name/:ident/:namespace/:name", auth.AuthorizationMiddleware(opts, server.executePluginByNameHandler()))
+	} else {
+		router.POST("/name/:ident/:namespace/:name", server.executePluginByNameHandler())
+		router.POST("/ref/:ref", server.executePluginByRefHandler())
+		router.POST("/workflow/:ident/:namespace/:name", server.executeWorkflowHandler())
+	}
 
-	router.POST("/name/:ident/:namespace/:name", server.executePluginByNameHandler())
-	router.POST("/ref/:ref", server.executePluginByRefHandler())
-	router.POST("/workflow/:ident/:namespace/:name", server.executeWorkflowHandler())
 	router.GET("/health", server.healthHandler())
 
 	server.server.SwapRouter(router)
