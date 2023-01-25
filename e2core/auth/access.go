@@ -46,7 +46,7 @@ func NewApiAuthClient(opts *options.Options) *AuthzClient {
 			Timeout:   20 * time.Second,
 			Transport: http.DefaultTransport,
 		},
-		location: opts.ControlPlane + "/api/v2/tenant/%s",
+		location: opts.ControlPlane + "/api/v1/tenant/%s",
 		cache:    NewAuthorizationCache(opts.AuthCacheTTL),
 	}
 }
