@@ -80,7 +80,6 @@ func New(l zerolog.Logger, sync *syncer.Syncer, opts *options.Options) (*Server,
 
 	router := vk.NewRouter(opts.Logger(), "")
 
-	router.WithMiddlewares(server.openTelemetryMiddleware())
 	router.WithMiddlewares(scopeMiddleware)
 	if opts.AdminEnabled() {
 		router.POST("/name/:ident/:namespace/:name", auth.AuthorizationMiddleware(opts, server.executePluginByNameHandler()))
