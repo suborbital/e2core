@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -8,10 +9,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/labstack/echo/v4"
+
 	"github.com/suborbital/e2core/e2core/options"
 	"github.com/suborbital/e2core/foundation/common"
 	"github.com/suborbital/systemspec/system"
-	"github.com/suborbital/vektor/vk"
 )
 
 type TenantInfo struct {
@@ -21,22 +23,25 @@ type TenantInfo struct {
 	Tenant          string `json:"tenant"`
 }
 
-func AuthorizationMiddleware(opts *options.Options, inner vk.HandlerFunc) vk.HandlerFunc {
+func AuthorizationMiddleware(opts *options.Options) echo.MiddlewareFunc {
 	authorizer := NewApiAuthClient(opts)
-	return func(w http.ResponseWriter, r *http.Request, ctx *vk.Ctx) error {
-		identifier := ctx.Params.ByName("ident")
-		namespace := ctx.Params.ByName("namespace")
-		name := ctx.Params.ByName("name")
 
-		tntInfo, err := authorizer.Authorize(ExtractAccessToken(r.Header), identifier, namespace, name)
-		if err != nil {
-			ctx.Log.Error(err)
-			return vk.E(http.StatusUnauthorized, "")
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			identifier := c.Param("ident")
+			namespace := c.Param("namespace")
+			name := c.Param("name")
+
+			tntInfo, err := authorizer.Authorize(ExtractAccessToken(c.Request().Header), identifier, namespace, name)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusUnauthorized).SetInternal(err)
+			}
+
+			c.Set("ident", tntInfo.Tenant)
+			c.SetRequest(c.Request().WithContext(context.WithValue(c.Request().Context(), "ident", tntInfo.Tenant)))
+
+			return next(c)
 		}
-
-		ctx.Set("ident", tntInfo.Tenant)
-
-		return inner(w, r, ctx)
 	}
 }
 

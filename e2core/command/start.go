@@ -67,7 +67,7 @@ func Start() *cobra.Command {
 
 			sync := syncer.New(vOpts, systemSource)
 
-			srv, err := server.New(sync, vOpts)
+			srv, err := server.New(logger, sync, vOpts)
 			if err != nil {
 				return errors.Wrap(err, "server.New")
 			}

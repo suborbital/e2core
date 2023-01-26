@@ -2,13 +2,11 @@ package server
 
 import (
 	"context"
-	"net/http"
 
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho"
-	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 
 	"github.com/suborbital/e2core/e2core/auth"
 	"github.com/suborbital/e2core/e2core/options"
@@ -37,7 +35,7 @@ func New(l zerolog.Logger, sync *syncer.Syncer, opts *options.Options) (*Server,
 	ll := l.With().Str("module", "syncer").Logger()
 	// @todo https://github.com/suborbital/e2core/issues/144, the first return value is a function that would close the
 	// tracer in case of a shutdown. Usually that is put in a defer statement. Server doesn't have a graceful shutdown.
-	tracingShutdown, err := setupTracing(opts.TracerConfig, ll)
+	_, err := setupTracing(opts.TracerConfig, ll)
 	if err != nil {
 		return nil, errors.Wrapf(err, "setupTracing(%s, %s, %f)", "e2core", "reporter_uri", 0.04)
 	}
@@ -51,24 +49,12 @@ func New(l zerolog.Logger, sync *syncer.Syncer, opts *options.Options) (*Server,
 
 	e := echo.New()
 	// trace middleware
-	e.Use(otelecho.Middleware("e2core"))
+	e.Use(
+		UUIDRequestID(),
+		otelecho.Middleware("e2core"),
+	)
 
 	d := newDispatcher(ll, b.Connect())
-
-	s := vk.New(
-		vk.UseEnvPrefix("E2CORE"),
-		vk.UseAppName(opts.AppName),
-		vk.UseLogger(opts.Logger()),
-		vk.UseDomain(opts.Domain),
-		vk.UseHTTPPort(opts.HTTPPort),
-		vk.UseTLSPort(opts.TLSPort),
-		vk.UseQuietRoutes(
-			E2CoreHealthURI,
-		),
-		vk.UseRouterWrapper(func(inner http.Handler) http.Handler {
-			return otelhttp.NewHandler(inner, "e2core")
-		}),
-	)
 
 	server := &Server{
 		server:     e,
@@ -78,24 +64,20 @@ func New(l zerolog.Logger, sync *syncer.Syncer, opts *options.Options) (*Server,
 		dispatcher: d,
 	}
 
-	router := vk.NewRouter(opts.Logger(), "")
-
 	if opts.AdminEnabled() {
-		router.POST("/name/:ident/:namespace/:name", auth.AuthorizationMiddleware(opts, server.executePluginByNameHandler()))
+		e.POST("/name/:ident/:namespace/:name", server.executePluginByNameHandler(), auth.AuthorizationMiddleware(opts))
 	} else {
-		router.POST("/name/:ident/:namespace/:name", server.executePluginByNameHandler())
-		router.POST("/ref/:ref", server.executePluginByRefHandler())
-		router.POST("/workflow/:ident/:namespace/:name", server.executeWorkflowHandler())
+		e.POST("/name/:ident/:namespace/:name", server.executePluginByNameHandler())
+		e.POST("/ref/:ref", server.executePluginByRefHandler(ll))
+		e.POST("/workflow/:ident/:namespace/:name", server.executeWorkflowHandler())
 	}
 
-	router.GET("/health", server.healthHandler())
-
-	server.server.SwapRouter(router)
+	e.GET("/health", server.healthHandler())
 
 	return server, nil
 }
 
-// Start starts the Server server.
+// Start starts the Server.
 func (s *Server) Start(ctx context.Context) error {
 	if err := s.server.Start(); err != nil {
 		return errors.Wrap(err, "failed to server.Start")
