@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog"
 
 	"github.com/suborbital/e2core/e2core/sequence"
 	"github.com/suborbital/e2core/foundation/bus/bus"
@@ -27,7 +28,7 @@ type callback func(*sequence.ExecResult)
 
 // dispatcher is responsible for "resolving" a sequence by sending messages to sats and collecting the results
 type dispatcher struct {
-	log       *vlog.Logger
+	log       zerolog.Logger
 	pod       *bus.Pod
 	callbacks map[string]callback
 	lock      *sync.RWMutex
@@ -39,9 +40,10 @@ type sequenceDispatcher struct {
 	log *vlog.Logger
 }
 
-func newDispatcher(log *vlog.Logger, pod *bus.Pod) *dispatcher {
+func newDispatcher(l zerolog.Logger, pod *bus.Pod) *dispatcher {
+	ll := l.With().Str("module", "dispatcher").Logger()
 	d := &dispatcher{
-		log:       log,
+		log:       ll,
 		pod:       pod,
 		callbacks: make(map[string]callback),
 		lock:      &sync.RWMutex{},

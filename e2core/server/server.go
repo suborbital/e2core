@@ -4,7 +4,10 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 
 	"github.com/suborbital/e2core/e2core/auth"
@@ -20,7 +23,7 @@ const E2CoreHealthURI = "/health"
 
 // Server is a E2Core server.
 type Server struct {
-	server *vk.Server
+	server *echo.Echo
 	syncer *syncer.Syncer
 
 	bus        *bus.Bus
@@ -30,22 +33,27 @@ type Server struct {
 }
 
 // New creates a new Server instance.
-func New(sync *syncer.Syncer, opts *options.Options) (*Server, error) {
+func New(l zerolog.Logger, sync *syncer.Syncer, opts *options.Options) (*Server, error) {
+	ll := l.With().Str("module", "syncer").Logger()
 	// @todo https://github.com/suborbital/e2core/issues/144, the first return value is a function that would close the
 	// tracer in case of a shutdown. Usually that is put in a defer statement. Server doesn't have a graceful shutdown.
-	_, err := setupTracing(opts.TracerConfig, opts.Logger())
+	tracingShutdown, err := setupTracing(opts.TracerConfig, ll)
 	if err != nil {
 		return nil, errors.Wrapf(err, "setupTracing(%s, %s, %f)", "e2core", "reporter_uri", 0.04)
 	}
 
 	busOpts := []bus.OptionsModifier{
-		bus.UseLogger(opts.Logger()),
+		bus.UseMeshTransport(websocket.New()),
+		bus.UseDiscovery(local.New()),
 	}
 
-	busOpts = append(busOpts, bus.UseMeshTransport(websocket.New()))
-	busOpts = append(busOpts, bus.UseDiscovery(local.New()))
-
 	b := bus.New(busOpts...)
+
+	e := echo.New()
+	// trace middleware
+	e.Use(otelecho.Middleware("e2core"))
+
+	d := newDispatcher(ll, b.Connect())
 
 	s := vk.New(
 		vk.UseEnvPrefix("E2CORE"),
@@ -62,10 +70,8 @@ func New(sync *syncer.Syncer, opts *options.Options) (*Server, error) {
 		}),
 	)
 
-	d := newDispatcher(opts.Logger(), b.Connect())
-
 	server := &Server{
-		server:     s,
+		server:     e,
 		syncer:     sync,
 		options:    opts,
 		bus:        b,

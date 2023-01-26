@@ -2,8 +2,10 @@ package command
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
@@ -16,7 +18,6 @@ import (
 	"github.com/suborbital/e2core/e2core/syncer"
 	"github.com/suborbital/systemspec/system/bundle"
 	"github.com/suborbital/systemspec/system/client"
-	"github.com/suborbital/vektor/vlog"
 )
 
 type e2coreInfo struct {
@@ -36,10 +37,10 @@ func Start() *cobra.Command {
 				path = args[0]
 			}
 
-			logger := vlog.Default(
-				vlog.AppMeta(e2coreInfo{E2CoreVersion: release.E2CoreServerDotVersion}),
-				vlog.EnvPrefix("E2CORE_"),
-			)
+			logger := zerolog.New(os.Stderr).With().
+				Str("command", "e2core start").
+				Str("version", release.E2CoreServerDotVersion).
+				Logger()
 
 			opts, err := optionsFromFlags(cmd.Flags())
 			if err != nil {
@@ -48,11 +49,13 @@ func Start() *cobra.Command {
 
 			opts = append(
 				opts,
-				options.UseLogger(logger),
 				options.UseBundlePath(path),
 			)
 
-			vOpts := options.NewWithModifiers(opts...)
+			vOpts, err := options.NewWithModifiers(opts...)
+			if err != nil {
+				return errors.Wrap(err, "options.NewWithModifiers")
+			}
 
 			// TODO: implement and use a CredentialSupplier
 			systemSource := bundle.NewBundleSource(vOpts.BundlePath)
