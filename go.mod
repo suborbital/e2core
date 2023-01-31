@@ -12,7 +12,7 @@ require (
 	github.com/nats-io/nats.go v1.23.0
 	github.com/pkg/errors v0.9.1
 	github.com/plar/go-adaptive-radix-tree v1.0.5
-	github.com/rs/zerolog v1.28.0
+	github.com/rs/zerolog v1.29.0
 	github.com/schollz/peerdiscovery v1.7.0
 	github.com/sethvargo/go-envconfig v0.8.3
 	github.com/spf13/cobra v1.6.1
@@ -24,7 +24,6 @@ require (
 	github.com/testcontainers/testcontainers-go v0.17.0
 	github.com/twmb/franz-go v1.11.3
 	go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho v0.37.0
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.36.4
 	go.opentelemetry.io/otel v1.11.2
 	go.opentelemetry.io/otel/metric v0.33.0
 	go.opentelemetry.io/otel/sdk v1.11.1
@@ -48,7 +47,6 @@ require (
 	github.com/docker/docker v20.10.20+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
-	github.com/felixge/httpsnoop v1.0.3 // indirect
 	github.com/go-logr/logr v1.2.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-redis/redis/v8 v8.11.5 // indirect
