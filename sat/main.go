@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog"
 
 	"github.com/suborbital/e2core/foundation/signaler"
 	"github.com/suborbital/e2core/sat/sat"
@@ -14,19 +15,24 @@ import (
 )
 
 func main() {
-	conf, err := sat.ConfigFromArgs()
+	logger := zerolog.New(os.Stderr).With().
+		Str("service", "sat-module").
+		Str("version", sat.SatDotVersion).
+		Logger()
+
+	conf, err := sat.ConfigFromArgs(logger)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	if err = start(conf); err != nil {
-		conf.Logger.Error(errors.Wrap(err, "startup"))
+	if err = start(logger, conf); err != nil {
+		logger.Err(err).Msg("startup")
 		os.Exit(1)
 	}
 }
 
 // start starts up the Sat instance
-func start(conf *sat.Config) error {
+func start(logger zerolog.Logger, conf *sat.Config) error {
 	traceProvider, err := sat.SetupTracing(conf.TracerConfig, conf.Logger)
 	if err != nil {
 		return errors.Wrap(err, "setup tracing")
@@ -43,7 +49,7 @@ func start(conf *sat.Config) error {
 	defer traceProvider.Shutdown(context.Background())
 
 	// initialize Reactr, Vektor, and Grav and wrap them in a sat instance
-	s, err := sat.New(conf, traceProvider, mtx)
+	s, err := sat.New(conf, logger, traceProvider, mtx)
 	if err != nil {
 		return errors.Wrap(err, "sat.New")
 	}

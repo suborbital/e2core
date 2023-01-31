@@ -10,6 +10,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/suborbital/e2core/foundation/bus/bus"
@@ -26,6 +27,7 @@ import (
 // Sat is a sat server with annoyingly terse field names (because it's smol)
 type Sat struct {
 	config    *Config
+	logger    zerolog.Logger
 	server    *echo.Echo
 	bus       *bus.Bus
 	pod       *bus.Pod
@@ -41,7 +43,7 @@ type loggerScope struct {
 
 // New initializes a Sat instance
 // if traceProvider is nil, the default NoopTraceProvider will be used
-func New(config *Config, traceProvider trace.TracerProvider, mtx metrics.Metrics) (*Sat, error) {
+func New(config *Config, logger zerolog.Logger, traceProvider trace.TracerProvider, mtx metrics.Metrics) (*Sat, error) {
 	var module *tenant.WasmModuleRef
 
 	if config.Module != nil && config.Module.WasmRef != nil && len(config.Module.WasmRef.Data) > 0 {
@@ -68,6 +70,7 @@ func New(config *Config, traceProvider trace.TracerProvider, mtx metrics.Metrics
 
 	sat := &Sat{
 		config:  config,
+		logger:  logger,
 		engine:  engine,
 		tracer:  traceProvider.Tracer("sat"),
 		metrics: mtx,
@@ -92,12 +95,7 @@ func New(config *Config, traceProvider trace.TracerProvider, mtx metrics.Metrics
 		sat.server.GET("/meta/metrics", sat.workerMetricsHandler())
 	} else {
 		// allow any HTTP method
-		sat.vektor.GET("/*any", sat.handler(engine))
-		sat.vektor.POST("/*any", sat.handler(engine))
-		sat.vektor.PATCH("/*any", sat.handler(engine))
-		sat.vektor.DELETE("/*any", sat.handler(engine))
-		sat.vektor.HEAD("/*any", sat.handler(engine))
-		sat.vektor.OPTIONS("/*any", sat.handler(engine))
+		sat.server.Any("*", sat.handler(engine))
 	}
 
 	return sat, nil

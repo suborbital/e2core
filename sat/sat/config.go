@@ -47,7 +47,7 @@ type app struct {
 	Name string `json:"name"`
 }
 
-func ConfigFromArgs() (*Config, error) {
+func ConfigFromArgs(l zerolog.Logger) (*Config, error) {
 	flag.Parse()
 	args := flag.Args()
 
@@ -57,15 +57,10 @@ func ConfigFromArgs() (*Config, error) {
 
 	moduleArg := args[0]
 
-	return ConfigFromModuleArg(moduleArg)
+	return ConfigFromModuleArg(l, moduleArg)
 }
 
-func ConfigFromModuleArg(moduleArg string) (*Config, error) {
-	logger := zerolog.New(os.Stderr).With().
-		Str("service", "sat-module").
-		Str("version", SatDotVersion).
-		Logger()
-
+func ConfigFromModuleArg(logger zerolog.Logger, moduleArg string) (*Config, error) {
 	var module *tenant.Module
 	var FQMN fqmn.FQMN
 
