@@ -10,17 +10,16 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog"
 	"github.com/sethvargo/go-envconfig"
 	"gopkg.in/yaml.v2"
 
-	"github.com/suborbital/e2core/e2core/options"
 	satOptions "github.com/suborbital/e2core/sat/sat/options"
 	"github.com/suborbital/systemspec/capabilities"
 	"github.com/suborbital/systemspec/fqmn"
 	"github.com/suborbital/systemspec/system"
 	"github.com/suborbital/systemspec/system/client"
 	"github.com/suborbital/systemspec/tenant"
-	"github.com/suborbital/vektor/vlog"
 )
 
 type Config struct {
@@ -34,7 +33,7 @@ type Config struct {
 	Port            int
 	ControlPlaneUrl string
 	EnvToken        string
-	Logger          *vlog.Logger
+	Logger          zerolog.Logger
 	ProcUUID        string
 	TracerConfig    satOptions.TracerConfig
 	MetricsConfig   satOptions.MetricsConfig
@@ -62,10 +61,10 @@ func ConfigFromArgs() (*Config, error) {
 }
 
 func ConfigFromModuleArg(moduleArg string) (*Config, error) {
-	logger := vlog.Default(
-		vlog.EnvPrefix("SAT"),
-		vlog.AppMeta(satInfo{SatVersion: SatDotVersion}),
-	)
+	logger := zerolog.New(os.Stderr).With().
+		Str("service", "sat-module").
+		Str("version", SatDotVersion).
+		Logger()
 
 	var module *tenant.Module
 	var FQMN fqmn.FQMN
@@ -84,19 +83,17 @@ func ConfigFromModuleArg(moduleArg string) (*Config, error) {
 	}
 
 	appClient := client.NewHTTPSource(controlPlane, NewAuthToken(opts.EnvToken))
-	caps := capabilities.DefaultConfigWithLogger(logger)
+	caps := capabilities.DefaultCapabilityConfig()
 
 	if useControlPlane {
-		opts := options.NewWithModifiers(options.UseLogger(logger))
-
-		if err = appClient.Start(opts); err != nil {
+		if err = appClient.Start(); err != nil {
 			return nil, errors.Wrap(err, "failed to systemSource.Start")
 		}
 	}
 
 	// next, handle the module arg being a URL, an FQMN, or a path on disk
 	if isURL(moduleArg) {
-		logger.Debug("fetching module from URL")
+		logger.Debug().Msg("fetching module from URL")
 		tmpFile, err := downloadFromURL(moduleArg)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to downloadFromURL")
@@ -105,7 +102,7 @@ func ConfigFromModuleArg(moduleArg string) (*Config, error) {
 		moduleArg = tmpFile
 	} else if FQMN, err = fqmn.Parse(moduleArg); err == nil {
 		if useControlPlane {
-			logger.Debug("fetching module from control plane")
+			logger.Debug().Msg("fetching module from control plane")
 
 			cpModule, err := appClient.GetModule(moduleArg)
 			if err != nil {
@@ -153,19 +150,19 @@ func ConfigFromModuleArg(moduleArg string) (*Config, error) {
 
 		prettyName = fmt.Sprintf("%s-%s", jobType, opts.ProcUUID[:6])
 
-		// replace the logger with something more detailed
-		logger = vlog.Default(
-			vlog.EnvPrefix("SAT"),
-			vlog.AppMeta(app{prettyName}),
-		)
+		logger = logger.With().
+			Str("app", prettyName).
+			Str("jobType", jobType).
+			Str("tenant", FQMN.Tenant).
+			Logger()
 
-		logger.Debug("configuring", jobType)
-		logger.Debug("joining tenant", FQMN.Tenant)
+		logger.Debug().Msg("configuring")
+		logger.Debug().Msg("joining tenant")
 	} else {
-		logger.Debug("configuring", jobType)
+		logger.Debug().Str("jobType", jobType).Msg("configuring")
 	}
 
-	conns := []tenant.Connection{}
+	conns := make([]tenant.Connection, 0)
 	if opts.Connections != "" {
 		if err := json.Unmarshal([]byte(opts.Connections), &conns); err != nil {
 			return nil, errors.Wrap(err, "failed to Unmarshal connections JSON")
