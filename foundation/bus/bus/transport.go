@@ -2,8 +2,7 @@ package bus
 
 import (
 	"github.com/pkg/errors"
-
-	"github.com/suborbital/vektor/vlog"
+	"github.com/rs/zerolog"
 )
 
 // ErrConnectionClosed and others are transport and connection related errors
@@ -37,14 +36,14 @@ type MeshOptions struct {
 	NodeUUID string
 	Port     string
 	URI      string
-	Logger   *vlog.Logger
+	Logger   zerolog.Logger
 	Custom   interface{}
 }
 
 // BridgeOptions is a set of options for mesh transports
 type BridgeOptions struct {
 	NodeUUID string
-	Logger   *vlog.Logger
+	Logger   zerolog.Logger
 	Custom   interface{}
 }
 

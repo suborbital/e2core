@@ -3,8 +3,7 @@ package bus
 import (
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
-
-	"github.com/suborbital/vektor/vlog"
+	"github.com/rs/zerolog"
 )
 
 // ErrTransportNotConfigured represent package-level vars
@@ -19,7 +18,7 @@ type Bus struct {
 	BelongsTo string
 	Interests []string
 	bus       *messageBus
-	logger    *vlog.Logger
+	logger    zerolog.Logger
 	hub       *hub
 }
 
