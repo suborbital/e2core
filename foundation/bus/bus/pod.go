@@ -38,10 +38,10 @@ Created with Monodraw
 // and immediately route a message between its owner and the Bus. The Bus is responsible for any "smarts".
 // Messages coming from the bus are filtered using the pod's messageFilter, which is configurable by the caller.
 type Pod struct {
-	onFunc     MsgFunc // the onFunc is called whenever a message is recieved
+	onFunc     MsgFunc // the onFunc is called whenever a message is received
 	onFuncLock sync.RWMutex
 
-	messageChan  MsgChan // messageChan is used to recieve messages coming from the bus
+	messageChan  MsgChan // messageChan is used to receive messages coming from the bus
 	feedbackChan MsgChan // feedbackChan is used to send "feedback" to the bus about the pod's status
 	busChan      MsgChan // busChan is used to emit messages to the bus
 

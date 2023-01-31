@@ -6,7 +6,7 @@ import (
 	"github.com/rs/zerolog"
 )
 
-// Options represent Grav options
+// Options represent Bus options
 type Options struct {
 	Logger          zerolog.Logger
 	MeshTransport   MeshTransport
