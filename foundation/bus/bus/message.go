@@ -2,7 +2,7 @@ package bus
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"time"
 
@@ -95,7 +95,7 @@ func MsgFromDataAndMeta(data []byte, metadata []byte) (Message, error) {
 // MsgFromRequest extracts an encoded Message from an HTTP request
 func MsgFromRequest(r *http.Request) (Message, error) {
 	defer r.Body.Close()
-	bytes, err := ioutil.ReadAll(r.Body)
+	bytes, err := io.ReadAll(r.Body)
 	if err != nil {
 		return nil, err
 	}
