@@ -8,6 +8,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/trace"
 
@@ -25,7 +26,7 @@ import (
 // Sat is a sat server with annoyingly terse field names (because it's smol)
 type Sat struct {
 	config    *Config
-	vektor    *vk.Server
+	server    *echo.Echo
 	bus       *bus.Bus
 	pod       *bus.Pod
 	transport *websocket.Transport
@@ -54,12 +55,12 @@ func New(config *Config, traceProvider trace.TracerProvider, mtx metrics.Metrics
 		module = ref
 	}
 
-	api, err := api.NewWithConfig(config.Logger, config.CapConfig)
+	engineAPI, err := api.NewWithConfig(config.Logger, config.CapConfig)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to NewWithConfig")
 	}
 
-	engine := engine2.New(config.JobType, module, api)
+	engine := engine2.New(config.JobType, module, engineAPI)
 
 	if traceProvider == nil {
 		traceProvider = trace.NewNoopTracerProvider()
@@ -72,6 +73,8 @@ func New(config *Config, traceProvider trace.TracerProvider, mtx metrics.Metrics
 		metrics: mtx,
 	}
 
+	sat.server = echo.New()
+
 	// Grav and Vektor will be started on call to s.Start()
 	sat.vektor = vk.New(
 		vk.UseLogger(config.Logger),
@@ -81,12 +84,12 @@ func New(config *Config, traceProvider trace.TracerProvider, mtx metrics.Metrics
 		vk.UseQuietRoutes("/meta/metrics"),
 	)
 
-	// if a transport is configured, enable bus and metrics endpoints, otherwise enable server mode
+	// if a "transport" is configured, enable bus and metrics endpoints, otherwise enable server mode
 	if config.ControlPlaneUrl != "" {
 		sat.transport = websocket.New()
 
-		sat.vektor.HandleHTTP(http.MethodGet, "/meta/message", sat.transport.HTTPHandlerFunc())
-		sat.vektor.GET("/meta/metrics", sat.workerMetricsHandler())
+		sat.server.GET("/meta/message", echo.WrapHandler(sat.transport.HTTPHandlerFunc()))
+		sat.server.GET("/meta/metrics", sat.workerMetricsHandler())
 	} else {
 		// allow any HTTP method
 		sat.vektor.GET("/*any", sat.handler(engine))
