@@ -4,12 +4,13 @@ import (
 	"context"
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 
-	"github.com/suborbital/e2core/foundation/signaler"
 	"github.com/suborbital/e2core/sat/sat"
 	"github.com/suborbital/e2core/sat/sat/metrics"
 )
@@ -53,15 +54,43 @@ func start(logger zerolog.Logger, conf *sat.Config) error {
 		return errors.Wrap(err, "sat.New")
 	}
 
-	monitor, err := NewMonitor(conf.Logger, conf)
+	monitor, err := NewMonitor(logger, conf)
 	if err != nil {
 		return errors.Wrap(err, "failed to createProcFile")
 	}
 
-	signaler := signaler.Setup()
+	serverErrors := make(chan error, 1)
+	shutdownChan := make(chan os.Signal, 1)
+	signal.Notify(shutdownChan, syscall.SIGINT, syscall.SIGTERM)
 
-	signaler.Start(s.Start)
-	signaler.Start(monitor.Start)
+	// Start sat.
+	go func() {
+		ctx, cxl := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cxl()
+		err := s.Start(ctx)
+		serverErrors <- errors.Wrap(err, "sat start")
+	}()
 
-	return signaler.Wait(time.Second * 5)
+	// Start monitor.
+	go func() {
+		ctx, cxl := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cxl()
+		err := monitor.Start(ctx)
+		serverErrors <- errors.Wrap(err, "monitor start")
+	}()
+
+	select {
+	case err := <-serverErrors:
+		return errors.Wrap(err, "server error")
+	case sig := <-shutdownChan:
+		logger.Info().Str("signal", sig.String()).Msg("signal received, shutdown started")
+
+		monitor.Stop()
+		satErr := s.Shutdown()
+		if satErr != nil {
+			return errors.Wrap(satErr, "sat shutdown")
+		}
+	}
+
+	return nil
 }

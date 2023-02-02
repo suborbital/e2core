@@ -33,7 +33,6 @@ type Config struct {
 	Port            int
 	ControlPlaneUrl string
 	EnvToken        string
-	Logger          zerolog.Logger
 	ProcUUID        string
 	TracerConfig    satOptions.TracerConfig
 	MetricsConfig   satOptions.MetricsConfig
@@ -175,7 +174,6 @@ func ConfigFromModuleArg(logger zerolog.Logger, moduleArg string) (*Config, erro
 		Connections:     conns,
 		Port:            portInt,
 		ControlPlaneUrl: controlPlane,
-		Logger:          logger,
 		TracerConfig:    opts.TracerConfig,
 		MetricsConfig:   opts.MetricsConfig,
 		ProcUUID:        string(opts.ProcUUID),
