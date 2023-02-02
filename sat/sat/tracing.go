@@ -2,7 +2,6 @@ package sat
 
 import (
 	"context"
-	"crypto/tls"
 	"time"
 
 	"github.com/pkg/errors"
@@ -28,7 +27,7 @@ func SetupTracing(config options.TracerConfig, logger zerolog.Logger) (*trace.Tr
 
 		ll.Info().Msg("configuring honeycomb exporter for tracing")
 
-		conn, err := observability.GrpcConnection(ctx, config.HoneycombConfig.Endpoint, &tls.Config{})
+		conn, err := observability.GrpcConnection(ctx, config.HoneycombConfig.Endpoint, nil)
 		if err != nil {
 			return nil, errors.Wrap(err, "honeycomb GrpcConnection")
 		}

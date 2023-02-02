@@ -7,7 +7,6 @@ import (
 	"github.com/rs/zerolog"
 
 	"github.com/suborbital/e2core/e2core/sequence"
-	"github.com/suborbital/e2core/e2core/transformers"
 	"github.com/suborbital/systemspec/request"
 	"github.com/suborbital/systemspec/tenant"
 )
@@ -77,7 +76,7 @@ func (s *Server) executePluginByRefHandler(l zerolog.Logger) echo.HandlerFunc {
 
 		ll.Debug().Str("fqmn", mod.FQMN).Msg("found module by ref")
 
-		req, err := transformers.FromEchoContext(c)
+		req, err := request.FromEchoContext(c)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError).SetInternal(err)
 		}
