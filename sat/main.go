@@ -33,10 +33,11 @@ func main() {
 
 // start starts up the Sat instance
 func start(logger zerolog.Logger, conf *sat.Config) error {
-	traceProvider, err := sat.SetupTracing(conf.TracerConfig, conf.Logger)
+	traceProvider, err := sat.SetupTracing(conf.TracerConfig, logger)
 	if err != nil {
 		return errors.Wrap(err, "setup tracing")
 	}
+	defer traceProvider.Shutdown(context.Background())
 
 	mctx, mcancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer mcancel()
@@ -45,8 +46,6 @@ func start(logger zerolog.Logger, conf *sat.Config) error {
 	if err != nil {
 		return errors.Wrap(err, "metrics.ResolveMetrics")
 	}
-
-	defer traceProvider.Shutdown(context.Background())
 
 	// initialize Reactr, Vektor, and Grav and wrap them in a sat instance
 	s, err := sat.New(conf, logger, traceProvider, mtx)

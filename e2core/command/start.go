@@ -65,7 +65,7 @@ func Start() *cobra.Command {
 				systemSource = client.NewHTTPSource(vOpts.ControlPlane, auth.NewAccessToken(vOpts.EnvironmentToken))
 			}
 
-			sync := syncer.New(vOpts, systemSource)
+			sync := syncer.New(vOpts, logger, systemSource)
 
 			srv, err := server.New(logger, sync, vOpts)
 			if err != nil {

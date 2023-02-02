@@ -1,16 +1,15 @@
 package syncer
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog"
 
 	"github.com/suborbital/e2core/e2core/options"
 	"github.com/suborbital/e2core/foundation/scheduler"
 	"github.com/suborbital/systemspec/system"
 	"github.com/suborbital/systemspec/tenant"
-	"github.com/suborbital/vektor/vlog"
 )
 
 var EmptyModules = make([]tenant.Module, 0)
@@ -30,12 +29,12 @@ type syncJob struct {
 	overviews    map[string]*system.TenantOverview
 	modules      map[string]tenant.Module
 
-	log  *vlog.Logger
+	log  zerolog.Logger
 	lock *sync.RWMutex
 }
 
 // New creates a syncer with the given SystemSource
-func New(opts *options.Options, source system.Source) *Syncer {
+func New(opts *options.Options, logger zerolog.Logger, source system.Source) *Syncer {
 	s := &Syncer{
 		sched: scheduler.New(),
 		opts:  opts,
@@ -47,7 +46,7 @@ func New(opts *options.Options, source system.Source) *Syncer {
 		tenantIdents: make(map[string]int64),
 		overviews:    make(map[string]*system.TenantOverview),
 		modules:      make(map[string]tenant.Module),
-		log:          opts.Logger(),
+		log:          logger.With().Str("module", "syncJob").Logger(),
 		lock:         &sync.RWMutex{},
 	}
 
@@ -58,7 +57,7 @@ func New(opts *options.Options, source system.Source) *Syncer {
 
 // Start starts the syncer
 func (s *Syncer) Start() error {
-	if err := s.job.systemSource.Start(s.opts); err != nil {
+	if err := s.job.systemSource.Start(); err != nil {
 		return errors.Wrap(err, "failed to systemSource.Start")
 	}
 
@@ -74,13 +73,16 @@ func (s *Syncer) Start() error {
 
 // Run runs a sync job
 func (s *syncJob) Run(job scheduler.Job, ctx *scheduler.Ctx) (interface{}, error) {
+
 	state, err := s.systemSource.State()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to systemSource.State")
 	}
 
+	ll := s.log.With().Str("method", "Run").Logger()
+
 	if state.SystemVersion == s.state.SystemVersion {
-		s.log.Debug(fmt.Sprintf("[syncJob.Run] skipping sync with version match: %d, %d", state.SystemVersion, s.state.SystemVersion))
+		ll.Debug().Int64("s.state.SystemVersion", s.state.SystemVersion).Msg("versions match, skipping sync")
 		return nil, nil
 	}
 
@@ -88,12 +90,18 @@ func (s *syncJob) Run(job scheduler.Job, ctx *scheduler.Ctx) (interface{}, error
 	defer s.lock.Unlock()
 
 	// update arrived between when we awaited the lock and when we acquired it
-	if state.SystemVersion <= s.state.SystemVersion {
-		s.log.Debug(fmt.Sprintf("[syncJob.Run] skipping sync with version match: %d, %d", state.SystemVersion, s.state.SystemVersion))
+	if state.SystemVersion < s.state.SystemVersion {
+		ll.Debug().
+			Int64("s.state.SystemVersion", s.state.SystemVersion).
+			Int64("state.SystemVersion", state.SystemVersion).
+			Msg("skipping sync as local state systemversion is lower than s.state.SystemVersion")
 		return nil, nil
 	}
 
-	s.log.Debug(fmt.Sprintf("[syncJob.Run] running sync with version mismatch: %d, %d", state.SystemVersion, s.state.SystemVersion))
+	ll.Debug().
+		Int64("s.state.SystemVersion", s.state.SystemVersion).
+		Int64("state.SystemVersion", state.SystemVersion).
+		Msg("running sync with version mismatch")
 
 	ovv, err := s.systemSource.Overview()
 	if err != nil {
@@ -117,18 +125,22 @@ func (s *syncJob) Run(job scheduler.Job, ctx *scheduler.Ctx) (interface{}, error
 		}
 		s.overviews[ident] = tnt
 
-		s.log.Debug("[syncJob.Run] syncing", len(tnt.Config.Modules), "modules for", ident)
+		ll.Debug().Str("ident", ident).Int("numberOfModules", len(tnt.Config.Modules)).Msg("syncing modules")
 
 		for i, m := range tnt.Config.Modules {
-			s.log.Debug("[syncJob.Run] syncing module:", m.Ref, m.Name, m.Namespace)
+			ll.Debug().
+				Str("moduleRef", m.Ref).
+				Str("moduleName", m.Name).
+				Str("moduleNamespace", m.Namespace).
+				Msg("syncing module")
 
 			s.modules[m.Ref] = tnt.Config.Modules[i]
 		}
 
-		s.log.Debug("[syncJob.Run] synced tenant", ident, "to version", version)
+		ll.Debug().Str("ident", ident).Int64("version", version).Msg("synced tenant")
 	}
 
-	s.log.Debug("[syncJob.Run] completed sync at version", state.SystemVersion)
+	ll.Debug().Int64("state.SystemVersion", state.SystemVersion).Msg("completed sync at current version")
 
 	s.state = state
 	s.tenantIdents = ovv.TenantRefs.Identifiers

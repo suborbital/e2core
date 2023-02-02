@@ -5,24 +5,24 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog"
 
 	"github.com/suborbital/e2core/sat/sat"
 	"github.com/suborbital/e2core/sat/sat/process"
-	"github.com/suborbital/vektor/vlog"
 )
 
 type ProcFileMonitor struct {
 	conf *sat.Config
 }
 
-func NewMonitor(log *vlog.Logger, conf *sat.Config) (*ProcFileMonitor, error) {
+func NewMonitor(log zerolog.Logger, conf *sat.Config) (*ProcFileMonitor, error) {
 	// write a file to disk which describes this instance
 	info := process.NewInfo(conf.Port, conf.JobType)
 	if err := info.Write(conf.ProcUUID); err != nil {
 		return nil, errors.Wrap(err, "failed to Write process info")
 	}
 
-	log.Debug("procfile created", conf.ProcUUID)
+	log.Debug().Str("procUUID", conf.ProcUUID).Msg("procfile created")
 
 	return &ProcFileMonitor{conf}, nil
 }

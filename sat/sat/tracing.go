@@ -3,21 +3,22 @@ package sat
 import (
 	"context"
 	"crypto/tls"
-	"fmt"
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog"
 	"go.opentelemetry.io/otel/sdk/trace"
 
 	"github.com/suborbital/e2core/sat/sat/options"
 	"github.com/suborbital/go-kit/observability"
-	"github.com/suborbital/vektor/vlog"
 )
 
 // SetupTracing configure open telemetry to be used with otel exporter. Returns a tracer closer func and an error.
-func SetupTracing(config options.TracerConfig, logger *vlog.Logger) (*trace.TracerProvider, error) {
+func SetupTracing(config options.TracerConfig, logger zerolog.Logger) (*trace.TracerProvider, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
+
+	ll := logger.With().Str("tracerType", config.TracerType).Logger()
 
 	switch config.TracerType {
 	case "honeycomb":
@@ -25,7 +26,7 @@ func SetupTracing(config options.TracerConfig, logger *vlog.Logger) (*trace.Trac
 			return nil, errors.New("missing honeycomb tracing config values")
 		}
 
-		logger.Info("configuring honeycomb exporter for tracing")
+		ll.Info().Msg("configuring honeycomb exporter for tracing")
 
 		conn, err := observability.GrpcConnection(ctx, config.HoneycombConfig.Endpoint, &tls.Config{})
 		if err != nil {
@@ -44,7 +45,7 @@ func SetupTracing(config options.TracerConfig, logger *vlog.Logger) (*trace.Trac
 			return nil, errors.Wrap(err, "observability.HoneycombTracer")
 		}
 
-		logger.Info("created honeycomb trace exporter")
+		ll.Info().Msg("created honeycomb trace exporter")
 
 		return traceProvider, nil
 	case "collector":
@@ -52,7 +53,7 @@ func SetupTracing(config options.TracerConfig, logger *vlog.Logger) (*trace.Trac
 			return nil, errors.New("missing collector tracing config values")
 		}
 
-		logger.Info("configuring collector exporter for tracing")
+		ll.Info().Msg("configuring collector exporter for tracing")
 
 		conn, err := observability.GrpcConnection(ctx, config.Collector.Endpoint)
 		if err != nil {
@@ -67,11 +68,11 @@ func SetupTracing(config options.TracerConfig, logger *vlog.Logger) (*trace.Trac
 			return nil, errors.Wrap(err, "observability.OtelTracer")
 		}
 
-		logger.Info("created collector trace exporter")
+		ll.Info().Msg("created collector trace exporter")
 
 		return traceProvider, nil
 	default:
-		logger.Warn(fmt.Sprintf("unrecognised tracer type configuration [%s]. Defaulting to no tracer", config.TracerType))
+		ll.Warn().Msg("unrecognised tracer type configuration. Defaulting to no tracer")
 		fallthrough
 	case "none", "":
 		// Create the most default trace provider and escape early.
@@ -80,7 +81,7 @@ func SetupTracing(config options.TracerConfig, logger *vlog.Logger) (*trace.Trac
 			return nil, errors.Wrap(err, "noop Tracer")
 		}
 
-		logger.Debug("finished setting up default noop tracer")
+		ll.Debug().Msg("finished setting up default noop tracer")
 
 		return traceProvider, nil
 	}
