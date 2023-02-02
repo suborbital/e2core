@@ -2,8 +2,6 @@ module github.com/suborbital/e2core
 
 go 1.19
 
-replace github.com/suborbital/systemspec => ../systemspec
-
 require (
 	github.com/bytecodealliance/wasmtime-go v1.0.0
 	github.com/google/uuid v1.3.0
