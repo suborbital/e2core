@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
@@ -14,7 +15,6 @@ import (
 	"github.com/suborbital/e2core/foundation/bus/bus"
 	"github.com/suborbital/e2core/foundation/bus/discovery/local"
 	"github.com/suborbital/e2core/foundation/bus/transport/websocket"
-	"github.com/suborbital/vektor/vk"
 )
 
 const E2CoreHealthURI = "/health"
@@ -78,8 +78,8 @@ func New(l zerolog.Logger, sync *syncer.Syncer, opts *options.Options) (*Server,
 }
 
 // Start starts the Server.
-func (s *Server) Start(ctx context.Context) error {
-	if err := s.server.Start(); err != nil {
+func (s *Server) Start() error {
+	if err := s.server.Start(fmt.Sprintf(":%d", s.Options().HTTPPort)); err != nil {
 		return errors.Wrap(err, "failed to server.Start")
 	}
 
@@ -98,13 +98,13 @@ func (s *Server) Syncer() *syncer.Syncer {
 
 // Shutdown shuts down the server
 func (s *Server) Shutdown(ctx context.Context) error {
-	if err := s.server.StopCtx(ctx); err != nil {
+	if err := s.server.Shutdown(ctx); err != nil {
 		return errors.Wrap(err, "http.Server.StopCtx")
 	}
 
 	return nil
 }
 
-func (s *Server) testServer() *vk.Server {
+func (s *Server) testServer() *echo.Echo {
 	return s.server
 }

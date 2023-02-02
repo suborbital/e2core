@@ -11,7 +11,6 @@ import (
 
 	"github.com/suborbital/e2core/e2core/sequence"
 	"github.com/suborbital/e2core/foundation/bus/bus"
-	"github.com/suborbital/vektor/vlog"
 )
 
 const (
@@ -37,7 +36,7 @@ type dispatcher struct {
 type sequenceDispatcher struct {
 	seq *sequence.Sequence
 	pod *bus.Pod
-	log *vlog.Logger
+	log zerolog.Logger
 }
 
 func newDispatcher(l zerolog.Logger, pod *bus.Pod) *dispatcher {
@@ -114,7 +113,9 @@ func (s *sequenceDispatcher) dispatchSingle(step *sequence.Step, resultChan chan
 		return errors.Wrap(err, "failed to Tunnel")
 	}
 
-	s.log.Debug("dispatched execution for", s.seq.ParentID(), "to peer with message", msg.UUID())
+	s.log.Debug().Str("parentID", s.seq.ParentID()).
+		Str("msgUUID", msg.UUID()).
+		Msg("dispatched execution for parent to peer with message")
 
 	return s.awaitResult(resultChan)
 }
@@ -150,7 +151,7 @@ func (d *dispatcher) onMsgHandler() bus.MsgFunc {
 		result := &sequence.ExecResult{}
 
 		if err := json.Unmarshal(msg.Data(), result); err != nil {
-			d.log.Error(errors.Wrap(err, "failed to Unmarshal message data"))
+			d.log.Err(err).Msg("json.Unmarshal message data failure")
 			return nil
 		}
 
