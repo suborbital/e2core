@@ -1,31 +1,21 @@
 package e2core
 
 import (
-	"time"
-
 	"github.com/suborbital/e2core/e2core/backend"
 	"github.com/suborbital/e2core/e2core/server"
-	"github.com/suborbital/e2core/foundation/signaler"
-)
-
-const (
-	shutdownWaitTime = time.Second * 3
 )
 
 // System describes a E2Core system, which is comprised of a server and a backend
 type System struct {
 	Server  *server.Server
 	Backend backend.Backend
-
-	signaler *signaler.Signaler
 }
 
 // NewSystem creates a new System with the provided server and backend
 func NewSystem(server *server.Server, backend backend.Backend) *System {
 	s := &System{
-		Server:   server,
-		Backend:  backend,
-		signaler: signaler.Setup(),
+		Server:  server,
+		Backend: backend,
 	}
 
 	return s

@@ -1,7 +1,6 @@
 package satbackend
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -36,7 +35,6 @@ type Orchestrator struct {
 func New(opts *options.Options, syncer *syncer.Syncer) (*Orchestrator, error) {
 	o := &Orchestrator{
 		syncer:           syncer,
-		logger:           opts.Logger(),
 		opts:             opts,
 		sats:             map[string]*watcher{},
 		failedPortCounts: map[string]int{},
@@ -47,7 +45,7 @@ func New(opts *options.Options, syncer *syncer.Syncer) (*Orchestrator, error) {
 	return o, nil
 }
 
-func (o *Orchestrator) Start(ctx context.Context) error {
+func (o *Orchestrator) Start() error {
 	if err := o.syncer.Start(); err != nil {
 		return errors.Wrap(err, "failed to syncer.Start")
 	}
@@ -62,11 +60,6 @@ func (o *Orchestrator) Start(ctx context.Context) error {
 loop:
 	for {
 		select {
-		case <-ctx.Done():
-			o.logger.Warn("[orchestrator.start] received on done chan")
-			// if context timeout reached or we manually cancelled the context
-			break loop
-
 		case <-o.signalChan:
 			o.logger.Warn("[orchestrator.start] received on signal chan")
 			// if anything gets sent in the signal channel
