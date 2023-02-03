@@ -65,9 +65,7 @@ func start(logger zerolog.Logger, conf *sat.Config) error {
 
 	// Start sat.
 	go func() {
-		ctx, cxl := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cxl()
-		err := s.Start(ctx)
+		err := s.Start()
 		serverErrors <- errors.Wrap(err, "sat start")
 	}()
 
