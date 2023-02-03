@@ -1,4 +1,4 @@
-package server
+package satbackend
 
 import (
 	"net/http"

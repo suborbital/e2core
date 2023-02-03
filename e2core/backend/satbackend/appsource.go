@@ -8,7 +8,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 
-	e2Server "github.com/suborbital/e2core/e2core/server"
 	"github.com/suborbital/go-kit/web/mid"
 	"github.com/suborbital/systemspec/system/bundle"
 )
@@ -24,7 +23,7 @@ func startSystemSourceServer(bundlePath string) (chan error, error) {
 		mid.Logger(l, nil),
 	)
 
-	es := e2Server.NewEchoSource(l, app)
+	es := NewEchoSource(l, app)
 	es.Attach(e)
 
 	errChan := make(chan error)
