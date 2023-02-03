@@ -3,17 +3,18 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog"
 
 	"github.com/suborbital/e2core/foundation/bus/bus"
 	"github.com/suborbital/e2core/foundation/bus/transport/kafka"
-	"github.com/suborbital/vektor/vlog"
 )
 
 func main() {
-	logger := vlog.Default(vlog.Level(vlog.LogLevelDebug))
+	logger := zerolog.New(os.Stderr).With().Timestamp().Logger()
 
 	knats, err := kafka.New("127.0.0.1:9092")
 	if err != nil {
