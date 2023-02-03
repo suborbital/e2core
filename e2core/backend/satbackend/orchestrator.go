@@ -2,8 +2,6 @@ package satbackend
 
 import (
 	"encoding/json"
-	"fmt"
-	"log"
 	"os"
 	"runtime"
 	"sync"
@@ -11,11 +9,11 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog"
 
 	"github.com/suborbital/e2core/e2core/backend/satbackend/exec"
 	"github.com/suborbital/e2core/e2core/options"
 	"github.com/suborbital/e2core/e2core/syncer"
-	"github.com/suborbital/vektor/vlog"
 )
 
 const (
@@ -24,7 +22,7 @@ const (
 
 type Orchestrator struct {
 	syncer           *syncer.Syncer
-	logger           *vlog.Logger
+	logger           zerolog.Logger
 	opts             *options.Options
 	sats             map[string]*watcher // map of FQMNs to watchers
 	failedPortCounts map[string]int
@@ -32,9 +30,10 @@ type Orchestrator struct {
 	wg               sync.WaitGroup
 }
 
-func New(opts *options.Options, syncer *syncer.Syncer) (*Orchestrator, error) {
+func New(logger zerolog.Logger, opts *options.Options, syncer *syncer.Syncer) (*Orchestrator, error) {
 	o := &Orchestrator{
 		syncer:           syncer,
+		logger:           logger.With().Str("module", "orchestrator").Logger(),
 		opts:             opts,
 		sats:             map[string]*watcher{},
 		failedPortCounts: map[string]int{},
@@ -50,6 +49,8 @@ func (o *Orchestrator) Start() error {
 		return errors.Wrap(err, "failed to syncer.Start")
 	}
 
+	ll := o.logger.With().Str("method", "Start").Logger()
+
 	errChan := o.setupSystemSourceServer()
 
 	o.wg.Add(1)
@@ -61,12 +62,12 @@ loop:
 	for {
 		select {
 		case <-o.signalChan:
-			o.logger.Warn("[orchestrator.start] received on signal chan")
+			ll.Warn().Msg("received on signal chan")
 			// if anything gets sent in the signal channel
 			break loop
 
 		case err = <-errChan:
-			o.logger.Warn("[orchestrator.start] received on error chan")
+			ll.Warn().Msg("received on error chan")
 			// if there's an error
 			break loop
 
@@ -76,13 +77,13 @@ loop:
 		}
 	}
 
-	o.logger.Debug("[orchestrator.start] stopping orchestrator")
+	ll.Debug().Msg("stopping orchestrator")
 
 	for _, s := range o.sats {
-		o.logger.Debug("[orchestrator.start] terminating sat instance")
+		ll.Debug().Str("satFQMN", s.fqmn).Msg("terminating sat instance")
 		err := s.terminate()
 		if err != nil {
-			log.Fatal("[orchestrator.start] terminating sats failed", err)
+			ll.Fatal().Str("satFQMN", s.fqmn).Err(err).Msg("terminating sats failed")
 		}
 	}
 
@@ -94,38 +95,42 @@ loop:
 // Shutdown signals to the orchestrator that shutdown is needed
 // mostly only required for testing purposes as the OS handles it normally
 func (o *Orchestrator) Shutdown() {
-	o.logger.Debug("[orchestrator.Shutdown] sending sigterm")
+	ll := o.logger.With().Str("method", "Shutdown").Logger()
+	ll.Debug().Msg("sending sigterm")
 	o.signalChan <- syscall.SIGTERM
 
-	o.logger.Debug("[orchestrator.Shutdown] waiting")
+	ll.Debug().Msg("waiting")
 
 	o.wg.Wait()
+
+	ll.Debug().Msg("shutdown completed")
 }
 
 func (o *Orchestrator) reconcileConstellation(syncer *syncer.Syncer) {
-	o.logger.Debug("[orchestrator.reconcileConstellation] reconciling...")
+	ll := o.logger.With().Str("method", "reconcileConstellation").Logger()
+	ll.Debug().Msg("reconciling...")
 	tenants := syncer.ListTenants()
 	if tenants == nil {
-		o.logger.ErrorString("[orchestrator.reconcileConstellation] tenants is nil")
+		ll.Error().Msg("tenants is nil")
 	}
 
 	// mount each handler into the VK group.
 	for ident := range tenants {
 		tnt := syncer.TenantOverview(ident)
 		if tnt == nil {
-			o.logger.ErrorString(fmt.Sprintf("[orchestrator.reconcileConstellation] failed to syncer.TenantOverview for %s", ident))
+			ll.Error().Str("ident", ident).Msg("syncer.TenantOverview is nil")
 			continue
 		}
 
 		defaultConnectionsJSON, err := json.Marshal(tnt.Config.DefaultNamespace.Connections)
 		if err != nil {
-			o.logger.ErrorString("failed to json.Marshal Connections config, will continue")
+			ll.Err(err).Msg("json.Marshal default connections, will continue")
 		}
 
 		for i := range tnt.Config.Modules {
 			module := tnt.Config.Modules[i]
 
-			o.logger.Debug("[orchestrator.reconcileConstellation] reconciling", module.FQMN)
+			ll.Debug().Str("moduleFQMN", module.FQMN).Msg("reconciling")
 
 			if _, exists := o.sats[module.FQMN]; !exists {
 				o.sats[module.FQMN] = newWatcher(module.FQMN, o.logger)
@@ -134,7 +139,7 @@ func (o *Orchestrator) reconcileConstellation(syncer *syncer.Syncer) {
 			satWatcher := o.sats[module.FQMN]
 
 			launch := func() {
-				o.logger.Debug("[orchestrator.reconcileConstellation] launching sat (", module.FQMN, ")")
+				ll.Debug().Str("moduleFQMN", module.FQMN).Msg("launching sat")
 
 				cmd, port := modStartCommand(module)
 
@@ -152,13 +157,13 @@ func (o *Orchestrator) reconcileConstellation(syncer *syncer.Syncer) {
 				)
 
 				if err != nil {
-					o.logger.Error(errors.Wrapf(err, "[orchestrator.reconcileConstellation] failed to exec.Run sat ( %s )", module.FQMN))
+					ll.Err(err).Str("moduleFQMN", module.FQMN).Msg("exec.Run failed for sat instance")
 					return
 				}
 
 				satWatcher.add(module.FQMN, port, uuid, pid)
 
-				o.logger.Debug("[orchestrator.reconcileConstellation] successfully started sat (", module.FQMN, ") on port", port)
+				ll.Debug().Str("moduleFQMN", module.FQMN).Str("port", port).Msg("successfully started sat")
 			}
 
 			// we want to max out at 8 threads per instance
@@ -171,15 +176,19 @@ func (o *Orchestrator) reconcileConstellation(syncer *syncer.Syncer) {
 
 			if report == nil || report.instCount == 0 {
 				// if no instances exist, launch one
-				o.logger.Debug("[orchestrator.reconcileConstellation] no instances exist for", module.FQMN)
+				ll.Debug().Str("moduleFQMN", module.FQMN).Msg("no instance exists")
 
 				go launch()
 			} else if report.instCount > 0 && report.totalThreads/report.instCount >= threshold {
 				if report.instCount >= runtime.NumCPU() {
-					o.logger.Warn("[orchestrator.reconcileConstellation] maximum instance count reached for", module.Name)
+					ll.Warn().Str("moduleName", module.Name).Msg("maximum instance count reached for named modules")
 				} else {
 					// if the current instances seem overwhelmed, add one
-					o.logger.Debug("[orchestrator.reconcileConstellation] scaling up", module.Name, "; totalThreads:", report.totalThreads, "instCount:", report.instCount)
+					ll.Debug().
+						Str("moduleName", module.Name).
+						Int("totalThreads", report.totalThreads).
+						Int("instanceCount", report.instCount).
+						Msg("scaling up")
 
 					go launch()
 				}
@@ -188,7 +197,11 @@ func (o *Orchestrator) reconcileConstellation(syncer *syncer.Syncer) {
 					// that's fine, do nothing
 				} else {
 					// if the current instances have too much spare time on their hands
-					o.logger.Debug("[orchestrator.reconcileConstellation] scaling down", module.Name, "; totalThreads:", report.totalThreads, "instCount:", report.instCount)
+					ll.Debug().
+						Str("moduleName", module.Name).
+						Int("totalThreads", report.totalThreads).
+						Int("instanceCount", report.instCount).
+						Msg("scaling down")
 
 					satWatcher.scaleDown()
 				}
@@ -201,7 +214,7 @@ func (o *Orchestrator) reconcileConstellation(syncer *syncer.Syncer) {
 					if !exists {
 						o.failedPortCounts[p] = 1
 					} else if count > 5 {
-						o.logger.Debug("[orchestrator.reconcileConstellation] killing instance from failed port", p)
+						ll.Debug().Str("port", p).Msg("killing instance from failed port")
 
 						satWatcher.terminateInstance(p)
 
@@ -217,22 +230,24 @@ func (o *Orchestrator) reconcileConstellation(syncer *syncer.Syncer) {
 
 // TODO: implement and use an authSource when creating NewHTTPSource
 func (o *Orchestrator) setupSystemSourceServer() chan error {
+	ll := o.logger.With().Str("method", "setupSystemSourceServer").Logger()
+
 	// if an external control plane hasn't been set, act as the control plane
 	// but if one has been set, use it (and launch all children with it configured)
 	if o.opts.ControlPlane == options.DefaultControlPlane || o.opts.ControlPlane == "" {
 		o.opts.ControlPlane = options.DefaultControlPlane
 
-		o.logger.Debug("[orchestrator.setupSystemSourceServer] starting SystemSource server")
+		ll.Debug().Msg("starting SystemSource server")
 
 		errChan := startSystemSourceServer(o.opts.BundlePath)
 
 		return errChan
 	}
 
-	o.logger.Debug("[orchestrator.setupSystemSourceServer] registering with control plane")
+	ll.Debug().Msg("registering with controlplane")
 
 	if err := registerWithControlPlane(*o.opts); err != nil {
-		log.Fatal(errors.Wrap(err, "[orchestrator.setupSystemSourceServer] failed to registerWithControlPlane"))
+		ll.Fatal().Err(err).Msg("registerWithControlPlane failed")
 	}
 
 	errChan := make(chan error)
