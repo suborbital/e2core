@@ -249,7 +249,7 @@ func (o *Orchestrator) setupSystemSourceServer() chan error {
 
 	ll.Debug().Msg("registering with controlplane")
 
-	if err := registerWithControlPlane(*o.opts); err != nil {
+	if err := registerWithControlPlane(o.logger, *o.opts); err != nil {
 		ll.Fatal().Err(err).Msg("registerWithControlPlane failed")
 	}
 
