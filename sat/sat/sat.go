@@ -56,7 +56,7 @@ func New(config *Config, logger zerolog.Logger, traceProvider trace.TracerProvid
 		module = ref
 	}
 
-	engineAPI, err := api.NewWithConfig(config.Logger, config.CapConfig)
+	engineAPI, err := api.NewWithConfig(logger, config.CapConfig)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to NewWithConfig")
 	}
