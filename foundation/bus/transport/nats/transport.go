@@ -5,15 +5,15 @@ import (
 
 	"github.com/nats-io/nats.go"
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog"
 
 	"github.com/suborbital/e2core/foundation/bus/bus"
-	"github.com/suborbital/vektor/vlog"
 )
 
 // Transport is a transport that connects Grav nodes via NATS
 type Transport struct {
 	opts *bus.BridgeOptions
-	log  *vlog.Logger
+	log  zerolog.Logger
 
 	serverConn *nats.Conn
 }
@@ -21,7 +21,7 @@ type Transport struct {
 // Conn implements transport.TopicConnection and represents a subscribe/send pair for a NATS topic
 type Conn struct {
 	topic string
-	log   *vlog.Logger
+	log   zerolog.Logger
 	pod   *bus.Pod
 
 	sub   *nats.Subscription
@@ -45,7 +45,7 @@ func New(endpoint string) (*Transport, error) {
 // Setup sets up the transport
 func (t *Transport) Setup(opts *bus.BridgeOptions) error {
 	t.opts = opts
-	t.log = opts.Logger
+	t.log = opts.Logger.With().Str("transportType", "NATS").Logger()
 
 	return nil
 }
@@ -63,7 +63,7 @@ func (t *Transport) ConnectTopic(topic string) (bus.BridgeConnection, error) {
 
 	conn := &Conn{
 		topic: topic,
-		log:   t.log,
+		log:   t.log.With().Str("topic", topic).Logger(),
 		sub:   sub,
 		pubFn: pubFn,
 	}
@@ -73,6 +73,8 @@ func (t *Transport) ConnectTopic(topic string) (bus.BridgeConnection, error) {
 
 // Start begins the receiving of messages
 func (c *Conn) Start(pod *bus.Pod) {
+	ll := c.log.With().Str("method", "Start").Logger()
+
 	c.pod = pod
 
 	c.pod.OnType(c.topic, func(msg bus.Message) error {
@@ -90,21 +92,22 @@ func (c *Conn) Start(pod *bus.Pod) {
 
 	go func() {
 		for {
-			message, err := c.sub.NextMsg(time.Duration(time.Second * 60))
+			message, err := c.sub.NextMsg(time.Second * 60)
 			if err != nil {
 				if err == nats.ErrTimeout {
 					continue
 				}
 
-				c.log.Error(errors.Wrap(err, "[bridge-nats] failed to ReadMessage, terminating connection"))
+				ll.Err(err).Msg("c.sub.NextMsg")
+
 				break
 			}
 
-			c.log.Debug("[bridge-nats] recieved message via", c.topic)
+			ll.Debug().Msg("received message from topic")
 
 			msg, err := bus.MsgFromBytes(message.Data)
 			if err != nil {
-				c.log.Debug(errors.Wrap(err, "[bridge-nats] failed to MsgFromBytes, falling back to raw data").Error())
+				ll.Err(err).Msg("bus.MsgFromBytes, falling back to raw data")
 
 				msg = bus.NewMsg(c.topic, message.Data)
 			}
@@ -117,9 +120,11 @@ func (c *Conn) Start(pod *bus.Pod) {
 
 // Close closes the underlying connection
 func (c *Conn) Close() {
-	c.log.Debug("[bridge-nats] connection for", c.topic, "is closing")
+	ll := c.log.With().Str("method", "Close").Logger()
+
+	ll.Debug().Msg("connection is closing")
 
 	if err := c.sub.Unsubscribe(); err != nil {
-		c.log.Error(errors.Wrapf(err, "[bridge-nats] connection for %s failed to close", c.topic))
+		ll.Err(err).Msg("connection failed to close")
 	}
 }
