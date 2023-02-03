@@ -32,7 +32,7 @@ type Server struct {
 
 // New creates a new Server instance.
 func New(l zerolog.Logger, sync *syncer.Syncer, opts *options.Options) (*Server, error) {
-	ll := l.With().Str("module", "syncer").Logger()
+	ll := l.With().Str("module", "server").Logger()
 	// @todo https://github.com/suborbital/e2core/issues/144, the first return value is a function that would close the
 	// tracer in case of a shutdown. Usually that is put in a defer statement. Server doesn't have a graceful shutdown.
 	_, err := setupTracing(opts.TracerConfig, ll)
