@@ -92,7 +92,7 @@ func New(config *Config, logger zerolog.Logger, traceProvider trace.TracerProvid
 }
 
 // Start starts Sat's Vektor server and Grav discovery
-func (s *Sat) Start(ctx context.Context) error {
+func (s *Sat) Start() error {
 	serverError := make(chan error, 1)
 
 	// start Vektor first so that the server is started up before Bus starts discovery
@@ -109,10 +109,6 @@ func (s *Sat) Start(ctx context.Context) error {
 	}()
 
 	select {
-	case <-ctx.Done():
-		if err := s.Shutdown(); err != nil {
-			return errors.Wrap(err, "failed to Shutdown")
-		}
 	case err := <-serverError:
 		if !errors.Is(err, http.ErrServerClosed) {
 			return errors.Wrap(err, "failed to start server")

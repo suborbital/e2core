@@ -2,13 +2,17 @@ package command
 
 import (
 	"context"
+	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 
 	"github.com/suborbital/e2core/e2core/release"
-	"github.com/suborbital/e2core/foundation/signaler"
 	"github.com/suborbital/e2core/sat/sat"
 	"github.com/suborbital/e2core/sat/sat/metrics"
 )
@@ -25,12 +29,14 @@ func ModStart() *cobra.Command {
 				path = args[0]
 			}
 
-			config, err := sat.ConfigFromModuleArg(path)
+			l := zerolog.New(os.Stderr).With().Timestamp().Str("command", "mod start").Logger()
+
+			config, err := sat.ConfigFromModuleArg(l, path)
 			if err != nil {
 				return errors.Wrap(err, "failed to ConfigFromModuleArg")
 			}
 
-			traceProvider, err := sat.SetupTracing(config.TracerConfig, config.Logger)
+			traceProvider, err := sat.SetupTracing(config.TracerConfig, l)
 			if err != nil {
 				return errors.Wrap(err, "setup tracing")
 			}
@@ -45,15 +51,39 @@ func ModStart() *cobra.Command {
 
 			defer traceProvider.Shutdown(context.Background())
 
-			sat, err := sat.New(config, traceProvider, mtx)
+			satInstance, err := sat.New(config, l, traceProvider, mtx)
 			if err != nil {
 				return errors.Wrap(err, "failed to sat.New")
 			}
 
-			signaler := signaler.Setup()
-			signaler.Start(sat.Start)
+			shutdown := make(chan os.Signal, 1)
+			signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
 
-			return signaler.Wait(time.Second * 5)
+			serverErrors := make(chan error, 1)
+
+			go func() {
+				l.Info().Msg("starting server")
+				err := satInstance.Start()
+				if err != nil {
+					serverErrors <- errors.Wrap(err, "srv.Start")
+				}
+			}()
+
+			select {
+			case err := <-serverErrors:
+				return fmt.Errorf("server error: %w", err)
+
+			case sig := <-shutdown:
+				l.Info().Str("signal", sig.String()).Str("status", "shutdown started").Msg("shutdown started")
+				defer l.Info().Str("status", "shutdown complete").Msg("all done")
+
+				srvErr := satInstance.Shutdown()
+				if srvErr != nil {
+					return errors.Wrap(srvErr, "srv.Shutdown")
+				}
+			}
+
+			return nil
 		},
 	}
 
