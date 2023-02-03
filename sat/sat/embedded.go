@@ -3,22 +3,20 @@ package sat
 import (
 	"net/http"
 
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 
 	"github.com/suborbital/e2core/foundation/scheduler"
 	"github.com/suborbital/systemspec/request"
-	"github.com/suborbital/vektor/vk"
 )
 
 // Exec takes input bytes, executes the loaded module, and returns the result
 func (s *Sat) Exec(input []byte) (*request.CoordinatedResponse, error) {
-	ctx := vk.NewCtx(s.config.Logger, nil, nil)
-
 	// construct a fake HTTP request from the input
 	req := &request.CoordinatedRequest{
 		Method:      http.MethodPost,
 		URL:         "/",
-		ID:          ctx.RequestID(),
+		ID:          uuid.New().String(),
 		Body:        input,
 		Headers:     map[string]string{},
 		RespHeaders: map[string]string{},
@@ -31,7 +29,10 @@ func (s *Sat) Exec(input []byte) (*request.CoordinatedResponse, error) {
 		return nil, errors.Wrap(err, "failed to exec")
 	}
 
-	resp := result.(*request.CoordinatedResponse)
+	resp, ok := result.(*request.CoordinatedResponse)
+	if !ok {
+		return nil, errors.New("response is not a coordinated response")
+	}
 
 	return resp, nil
 }

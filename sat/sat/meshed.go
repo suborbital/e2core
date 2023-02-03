@@ -1,6 +1,7 @@
 package sat
 
 import (
+	"context"
 	"encoding/json"
 
 	"github.com/pkg/errors"
@@ -12,41 +13,38 @@ import (
 	"github.com/suborbital/e2core/foundation/bus/bus"
 	"github.com/suborbital/e2core/foundation/scheduler"
 	"github.com/suborbital/systemspec/request"
-	"github.com/suborbital/vektor/vk"
 )
 
 // handleFnResult is mounted onto exec.ListenAndRun...
 // when a meshed peer sends us a job, it is executed by Reactr and then
 // the result is passed into this function for handling
 func (s *Sat) handleFnResult(msg bus.Message, result interface{}, fnErr error) {
+	ll := s.logger.With().Str("method", "handleFnResult").Logger()
+
 	// first unmarshal the request and sequence information
 	req, err := request.FromJSON(msg.Data())
 	if err != nil {
-		s.config.Logger.Error(errors.Wrap(err, "failed to request.FromJSON"))
+		ll.Err(err).Msg("request.FromJSON")
 		return
 	}
 
-	ctx := vk.NewCtx(s.config.Logger, nil, nil)
-	ctx.UseRequestID(req.ID)
-	ctx.UseScope(loggerScope{req.ID})
+	ctx := context.WithValue(context.Background(), "requestID", req.ID)
 
-	spanCtx, span := s.tracer.Start(ctx.Context, "handleFnResult", trace.WithAttributes(
-		attribute.String("request_id", ctx.RequestID()),
+	spanCtx, span := s.tracer.Start(ctx, "handleFnResult", trace.WithAttributes(
+		attribute.String("request_id", req.ID),
 	))
 	defer span.End()
 
-	ctx.Context = spanCtx
-
 	seq, err := sequence.FromJSON(req.SequenceJSON, req)
 	if err != nil {
-		s.config.Logger.Error(errors.Wrap(err, "failed to sequence.FromJSON"))
+		ll.Err(err).Msg("sequence.FromJSON")
 		return
 	}
 
 	// figure out where we are in the sequence
 	step := seq.NextStep()
 	if step == nil {
-		ctx.Log.Error(errors.New("got nil NextStep"))
+		ll.Error().Msg("got nil seq.NextStep")
 		return
 	}
 
@@ -80,36 +78,36 @@ func (s *Sat) handleFnResult(msg bus.Message, result interface{}, fnErr error) {
 		}(),
 	}
 
-	if err = s.sendFnResult(fnr, ctx); err != nil {
-		ctx.Log.Error(errors.Wrap(err, "failed to sendFnResult"))
+	if err = s.sendFnResult(fnr, spanCtx); err != nil {
+		ll.Err(err).Msg("s.sendFnResult")
 		return
 	}
 
 	// determine if we ourselves should continue or halt the sequence
 	if execErr != nil {
-		ctx.Log.ErrorString("stopping execution after error failed execution of", msg.Type(), ":", execErr.Error())
+		ll.Err(execErr).Str("messageType", msg.Type()).Msg("stopping execution after exec error")
 		return
 	}
 
 	if err = seq.HandleStepResults([]sequence.ExecResult{*fnr}); err != nil {
-		ctx.Log.Error(err)
+		ll.Err(err).Msg("seq.HandleStepResults")
 		return
 	}
 
 	// prepare for the next step in the chain to be executed
 	stepJSON, err := seq.StepsJSON()
 	if err != nil {
-		ctx.Log.Error(errors.Wrap(err, "failed to StepsJSON"))
+		ll.Err(err).Msg("seq.StepsJSON")
 		return
 	}
 
 	req.SequenceJSON = stepJSON
 
-	s.sendNextStep(msg, seq, req, ctx)
+	s.sendNextStep(msg, seq, req, spanCtx)
 }
 
-func (s *Sat) sendFnResult(result *sequence.ExecResult, ctx *vk.Ctx) error {
-	span := trace.SpanFromContext(ctx.Context)
+func (s *Sat) sendFnResult(result *sequence.ExecResult, ctx context.Context) error {
+	span := trace.SpanFromContext(ctx)
 	defer span.End()
 
 	fnrJSON, err := json.Marshal(result)
@@ -117,9 +115,18 @@ func (s *Sat) sendFnResult(result *sequence.ExecResult, ctx *vk.Ctx) error {
 		return errors.Wrap(err, "failed to Marshal function result")
 	}
 
-	respMsg := bus.NewMsgWithParentID(server.MsgTypeSuborbitalResult, ctx.RequestID(), fnrJSON)
+	reqID, ok := ctx.Value("requestID").(string)
+	if !ok {
+		return errors.New("request ID was not in the context")
+	}
 
-	ctx.Log.Debug("function", s.config.JobType, "completed, sending meshed result message", respMsg.UUID())
+	respMsg := bus.NewMsgWithParentID(server.MsgTypeSuborbitalResult, reqID, fnrJSON)
+
+	s.logger.Debug().
+		Str("method", "sendFnResult").
+		Str("function", s.config.JobType).
+		Str("respUUID", respMsg.UUID()).
+		Msg("function completed, sending meshed result message")
 
 	if s.pod.Send(respMsg) == nil {
 		return errors.New("failed to Send fnResult")
@@ -128,28 +135,36 @@ func (s *Sat) sendFnResult(result *sequence.ExecResult, ctx *vk.Ctx) error {
 	return nil
 }
 
-func (s *Sat) sendNextStep(_ bus.Message, seq *sequence.Sequence, req *request.CoordinatedRequest, ctx *vk.Ctx) {
-	span := trace.SpanFromContext(ctx.Context)
+func (s *Sat) sendNextStep(_ bus.Message, seq *sequence.Sequence, req *request.CoordinatedRequest, ctx context.Context) {
+	ll := s.logger.With().Str("method", "sendNextStep").Logger()
+
+	span := trace.SpanFromContext(ctx)
 	defer span.End()
 
 	nextStep := seq.NextStep()
 	if nextStep == nil {
-		ctx.Log.Debug("sequence completed, no nextStep message to send")
+		ll.Debug().Msg("sequence completed, no nextStep message to send")
 		return
 	}
 
 	reqJSON, err := json.Marshal(req)
 	if err != nil {
-		ctx.Log.Error(errors.Wrap(err, "failed to Marshal request"))
+		ll.Err(err).Msg("json.Marshal request")
 		return
 	}
 
-	nextMsg := bus.NewMsgWithParentID(nextStep.FQMN, ctx.RequestID(), reqJSON)
+	reqID, ok := ctx.Value("requestID").(string)
+	if !ok {
+		ll.Error().Msg("request ID was not present in the context, stopping")
+		return
+	}
 
-	ctx.Log.Debug("sending next message", nextStep.FQMN, nextMsg.UUID())
+	nextMsg := bus.NewMsgWithParentID(nextStep.FQMN, reqID, reqJSON)
+
+	ll.Debug().Str("nextStep", nextStep.FQMN).Str("nextMessage", nextMsg.UUID()).Msg("sending next message")
 
 	if err := s.bus.Tunnel(nextStep.FQMN, nextMsg); err != nil {
 		// nothing much we can do here
-		ctx.Log.Error(errors.Wrap(err, "failed to Tunnel nextMsg"))
+		ll.Err(err).Msg("bus.Tunnel next step")
 	}
 }
