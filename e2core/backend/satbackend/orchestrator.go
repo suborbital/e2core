@@ -239,7 +239,10 @@ func (o *Orchestrator) setupSystemSourceServer() chan error {
 
 		ll.Debug().Msg("starting SystemSource server")
 
-		errChan := startSystemSourceServer(o.opts.BundlePath)
+		errChan, err := startSystemSourceServer(o.opts.BundlePath)
+		if err != nil {
+
+		}
 
 		return errChan
 	}

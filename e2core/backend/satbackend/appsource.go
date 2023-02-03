@@ -1,43 +1,39 @@
 package satbackend
 
 import (
-	"github.com/pkg/errors"
+	"fmt"
+	"os"
 
-	"github.com/suborbital/e2core/e2core/options"
+	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
+	"github.com/rs/zerolog"
+
+	e2Server "github.com/suborbital/e2core/e2core/server"
+	"github.com/suborbital/go-kit/web/mid"
 	"github.com/suborbital/systemspec/system/bundle"
-	"github.com/suborbital/systemspec/system/server"
-	"github.com/suborbital/vektor/vk"
-	"github.com/suborbital/vektor/vlog"
 )
 
-func startSystemSourceServer(bundlePath string) chan error {
+func startSystemSourceServer(bundlePath string) (chan error, error) {
 	app := bundle.NewBundleSource(bundlePath)
-	opts := options.NewWithModifiers()
+
+	l := zerolog.New(os.Stderr).With().Str("service", "systemSourceServer").Timestamp().Logger()
+
+	e := echo.New()
+	e.Use(
+		mid.UUIDRequestID(),
+		mid.Logger(l, nil),
+	)
+
+	es := e2Server.NewEchoSource(l, app)
+	es.Attach(e)
 
 	errChan := make(chan error)
 
-	router, err := server.NewAppSourceVKRouter(app, opts).GenerateRouter()
-	if err != nil {
-		errChan <- errors.Wrap(err, "failed to NewSystemSourceVKRouter.GenerateRouter")
-	}
-
-	log := vlog.Default(
-		vlog.Level(vlog.LogLevelWarn),
-	)
-
-	server := vk.New(
-		vk.UseLogger(log),
-		vk.UseAppName("SystemSource server"),
-		vk.UseHTTPPort(9090),
-	)
-
-	server.SwapRouter(router)
-
 	go func() {
-		if err := server.Start(); err != nil {
+		if err := e.Start(fmt.Sprintf(":%d", 9090)); err != nil {
 			errChan <- errors.Wrap(err, "failed to server.Start")
 		}
 	}()
 
-	return errChan
+	return errChan, nil
 }
