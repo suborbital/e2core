@@ -2,7 +2,7 @@ package api
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 
@@ -53,17 +53,19 @@ func (d *defaultAPI) FetchURLHandler() HostFn {
 }
 
 func (d *defaultAPI) fetchUrl(method int32, urlPointer int32, urlSize int32, bodyPointer int32, bodySize int32, identifier int32) int32 {
+	ll := d.logger.With().Str("method", "fetchUrl").Logger()
+
 	// fetch makes a network request on bahalf of the wasm runner.
 	// fetch writes the http response body into memory starting at returnBodyPointer, and the return value is a pointer to that memory
 	inst, err := instance.ForIdentifier(identifier, true)
 	if err != nil {
-		d.logger.Error(errors.Wrap(err, "[engine] alert: failed to ForIdentifier"))
+		ll.Err(err).Msg("instance.ForIdentifier")
 		return -1
 	}
 
 	httpMethod, exists := methodValToMethod[method]
 	if !exists {
-		d.logger.ErrorString("invalid method provided: ", method)
+		d.logger.Error().Int32("providedMethod", method).Msg("invalid method provided")
 		return -2
 	}
 
@@ -76,7 +78,7 @@ func (d *defaultAPI) fetchUrl(method int32, urlPointer int32, urlSize int32, bod
 
 	headers, err := parseHTTPHeaders(urlParts)
 	if err != nil {
-		d.logger.Error(errors.Wrap(err, "could not parse URL headers"))
+		ll.Err(err).Msg("parseHTTPHeaders")
 		return -2
 	}
 
@@ -93,18 +95,18 @@ func (d *defaultAPI) fetchUrl(method int32, urlPointer int32, urlSize int32, bod
 		// filter the request through the capabilities
 		resp, err := d.capabilities.HTTPClient.Do(d.capabilities.Auth, httpMethod, urlString, body, *headers)
 		if err != nil {
-			d.logger.Error(errors.Wrap(err, "failed to Do request"))
+			ll.Err(err).Msg("capabilities.HTTPClient.Do")
 			return nil, err
 		}
 
 		defer resp.Body.Close()
-		respBytes, err := ioutil.ReadAll(resp.Body)
+		respBytes, err := io.ReadAll(resp.Body)
 		if err != nil {
-			d.logger.Error(errors.Wrap(err, "failed to Read response body"))
+			ll.Err(err).Msg("io.ReadAll response body")
 		}
 
 		if resp.StatusCode > 299 {
-			d.logger.Debug("module's http request returned non-200 response:", resp.StatusCode)
+			ll.Debug().Int("status", resp.StatusCode).Msg("http request returned a non 1xx or 2xx status code")
 			return nil, fmt.Errorf("%d: %s", resp.StatusCode, string(respBytes))
 		}
 
@@ -113,7 +115,7 @@ func (d *defaultAPI) fetchUrl(method int32, urlPointer int32, urlSize int32, bod
 
 	result, err := inst.Ctx().SetFFIResult(resp, err)
 	if err != nil {
-		d.logger.ErrorString("[engine] failed to SetFFIResult", err.Error())
+		ll.Err(err).Msg("inst.Ctx().SetFFIResult")
 		return -1
 	}
 

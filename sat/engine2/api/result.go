@@ -1,8 +1,6 @@
 package api
 
 import (
-	"github.com/pkg/errors"
-
 	"github.com/suborbital/e2core/foundation/scheduler"
 	"github.com/suborbital/e2core/sat/engine2/runtime/instance"
 )
@@ -24,7 +22,7 @@ func (d *defaultAPI) ReturnResultHandler() HostFn {
 func (d *defaultAPI) returnResult(pointer int32, size int32, identifier int32) {
 	inst, err := instance.ForIdentifier(identifier, false)
 	if err != nil {
-		d.logger.Error(errors.Wrap(err, "[engine] alert: failed to ForIdentifier"))
+		d.logger.Err(err).Msg("instance.ForIdentifier")
 		return
 	}
 
@@ -51,7 +49,7 @@ func (d *defaultAPI) ReturnErrorHandler() HostFn {
 func (d *defaultAPI) returnError(code int32, pointer int32, size int32, identifier int32) {
 	inst, err := instance.ForIdentifier(identifier, false)
 	if err != nil {
-		d.logger.Error(errors.Wrap(err, "[engine] alert: failed to ForIdentifier"))
+		d.logger.Err(err).Msg("instance.ForIdentifier")
 		return
 	}
 

@@ -1,8 +1,6 @@
 package api
 
 import (
-	"github.com/pkg/errors"
-
 	"github.com/suborbital/e2core/sat/engine2/runtime/instance"
 )
 
@@ -25,7 +23,7 @@ func (d *defaultAPI) AddFFIVariableHandler() HostFn {
 func (d *defaultAPI) addFfiVar(namePtr, nameLen, valPtr, valLen, identifier int32) int32 {
 	inst, err := instance.ForIdentifier(identifier, false)
 	if err != nil {
-		d.logger.Error(errors.Wrap(err, "[engine] failed to instanceForIdentifier"))
+		d.logger.Err(err).Str("method", "addFfiVar").Msg("instance.ForIdentifier")
 		return -1
 	}
 

@@ -1,8 +1,6 @@
 package api
 
 import (
-	"github.com/pkg/errors"
-
 	"github.com/suborbital/e2core/sat/engine2/runtime/instance"
 )
 
@@ -20,15 +18,17 @@ func (d *defaultAPI) GetFFIResultHandler() HostFn {
 }
 
 func (d *defaultAPI) getFfiResult(pointer int32, identifier int32) int32 {
+	ll := d.logger.With().Str("method", "getFfiResult").Logger()
+
 	inst, err := instance.ForIdentifier(identifier, false)
 	if err != nil {
-		d.logger.Error(errors.Wrap(err, "[engine] failed to instanceForIdentifier"))
+		ll.Err(err).Msg("instance.ForIdentifier")
 		return -1
 	}
 
 	result, err := inst.Ctx().UseFFIResult()
 	if err != nil {
-		d.logger.Error(errors.Wrap(err, "[engine] failed to useFFIResult"))
+		ll.Err(err).Msg("inst.Ctx().UseFFIResult")
 		return -1
 	}
 

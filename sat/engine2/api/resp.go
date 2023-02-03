@@ -1,8 +1,6 @@
 package api
 
 import (
-	"github.com/pkg/errors"
-
 	"github.com/suborbital/e2core/sat/engine2/runtime/instance"
 	"github.com/suborbital/systemspec/capabilities"
 )
@@ -24,9 +22,11 @@ func (d *defaultAPI) RespSetHeaderHandler() HostFn {
 }
 
 func (d *defaultAPI) responseSetHeader(keyPointer int32, keySize int32, valPointer int32, valSize int32, ident int32) int32 {
+	ll := d.logger.With().Str("method", "responseSetHeader").Logger()
+
 	inst, err := instance.ForIdentifier(ident, false)
 	if err != nil {
-		d.logger.Error(errors.Wrap(err, "[engine] alert: failed to ForIdentifier"))
+		ll.Err(err).Msg("instance.ForIdentifier")
 		return -1
 	}
 
@@ -39,13 +39,13 @@ func (d *defaultAPI) responseSetHeader(keyPointer int32, keySize int32, valPoint
 	req := RequestFromContext(inst.Ctx().Context)
 
 	if req == nil {
-		d.logger.ErrorString("request is not set")
+		ll.Error().Msg("request is not set")
 	}
 
 	handler := capabilities.NewRequestHandler(*d.capabilities.RequestConfig, req)
 
 	if err := handler.SetResponseHeader(key, val); err != nil {
-		d.logger.Error(errors.Wrap(err, "[engine] failed to SetResponseHeader"))
+		ll.Err(err).Msg("handler.SetResponseHeader")
 
 		if err == capabilities.ErrReqNotSet {
 			return -2

@@ -1,8 +1,6 @@
 package api
 
 import (
-	"github.com/pkg/errors"
-
 	"github.com/suborbital/e2core/sat/engine2/runtime/instance"
 	"github.com/suborbital/systemspec/capabilities"
 )
@@ -30,7 +28,7 @@ func (d *defaultAPI) LogMsgHandler() HostFn {
 func (d *defaultAPI) logMsg(pointer int32, size int32, level int32, identifier int32) {
 	inst, err := instance.ForIdentifier(identifier, false)
 	if err != nil {
-		d.logger.Error(errors.Wrap(err, "[engine] alert: failed to ForIdentifier"))
+		d.logger.Err(err).Str("method", "logMsg").Msg("instance.ForIdentifier")
 		return
 	}
 
