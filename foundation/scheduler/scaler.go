@@ -5,8 +5,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-
-	"github.com/suborbital/vektor/vlog"
+	"github.com/rs/zerolog"
 )
 
 // ScalerMetrics is internal metrics about the scaler
@@ -27,12 +26,12 @@ type WorkerMetrics struct {
 type scaler struct {
 	workers map[string]*worker
 
-	log       *vlog.Logger
+	log       zerolog.Logger
 	lock      *sync.RWMutex
 	startOnce *sync.Once
 }
 
-func newScaler(log *vlog.Logger) *scaler {
+func newScaler(log zerolog.Logger) *scaler {
 	s := &scaler{
 		workers:   make(map[string]*worker),
 		log:       log,
@@ -86,7 +85,7 @@ func (s *scaler) addWorker(jobType string, wk *worker) {
 
 	go func() {
 		if err := wk.start(); err != nil {
-			s.log.Error(errors.Wrapf(err, "failed to start %s worker", jobType))
+			s.log.Err(err).Str("jobType", jobType).Msg("failed to start worker")
 		}
 	}()
 }

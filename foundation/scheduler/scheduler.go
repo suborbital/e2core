@@ -2,11 +2,12 @@ package scheduler
 
 import (
 	"encoding/json"
+	"os"
 
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog"
 
 	"github.com/suborbital/e2core/foundation/bus/bus"
-	"github.com/suborbital/vektor/vlog"
 )
 
 // MsgTypeReactrJobErr and others are Grav message types used for Scheduler job
@@ -22,17 +23,17 @@ type JobFunc func(interface{}) *Result
 
 // Scheduler represents the main control object
 type Scheduler struct {
-	log  *vlog.Logger
+	log  zerolog.Logger
 	core *core
 }
 
 // New returns a Scheduler ready to accept Jobs
 func New() *Scheduler {
-	return NewWithLogger(vlog.Default())
+	return NewWithLogger(zerolog.New(os.Stderr).With().Timestamp().Str("component", "scheduler").Logger())
 }
 
 // NewWithLogger returns a Scheduler with a custom logger
-func NewWithLogger(log *vlog.Logger) *Scheduler {
+func NewWithLogger(log zerolog.Logger) *Scheduler {
 	c := newCore(log)
 
 	r := &Scheduler{
