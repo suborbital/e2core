@@ -3,16 +3,19 @@ package sat
 import (
 	"bytes"
 	"context"
+	"io"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/sdk/trace"
 
 	"github.com/suborbital/e2core/sat/sat/metrics"
-	"github.com/suborbital/vektor/vtest"
 )
 
 func TestEchoRequest(t *testing.T) {
@@ -23,14 +26,16 @@ func TestEchoRequest(t *testing.T) {
 	defer ctxCloser()
 	defer tp.Shutdown(ctx)
 
-	vt := vtest.New(sat.testServer())
+	req := httptest.NewRequest(http.MethodPost, "/", bytes.NewBuffer([]byte("my friend")))
+	w := httptest.NewRecorder()
 
-	req, _ := http.NewRequest(http.MethodPost, "/", bytes.NewBuffer([]byte("my friend")))
+	sat.server.ServeHTTP(w, req)
 
-	resp := vt.Do(req, t)
+	assert.Equal(t, http.StatusOK, w.Result().StatusCode)
+	body, err := io.ReadAll(w.Result().Body)
+	require.NoError(t, err)
 
-	resp.AssertStatus(200)
-	resp.AssertBodyString("hello my friend")
+	assert.Equal(t, "hello my friend", string(body))
 }
 
 func TestEchoGetRequest(t *testing.T) {
@@ -41,13 +46,12 @@ func TestEchoGetRequest(t *testing.T) {
 	defer ctxCloser()
 	defer tp.Shutdown(ctx)
 
-	vt := vtest.New(sat.testServer())
+	req := httptest.NewRequest(http.MethodGet, "/", bytes.NewBuffer(nil))
+	w := httptest.NewRecorder()
 
-	req, _ := http.NewRequest(http.MethodGet, "/", bytes.NewBuffer(nil))
+	sat.server.ServeHTTP(w, req)
 
-	resp := vt.Do(req, t)
-
-	resp.AssertStatus(200)
+	assert.Equal(t, http.StatusOK, w.Result().StatusCode)
 }
 
 func TestErrorRequest(t *testing.T) {
@@ -58,14 +62,16 @@ func TestErrorRequest(t *testing.T) {
 	defer ctxCloser()
 	defer tp.Shutdown(ctx)
 
-	vt := vtest.New(sat.testServer())
+	req := httptest.NewRequest(http.MethodPost, "/", bytes.NewBuffer([]byte{}))
+	w := httptest.NewRecorder()
 
-	req, _ := http.NewRequest(http.MethodPost, "/", bytes.NewBuffer([]byte{}))
+	sat.server.ServeHTTP(w, req)
 
-	resp := vt.Do(req, t)
+	assert.Equal(t, http.StatusUnauthorized, w.Result().StatusCode)
+	body, err := io.ReadAll(w.Result().Body)
+	require.NoError(t, err)
 
-	resp.AssertStatus(401)
-	resp.AssertBodyString(`{"status":401,"message":"don't go there"}`)
+	assert.Equal(t, `{"status":401,"message":"don't go there"}`, string(body))
 }
 
 func TestPanicRequest(t *testing.T) {
@@ -76,28 +82,30 @@ func TestPanicRequest(t *testing.T) {
 	defer ctxCloser()
 	defer tp.Shutdown(ctx)
 
-	vt := vtest.New(sat.testServer())
+	req := httptest.NewRequest(http.MethodPost, "/", bytes.NewBuffer([]byte{}))
+	w := httptest.NewRecorder()
 
-	req, _ := http.NewRequest(http.MethodPost, "/", bytes.NewBuffer([]byte{}))
+	sat.server.ServeHTTP(w, req)
 
-	resp := vt.Do(req, t)
+	assert.Equal(t, http.StatusInternalServerError, w.Result().StatusCode)
+	body, err := io.ReadAll(w.Result().Body)
+	require.NoError(t, err)
 
-	resp.AssertStatus(500)
-	resp.AssertBodyString(`{"status":500,"message":"unknown error"}`)
+	assert.Equal(t, `{"status":500,"message":"unknown error"}`, string(body))
 }
 
 func satForFile(filepath string) (*Sat, *trace.TracerProvider, error) {
-	config, err := ConfigFromModuleArg(filepath)
+	config, err := ConfigFromModuleArg(zerolog.Nop(), filepath)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	traceProvider, err := SetupTracing(config.TracerConfig, config.Logger)
+	traceProvider, err := SetupTracing(config.TracerConfig, zerolog.Nop())
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "setup tracing")
 	}
 
-	sat, err := New(config, traceProvider, metrics.SetupNoopMetrics())
+	sat, err := New(config, zerolog.Nop(), traceProvider, metrics.SetupNoopMetrics())
 	if err != nil {
 		return nil, nil, err
 	}
