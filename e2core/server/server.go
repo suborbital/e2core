@@ -15,6 +15,8 @@ import (
 	"github.com/suborbital/e2core/foundation/bus/bus"
 	"github.com/suborbital/e2core/foundation/bus/discovery/local"
 	"github.com/suborbital/e2core/foundation/bus/transport/websocket"
+	kitError "github.com/suborbital/go-kit/web/error"
+	"github.com/suborbital/go-kit/web/mid"
 )
 
 const E2CoreHealthURI = "/health"
@@ -48,9 +50,10 @@ func New(l zerolog.Logger, sync *syncer.Syncer, opts *options.Options) (*Server,
 	b := bus.New(busOpts...)
 
 	e := echo.New()
-	// trace middleware
+	e.HTTPErrorHandler = kitError.Handler(l)
+
 	e.Use(
-		UUIDRequestID(),
+		mid.UUIDRequestID(),
 		otelecho.Middleware("e2core"),
 	)
 
