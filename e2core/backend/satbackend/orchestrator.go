@@ -114,7 +114,7 @@ func (o *Orchestrator) reconcileConstellation(syncer *syncer.Syncer) {
 		ll.Error().Msg("tenants is nil")
 	}
 
-	// mount each handler into the VK group.
+	// mount each handler into the handler group.
 	for ident := range tenants {
 		tnt := syncer.TenantOverview(ident)
 		if tnt == nil {

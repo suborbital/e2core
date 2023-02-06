@@ -17,7 +17,7 @@ import (
 
 func (s *Sat) handler(engine *engine2.Engine) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		spanCtx, span := s.tracer.Start(c.Request().Context(), "vkhandler", trace.WithAttributes(
+		spanCtx, span := s.tracer.Start(c.Request().Context(), "echoHandler", trace.WithAttributes(
 			attribute.String("request_id", c.Request().Header.Get("requestID")),
 		))
 		defer span.End()

@@ -91,11 +91,11 @@ func New(config *Config, logger zerolog.Logger, traceProvider trace.TracerProvid
 	return sat, nil
 }
 
-// Start starts Sat's Vektor server and Grav discovery
+// Start starts Sat's echo server and Bus discovery.
 func (s *Sat) Start() error {
 	serverError := make(chan error, 1)
 
-	// start Vektor first so that the server is started up before Bus starts discovery
+	// start Echo first so that the server is started up before Bus starts discovery.
 	go func() {
 		if err := s.server.Start(fmt.Sprintf(":%d", s.config.Port)); err != nil {
 			serverError <- err
@@ -122,7 +122,7 @@ func (s *Sat) Shutdown() error {
 	s.logger.Info().Msg("sat shutting down")
 
 	// stop Bus with a 3s delay between Withdraw and Stop (to allow in-flight requests to drain)
-	// s.vektor.Stop isn't called until all connections are ready to close (after said delay)
+	// s.server.Shutdown isn't called until all connections are ready to close (after said delay)
 	// this is needed to ensure a safe withdraw from the constellation/mesh
 	if s.transport != nil {
 		if err := s.bus.Withdraw(); err != nil {

@@ -48,7 +48,7 @@ func start(logger zerolog.Logger, conf *sat.Config) error {
 		return errors.Wrap(err, "metrics.ResolveMetrics")
 	}
 
-	// initialize Reactr, Vektor, and Grav and wrap them in a sat instance
+	// initialize Reactr, echo, and Bus and wrap them in a sat instance.
 	s, err := sat.New(conf, logger, traceProvider, mtx)
 	if err != nil {
 		return errors.Wrap(err, "sat.New")

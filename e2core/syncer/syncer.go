@@ -108,7 +108,7 @@ func (s *syncJob) Run(job scheduler.Job, ctx *scheduler.Ctx) (interface{}, error
 		return nil, errors.Wrap(err, "failed to app.Overview")
 	}
 
-	// mount each handler into the VK group.
+	// mount each handler into the handler group.
 	for ident, version := range ovv.TenantRefs.Identifiers {
 		localTnt, exists := s.overviews[ident]
 		if exists && localTnt.Version == version {
