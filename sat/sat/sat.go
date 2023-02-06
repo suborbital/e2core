@@ -20,6 +20,7 @@ import (
 	"github.com/suborbital/e2core/sat/engine2/api"
 	"github.com/suborbital/e2core/sat/sat/metrics"
 	"github.com/suborbital/e2core/sat/sat/process"
+	kitError "github.com/suborbital/go-kit/web/error"
 	"github.com/suborbital/systemspec/tenant"
 )
 
@@ -76,6 +77,7 @@ func New(config *Config, logger zerolog.Logger, traceProvider trace.TracerProvid
 	}
 
 	sat.server = echo.New()
+	sat.server.HTTPErrorHandler = kitError.Handler(logger)
 
 	// if a "transport" is configured, enable bus and metrics endpoints, otherwise enable server mode
 	if config.ControlPlaneUrl != "" {
