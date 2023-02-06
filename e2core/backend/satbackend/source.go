@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
@@ -28,22 +29,29 @@ func NewEchoSource(logger zerolog.Logger, source system.Source) *EchoSource {
 
 // Routes creates an echo route group and returns it so the consuming service can attach it to wherever it likes using
 // whatever middlewares they way. The consuming service no longer has an option to modify the middlewares of a route,
-// nor can it remove a route once added.
+// nor can it remove a route once added. The routes do not have a prefix, so the consuming service can choose what path
+// to mount these under.
+//
+// To use this you will need to do the following:
+// - e.Any("/some/prefix", echo.WrapHandler(es.Routes(), <middlewares>)
+//
+// Alternatively you can not use the Routes() method, and construct your own route-handler pairs as you see fit, because
+// all of the handlers are exported. That way you have the most flexibility.
 //
 // The routes in this group are the following:
-// - GET /system/v1/state
-// - GET /system/v1/overview
-// - GET /system/v1/tenant/:ident
-// - GET /system/v1/module/:ident/:ref/:namespace/:mod
-// - GET /system/v1/workflows/:ident/:namespace/:version
-// - GET /system/v1/connections/:ident/:namespace/:verion
-// - GET /system/v1/authentication/:ident/:namespace/:version
-// - GET /system/v1/capabilities/:ident/:namespace/:version
-// - GET /system/v1/queries/:ident/:namespace/:version
-// - GET /system/v1/file/:ident/:version/*filename
-func (es *EchoSource) Routes() *echo.Group {
+// - GET /state
+// - GET /overview
+// - GET /tenant/:ident
+// - GET /module/:ident/:ref/:namespace/:mod
+// - GET /workflows/:ident/:namespace/:version
+// - GET /connections/:ident/:namespace/:verion
+// - GET /authentication/:ident/:namespace/:version
+// - GET /capabilities/:ident/:namespace/:version
+// - GET /queries/:ident/:namespace/:version
+// - GET /file/:ident/:version/*filename
+func (es *EchoSource) Routes() *echo.Echo {
 	e := echo.New()
-	v1 := e.Group("/system/v1")
+	v1 := e.Group("/")
 
 	v1.GET("/state", es.StateHandler())
 	v1.GET("/overview", es.OverviewHandler())
@@ -56,7 +64,45 @@ func (es *EchoSource) Routes() *echo.Group {
 	v1.GET("/queries/:ident/:namespace/:version", es.QueriesHandler())
 	v1.GET("/file/:ident/:version/*filename", es.FileHandler())
 
-	return v1
+	return e
+}
+
+// Attach takes a prefix and an echo instance to attach the routes onto. The prefix can either be empty, or start with
+// a / character. It will attach the following routes to the passed in echo handler:
+// - GET /<prefix>/state
+// - GET /<prefix>/overview
+// - GET /<prefix>/tenant/:ident
+// - GET /<prefix>/module/:ident/:ref/:namespace/:mod
+// - GET /<prefix>/workflows/:ident/:namespace/:version
+// - GET /<prefix>/connections/:ident/:namespace/:verion
+// - GET /<prefix>/authentication/:ident/:namespace/:version
+// - GET /<prefix>/capabilities/:ident/:namespace/:version
+// - GET /<prefix>/queries/:ident/:namespace/:version
+// - GET /<prefix>/file/:ident/:version/*filename
+//
+// If the prefix is not empty and does not start with a / character, it returns an error.
+func (es *EchoSource) Attach(prefix string, e *echo.Echo) error {
+	if prefix == "" {
+		prefix = "/"
+	}
+
+	if !strings.HasPrefix(prefix, "/") {
+		return errors.New("prefix must start with a / character")
+	}
+
+	v1 := e.Group(prefix)
+	v1.GET("/state", es.StateHandler())
+	v1.GET("/overview", es.OverviewHandler())
+	v1.GET("/tenant/:ident", es.TenantOverviewHandler())
+	v1.GET("/module/:ident/:ref/:namespace/:mod", es.GetModuleHandler())
+	v1.GET("/workflows/:ident/:namespace/:version", es.WorkflowsHandler())
+	v1.GET("/connections/:ident/:namespace/:version", es.ConnectionsHandler())
+	v1.GET("/authentication/:ident/:namespace/:version", es.AuthenticationHandler())
+	v1.GET("/capabilities/:ident/:namespace/:version", es.CapabilitiesHandler())
+	v1.GET("/queries/:ident/:namespace/:version", es.QueriesHandler())
+	v1.GET("/file/:ident/:version/*filename", es.FileHandler())
+
+	return nil
 }
 
 // StateHandler is a handler to fetch the system State.
