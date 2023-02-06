@@ -26,7 +26,11 @@ func NewEchoSource(logger zerolog.Logger, source system.Source) *EchoSource {
 	}
 }
 
-// Attach takes the incoming existing echo.Echo router, and adds the following routes to it:
+// Routes creates an echo route group and returns it so the consuming service can attach it to wherever it likes using
+// whatever middlewares they way. The consuming service no longer has an option to modify the middlewares of a route,
+// nor can it remove a route once added.
+//
+// The routes in this group are the following:
 // - GET /system/v1/state
 // - GET /system/v1/overview
 // - GET /system/v1/tenant/:ident
@@ -37,7 +41,8 @@ func NewEchoSource(logger zerolog.Logger, source system.Source) *EchoSource {
 // - GET /system/v1/capabilities/:ident/:namespace/:version
 // - GET /system/v1/queries/:ident/:namespace/:version
 // - GET /system/v1/file/:ident/:version/*filename
-func (es *EchoSource) Attach(e *echo.Echo) {
+func (es *EchoSource) Routes() *echo.Group {
+	e := echo.New()
 	v1 := e.Group("/system/v1")
 
 	v1.GET("/state", es.StateHandler())
@@ -50,6 +55,8 @@ func (es *EchoSource) Attach(e *echo.Echo) {
 	v1.GET("/capabilities/:ident/:namespace/:version", es.CapabilitiesHandler())
 	v1.GET("/queries/:ident/:namespace/:version", es.QueriesHandler())
 	v1.GET("/file/:ident/:version/*filename", es.FileHandler())
+
+	return v1
 }
 
 // StateHandler is a handler to fetch the system State.
