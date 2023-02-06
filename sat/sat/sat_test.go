@@ -71,7 +71,8 @@ func TestErrorRequest(t *testing.T) {
 	body, err := io.ReadAll(w.Result().Body)
 	require.NoError(t, err)
 
-	assert.Equal(t, `{"message":"don't go there","status":401}`, string(body))
+	assert.Equal(t, `{"message":"don't go there","status":401}
+`, string(body))
 }
 
 func TestPanicRequest(t *testing.T) {
@@ -91,7 +92,8 @@ func TestPanicRequest(t *testing.T) {
 	body, err := io.ReadAll(w.Result().Body)
 	require.NoError(t, err)
 
-	assert.Equal(t, `{"message":"unknown error","status":500}`, string(body))
+	assert.Equal(t, `{"message":"unknown error","status":500}
+`, string(body))
 }
 
 func satForFile(filepath string) (*Sat, *trace.TracerProvider, error) {
