@@ -38,14 +38,6 @@ type Config struct {
 	MetricsConfig   satOptions.MetricsConfig
 }
 
-type satInfo struct {
-	SatVersion string `json:"sat_version"`
-}
-
-type app struct {
-	Name string `json:"name"`
-}
-
 func ConfigFromArgs(l zerolog.Logger) (*Config, error) {
 	flag.Parse()
 	args := flag.Args()

@@ -37,10 +37,6 @@ type Sat struct {
 	metrics   metrics.Metrics
 }
 
-type loggerScope struct {
-	RequestID string `json:"request_id"`
-}
-
 // New initializes a Sat instance
 // if traceProvider is nil, the default NoopTraceProvider will be used
 func New(config *Config, logger zerolog.Logger, traceProvider trace.TracerProvider, mtx metrics.Metrics) (*Sat, error) {
@@ -168,11 +164,6 @@ func (s *Sat) setupBus() {
 	s.pod = s.bus.Connect()
 
 	s.engine.ListenAndRun(s.bus.Connect(), s.config.JobType, s.handleFnResult)
-}
-
-// testStart returns Sat's internal server for testing purposes
-func (s *Sat) testServer() *echo.Echo {
-	return s.server
 }
 
 func refFromFilename(name, fqmn, filename string) (*tenant.WasmModuleRef, error) {
