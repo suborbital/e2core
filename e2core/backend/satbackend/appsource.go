@@ -24,7 +24,10 @@ func startSystemSourceServer(bundlePath string) (chan error, error) {
 	)
 
 	es := NewEchoSource(l, app)
-	es.Attach(e)
+	err := es.Attach("/system/v1", e)
+	if err != nil {
+		return nil, errors.Wrap(err, "es.Attach with /system/v1 prefix")
+	}
 
 	errChan := make(chan error)
 
