@@ -80,7 +80,7 @@ func (r *Scheduler) Listen(pod *bus.Pod, msgType string) {
 		var replyMsg bus.Message
 
 		if err != nil {
-			r.log.Error(errors.Wrapf(err, "job from message %s returned error result", msg.UUID()))
+			r.log.Err(err).Str("messageUUID", msg.UUID()).Msg("job returned error result")
 
 			runErr := &RunErr{}
 			if errors.As(err, runErr) {
@@ -107,7 +107,7 @@ func (r *Scheduler) Listen(pod *bus.Pod, msgType string) {
 				// if the job returned something else like a struct
 				resultJSON, err := json.Marshal(result)
 				if err != nil {
-					r.log.Error(errors.Wrapf(err, "job from message %s returned result that could not be JSON marshalled", msg.UUID()))
+					r.log.Err(err).Str("messageUUID", msg.UUID()).Msg("job result could not be marshaled into JSON")
 					replyMsg = bus.NewMsgWithParentID(MsgTypeReactrJobErr, msg.ParentID(), []byte(errors.Wrap(err, "failed to Marshal job result").Error()))
 				} else {
 					replyMsg = bus.NewMsgWithParentID(MsgTypeReactrResult, msg.ParentID(), resultJSON)
