@@ -18,7 +18,7 @@ func main() {
 	gwss := websocket.New()
 	locald := local.New()
 
-	port := os.Getenv("VK_HTTP_PORT")
+	port := os.Getenv("ECHO_HTTP_PORT")
 
 	g := bus.New(
 		bus.UseLogger(logger),
@@ -58,7 +58,7 @@ func main() {
 		os.Exit(0)
 	}()
 
-	if err := e.Start(":9000"); err != nil {
-		logger.Err(err).Msg("echo.start on port 9000")
+	if err := e.Start(fmt.Sprintf(":%s", port)); err != nil {
+		logger.Err(err).Msgf("echo.start on port %s", port)
 	}
 }
