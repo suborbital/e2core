@@ -12,7 +12,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"github.com/sethvargo/go-envconfig"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 
 	satOptions "github.com/suborbital/e2core/sat/sat/options"
 	"github.com/suborbital/systemspec/capabilities"
