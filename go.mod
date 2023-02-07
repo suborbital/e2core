@@ -18,7 +18,7 @@ require (
 	github.com/suborbital/systemspec v0.0.6-0.20221214172802-9e73130024e4
 	github.com/suborbital/vektor v0.7.0
 	github.com/testcontainers/testcontainers-go v0.17.0
-	github.com/twmb/franz-go v1.11.3
+	github.com/twmb/franz-go v1.11.6
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.36.4
 	go.opentelemetry.io/otel v1.11.1
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.11.1
@@ -82,7 +82,7 @@ require (
 	github.com/pierrec/lz4/v4 v4.1.17 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
-	github.com/twmb/franz-go/pkg/kmsg v1.2.0 // indirect
+	github.com/twmb/franz-go/pkg/kmsg v1.3.0 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/internal/retry v1.11.1 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric v0.33.0 // indirect
