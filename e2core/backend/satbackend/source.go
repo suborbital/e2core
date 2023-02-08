@@ -269,7 +269,7 @@ func (es *EchoSource) FileHandler() echo.HandlerFunc {
 			return echo.NewHTTPError(http.StatusInternalServerError).SetInternal(errors.Wrap(err, "es.source.StaticFile"))
 		}
 
-		return c.Blob(http.StatusOK, "text/plain", fileBytes)
+		return c.Blob(http.StatusOK, "application/octet-stream", fileBytes)
 	}
 }
 

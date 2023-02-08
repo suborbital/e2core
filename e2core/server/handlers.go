@@ -59,7 +59,7 @@ func (s *Server) executePluginByNameHandler() echo.HandlerFunc {
 
 		responseData := seq.Request().State[mod.FQMN]
 
-		return c.Blob(http.StatusOK, "text/plain", responseData)
+		return c.Blob(http.StatusOK, "application/octet-stream", responseData)
 	}
 }
 
@@ -113,7 +113,7 @@ func (s *Server) executePluginByRefHandler(l zerolog.Logger) echo.HandlerFunc {
 
 		responseData := seq.Request().State[mod.FQMN]
 
-		return c.Blob(http.StatusOK, "text/plain", responseData)
+		return c.Blob(http.StatusOK, "application/octet-stream", responseData)
 	}
 }
 
@@ -194,7 +194,7 @@ func (s *Server) executeWorkflowHandler() echo.HandlerFunc {
 		// this should be smarter eventually (i.e. handle last-step groups properly)
 		responseData := seq.Request().State[workflow.Steps[len(workflow.Steps)-1].FQMN]
 
-		return c.Blob(http.StatusOK, "text/plain", responseData)
+		return c.Blob(http.StatusOK, "application/octet-stream", responseData)
 	}
 }
 

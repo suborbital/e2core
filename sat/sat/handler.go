@@ -68,6 +68,6 @@ func (s *Sat) handler(engine *engine2.Engine) echo.HandlerFunc {
 			c.Response().Header().Add(headerKey, headerValue)
 		}
 
-		return c.Blob(http.StatusOK, "text/plain", resp.Output)
+		return c.Blob(http.StatusOK, "application/octet-stream", resp.Output)
 	}
 }
