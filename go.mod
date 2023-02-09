@@ -15,7 +15,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.8.1
 	github.com/suborbital/go-kit v0.0.4
-	github.com/suborbital/systemspec v0.0.6-0.20221214172802-9e73130024e4
+	github.com/suborbital/systemspec 199f4e47d333
 	github.com/suborbital/vektor v0.7.0
 	github.com/testcontainers/testcontainers-go v0.17.0
 	github.com/twmb/franz-go v1.11.6
