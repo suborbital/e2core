@@ -2,7 +2,6 @@ package satbackend
 
 import (
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 
@@ -61,8 +60,6 @@ func (es *EchoSource) Routes() *echo.Echo {
 	v1.GET("/connections/:ident/:namespace/:version", es.ConnectionsHandler())
 	v1.GET("/authentication/:ident/:namespace/:version", es.AuthenticationHandler())
 	v1.GET("/capabilities/:ident/:namespace/:version", es.CapabilitiesHandler())
-	v1.GET("/queries/:ident/:namespace/:version", es.QueriesHandler())
-	v1.GET("/file/:ident/:version/*filename", es.FileHandler())
 
 	return e
 }
@@ -99,8 +96,6 @@ func (es *EchoSource) Attach(prefix string, e *echo.Echo) error {
 	v1.GET("/connections/:ident/:namespace/:version", es.ConnectionsHandler())
 	v1.GET("/authentication/:ident/:namespace/:version", es.AuthenticationHandler())
 	v1.GET("/capabilities/:ident/:namespace/:version", es.CapabilitiesHandler())
-	v1.GET("/queries/:ident/:namespace/:version", es.QueriesHandler())
-	v1.GET("/file/:ident/:version/*filename", es.FileHandler())
 
 	return nil
 }
@@ -246,48 +241,5 @@ func (es *EchoSource) CapabilitiesHandler() echo.HandlerFunc {
 		}
 
 		return c.JSON(http.StatusOK, caps)
-	}
-}
-
-// FileHandler is a handler to fetch Files.
-func (es *EchoSource) FileHandler() echo.HandlerFunc {
-	return func(c echo.Context) error {
-		ident := c.Param("ident")
-		filename := c.Param("filename")
-
-		version, err := strconv.Atoi(c.Param("version"))
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest).SetInternal(errors.Wrap(err, "strconv.Atoi"))
-		}
-
-		fileBytes, err := es.source.StaticFile(ident, int64(version), filename)
-		if err != nil {
-			if errors.Is(err, os.ErrNotExist) {
-				return echo.NewHTTPError(http.StatusNotFound)
-			}
-
-			return echo.NewHTTPError(http.StatusInternalServerError).SetInternal(errors.Wrap(err, "es.source.StaticFile"))
-		}
-
-		return c.Blob(http.StatusOK, "application/octet-stream", fileBytes)
-	}
-}
-
-// QueriesHandler is a handler to fetch queries.
-func (es *EchoSource) QueriesHandler() echo.HandlerFunc {
-	return func(c echo.Context) error {
-		ident := c.Param("ident")
-		namespace := c.Param("namespace")
-		version, err := strconv.Atoi(c.Param("version"))
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest).SetInternal(errors.Wrap(err, "strconv.Atoi"))
-		}
-
-		queries, err := es.source.Queries(ident, namespace, int64(version))
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError).SetInternal(errors.Wrap(err, "es.source.Queries"))
-		}
-
-		return c.JSON(http.StatusOK, queries)
 	}
 }
