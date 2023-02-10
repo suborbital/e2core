@@ -19,7 +19,7 @@ require (
 	github.com/suborbital/go-kit v0.0.8
 	github.com/suborbital/systemspec v0.0.6-0.20230208184245-e3a2220475fc
 	github.com/testcontainers/testcontainers-go v0.17.0
-	github.com/twmb/franz-go v1.11.3
+	github.com/twmb/franz-go v1.12.0
 	go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho v0.37.0
 	go.opentelemetry.io/otel v1.13.0
 	go.opentelemetry.io/otel/metric v0.36.0
@@ -68,7 +68,7 @@ require (
 	github.com/pierrec/lz4/v4 v4.1.17 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
-	github.com/twmb/franz-go/pkg/kmsg v1.3.0 // indirect
+	github.com/twmb/franz-go/pkg/kmsg v1.4.0 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
 	go.opencensus.io v0.23.0 // indirect
