@@ -1,4 +1,4 @@
-FROM golang:1.19 as builder
+FROM golang:1.20 as builder
 
 RUN mkdir -p /go/src/github.com/suborbital/e2core
 WORKDIR /go/src/github.com/suborbital/e2core/
