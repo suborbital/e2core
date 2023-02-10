@@ -90,7 +90,7 @@ jobs:
     needs: [test, lint]
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/goreleaser/goreleaser-cross:v1.19
+      image: ghcr.io/goreleaser/goreleaser-cross:v1.20
 
     steps:
       - uses: actions/checkout@v3

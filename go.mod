@@ -1,6 +1,6 @@
 module github.com/suborbital/e2core
 
-go 1.19
+go 1.20
 
 require (
 	github.com/bytecodealliance/wasmtime-go v1.0.0
