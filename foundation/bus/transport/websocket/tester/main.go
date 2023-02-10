@@ -2,25 +2,23 @@ package main
 
 import (
 	"fmt"
-	"net/http"
 	"os"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/labstack/echo/v4"
+	"github.com/rs/zerolog"
 
 	"github.com/suborbital/e2core/foundation/bus/bus"
 	"github.com/suborbital/e2core/foundation/bus/discovery/local"
 	"github.com/suborbital/e2core/foundation/bus/transport/websocket"
-	"github.com/suborbital/vektor/vk"
-	"github.com/suborbital/vektor/vlog"
 )
 
 func main() {
-	logger := vlog.Default(vlog.Level(vlog.LogLevelDebug))
+	logger := zerolog.New(os.Stderr).With().Timestamp().Logger()
 	gwss := websocket.New()
 	locald := local.New()
 
-	port := os.Getenv("VK_HTTP_PORT")
+	port := os.Getenv("ECHO_HTTP_PORT")
 
 	g := bus.New(
 		bus.UseLogger(logger),
@@ -35,8 +33,8 @@ func main() {
 		return nil
 	})
 
-	vk := vk.New(vk.UseAppName("websocket tester"))
-	vk.HandleHTTP(http.MethodGet, "/meta/message", gwss.HTTPHandlerFunc())
+	e := echo.New()
+	e.GET("/meta/message", echo.WrapHandler(gwss.HTTPHandlerFunc()))
 
 	go func() {
 		<-time.After(time.Second * time.Duration(5))
@@ -47,20 +45,20 @@ func main() {
 
 		<-time.After(time.Second * time.Duration(5))
 		if err := g.Withdraw(); err != nil {
-			logger.Error(errors.Wrap(err, "failed to Withdraw"))
+			logger.Err(err).Msg("failed to withdraw")
 			os.Exit(1)
 		}
 
 		if err := g.Stop(); err != nil {
-			logger.Error(errors.Wrap(err, "failed to Stop"))
+			logger.Err(err).Msg("failed to stop")
 			os.Exit(1)
 		}
 
-		logger.Debug("withdrew and stopped!")
+		logger.Debug().Msg("withdrawn and stopped")
 		os.Exit(0)
 	}()
 
-	if err := vk.Start(); err != nil {
-		logger.Error(errors.Wrap(err, "failed to vk.Start"))
+	if err := e.Start(fmt.Sprintf(":%s", port)); err != nil {
+		logger.Err(err).Msgf("echo.start on port %s", port)
 	}
 }

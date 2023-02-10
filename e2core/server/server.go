@@ -2,10 +2,12 @@ package server
 
 import (
 	"context"
-	"net/http"
+	"fmt"
 
+	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
-	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"github.com/rs/zerolog"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho"
 
 	"github.com/suborbital/e2core/e2core/auth"
 	"github.com/suborbital/e2core/e2core/options"
@@ -13,14 +15,15 @@ import (
 	"github.com/suborbital/e2core/foundation/bus/bus"
 	"github.com/suborbital/e2core/foundation/bus/discovery/local"
 	"github.com/suborbital/e2core/foundation/bus/transport/websocket"
-	"github.com/suborbital/vektor/vk"
+	kitError "github.com/suborbital/go-kit/web/error"
+	"github.com/suborbital/go-kit/web/mid"
 )
 
 const E2CoreHealthURI = "/health"
 
 // Server is a E2Core server.
 type Server struct {
-	server *vk.Server
+	server *echo.Echo
 	syncer *syncer.Syncer
 
 	bus        *bus.Bus
@@ -30,70 +33,56 @@ type Server struct {
 }
 
 // New creates a new Server instance.
-func New(sync *syncer.Syncer, opts *options.Options) (*Server, error) {
+func New(l zerolog.Logger, sync *syncer.Syncer, opts *options.Options) (*Server, error) {
+	ll := l.With().Str("module", "server").Logger()
 	// @todo https://github.com/suborbital/e2core/issues/144, the first return value is a function that would close the
 	// tracer in case of a shutdown. Usually that is put in a defer statement. Server doesn't have a graceful shutdown.
-	_, err := setupTracing(opts.TracerConfig, opts.Logger())
+	_, err := setupTracing(opts.TracerConfig, ll)
 	if err != nil {
 		return nil, errors.Wrapf(err, "setupTracing(%s, %s, %f)", "e2core", "reporter_uri", 0.04)
 	}
 
 	busOpts := []bus.OptionsModifier{
-		bus.UseLogger(opts.Logger()),
+		bus.UseMeshTransport(websocket.New()),
+		bus.UseDiscovery(local.New()),
 	}
-
-	busOpts = append(busOpts, bus.UseMeshTransport(websocket.New()))
-	busOpts = append(busOpts, bus.UseDiscovery(local.New()))
 
 	b := bus.New(busOpts...)
 
-	s := vk.New(
-		vk.UseEnvPrefix("E2CORE"),
-		vk.UseAppName(opts.AppName),
-		vk.UseLogger(opts.Logger()),
-		vk.UseDomain(opts.Domain),
-		vk.UseHTTPPort(opts.HTTPPort),
-		vk.UseTLSPort(opts.TLSPort),
-		vk.UseQuietRoutes(
-			E2CoreHealthURI,
-		),
-		vk.UseRouterWrapper(func(inner http.Handler) http.Handler {
-			return otelhttp.NewHandler(inner, "e2core")
-		}),
+	e := echo.New()
+	e.HTTPErrorHandler = kitError.Handler(l)
+
+	e.Use(
+		mid.UUIDRequestID(),
+		otelecho.Middleware("e2core"),
 	)
 
-	d := newDispatcher(opts.Logger(), b.Connect())
+	d := newDispatcher(ll, b.Connect())
 
 	server := &Server{
-		server:     s,
+		server:     e,
 		syncer:     sync,
 		options:    opts,
 		bus:        b,
 		dispatcher: d,
 	}
 
-	router := vk.NewRouter(opts.Logger(), "")
-
-	router.WithMiddlewares(server.openTelemetryMiddleware())
-	router.WithMiddlewares(scopeMiddleware)
 	if opts.AdminEnabled() {
-		router.POST("/name/:ident/:namespace/:name", auth.AuthorizationMiddleware(opts, server.executePluginByNameHandler()))
+		e.POST("/name/:ident/:namespace/:name", server.executePluginByNameHandler(), auth.AuthorizationMiddleware(opts))
 	} else {
-		router.POST("/name/:ident/:namespace/:name", server.executePluginByNameHandler())
-		router.POST("/ref/:ref", server.executePluginByRefHandler())
-		router.POST("/workflow/:ident/:namespace/:name", server.executeWorkflowHandler())
+		e.POST("/name/:ident/:namespace/:name", server.executePluginByNameHandler())
+		e.POST("/ref/:ref", server.executePluginByRefHandler(ll))
+		e.POST("/workflow/:ident/:namespace/:name", server.executeWorkflowHandler())
 	}
 
-	router.GET("/health", server.healthHandler())
-
-	server.server.SwapRouter(router)
+	e.GET("/health", server.healthHandler())
 
 	return server, nil
 }
 
-// Start starts the Server server.
-func (s *Server) Start(ctx context.Context) error {
-	if err := s.server.Start(); err != nil {
+// Start starts the Server.
+func (s *Server) Start() error {
+	if err := s.server.Start(fmt.Sprintf(":%d", s.Options().HTTPPort)); err != nil {
 		return errors.Wrap(err, "failed to server.Start")
 	}
 
@@ -112,13 +101,13 @@ func (s *Server) Syncer() *syncer.Syncer {
 
 // Shutdown shuts down the server
 func (s *Server) Shutdown(ctx context.Context) error {
-	if err := s.server.StopCtx(ctx); err != nil {
+	if err := s.server.Shutdown(ctx); err != nil {
 		return errors.Wrap(err, "http.Server.StopCtx")
 	}
 
 	return nil
 }
 
-func (s *Server) testServer() *vk.Server {
+func (s *Server) testServer() *echo.Echo {
 	return s.server
 }

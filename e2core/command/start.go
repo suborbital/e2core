@@ -1,13 +1,18 @@
 package command
 
 import (
+	"context"
 	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
-	"github.com/suborbital/e2core/e2core"
 	"github.com/suborbital/e2core/e2core/auth"
 	"github.com/suborbital/e2core/e2core/backend/satbackend"
 	"github.com/suborbital/e2core/e2core/options"
@@ -16,13 +21,11 @@ import (
 	"github.com/suborbital/e2core/e2core/syncer"
 	"github.com/suborbital/systemspec/system/bundle"
 	"github.com/suborbital/systemspec/system/client"
-	"github.com/suborbital/vektor/vlog"
 )
 
-type e2coreInfo struct {
-	E2CoreVersion string `json:"e2core_version"`
-	ModuleName    string `json:"module_name,omitempty"`
-}
+const (
+	shutdownWaitTime = time.Second * 3
+)
 
 func Start() *cobra.Command {
 	cmd := &cobra.Command{
@@ -36,10 +39,10 @@ func Start() *cobra.Command {
 				path = args[0]
 			}
 
-			logger := vlog.Default(
-				vlog.AppMeta(e2coreInfo{E2CoreVersion: release.E2CoreServerDotVersion}),
-				vlog.EnvPrefix("E2CORE_"),
-			)
+			logger := zerolog.New(os.Stderr).With().
+				Str("command", "e2core start").
+				Str("version", release.E2CoreServerDotVersion).
+				Logger()
 
 			opts, err := optionsFromFlags(cmd.Flags())
 			if err != nil {
@@ -48,11 +51,13 @@ func Start() *cobra.Command {
 
 			opts = append(
 				opts,
-				options.UseLogger(logger),
 				options.UseBundlePath(path),
 			)
 
-			vOpts := options.NewWithModifiers(opts...)
+			vOpts, err := options.NewWithModifiers(opts...)
+			if err != nil {
+				return errors.Wrap(err, "options.NewWithModifiers")
+			}
 
 			// TODO: implement and use a CredentialSupplier
 			systemSource := bundle.NewBundleSource(vOpts.BundlePath)
@@ -62,23 +67,60 @@ func Start() *cobra.Command {
 				systemSource = client.NewHTTPSource(vOpts.ControlPlane, auth.NewAccessToken(vOpts.EnvironmentToken))
 			}
 
-			sync := syncer.New(vOpts, systemSource)
+			sync := syncer.New(vOpts, logger, systemSource)
 
-			srv, err := server.New(sync, vOpts)
+			srv, err := server.New(logger, sync, vOpts)
 			if err != nil {
 				return errors.Wrap(err, "server.New")
 			}
 
-			backend, err := satbackend.New(vOpts, sync)
+			backend, err := satbackend.New(logger, vOpts, sync)
 			if err != nil {
 				return errors.Wrap(err, "failed to satbackend.New")
 			}
 
-			system := e2core.NewSystem(srv, backend)
+			shutdown := make(chan os.Signal, 1)
+			signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
 
-			system.StartAll()
+			serverErrors := make(chan error, 1)
 
-			return system.ShutdownWait()
+			go func() {
+				logger.Info().Msg("starting server")
+				err := srv.Start()
+				if err != nil {
+					serverErrors <- errors.Wrap(err, "srv.Start")
+				}
+			}()
+
+			go func() {
+				logger.Info().Msg("starting backend")
+				err := backend.Start()
+				if err != nil {
+					serverErrors <- errors.Wrap(err, "backend.Start")
+				}
+
+			}()
+
+			select {
+			case err := <-serverErrors:
+				return fmt.Errorf("server error: %w", err)
+
+			case sig := <-shutdown:
+				logger.Info().Str("signal", sig.String()).Str("status", "shutdown started").Msg("shutdown started")
+				defer logger.Info().Str("status", "shutdown complete").Msg("all done")
+
+				ctx, cancel := context.WithTimeout(context.Background(), shutdownWaitTime)
+				defer cancel()
+
+				srvErr := srv.Shutdown(ctx)
+				if srvErr != nil {
+					return errors.Wrap(srvErr, "srv.Shutdown")
+				}
+
+				backend.Shutdown()
+			}
+
+			return nil
 		},
 	}
 

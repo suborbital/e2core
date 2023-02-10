@@ -1,15 +1,14 @@
 package bus
 
 import (
-	"fmt"
 	"sync"
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog"
 
 	"github.com/suborbital/e2core/foundation/bus/bus/tunnel"
 	"github.com/suborbital/e2core/foundation/bus/bus/withdraw"
-	"github.com/suborbital/vektor/vlog"
 )
 
 const tunnelRetryCount = 32
@@ -22,7 +21,7 @@ type hub struct {
 	mesh        MeshTransport
 	bridge      BridgeTransport
 	discovery   Discovery
-	log         *vlog.Logger
+	log         zerolog.Logger
 	pod         *Pod
 	connectFunc func() *Pod
 
@@ -42,7 +41,7 @@ func initHub(nodeUUID string, options *Options, connectFunc func() *Pod) *hub {
 		mesh:                options.MeshTransport,
 		bridge:              options.BridgeTransport,
 		discovery:           options.Discovery,
-		log:                 options.Logger,
+		log:                 options.Logger.With().Str("module", "hub").Logger(),
 		pod:                 connectFunc(),
 		connectFunc:         connectFunc,
 		meshConnections:     map[string]*connectionHandler{},
@@ -62,7 +61,7 @@ func initHub(nodeUUID string, options *Options, connectFunc func() *Pod) *hub {
 
 		go func() {
 			if err := h.mesh.Setup(transportOpts, h.handleIncomingConnection); err != nil {
-				h.log.Error(errors.Wrap(err, "[hub.initHub] failed to Setup transport"))
+				h.log.Err(err).Str("function", "initHub").Msg("failed to Setup transport")
 			}
 
 			// send all messages to all mesh connections
@@ -77,12 +76,12 @@ func initHub(nodeUUID string, options *Options, connectFunc func() *Pod) *hub {
 				NodeUUID:      nodeUUID,
 				TransportPort: transportOpts.Port,
 				TransportURI:  transportOpts.URI,
-				Logger:        options.Logger,
+				Logger:        options.Logger.With().Str("module", "discoveryOpts").Logger(),
 			}
 
 			go func() {
 				if err := h.discovery.Start(discoveryOpts, h.discoveryHandler()); err != nil {
-					options.Logger.Error(errors.Wrap(err, "[hub.initHub] failed to Start discovery"))
+					options.Logger.Err(err).Str("function", "initHub").Msg("failed to Start discovery")
 				}
 			}()
 		}
@@ -96,7 +95,8 @@ func initHub(nodeUUID string, options *Options, connectFunc func() *Pod) *hub {
 
 		go func() {
 			if err := h.bridge.Setup(transportOpts); err != nil {
-				h.log.Error(errors.Wrap(err, "[hub.initHub] failed to Setup bridge transport"))
+
+				h.log.Err(err).Str("function", "initHub").Msg("failed to Setup bridge transport")
 			}
 		}()
 	}
@@ -120,19 +120,20 @@ func (h *hub) messageHandler(msg Message) error {
 
 func (h *hub) discoveryHandler() func(endpoint string, uuid string) {
 	return func(endpoint string, uuid string) {
+		ll := h.log.With().Str("method", "discoveryHandler").Logger()
 		if uuid == h.nodeUUID {
-			h.log.Debug("[hub.discoveryHandler] discovered self, discarding")
+			ll.Debug().Msg("discovered self, discarding")
 			return
 		}
 
 		// this reduces the number of extraneous outgoing handshakes that get attempted.
 		if h.connectionExists(uuid) {
-			h.log.Debug("[hub.discoveryHandler] encountered duplicate connection", uuid, ", discarding")
+			ll.Debug().Str("uuid", uuid).Msg("encountered duplicate connection,discarding")
 			return
 		}
 
 		if err := h.connectEndpoint(endpoint, uuid); err != nil {
-			h.log.Error(errors.Wrapf(err, "[hub.discoveryHandler] failed to connectEndpoint for discovered peer %s", uuid))
+			ll.Err(err).Str("uuid", uuid).Msg("failed to connectEndpoint for discovered peer")
 		}
 	}
 }
@@ -143,7 +144,7 @@ func (h *hub) connectEndpoint(endpoint, uuid string) error {
 		return ErrTransportNotConfigured
 	}
 
-	h.log.Debug("[hub.connectEndpoint] connecting to endpoint", endpoint)
+	h.log.Debug().Str("method", "connectEndpoint").Str("endpoint", endpoint).Msg("connecting to endpoint")
 
 	conn, err := h.mesh.Connect(endpoint)
 	if err != nil {
@@ -161,7 +162,7 @@ func (h *hub) connectBridgeTopic(topic string) error {
 		return ErrTransportNotConfigured
 	}
 
-	h.log.Debug("[hub.connectBridgeTopic] connecting to topic", topic)
+	h.log.Debug().Str("method", "connectBridgeTopic").Str("topic", topic).Msg("connecting to topic")
 
 	conn, err := h.bridge.ConnectTopic(topic)
 	if err != nil {
@@ -174,23 +175,25 @@ func (h *hub) connectBridgeTopic(topic string) error {
 }
 
 func (h *hub) setupOutgoingConnection(connection Connection, uuid string) {
+	ll := h.log.With().Str("method", "setupOutgoingConnection").Logger()
+
 	handshake := &TransportHandshake{h.nodeUUID, h.belongsTo, h.interests}
 
 	ack, err := connection.OutgoingHandshake(handshake)
 	if err != nil {
-		h.log.Error(errors.Wrap(err, "[hub.setupOutgoingConnection] failed to connection.DoOutgoingHandshake"))
+		ll.Err(err).Msg("connection.OutgoingHandshake")
 		connection.Close()
 		return
 	}
 
 	if !ack.Accept {
-		h.log.Debug("[hub.setupOutgoingConnection] connection handshake was not accepted, terminating connection")
+		ll.Debug().Msg("connection handshake was not accepted, terminating connection")
 		connection.Close()
 
 		return
 	} else if uuid == "" {
 		if ack.UUID == "" {
-			h.log.ErrorString("[hub.setupOutgoingConnection] connection handshake returned empty UUID, terminating connection")
+			ll.Error().Msg("connection handshake returned empty UUID, terminating connection")
 			connection.Close()
 
 			return
@@ -198,7 +201,7 @@ func (h *hub) setupOutgoingConnection(connection Connection, uuid string) {
 
 		uuid = ack.UUID
 	} else if ack.UUID != uuid {
-		h.log.ErrorString(fmt.Sprintf("[hub.setupOutgoingConnection] connection handshake Ack %s did not match Discovery Ack %s, terminating connection", ack.UUID, uuid))
+		ll.Error().Str("uuid", uuid).Str("ack.UUID", ack.UUID).Msg("connection handshake Ack did not match Discovery Ack, terminating connection")
 		connection.Close()
 
 		return
@@ -208,6 +211,8 @@ func (h *hub) setupOutgoingConnection(connection Connection, uuid string) {
 }
 
 func (h *hub) handleIncomingConnection(connection Connection) {
+	ll := h.log.With().Str("method", "handleIncomingConnection").Logger()
+
 	var handshake *TransportHandshake
 	var ack *TransportHandshakeAck
 
@@ -230,21 +235,21 @@ func (h *hub) handleIncomingConnection(connection Connection) {
 	}
 
 	if err := connection.IncomingHandshake(callback); err != nil {
-		h.log.Error(errors.Wrap(err, "[hub.handleIncomingConnection] failed to connection.DoIncomingHandshake"))
+		ll.Err(err).Msg("connection.DoIncomingHandshake")
 		connection.Close()
 
 		return
 	}
 
 	if handshake == nil || handshake.UUID == "" {
-		h.log.ErrorString("[hub.handleIncomingConnection] connection handshake returned empty UUID, terminating connection")
+		ll.Error().Msg("connection handshake returned empty UUID, terminating connection")
 		connection.Close()
 
 		return
 	}
 
 	if !ack.Accept {
-		h.log.Debug("[hub.handleIncomingConnection] rejecting connection with incompatible BelongsTo", handshake.BelongsTo)
+		ll.Debug().Str("belongsTo", handshake.BelongsTo).Msg("rejecting connection with incompatible BelongsTo")
 		connection.Close()
 
 		return
@@ -256,7 +261,7 @@ func (h *hub) handleIncomingConnection(connection Connection) {
 func (h *hub) setupNewConnection(connection Connection, uuid, belongsTo string, interests []string) {
 	if h.connectionExists(uuid) {
 		connection.Close()
-		h.log.Debug("[hub.setupNewConnection] encountered duplicate connection, discarding")
+		h.log.Debug().Str("method", "setupNewConnection").Msg("encountered duplicate connection, discarding")
 	} else {
 		h.addConnection(connection, uuid, belongsTo, interests)
 	}
@@ -266,7 +271,7 @@ func (h *hub) addConnection(connection Connection, uuid, belongsTo string, inter
 	h.lock.Lock()
 	defer h.lock.Unlock()
 
-	h.log.Debug("[hub.addConnection] adding connection for", uuid)
+	h.log.Debug().Str("method", "addConnection").Str("uuid", uuid).Msg("adding connection for")
 
 	signaler := withdraw.NewSignaler()
 
@@ -298,7 +303,7 @@ func (h *hub) addTopicConnection(connection BridgeConnection, topic string) {
 	h.lock.Lock()
 	defer h.lock.Unlock()
 
-	h.log.Debug("[hub.addTopicConnection] adding bridge connection for", topic)
+	h.log.Debug().Str("method", "addTopicConnection").Str("topic", topic).Msg("adding bridge connection for topic")
 
 	connection.Start(h.connectFunc())
 
@@ -314,7 +319,7 @@ func (h *hub) removeMeshConnection(uuid string) {
 	h.lock.Lock()
 	defer h.lock.Unlock()
 
-	h.log.Debug("[hub.removeMeshConnection] removing connection for", uuid)
+	h.log.Debug().Str("method", "removeMeshConnection").Str("uuid", uuid).Msg("removing connection")
 
 	for _, balancer := range h.capabilityBalancers {
 		balancer.Remove(uuid)
@@ -338,6 +343,7 @@ func (h *hub) connectionExists(uuid string) bool {
 // scanFailedMeshConnections should be run on a goroutine to constantly
 // check for failed connections and clean them up
 func (h *hub) scanFailedMeshConnections() {
+	ll := h.log.With().Str("method", "scanFailedMeshConnections").Logger()
 	for {
 		// we don't want to edit the `meshConnections` map while in the loop, so do it after
 		toRemove := make([]string, 0)
@@ -348,14 +354,15 @@ func (h *hub) scanFailedMeshConnections() {
 			select {
 			case <-conn.ErrChan:
 				if err := conn.Close(); err != nil {
-					h.log.Error(errors.Wrapf(err, "[hub.scanFailedMeshConnections] failed to Close %s", conn.UUID))
+					ll.Err(err).Str("connUUID", conn.UUID).Msg("failed to Close connection")
 				}
 
 				toRemove = append(toRemove, conn.UUID)
 			default:
 				if conn.Signaler.PeerWithdrawn() {
 					if err := conn.Close(); err != nil {
-						h.log.Error(errors.Wrapf(err, "[hub.scanFailedMeshConnections] failed to Close %s", conn.UUID))
+						ll.Err(err).Str("connUUID", conn.UUID).Msg(
+							"failed to Close connection")
 					}
 
 					toRemove = append(toRemove, conn.UUID)
@@ -372,6 +379,8 @@ func (h *hub) scanFailedMeshConnections() {
 }
 
 func (h *hub) sendTunneledMessage(capability string, msg Message) error {
+	ll := h.log.With().Str("method", "sendTunneledMessage").Logger()
+
 	balancer, exists := h.capabilityBalancers[capability]
 	if !exists {
 		return ErrTunnelNotEstablished
@@ -404,9 +413,9 @@ func (h *hub) sendTunneledMessage(capability string, msg Message) error {
 
 		if handler.Conn != nil {
 			if err := handler.Send(msg); err != nil {
-				h.log.Error(errors.Wrap(err, "[hub.sendTunneledMessage] failed to SendMsg on tunneled connection, will remove"))
+				ll.Err(err).Msg("failed to SendMsg on tunneled connection, will remove")
 			} else {
-				h.log.Debug("[hub.sendTunneledMessage] tunneled to", handler.UUID)
+				ll.Debug().Str("handlerUUID", handler.UUID).Msg("tunneled to handler")
 				return nil
 			}
 		}
@@ -473,13 +482,15 @@ func (h *hub) withdraw() error {
 }
 
 func (h *hub) stop() error {
-	h.log.Info("[hub.stop] stopping")
+	ll := h.log.With().Str("method", "stop").Logger()
+
+	ll.Info().Msg("stopping")
 
 	var lastErr error
 	for _, c := range h.meshConnections {
 		if err := c.Conn.Close(); err != nil {
 			lastErr = err
-			h.log.Error(errors.Wrapf(err, "[hub.stop] failed to Close connection %s", c.UUID))
+			ll.Err(err).Str("connectionUUID", c.UUID).Msg("failed to Close connection")
 		}
 	}
 

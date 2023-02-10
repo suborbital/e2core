@@ -2,138 +2,60 @@ package server
 
 import (
 	"context"
-	"fmt"
-	"time"
 
 	"github.com/pkg/errors"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
-	"go.opentelemetry.io/otel/sdk/resource"
-	"go.opentelemetry.io/otel/sdk/trace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
-	traceProviders "go.opentelemetry.io/otel/trace"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
-	"google.golang.org/grpc/credentials/insecure"
+	"github.com/rs/zerolog"
 
 	"github.com/suborbital/e2core/e2core/options"
-	"github.com/suborbital/vektor/vlog"
+	"github.com/suborbital/go-kit/observability"
 )
 
 // setupTracing configure open telemetry to be used with otel exporter. Returns a tracer closer func and an error.
-func setupTracing(config options.TracerConfig, logger *vlog.Logger) (func(), error) {
-	exporterString := "none"
-	exporterOpts := make([]otlptracegrpc.Option, 0)
+func setupTracing(config options.TracerConfig, logger zerolog.Logger) (func(ctx context.Context) error, error) {
+	l := logger.With().Str("function", "setupTracing").Logger()
+	emptyShutdown := func(_ context.Context) error { return nil }
 
 	switch config.TracerType {
 	case "honeycomb":
-		logger.Debug("[setupTracing] configuring honeycomb exporter for tracing")
-
-		honeyOpts, err := honeycombExporterOptions(config.HoneycombConfig)
+		conn, err := observability.GrpcConnection(context.Background(), config.HoneycombConfig.Endpoint)
 		if err != nil {
-			return func() {}, errors.Wrap(err, "honeycombExporterOptions")
+			return emptyShutdown, errors.Wrapf(err, "observability.GrpcConnection to %s", config.HoneycombConfig.Endpoint)
 		}
 
-		exporterString = "honeycomb"
-		exporterOpts = append(exporterOpts, honeyOpts...)
+		tp, err := observability.HoneycombTracer(context.Background(), conn, observability.HoneycombTracingConfig{
+			TracingConfig: observability.TracingConfig{
+				Probability: config.Probability,
+				ServiceName: config.ServiceName,
+			},
+			APIKey:  config.HoneycombConfig.APIKey,
+			Dataset: config.HoneycombConfig.Dataset,
+		})
+		if err != nil {
+			return emptyShutdown, errors.Wrap(err, "observability.HoneycombTracer")
+		}
 
-		logger.Debug("[setupTracing] created honeycomb trace exporter")
+		return tp.Shutdown, nil
 	case "collector":
-		logger.Debug("[setupTracing] configuring collector exporter for tracing")
-
-		collectorOpts, err := collectorExporterOptions(config.Collector)
+		conn, err := observability.GrpcConnection(context.Background(), config.Collector.Endpoint)
 		if err != nil {
-			return func() {}, errors.Wrap(err, "collectorExporterOptions")
+			return emptyShutdown, errors.Wrap(err, "observability.GrpcConnection")
 		}
 
-		exporterString = "collector"
-		exporterOpts = append(exporterOpts, collectorOpts...)
+		tp, err := observability.OtelTracer(context.Background(), conn, observability.TracingConfig{
+			Probability: config.Probability,
+			ServiceName: config.ServiceName,
+		})
 
-		logger.Debug("[setupTracing] created collector trace exporter")
+		return tp.Shutdown, nil
 	default:
-		logger.Warn(fmt.Sprintf("unrecognised tracer type configuration [%s]. Defaulting to no tracer", config.TracerType))
+		l.Warn().Str("tracerType", config.TracerType).Msg("unrecognised tracer type configuration. Defaulting to no tracer")
 		fallthrough
 	case "none", "":
-		otel.SetTracerProvider(traceProviders.NewNoopTracerProvider())
+		tp, err := observability.NoopTracer()
+		if err != nil {
+			return emptyShutdown, errors.Wrap(err, "observability.NoopTracer")
+		}
 
-		logger.Debug("[setupTracing] finished setting up noop tracer")
-
-		return func() {}, nil
+		return tp.Shutdown, nil
 	}
-
-	exporter, err := otlptrace.New(context.Background(), otlptracegrpc.NewClient(exporterOpts...))
-	if err != nil {
-		return func() {}, errors.Wrapf(err, "oltptrace.New with exporter as %s", exporterString)
-	}
-
-	traceOpts := []trace.TracerProviderOption{
-		trace.WithSampler(trace.TraceIDRatioBased(config.Probability)),
-		trace.WithResource(
-			resource.NewWithAttributes(
-				semconv.SchemaURL,
-				semconv.ServiceNameKey.String(config.ServiceName),
-				attribute.String("exporter", exporterString),
-			),
-		),
-		trace.WithBatcher(exporter,
-			trace.WithMaxExportBatchSize(trace.DefaultMaxExportBatchSize),
-			trace.WithBatchTimeout(trace.DefaultScheduleDelay*time.Millisecond),
-			trace.WithMaxExportBatchSize(trace.DefaultMaxExportBatchSize),
-		),
-		trace.WithResource(
-			resource.NewWithAttributes(
-				semconv.SchemaURL,
-				semconv.ServiceNameKey.String(config.ServiceName),
-				attribute.String("exporter", "honeycomb"),
-			),
-		),
-	}
-
-	traceProvider := trace.NewTracerProvider(traceOpts...)
-
-	otel.SetTracerProvider(traceProvider)
-
-	logger.Debug(fmt.Sprintf("[setupTracing] finished setting up tracer [%s] with a trace probability of [%f]",
-		exporterString, config.Probability))
-
-	return func() {
-		_ = traceProvider.Shutdown(context.Background())
-	}, nil
-
-}
-
-func collectorExporterOptions(config *options.CollectorConfig) ([]otlptracegrpc.Option, error) {
-	if config == nil {
-		return nil, errors.New("empty collector tracer configuration")
-	}
-
-	ctx, ctxCancel := context.WithTimeout(context.Background(), 1*time.Second)
-	defer ctxCancel()
-
-	conn, err := grpc.DialContext(ctx, config.Endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
-	if err != nil {
-		return nil, errors.Wrap(err, "grpc.DialContext")
-	}
-
-	return []otlptracegrpc.Option{
-		otlptracegrpc.WithGRPCConn(conn),
-		otlptracegrpc.WithTimeout(500 * time.Millisecond),
-	}, nil
-}
-
-func honeycombExporterOptions(config *options.HoneycombConfig) ([]otlptracegrpc.Option, error) {
-	if config == nil {
-		return nil, errors.New("empty honeycomb tracer configuration")
-	}
-
-	return []otlptracegrpc.Option{
-		otlptracegrpc.WithEndpoint(config.Endpoint),
-		otlptracegrpc.WithHeaders(map[string]string{
-			"x-honeycomb-team":    config.APIKey,
-			"x-honeycomb-dataset": config.Dataset,
-		}),
-		otlptracegrpc.WithTLSCredentials(credentials.NewClientTLSFromCert(nil, "")),
-	}, nil
 }

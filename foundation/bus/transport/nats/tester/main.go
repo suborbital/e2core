@@ -3,17 +3,18 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog"
 
 	"github.com/suborbital/e2core/foundation/bus/bus"
 	"github.com/suborbital/e2core/foundation/bus/transport/nats"
-	"github.com/suborbital/vektor/vlog"
 )
 
 func main() {
-	logger := vlog.Default(vlog.Level(vlog.LogLevelDebug))
+	logger := zerolog.New(os.Stderr).With().Timestamp().Logger()
 
 	gnats, err := nats.New("nats://localhost:4222")
 	if err != nil {

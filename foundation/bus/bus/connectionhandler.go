@@ -2,9 +2,9 @@ package bus
 
 import (
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog"
 
 	"github.com/suborbital/e2core/foundation/bus/bus/withdraw"
-	"github.com/suborbital/vektor/vlog"
 )
 
 type connectionHandler struct {
@@ -15,20 +15,23 @@ type connectionHandler struct {
 	ErrChan   chan error
 	BelongsTo string
 	Interests []string
-	Log       *vlog.Logger
+	Log       zerolog.Logger
 }
 
 // Start starts up a listener to read messages from the connection into the Grav bus
 func (c *connectionHandler) Start() {
+	ll := c.Log.With().Str("method", "Start").Logger()
 	withdrawChan := c.Signaler.Listen()
 
 	go func() {
 		<-withdrawChan
 
-		c.Log.Debug("[connectionHandler.Start] sending withdraw and disconnecting")
+		ll.Debug().Msg("sending withdraw and disconnecting")
 
 		if err := c.Conn.SendWithdraw(&Withdraw{}); err != nil {
-			c.Log.Error(errors.Wrapf(err, "[connectionHandler.Start] failed to SendWithdraw to connection %s", c.UUID))
+			ll.Err(err).
+				Str("connectionUUID", c.UUID).
+				Msg("failed to SendWithdraw to connection")
 			c.ErrChan <- err
 		}
 
@@ -37,27 +40,27 @@ func (c *connectionHandler) Start() {
 
 	go func() {
 		for {
-			msg, withdraw, err := c.Conn.ReadMsg()
+			msg, connWithdraw, err := c.Conn.ReadMsg()
 			if err != nil {
 				if !(c.Signaler.SelfWithdrawn() || c.Signaler.PeerWithdrawn()) {
-					c.Log.Error(errors.Wrapf(err, "[connectionHandler.Start] failed to ReadMsg from connection %s", c.UUID))
+					ll.Err(err).Str("connectionUUID", c.UUID).Msg("failed to ReadMsg from connection")
 					c.ErrChan <- err
 				} else {
-					c.Log.Debug("[connectionHandler.Start] failed to ReadMsg from withdrawn connection, ignoring:", err.Error())
+					ll.Debug().Msgf("failed to ReadMsg from withdrawn connection, ignoring: %s", err.Error())
 				}
 
 				return
 			}
 
-			if withdraw != nil {
-				c.Log.Debug("[connectionHandler.Start] peer has withdrawn, disconnecting")
+			if connWithdraw != nil {
+				ll.Debug().Msg("peer has withdrawn, disconnecting")
 
 				c.Signaler.SetPeerWithdrawn()
 
 				return
 			}
 
-			c.Log.Debug("received message", msg.UUID())
+			ll.Debug().Str("messageUUID", msg.UUID()).Msg("received message")
 
 			c.Pod.Send(msg)
 		}

@@ -2,8 +2,6 @@ package scheduler
 
 import (
 	"encoding/json"
-
-	"github.com/suborbital/vektor/vk"
 )
 
 // RunErr represents an error returned from a Wasm Runnable
@@ -17,9 +15,4 @@ type RunErr struct {
 func (r RunErr) Error() string {
 	bytes, _ := json.Marshal(r)
 	return string(bytes)
-}
-
-// ToVKErr converts a RunErr to a VKError
-func (r RunErr) ToVKErr() vk.Error {
-	return vk.Err(r.Code, r.Message)
 }

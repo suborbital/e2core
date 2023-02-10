@@ -5,8 +5,7 @@ import (
 	"sync"
 
 	"github.com/pkg/errors"
-
-	"github.com/suborbital/vektor/vlog"
+	"github.com/rs/zerolog"
 )
 
 // coreDoFunc is an internal version of DoFunc that takes a
@@ -21,11 +20,11 @@ type core struct {
 	// watcher holds onto active Schedules and ensures they get executed
 	watcher *watcher
 
-	log  *vlog.Logger
+	log  zerolog.Logger
 	lock sync.RWMutex
 }
 
-func newCore(log *vlog.Logger) *core {
+func newCore(log zerolog.Logger) *core {
 	c := &core{
 		scaler: newScaler(log),
 		log:    log,

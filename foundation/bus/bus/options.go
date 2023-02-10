@@ -1,12 +1,14 @@
 package bus
 
 import (
-	"github.com/suborbital/vektor/vlog"
+	"os"
+
+	"github.com/rs/zerolog"
 )
 
-// Options represent Grav options
+// Options represent Bus options
 type Options struct {
-	Logger          *vlog.Logger
+	Logger          zerolog.Logger
 	MeshTransport   MeshTransport
 	BridgeTransport BridgeTransport
 	Discovery       Discovery
@@ -30,7 +32,7 @@ func newOptionsWithModifiers(mods ...OptionsModifier) *Options {
 }
 
 // UseLogger allows a custom logger to be used
-func UseLogger(logger *vlog.Logger) OptionsModifier {
+func UseLogger(logger zerolog.Logger) OptionsModifier {
 	return func(o *Options) {
 		o.Logger = logger
 	}
@@ -89,7 +91,7 @@ func defaultOptions() *Options {
 	o := &Options{
 		BelongsTo:       "*",
 		Interests:       []string{},
-		Logger:          vlog.Default(),
+		Logger:          zerolog.New(os.Stderr),
 		Port:            "8080",
 		URI:             "/meta/message",
 		MeshTransport:   nil,

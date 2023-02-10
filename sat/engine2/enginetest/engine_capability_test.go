@@ -4,20 +4,20 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
+	"github.com/rs/zerolog"
 
 	"github.com/suborbital/e2core/foundation/scheduler"
 	"github.com/suborbital/e2core/sat/engine2"
 	"github.com/suborbital/e2core/sat/engine2/api"
 	"github.com/suborbital/systemspec/capabilities"
 	"github.com/suborbital/systemspec/request"
-	"github.com/suborbital/vektor/vlog"
 )
 
 func TestEngineDisabledHTTP(t *testing.T) {
 	config := capabilities.DefaultCapabilityConfig()
 	config.HTTP = &capabilities.HTTPConfig{Enabled: false}
 
-	api, _ := api.NewWithConfig(vlog.Default(), config)
+	apiInstance, _ := api.NewWithConfig(zerolog.Nop(), config)
 
 	ref, err := engine2.WasmRefFromFile("./testdata/fetch/fetch.wasm")
 	if err != nil {
@@ -25,7 +25,7 @@ func TestEngineDisabledHTTP(t *testing.T) {
 		return
 	}
 
-	e := engine2.New("fetch", ref, api)
+	e := engine2.New("fetch", ref, apiInstance)
 
 	req := &request.CoordinatedRequest{
 		Method: "GET",

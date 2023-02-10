@@ -2,33 +2,32 @@ package server
 
 import (
 	"bytes"
-	"context"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 	"testing"
 	"time"
 
+	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/suborbital/e2core/e2core/backend/satbackend"
 	"github.com/suborbital/e2core/e2core/options"
 	"github.com/suborbital/e2core/e2core/syncer"
-	"github.com/suborbital/e2core/foundation/signaler"
 	"github.com/suborbital/systemspec/system/bundle"
-	"github.com/suborbital/vektor/vk"
-	"github.com/suborbital/vektor/vlog"
 )
 
 type serverTestSuite struct {
 	suite.Suite
-	ts       *vk.Server
-	o        *satbackend.Orchestrator
-	signaler *signaler.Signaler
-	lock     sync.Mutex
+	ts   *echo.Echo
+	o    *satbackend.Orchestrator
+	lock sync.Mutex
 
 	shouldRun bool
 }
@@ -61,8 +60,6 @@ func (s *serverTestSuite) SetupSuite() {
 	err := s.serverForBundle("../../example-project/modules.wasm.zip")
 	s.Require().NoError(err)
 
-	err = s.ts.TestStart()
-	s.Require().NoError(err)
 }
 
 func (s *serverTestSuite) TearDownSuite() {
@@ -77,24 +74,8 @@ func (s *serverTestSuite) TearDownSuite() {
 		s.o = nil
 	}
 
-	if s.signaler != nil {
-		s.T().Log("starting shutdown of signaler")
-
-		err := s.signaler.ManualShutdown(time.Second)
-		s.Require().NoError(err)
-
-		s.T().Log("shutdown completed of signaler")
-
-		s.signaler = nil
-	}
-
 	if s.ts != nil {
 		s.T().Log("starting shutdown of test server")
-
-		ctx, cxl := context.WithTimeout(context.Background(), time.Second)
-		defer cxl()
-		err := s.ts.StopCtx(ctx)
-		s.Require().NoError(err)
 
 		s.T().Log("shutdown of test server completed")
 	}
@@ -167,34 +148,44 @@ func (s *serverTestSuite) serverForBundle(filepath string) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
-	logger := vlog.Default(vlog.Level(vlog.LogLevelInfo))
+	logger := zerolog.New(os.Stderr).With().Timestamp().Str("service", "serverForBundle test").Logger()
 
-	opts := options.NewWithModifiers(options.UseBundlePath(filepath), options.UseLogger(logger))
+	opts, err := options.NewWithModifiers(options.UseBundlePath(filepath))
+	s.Require().NoError(err, "options.NewWithModifiers")
 
 	source := bundle.NewBundleSource(opts.BundlePath)
 
-	syncR := syncer.New(opts, source)
+	syncR := syncer.New(opts, logger, source)
 
-	server, err := New(syncR, opts)
+	server, err := New(logger, syncR, opts)
 	if err != nil {
 		return errors.Wrap(err, "failed to New")
 	}
 
 	testServer := server.testServer()
 
-	orchestrator, err := satbackend.New(opts, syncR)
+	orchestrator, err := satbackend.New(logger, opts, syncR)
 	if err != nil {
 		return errors.Wrap(err, "failed to orchestrator.New")
 	}
 
-	sig := signaler.Setup()
-	sig.Start(orchestrator.Start)
+	shutdown := make(chan os.Signal, 1)
+	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
+
+	serverErrors := make(chan error, 1)
+
+	go func() {
+		logger.Info().Msg("starting server")
+		err := orchestrator.Start()
+		if err != nil {
+			serverErrors <- errors.Wrap(err, "orchestrator.Start")
+		}
+	}()
 
 	time.Sleep(time.Second * 3)
 
 	s.o = orchestrator
 	s.ts = testServer
-	s.signaler = sig
 
 	return nil
 }

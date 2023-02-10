@@ -5,16 +5,16 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/rs/zerolog"
 	"github.com/schollz/peerdiscovery"
 
 	"github.com/suborbital/e2core/foundation/bus/bus"
-	"github.com/suborbital/vektor/vlog"
 )
 
 // Discovery is a grav Discovery plugin using local network multicast
 type Discovery struct {
 	opts     *bus.DiscoveryOpts
-	log      *vlog.Logger
+	log      zerolog.Logger
 	stopChan chan struct{}
 
 	discoveryFunc bus.DiscoveryFunc
@@ -41,7 +41,8 @@ func (d *Discovery) Start(opts *bus.DiscoveryOpts, discoveryFunc bus.DiscoveryFu
 	d.discoveryFunc = discoveryFunc
 	d.stopChan = make(chan struct{})
 
-	d.log.Debug("[discovery-local] starting discovery, advertising endpoint", opts.TransportPort, opts.TransportURI)
+	d.log.Debug().Str("transportURI", opts.TransportURI).
+		Str("transportPort", opts.TransportPort).Msg("starting discovery, advertising endpoint")
 
 	payloadFunc := func() []byte {
 		payload := payload{
@@ -55,11 +56,11 @@ func (d *Discovery) Start(opts *bus.DiscoveryOpts, discoveryFunc bus.DiscoveryFu
 	}
 
 	notifyFunc := func(peer peerdiscovery.Discovered) {
-		d.log.Debug("[discovery-local] potential peer found:", peer.Address)
+		d.log.Debug().Str("peerAddress", peer.Address).Msg("potential peer found")
 
 		payload := payload{}
 		if err := json.Unmarshal(peer.Payload, &payload); err != nil {
-			d.log.Debug("[discovery-local] peer did not offer correct payload, discarding")
+			d.log.Debug().Msg("peer did not offer correct payload, discarding")
 			return
 		}
 

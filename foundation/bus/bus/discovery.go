@@ -1,6 +1,8 @@
 package bus
 
-import "github.com/suborbital/vektor/vlog"
+import (
+	"github.com/rs/zerolog"
+)
 
 // DiscoveryFunc is a function that allows a plugin to report a newly discovered node
 type DiscoveryFunc func(endpoint string, uuid string)
@@ -17,6 +19,6 @@ type DiscoveryOpts struct {
 	NodeUUID      string
 	TransportPort string
 	TransportURI  string
-	Logger        *vlog.Logger
+	Logger        zerolog.Logger
 	Custom        interface{}
 }

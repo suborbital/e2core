@@ -2,11 +2,12 @@ package scheduler
 
 import (
 	"encoding/json"
+	"os"
 
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog"
 
 	"github.com/suborbital/e2core/foundation/bus/bus"
-	"github.com/suborbital/vektor/vlog"
 )
 
 // MsgTypeReactrJobErr and others are Grav message types used for Scheduler job
@@ -22,17 +23,17 @@ type JobFunc func(interface{}) *Result
 
 // Scheduler represents the main control object
 type Scheduler struct {
-	log  *vlog.Logger
+	log  zerolog.Logger
 	core *core
 }
 
 // New returns a Scheduler ready to accept Jobs
 func New() *Scheduler {
-	return NewWithLogger(vlog.Default())
+	return NewWithLogger(zerolog.New(os.Stderr).With().Timestamp().Str("component", "scheduler").Logger())
 }
 
 // NewWithLogger returns a Scheduler with a custom logger
-func NewWithLogger(log *vlog.Logger) *Scheduler {
+func NewWithLogger(log zerolog.Logger) *Scheduler {
 	c := newCore(log)
 
 	r := &Scheduler{
@@ -79,7 +80,7 @@ func (r *Scheduler) Listen(pod *bus.Pod, msgType string) {
 		var replyMsg bus.Message
 
 		if err != nil {
-			r.log.Error(errors.Wrapf(err, "job from message %s returned error result", msg.UUID()))
+			r.log.Err(err).Str("messageUUID", msg.UUID()).Msg("job returned error result")
 
 			runErr := &RunErr{}
 			if errors.As(err, runErr) {
@@ -106,7 +107,7 @@ func (r *Scheduler) Listen(pod *bus.Pod, msgType string) {
 				// if the job returned something else like a struct
 				resultJSON, err := json.Marshal(result)
 				if err != nil {
-					r.log.Error(errors.Wrapf(err, "job from message %s returned result that could not be JSON marshalled", msg.UUID()))
+					r.log.Err(err).Str("messageUUID", msg.UUID()).Msg("job result could not be marshaled into JSON")
 					replyMsg = bus.NewMsgWithParentID(MsgTypeReactrJobErr, msg.ParentID(), []byte(errors.Wrap(err, "failed to Marshal job result").Error()))
 				} else {
 					replyMsg = bus.NewMsgWithParentID(MsgTypeReactrResult, msg.ParentID(), resultJSON)

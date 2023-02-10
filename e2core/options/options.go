@@ -8,8 +8,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sethvargo/go-envconfig"
 	"golang.org/x/exp/slices"
-
-	"github.com/suborbital/vektor/vlog"
 )
 
 const (
@@ -20,8 +18,6 @@ const (
 
 // Options defines options for E2Core.
 type Options struct {
-	logger *vlog.Logger
-
 	Features         []string      `env:"E2CORE_API_FEATURES"`
 	BundlePath       string        `env:"E2CORE_BUNDLE_PATH"`
 	RunSchedules     *bool         `env:"E2CORE_RUN_SCHEDULES,default=true"`
@@ -65,23 +61,19 @@ type HoneycombConfig struct {
 // Modifier defines options for E2Core.
 type Modifier func(*Options)
 
-func NewWithModifiers(mods ...Modifier) *Options {
+func NewWithModifiers(mods ...Modifier) (*Options, error) {
 	opts := &Options{}
 
 	for _, mod := range mods {
 		mod(opts)
 	}
 
-	opts.finalize(e2coreEnvPrefix)
-
-	return opts
-}
-
-// UseLogger sets the logger to be used.
-func UseLogger(logger *vlog.Logger) Modifier {
-	return func(opts *Options) {
-		opts.logger = logger
+	err := opts.finalize()
+	if err != nil {
+		return nil, errors.Wrap(err, "opts.finalize")
 	}
+
+	return opts, nil
 }
 
 // UseBundlePath sets the bundle path to be used.
@@ -119,24 +111,11 @@ func TLSPort(port int) Modifier {
 	}
 }
 
-// Logger returns the options' logger
-func (o *Options) Logger() *vlog.Logger {
-	return o.logger
-}
-
 // finalize "locks in" the options by overriding any existing options with the version from the environment, and setting the default logger if needed.
-func (o *Options) finalize(prefix string) {
-	if o.logger == nil {
-		o.logger = vlog.Default(
-			vlog.EnvPrefix(prefix),
-			vlog.Level(vlog.LogLevelWarn),
-		)
-	}
-
+func (o *Options) finalize() error {
 	envOpts := Options{}
 	if err := envconfig.Process(context.Background(), &envOpts); err != nil {
-		o.logger.Error(errors.Wrap(err, "failed to Process environment config"))
-		return
+		return errors.Wrap(err, "envconfig.Process")
 	}
 
 	o.ControlPlane = strings.TrimSuffix(envOpts.ControlPlane, "/")
@@ -176,6 +155,8 @@ func (o *Options) finalize(prefix string) {
 
 	o.EnvironmentToken = envOpts.EnvironmentToken
 	o.TracerConfig = envOpts.TracerConfig
+
+	return nil
 }
 
 func (o *Options) AdminEnabled() bool {

@@ -7,10 +7,10 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog"
 
 	"github.com/suborbital/e2core/e2core/sequence"
 	"github.com/suborbital/e2core/foundation/bus/bus"
-	"github.com/suborbital/vektor/vlog"
 )
 
 const (
@@ -27,7 +27,7 @@ type callback func(*sequence.ExecResult)
 
 // dispatcher is responsible for "resolving" a sequence by sending messages to sats and collecting the results
 type dispatcher struct {
-	log       *vlog.Logger
+	log       zerolog.Logger
 	pod       *bus.Pod
 	callbacks map[string]callback
 	lock      *sync.RWMutex
@@ -36,12 +36,13 @@ type dispatcher struct {
 type sequenceDispatcher struct {
 	seq *sequence.Sequence
 	pod *bus.Pod
-	log *vlog.Logger
+	log zerolog.Logger
 }
 
-func newDispatcher(log *vlog.Logger, pod *bus.Pod) *dispatcher {
+func newDispatcher(l zerolog.Logger, pod *bus.Pod) *dispatcher {
+	ll := l.With().Str("module", "dispatcher").Logger()
 	d := &dispatcher{
-		log:       log,
+		log:       ll,
 		pod:       pod,
 		callbacks: make(map[string]callback),
 		lock:      &sync.RWMutex{},
@@ -112,7 +113,9 @@ func (s *sequenceDispatcher) dispatchSingle(step *sequence.Step, resultChan chan
 		return errors.Wrap(err, "failed to Tunnel")
 	}
 
-	s.log.Debug("dispatched execution for", s.seq.ParentID(), "to peer with message", msg.UUID())
+	s.log.Debug().Str("parentID", s.seq.ParentID()).
+		Str("msgUUID", msg.UUID()).
+		Msg("dispatched execution for parent to peer with message")
 
 	return s.awaitResult(resultChan)
 }
@@ -148,7 +151,7 @@ func (d *dispatcher) onMsgHandler() bus.MsgFunc {
 		result := &sequence.ExecResult{}
 
 		if err := json.Unmarshal(msg.Data(), result); err != nil {
-			d.log.Error(errors.Wrap(err, "failed to Unmarshal message data"))
+			d.log.Err(err).Msg("json.Unmarshal message data failure")
 			return nil
 		}
 

@@ -10,9 +10,9 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog"
 
 	"github.com/suborbital/e2core/foundation/bus/bus"
-	"github.com/suborbital/vektor/vlog"
 )
 
 const (
@@ -27,7 +27,7 @@ var upgrader = websocket.Upgrader{}
 // Transport is a transport that connects Grav nodes via standard websockets
 type Transport struct {
 	opts *bus.MeshOptions
-	log  *vlog.Logger
+	log  zerolog.Logger
 
 	connectionFunc bus.ConnectFunc
 }
@@ -35,7 +35,7 @@ type Transport struct {
 // Conn implements transport.Connection and represents a websocket connection
 type Conn struct {
 	nodeUUID string
-	log      *vlog.Logger
+	log      zerolog.Logger
 
 	conn *websocket.Conn
 	lock sync.Mutex
@@ -53,7 +53,7 @@ func (t *Transport) Setup(opts *bus.MeshOptions, connFunc bus.ConnectFunc) error
 	// independent serving is not yet implemented, use the HTTP handler
 
 	t.opts = opts
-	t.log = opts.Logger
+	t.log = opts.Logger.With().Str("transport", "websocket").Logger()
 	t.connectionFunc = connFunc
 
 	return nil
@@ -88,18 +88,18 @@ func (t *Transport) Connect(endpoint string) (bus.Connection, error) {
 func (t *Transport) HTTPHandlerFunc() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if t.connectionFunc == nil {
-			t.log.ErrorString("[transport-websocket] incoming connection received, but no connFunc configured")
+			t.log.Error().Msg("incoming connection received, but no connFunc configured")
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
 		c, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
-			t.log.Error(errors.Wrap(err, "[transport-websocket] failed to upgrade connection"))
+			t.log.Err(err).Msg("could not upgrade connection to websocket")
 			return
 		}
 
-		t.log.Debug("[transport-websocket] upgraded connection:", r.URL.String())
+		t.log.Debug().Str("connectionURL", r.URL.String()).Msg("upgraded connection")
 
 		conn := &Conn{
 			conn: c,
@@ -117,7 +117,8 @@ func (c *Conn) SendMsg(msg bus.Message) error {
 		return errors.Wrap(err, "[transport-websocket] failed to Marshal message")
 	}
 
-	c.log.Debug("[transport-websocket] sending message", msg.UUID(), "to connection", c.nodeUUID)
+	c.log.Debug().Str("msgUUID", msg.UUID()).
+		Str("nodeUUID", c.nodeUUID).Msg("sending message to connection")
 
 	if err := c.WriteMessage(websocket.BinaryMessage, msgBytes); err != nil {
 		if errors.Is(err, websocket.ErrCloseSent) {
@@ -129,7 +130,8 @@ func (c *Conn) SendMsg(msg bus.Message) error {
 		return errors.Wrap(err, "[transport-websocket] failed to WriteMessage")
 	}
 
-	c.log.Debug("[transport-websocket] sent message", msg.UUID(), "to connection", c.nodeUUID)
+	c.log.Debug().Str("msgUUID", msg.UUID()).
+		Str("nodeUUID", c.nodeUUID).Msg("sent message to connection")
 
 	return nil
 }
@@ -152,12 +154,15 @@ func (c *Conn) ReadMsg() (bus.Message, *bus.Withdraw, error) {
 
 	msg, err := bus.MsgFromBytes(message)
 	if err != nil {
-		c.log.Debug(errors.Wrap(err, "[transport-websocket] failed to MsgFromBytes, falling back to raw data").Error())
+		c.log.Err(err).Msg("failed to MsgFromBytes, falling back to raw data")
 
 		msg = bus.NewMsg(MsgTypeWebsocketMessage, message)
 	}
 
-	c.log.Debug("[transport-websocket] received message", msg.UUID(), "via", c.nodeUUID)
+	c.log.Debug().
+		Str("msgUUID", msg.UUID()).
+		Str("nodeUUID", c.nodeUUID).
+		Msg("received message from node")
 
 	return msg, nil, nil
 }
@@ -170,7 +175,7 @@ func (c *Conn) OutgoingHandshake(handshake *bus.TransportHandshake) (*bus.Transp
 		return nil, errors.Wrap(err, "failed to Marshal handshake JSON")
 	}
 
-	c.log.Debug("[transport-websocket] sending handshake")
+	c.log.Debug().Msg("sending handshake")
 
 	if err := c.WriteMessage(websocket.BinaryMessage, handshakeJSON); err != nil {
 		return nil, errors.Wrap(err, "failed to WriteMessage handshake")
@@ -185,7 +190,7 @@ func (c *Conn) OutgoingHandshake(handshake *bus.TransportHandshake) (*bus.Transp
 		return nil, errors.New("first message recieved was not handshake ack")
 	}
 
-	c.log.Debug("[transport-websocket] recieved handshake ack")
+	c.log.Debug().Msg("received handshake ack")
 
 	ack := bus.TransportHandshakeAck{}
 	if err := json.Unmarshal(message, &ack); err != nil {
@@ -209,7 +214,7 @@ func (c *Conn) IncomingHandshake(handshakeCallback bus.HandshakeCallback) error 
 		return errors.New("first message recieved was not handshake")
 	}
 
-	c.log.Debug("[transport-websocket] recieved handshake")
+	c.log.Debug().Msg("received handshake")
 
 	handshake := &bus.TransportHandshake{}
 	if err := json.Unmarshal(message, handshake); err != nil {
@@ -223,13 +228,13 @@ func (c *Conn) IncomingHandshake(handshakeCallback bus.HandshakeCallback) error 
 		return errors.Wrap(err, "failed to Marshal handshake ack JSON")
 	}
 
-	c.log.Debug("[transport-websocket] sending handshake ack")
+	c.log.Debug().Msg("sending handshake ack")
 
 	if err := c.WriteMessage(websocket.BinaryMessage, ackJSON); err != nil {
 		return errors.Wrap(err, "failed to WriteMessage handshake ack")
 	}
 
-	c.log.Debug("[transport-websocket] sent handshake ack")
+	c.log.Debug().Msg("sent handshake ack")
 
 	c.nodeUUID = handshake.UUID
 
@@ -252,7 +257,7 @@ func (c *Conn) SendWithdraw(withdraw *bus.Withdraw) error {
 
 // Close closes the underlying connection
 func (c *Conn) Close() error {
-	c.log.Debug("[transport-websocket] connection for", c.nodeUUID, "is closing")
+	c.log.Debug().Str("nodeUUID", c.nodeUUID).Msg("connection is closing")
 
 	if err := c.conn.Close(); err != nil {
 		return errors.Wrap(err, "[transport-websocket] failed to Close connection")

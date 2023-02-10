@@ -6,15 +6,15 @@ import (
 	"context"
 	"time"
 
-	"go.opentelemetry.io/otel/metric/instrument/syncint64"
+	"go.opentelemetry.io/otel/metric/instrument"
 
 	"github.com/suborbital/e2core/sat/sat/options"
 )
 
 type Metrics struct {
-	FunctionExecutions       syncint64.Counter
-	FailedFunctionExecutions syncint64.Counter
-	FunctionTime             syncint64.Histogram
+	FunctionExecutions       instrument.Int64Counter
+	FailedFunctionExecutions instrument.Int64Counter
+	FunctionTime             instrument.Int64Histogram
 }
 
 type Timer struct {

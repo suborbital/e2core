@@ -2,8 +2,7 @@ package bus
 
 import (
 	"github.com/pkg/errors"
-
-	"github.com/suborbital/vektor/vlog"
+	"github.com/rs/zerolog"
 )
 
 // ErrConnectionClosed and others are transport and connection related errors
@@ -37,14 +36,14 @@ type MeshOptions struct {
 	NodeUUID string
 	Port     string
 	URI      string
-	Logger   *vlog.Logger
+	Logger   zerolog.Logger
 	Custom   interface{}
 }
 
 // BridgeOptions is a set of options for mesh transports
 type BridgeOptions struct {
 	NodeUUID string
-	Logger   *vlog.Logger
+	Logger   zerolog.Logger
 	Custom   interface{}
 }
 
@@ -69,11 +68,11 @@ type BridgeTransport interface {
 type Connection interface {
 	// SendMsg a message from the local instance to the connected node
 	SendMsg(msg Message) error
-	// ReadMsg prompts the connection to read the next incoming message, and returns either a message or a withdraw (if recieved)
+	// ReadMsg prompts the connection to read the next incoming message, and returns either a message or withdraw (if received)
 	ReadMsg() (Message, *Withdraw, error)
-	// Initiate a handshake for an outgoing connection and return the remote Ack
+	// OutgoingHandshake initiate a handshake for an outgoing connection and return the remote Ack
 	OutgoingHandshake(handshake *TransportHandshake) (*TransportHandshakeAck, error)
-	// Wait for an incoming handshake and allow the hub to determine what ack to send using the HandshakeCallback
+	// IncomingHandshake waits for an incoming handshake and allow the hub to determine what ack to send using the HandshakeCallback
 	IncomingHandshake(HandshakeCallback) error
 	// SendWithdraw indicates the connection should send the transport-specific withdraw message
 	SendWithdraw(*Withdraw) error
@@ -83,7 +82,7 @@ type Connection interface {
 
 // BridgeConnection is a connection to something via a bridge such as a topic
 type BridgeConnection interface {
-	// Called when the connection can actively start exchanging messages
+	// Start is called when the connection can actively start exchanging messages
 	Start(pod *Pod)
 	// Close requests that the Connection close itself
 	Close()

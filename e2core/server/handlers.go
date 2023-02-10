@@ -1,119 +1,131 @@
 package server
 
 import (
-	"fmt"
 	"net/http"
 
-	"github.com/pkg/errors"
+	"github.com/labstack/echo/v4"
+	"github.com/rs/zerolog"
 
 	"github.com/suborbital/e2core/e2core/sequence"
 	"github.com/suborbital/systemspec/request"
 	"github.com/suborbital/systemspec/tenant"
-	"github.com/suborbital/vektor/vk"
 )
 
-func (s *Server) executePluginByNameHandler() vk.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request, ctx *vk.Ctx) error {
-		ident := readParam(ctx, "ident")
-		namespace := readParam(ctx, "namespace")
-		name := readParam(ctx, "name")
+func (s *Server) executePluginByNameHandler() echo.HandlerFunc {
+	return func(c echo.Context) error {
+		ident := c.Param("ident")
+		namespace := c.Param("namespace")
+		name := c.Param("name")
 
 		mod := s.syncer.GetModuleByName(ident, namespace, name)
 		if mod == nil {
-			return vk.E(http.StatusNotFound, "module not found")
+			return echo.NewHTTPError(http.StatusNotFound, "module not found")
 		}
 
-		req, err := request.FromVKRequest(r, ctx)
+		req, err := request.FromEchoContext(c)
 		if err != nil {
-			ctx.Log.Error(errors.Wrap(err, "failed to request.FromVKRequest"))
-			return vk.E(http.StatusInternalServerError, "failed to handle request")
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to handle request").SetInternal(err)
 		}
 
-		req.UseSuborbitalHeaders(r, ctx)
+		err = req.UseSuborbitalHeaders(c)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to handle request").SetInternal(err)
+		}
 
 		steps := []tenant.WorkflowStep{{FQMN: mod.FQMN}}
 
 		// a sequence executes the handler's steps and manages its state.
 		seq, err := sequence.New(steps, req)
 		if err != nil {
-			ctx.Log.Error(errors.Wrap(err, "failed to sequence.New"))
-			return vk.E(http.StatusInternalServerError, "failed to handle request")
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to handle request")
 		}
 
 		if err := s.dispatcher.Execute(seq); err != nil {
-			ctx.Log.Error(errors.Wrap(err, "failed to Execute"))
-			return vk.E(http.StatusInternalServerError, "failed to execute plugin")
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to execute plugin").SetInternal(err)
 		}
 
 		// handle any response headers that were set by the Runnables.
 		if req.RespHeaders != nil {
 			for head, val := range req.RespHeaders {
-				w.Header().Add(head, val)
+				// need to directly assign because .Add and .Set will filter out non-standard
+				// header names, which ours are.
+				if c.Response().Header()[head] == nil {
+					c.Response().Header()[head] = make([]string, 0)
+				}
+
+				c.Response().Header()[head] = append(c.Response().Header()[head], val)
 			}
 		}
 
 		responseData := seq.Request().State[mod.FQMN]
 
-		return vk.RespondBytes(ctx.Context, w, responseData, http.StatusOK)
+		return c.Blob(http.StatusOK, "application/octet-stream", responseData)
 	}
 }
 
-func (s *Server) executePluginByRefHandler() vk.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request, ctx *vk.Ctx) error {
-		ref := readParam(ctx, "ref")
+func (s *Server) executePluginByRefHandler(l zerolog.Logger) echo.HandlerFunc {
+	ll := l.With().Str("handler", "executePluginByRefHandler").Logger()
+
+	return func(c echo.Context) error {
+		ref := c.Param("ref")
 
 		mod := s.syncer.GetModuleByRef(ref)
 		if mod == nil {
-			return vk.E(http.StatusNotFound, "module not found")
+			return echo.NewHTTPError(http.StatusNotFound, "module not found")
 		}
 
-		ctx.Log.Debug("found module by ref:", mod.FQMN)
+		ll.Debug().Str("fqmn", mod.FQMN).Msg("found module by ref")
 
-		req, err := request.FromVKRequest(r, ctx)
+		req, err := request.FromEchoContext(c)
 		if err != nil {
-			ctx.Log.Error(errors.Wrap(err, "failed to request.FromVKRequest"))
-			return vk.E(http.StatusInternalServerError, "failed to handle request")
+			return echo.NewHTTPError(http.StatusInternalServerError).SetInternal(err)
 		}
 
-		req.UseSuborbitalHeaders(r, ctx)
+		err = req.UseSuborbitalHeaders(c)
+		if err != nil {
+			return err
+		}
 
 		steps := []tenant.WorkflowStep{{FQMN: mod.FQMN}}
 
 		// a sequence executes the handler's steps and manages its state.
 		seq, err := sequence.New(steps, req)
 		if err != nil {
-			ctx.Log.Error(errors.Wrap(err, "failed to sequence.New"))
-			return vk.E(http.StatusInternalServerError, "failed to handle request")
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to handle request")
 		}
 
 		if err := s.dispatcher.Execute(seq); err != nil {
-			ctx.Log.Error(errors.Wrap(err, "failed to Execute"))
-			return vk.E(http.StatusInternalServerError, "failed to execute plugin")
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to execute plugin")
 		}
 
 		// handle any response headers that were set by the Runnables.
 		if req.RespHeaders != nil {
 			for head, val := range req.RespHeaders {
-				w.Header().Add(head, val)
+				// need to directly assign because .Add and .Set will filter out non-standard
+				// header names, which ours are.
+				if c.Response().Header()[head] == nil {
+					c.Response().Header()[head] = make([]string, 0)
+				}
+
+				c.Response().Header()[head] = append(c.Response().Header()[head], val)
 			}
 		}
 
 		responseData := seq.Request().State[mod.FQMN]
 
-		return vk.RespondBytes(ctx.Context, w, responseData, http.StatusOK)
+		return c.Blob(http.StatusOK, "application/octet-stream", responseData)
 	}
 }
 
-func (s *Server) executeWorkflowHandler() vk.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request, ctx *vk.Ctx) error {
-		ident := readParam(ctx, "ident")
-		namespace := readParam(ctx, "namespace")
-		name := readParam(ctx, "name")
+func (s *Server) executeWorkflowHandler() echo.HandlerFunc {
+	return func(c echo.Context) error {
+		ident := c.Param("ident")
+		namespace := c.Param("namespace")
+		name := c.Param("name")
 
 		tnt := s.syncer.TenantOverview(ident)
 		if tnt == nil {
-			ctx.Log.Error(fmt.Errorf("failed to find tenant %s", ident))
-			return vk.E(http.StatusNotFound, "not found")
+			return echo.NewHTTPError(http.StatusNotFound, "not found")
 		}
 
 		namespaces := []tenant.NamespaceConfig{tnt.Config.DefaultNamespace}
@@ -143,55 +155,51 @@ func (s *Server) executeWorkflowHandler() vk.HandlerFunc {
 		}
 
 		if workflow == nil {
-			ctx.Log.Error(fmt.Errorf("failed to find workflow %s", ident))
-			return vk.E(http.StatusNotFound, "not found")
+			return echo.NewHTTPError(http.StatusNotFound, "not found")
 		}
 
-		req, err := request.FromVKRequest(r, ctx)
+		req, err := request.FromEchoContext(c)
 		if err != nil {
-			ctx.Log.Error(errors.Wrap(err, "failed to request.FromVKRequest"))
-			return vk.E(http.StatusInternalServerError, "failed to handle request")
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to handle request").SetInternal(err)
 		}
 
-		req.UseSuborbitalHeaders(r, ctx)
+		err = req.UseSuborbitalHeaders(c)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError).SetInternal(err)
+		}
 
 		// a sequence executes the handler's steps and manages its state.
 		seq, err := sequence.New(workflow.Steps, req)
 		if err != nil {
-			ctx.Log.Error(errors.Wrap(err, "failed to sequence.New"))
-			return vk.E(http.StatusInternalServerError, "failed to handle request")
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to handle request").SetInternal(err)
 		}
 
 		if err := s.dispatcher.Execute(seq); err != nil {
-			ctx.Log.Error(errors.Wrap(err, "failed to Execute"))
-			return vk.E(http.StatusInternalServerError, "failed to execute plugin")
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to execute plugin").SetInternal(err)
 		}
 
 		// handle any response headers that were set by the Runnables.
 		if req.RespHeaders != nil {
 			for head, val := range req.RespHeaders {
-				w.Header().Add(head, val)
+				// need to directly assign because .Add and .Set will filter out non-standard
+				// header names, which ours are.
+				if c.Response().Header()[head] == nil {
+					c.Response().Header()[head] = make([]string, 0)
+				}
+
+				c.Response().Header()[head] = append(c.Response().Header()[head], val)
 			}
 		}
 
 		// this should be smarter eventually (i.e. handle last-step groups properly)
 		responseData := seq.Request().State[workflow.Steps[len(workflow.Steps)-1].FQMN]
 
-		return vk.RespondBytes(ctx.Context, w, responseData, http.StatusOK)
+		return c.Blob(http.StatusOK, "application/octet-stream", responseData)
 	}
 }
 
-func (s *Server) healthHandler() vk.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request, ctx *vk.Ctx) error {
-		return vk.RespondJSON(ctx.Context, w, map[string]bool{"healthy": true}, http.StatusOK)
+func (s *Server) healthHandler() echo.HandlerFunc {
+	return func(c echo.Context) error {
+		return c.JSON(http.StatusOK, map[string]bool{"healthy": true})
 	}
-}
-
-func readParam(ctx *vk.Ctx, name string) string {
-	v := ctx.Get(name)
-	if v != nil {
-		return v.(string)
-	}
-
-	return ctx.Params.ByName(name)
 }

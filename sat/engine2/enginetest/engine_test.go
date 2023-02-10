@@ -7,12 +7,12 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog"
 
 	"github.com/suborbital/e2core/foundation/scheduler"
 	"github.com/suborbital/e2core/sat/engine2"
 	"github.com/suborbital/e2core/sat/engine2/api"
 	"github.com/suborbital/systemspec/request"
-	"github.com/suborbital/vektor/vlog"
 )
 
 type testBody struct {
@@ -26,7 +26,7 @@ func TestEngineWithRequest(t *testing.T) {
 		return
 	}
 
-	e := engine2.New("log", ref, api.New(vlog.Default()))
+	e := engine2.New("log", ref, api.New(zerolog.Nop()))
 
 	body := testBody{
 		Username: "cohix",
@@ -64,7 +64,7 @@ func TestEngineWithURLQuery(t *testing.T) {
 		return
 	}
 
-	e := engine2.New("rust-urlquery", ref, api.New(vlog.Default()))
+	e := engine2.New("rust-urlquery", ref, api.New(zerolog.Nop()))
 
 	req := &request.CoordinatedRequest{
 		Method: "GET",
@@ -93,7 +93,7 @@ func TestEngineSetRespHeader(t *testing.T) {
 		return
 	}
 
-	e := engine2.New("rs-reqset", ref, api.New(vlog.Default()))
+	e := engine2.New("rs-reqset", ref, api.New(zerolog.Nop()))
 
 	body := testBody{
 		Username: "cohix",
@@ -132,7 +132,7 @@ func TestEngineFetch(t *testing.T) {
 		return
 	}
 
-	e := engine2.New("fetch", ref, api.New(vlog.Default()))
+	e := engine2.New("fetch", ref, api.New(zerolog.Nop()))
 
 	req := &request.CoordinatedRequest{
 		Method: "GET",

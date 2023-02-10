@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog"
 
 	"github.com/suborbital/e2core/e2core/options"
 )
@@ -19,7 +20,7 @@ type AddUpstreamRequest struct {
 	UpstreamAddress string `json:"upstreamAddress"`
 }
 
-func registerWithControlPlane(opts options.Options) error {
+func registerWithControlPlane(logger zerolog.Logger, opts options.Options) error {
 	if opts.ControlPlane == options.DefaultControlPlane {
 		return nil
 	}
@@ -73,7 +74,7 @@ func registerWithControlPlane(opts options.Options) error {
 		}
 
 		if resp.StatusCode == http.StatusNotFound {
-			opts.Logger().Info("control plane does not support backend registration")
+			logger.Info().Str("function", "registerWithControlPlane").Msg("control plane does not support backend registration")
 			return nil
 		} else if resp.StatusCode != http.StatusCreated {
 			return errors.New("registration request failed: " + resp.Status)

@@ -2,7 +2,7 @@ package bus
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"time"
 
@@ -49,17 +49,17 @@ type Message interface {
 
 // NewMsg creates a new Message with the built-in `_message` type
 func NewMsg(msgType string, data []byte) Message {
-	return new(msgType, "", data)
+	return newMessage(msgType, "", data)
 }
 
 // NewMsgWithParentID returns a new message with the provided parent ID
 func NewMsgWithParentID(msgType, parentID string, data []byte) Message {
-	return new(msgType, parentID, data)
+	return newMessage(msgType, parentID, data)
 }
 
 // NewMsgReplyTo creates a new message in response to a previous message
 func NewMsgReplyTo(ticket MsgReceipt, msgType string, data []byte) Message {
-	m := new(msgType, "", data)
+	m := newMessage(msgType, "", data)
 	m.SetReplyTo(ticket.UUID)
 
 	return m
@@ -95,7 +95,7 @@ func MsgFromDataAndMeta(data []byte, metadata []byte) (Message, error) {
 // MsgFromRequest extracts an encoded Message from an HTTP request
 func MsgFromRequest(r *http.Request) (Message, error) {
 	defer r.Body.Close()
-	bytes, err := ioutil.ReadAll(r.Body)
+	bytes, err := io.ReadAll(r.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -103,12 +103,12 @@ func MsgFromRequest(r *http.Request) (Message, error) {
 	return MsgFromBytes(bytes)
 }
 
-func new(msgType, parentID string, data []byte) Message {
-	uuid := uuid.New()
+func newMessage(msgType, parentID string, data []byte) Message {
+	messageUUID := uuid.New()
 
 	m := &_message{
 		Meta: _meta{
-			UUID:      uuid.String(),
+			UUID:      messageUUID.String(),
 			ParentID:  parentID,
 			ReplyTo:   "",
 			MsgType:   msgType,

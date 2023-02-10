@@ -1,8 +1,6 @@
 package api
 
 import (
-	"github.com/pkg/errors"
-
 	"github.com/suborbital/e2core/sat/engine2/runtime/instance"
 	"github.com/suborbital/systemspec/capabilities"
 )
@@ -23,9 +21,11 @@ func (d *defaultAPI) RequestGetFieldHandler() HostFn {
 }
 
 func (d *defaultAPI) requestGetField(fieldType int32, keyPointer int32, keySize int32, identifier int32) int32 {
+	ll := d.logger.With().Str("method", "requestGetField").Logger()
+
 	inst, err := instance.ForIdentifier(identifier, true)
 	if err != nil {
-		d.logger.Error(errors.Wrap(err, "[engine] alert: failed to ForIdentifier"))
+		ll.Err(err).Msg("instance.ForIdentifier")
 		return -1
 	}
 
@@ -35,7 +35,7 @@ func (d *defaultAPI) requestGetField(fieldType int32, keyPointer int32, keySize 
 	req := RequestFromContext(inst.Ctx().Context)
 
 	if req == nil {
-		d.logger.ErrorString("request is not set")
+		ll.Error().Msg("request is not set")
 	}
 
 	handler := capabilities.NewRequestHandler(*d.capabilities.RequestConfig, req)
@@ -48,14 +48,14 @@ func (d *defaultAPI) requestGetField(fieldType int32, keyPointer int32, keySize 
 			val = []byte{}
 			err = nil
 		} else {
-			d.logger.Error(errors.Wrap(err, "failed to GetField"))
+			ll.Err(err).Msg("handler.GetField")
 			return -1
 		}
 	}
 
 	result, err := inst.Ctx().SetFFIResult(val, err)
 	if err != nil {
-		d.logger.ErrorString("[engine] failed to SetFFIResult", err.Error())
+		ll.Err(err).Msg("inst.Ctx().SetFFIResult")
 		return -1
 	}
 
@@ -80,9 +80,11 @@ func (d *defaultAPI) RequestSetFieldHandler() HostFn {
 }
 
 func (d *defaultAPI) requestSetField(fieldType int32, keyPointer int32, keySize int32, valPointer int32, valSize int32, identifier int32) int32 {
+	ll := d.logger.With().Str("method", "requestSetField").Logger()
+
 	inst, err := instance.ForIdentifier(identifier, true)
 	if err != nil {
-		d.logger.Error(errors.Wrap(err, "[engine] alert: failed to ForIdentifier"))
+		ll.Err(err).Msg("instance.ForIdentifier")
 		return -1
 	}
 
@@ -95,18 +97,18 @@ func (d *defaultAPI) requestSetField(fieldType int32, keyPointer int32, keySize 
 	req := RequestFromContext(inst.Ctx().Context)
 
 	if req == nil {
-		d.logger.ErrorString("request is not set")
+		ll.Error().Msg("request is not set")
 	}
 
 	handler := capabilities.NewRequestHandler(*d.capabilities.RequestConfig, req)
 
 	if err := handler.SetField(fieldType, key, val); err != nil {
-		d.logger.Error(errors.Wrap(err, "failed to SetField"))
+		ll.Err(err).Msg("handler.SetField")
 	}
 
 	result, err := inst.Ctx().SetFFIResult(nil, err)
 	if err != nil {
-		d.logger.ErrorString("[engine] failed to SetFFIResult", err.Error())
+		ll.Err(err).Msg("inst.Ctx().SetFFIResult")
 		return -1
 	}
 

@@ -48,9 +48,7 @@ func configureMetrics() (Metrics, error) {
 		metric.WithInstrumentationVersion("1.0"),
 	)
 
-	si64 := m.SyncInt64()
-
-	functionExecutions, err := si64.Counter(
+	functionExecutions, err := m.Int64Counter(
 		"function_executions",
 		instrument.WithUnit(unit.Dimensionless),
 		instrument.WithDescription("How many function execution requests happened"),
@@ -59,7 +57,7 @@ func configureMetrics() (Metrics, error) {
 		return Metrics{}, errors.Wrap(err, "sync int 64 provider function_executions")
 	}
 
-	failedFunctionExecutions, err := si64.Counter(
+	failedFunctionExecutions, err := m.Int64Counter(
 		"failed_function_executions",
 		instrument.WithUnit(unit.Dimensionless),
 		instrument.WithDescription("How many function execution requests failed"),
@@ -68,7 +66,7 @@ func configureMetrics() (Metrics, error) {
 		return Metrics{}, errors.Wrap(err, "sync int 64 provider failed_function_executions")
 	}
 
-	functionTime, err := si64.Histogram(
+	functionTime, err := m.Int64Histogram(
 		"function_time",
 		instrument.WithUnit(unit.Milliseconds),
 		instrument.WithDescription("How much time was spent doing function executions"),

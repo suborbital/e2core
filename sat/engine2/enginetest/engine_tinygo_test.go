@@ -6,12 +6,12 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog"
 
 	"github.com/suborbital/e2core/foundation/scheduler"
 	"github.com/suborbital/e2core/sat/engine2"
 	"github.com/suborbital/e2core/sat/engine2/api"
 	"github.com/suborbital/systemspec/request"
-	"github.com/suborbital/vektor/vlog"
 )
 
 func TestEngineWithTinyGo(t *testing.T) {
@@ -21,7 +21,7 @@ func TestEngineWithTinyGo(t *testing.T) {
 		return
 	}
 
-	e := engine2.New("tinygo-urlquery", ref, api.New(vlog.Default()))
+	e := engine2.New("tinygo-urlquery", ref, api.New(zerolog.Nop()))
 
 	req := &request.CoordinatedRequest{
 		Method: "GET",
@@ -50,7 +50,7 @@ func TestEngineTinyGoUrlQuery(t *testing.T) {
 		return
 	}
 
-	e := engine2.New("tinygo-resp", ref, api.New(vlog.Default()))
+	e := engine2.New("tinygo-resp", ref, api.New(zerolog.Nop()))
 
 	req := &request.CoordinatedRequest{
 		Method: "POST",

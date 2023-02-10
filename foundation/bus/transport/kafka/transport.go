@@ -4,10 +4,10 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog"
 	"github.com/twmb/franz-go/pkg/kgo"
 
 	"github.com/suborbital/e2core/foundation/bus/bus"
-	"github.com/suborbital/vektor/vlog"
 )
 
 const busMetadataHeaderKey = "bus.metadata"
@@ -15,7 +15,7 @@ const busMetadataHeaderKey = "bus.metadata"
 // Transport is a transport that connects bus nodes via kafka
 type Transport struct {
 	opts *bus.BridgeOptions
-	log  *vlog.Logger
+	log  zerolog.Logger
 
 	endpoint string
 }
@@ -23,7 +23,7 @@ type Transport struct {
 // Conn implements transport.TopicConnection and represents a subscribe/send pair for a Kafka topic
 type Conn struct {
 	topic string
-	log   *vlog.Logger
+	log   zerolog.Logger
 	pod   *bus.Pod
 
 	conn *kgo.Client
@@ -41,7 +41,7 @@ func New(endpoint string) (*Transport, error) {
 // Setup sets up the transport
 func (t *Transport) Setup(opts *bus.BridgeOptions) error {
 	t.opts = opts
-	t.log = opts.Logger
+	t.log = opts.Logger.With().Str("transportType", "kafka").Logger()
 
 	return nil
 }
@@ -58,11 +58,11 @@ func (t *Transport) ConnectTopic(topic string) (bus.BridgeConnection, error) {
 		return nil, errors.Wrap(err, "failed to NewClient")
 	}
 
-	t.log.Info("[bridge-kafka] connected to topic", topic)
+	t.log.Info().Str("topic", topic).Msg("connected to topic")
 
 	conn := &Conn{
 		topic: topic,
-		log:   t.log,
+		log:   t.log.With().Str("topic", topic).Logger(),
 		conn:  client,
 	}
 
@@ -71,6 +71,8 @@ func (t *Transport) ConnectTopic(topic string) (bus.BridgeConnection, error) {
 
 // Start begins the receiving of messages
 func (c *Conn) Start(pod *bus.Pod) {
+	ll := c.log.With().Str("method", "Start").Logger()
+
 	c.pod = pod
 
 	c.pod.OnType(c.topic, func(msg bus.Message) error {
@@ -103,7 +105,7 @@ func (c *Conn) Start(pod *bus.Pod) {
 		for {
 			fetches := c.conn.PollFetches(context.Background())
 			if errs := fetches.Errors(); len(errs) > 0 {
-				c.log.Error(errors.Wrap(errs[0].Err, "failed to PollFetches"))
+				ll.Err(errs[0].Err).Msg("fetches.Errors()")
 				continue
 			}
 
@@ -111,7 +113,7 @@ func (c *Conn) Start(pod *bus.Pod) {
 			for !iter.Done() {
 				record := iter.Next()
 
-				c.log.Debug("[bridge-kafka] recieved message via", c.topic)
+				ll.Debug().Msg("received message from topic")
 
 				var msg bus.Message
 
@@ -122,7 +124,7 @@ func (c *Conn) Start(pod *bus.Pod) {
 				} else {
 					reconstructedMsg, err := bus.MsgFromDataAndMeta(record.Value, metaHeader)
 					if err != nil {
-						c.log.Debug(errors.Wrap(err, "[bridge-kafka] failed to MsgFromDataAndMeta").Error())
+						ll.Err(err).Msg("bus.MsgFromDataAndMeta")
 						continue
 					}
 
@@ -149,7 +151,7 @@ func findMetaHeaderValue(key string, headers []kgo.RecordHeader) []byte {
 
 // Close closes the underlying connection
 func (c *Conn) Close() {
-	c.log.Debug("[bridge-kafka] connection for", c.topic, "is closing")
+	c.log.Debug().Msg("connection for topic is closing")
 
 	c.conn.Close()
 }

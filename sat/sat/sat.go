@@ -8,7 +8,9 @@ import (
 	"os"
 	"time"
 
+	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/suborbital/e2core/foundation/bus/bus"
@@ -18,14 +20,15 @@ import (
 	"github.com/suborbital/e2core/sat/engine2/api"
 	"github.com/suborbital/e2core/sat/sat/metrics"
 	"github.com/suborbital/e2core/sat/sat/process"
+	kitError "github.com/suborbital/go-kit/web/error"
 	"github.com/suborbital/systemspec/tenant"
-	"github.com/suborbital/vektor/vk"
 )
 
 // Sat is a sat server with annoyingly terse field names (because it's smol)
 type Sat struct {
 	config    *Config
-	vektor    *vk.Server
+	logger    zerolog.Logger
+	server    *echo.Echo
 	bus       *bus.Bus
 	pod       *bus.Pod
 	transport *websocket.Transport
@@ -34,13 +37,9 @@ type Sat struct {
 	metrics   metrics.Metrics
 }
 
-type loggerScope struct {
-	RequestID string `json:"request_id"`
-}
-
 // New initializes a Sat instance
 // if traceProvider is nil, the default NoopTraceProvider will be used
-func New(config *Config, traceProvider trace.TracerProvider, mtx metrics.Metrics) (*Sat, error) {
+func New(config *Config, logger zerolog.Logger, traceProvider trace.TracerProvider, mtx metrics.Metrics) (*Sat, error) {
 	var module *tenant.WasmModuleRef
 
 	if config.Module != nil && config.Module.WasmRef != nil && len(config.Module.WasmRef.Data) > 0 {
@@ -54,12 +53,12 @@ func New(config *Config, traceProvider trace.TracerProvider, mtx metrics.Metrics
 		module = ref
 	}
 
-	api, err := api.NewWithConfig(config.Logger, config.CapConfig)
+	engineAPI, err := api.NewWithConfig(logger, config.CapConfig)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to NewWithConfig")
 	}
 
-	engine := engine2.New(config.JobType, module, api)
+	engine := engine2.New(config.JobType, module, engineAPI)
 
 	if traceProvider == nil {
 		traceProvider = trace.NewNoopTracerProvider()
@@ -67,47 +66,37 @@ func New(config *Config, traceProvider trace.TracerProvider, mtx metrics.Metrics
 
 	sat := &Sat{
 		config:  config,
+		logger:  logger,
 		engine:  engine,
 		tracer:  traceProvider.Tracer("sat"),
 		metrics: mtx,
 	}
 
-	// Grav and Vektor will be started on call to s.Start()
-	sat.vektor = vk.New(
-		vk.UseLogger(config.Logger),
-		vk.UseAppName(config.PrettyName),
-		vk.UseHTTPPort(config.Port),
-		vk.UseEnvPrefix("SAT"),
-		vk.UseQuietRoutes("/meta/metrics"),
-	)
+	sat.server = echo.New()
+	sat.server.HTTPErrorHandler = kitError.Handler(logger)
 
-	// if a transport is configured, enable bus and metrics endpoints, otherwise enable server mode
+	// if a "transport" is configured, enable bus and metrics endpoints, otherwise enable server mode
 	if config.ControlPlaneUrl != "" {
 		sat.transport = websocket.New()
 
-		sat.vektor.HandleHTTP(http.MethodGet, "/meta/message", sat.transport.HTTPHandlerFunc())
-		sat.vektor.GET("/meta/metrics", sat.workerMetricsHandler())
+		sat.server.GET("/meta/message", echo.WrapHandler(sat.transport.HTTPHandlerFunc()))
+		sat.server.GET("/meta/metrics", sat.workerMetricsHandler())
 	} else {
 		// allow any HTTP method
-		sat.vektor.GET("/*any", sat.handler(engine))
-		sat.vektor.POST("/*any", sat.handler(engine))
-		sat.vektor.PATCH("/*any", sat.handler(engine))
-		sat.vektor.DELETE("/*any", sat.handler(engine))
-		sat.vektor.HEAD("/*any", sat.handler(engine))
-		sat.vektor.OPTIONS("/*any", sat.handler(engine))
+		sat.server.Any("*", sat.handler(engine))
 	}
 
 	return sat, nil
 }
 
-// Start starts Sat's Vektor server and Grav discovery
-func (s *Sat) Start(ctx context.Context) error {
-	vektorError := make(chan error, 1)
+// Start starts Sat's echo server and Bus discovery.
+func (s *Sat) Start() error {
+	serverError := make(chan error, 1)
 
-	// start Vektor first so that the server is started up before Bus starts discovery
+	// start Echo first so that the server is started up before Bus starts discovery.
 	go func() {
-		if err := s.vektor.Start(); err != nil {
-			vektorError <- err
+		if err := s.server.Start(fmt.Sprintf(":%d", s.config.Port)); err != nil {
+			serverError <- err
 		}
 	}()
 
@@ -118,11 +107,7 @@ func (s *Sat) Start(ctx context.Context) error {
 	}()
 
 	select {
-	case <-ctx.Done():
-		if err := s.Shutdown(); err != nil {
-			return errors.Wrap(err, "failed to Shutdown")
-		}
-	case err := <-vektorError:
+	case err := <-serverError:
 		if !errors.Is(err, http.ErrServerClosed) {
 			return errors.Wrap(err, "failed to start server")
 		}
@@ -132,31 +117,32 @@ func (s *Sat) Start(ctx context.Context) error {
 }
 
 func (s *Sat) Shutdown() error {
-	s.config.Logger.Info("sat shutting down")
+	s.logger.Info().Msg("sat shutting down")
 
 	// stop Bus with a 3s delay between Withdraw and Stop (to allow in-flight requests to drain)
-	// s.vektor.Stop isn't called until all connections are ready to close (after said delay)
+	// s.server.Shutdown isn't called until all connections are ready to close (after said delay)
 	// this is needed to ensure a safe withdraw from the constellation/mesh
 	if s.transport != nil {
 		if err := s.bus.Withdraw(); err != nil {
-			s.config.Logger.Warn("encountered error during Withdraw, will proceed:", err.Error())
+			s.logger.Err(err).Msg("encountered error during bus.Withdraw, will proceed")
 		}
 
 		time.Sleep(time.Second * 3)
 
 		if err := s.bus.Stop(); err != nil {
-			s.config.Logger.Warn("encountered error during Stop, will proceed:", err.Error())
+			s.logger.Err(err).Msg("encountered error during bus.Stop, will proceed")
 		}
 	}
 
 	if err := process.Delete(s.config.ProcUUID); err != nil {
-		s.config.Logger.Debug("encountered error during process.Delete, will proceed:", err.Error())
+		s.logger.Err(err).Msg("encountered error during process.Delete, will proceed")
 	}
 
-	stopCtx, _ := context.WithTimeout(context.Background(), time.Second)
+	stopCtx, cxl := context.WithTimeout(context.Background(), time.Second)
+	defer cxl()
 
-	if err := s.vektor.StopCtx(stopCtx); err != nil {
-		return errors.Wrap(err, "failed to StopCtx")
+	if err := s.server.Shutdown(stopCtx); err != nil {
+		return errors.Wrap(err, "failed to echo.Shutdown()")
 	}
 
 	return nil
@@ -168,7 +154,7 @@ func (s *Sat) setupBus() {
 	opts := []bus.OptionsModifier{
 		bus.UseBelongsTo(s.config.Tenant),
 		bus.UseInterests(s.config.JobType),
-		bus.UseLogger(s.config.Logger),
+		bus.UseLogger(s.logger),
 		bus.UseMeshTransport(s.transport),
 		bus.UseDiscovery(local.New()),
 		bus.UseEndpoint(fmt.Sprintf("%d", s.config.Port), "/meta/message"),
@@ -178,11 +164,6 @@ func (s *Sat) setupBus() {
 	s.pod = s.bus.Connect()
 
 	s.engine.ListenAndRun(s.bus.Connect(), s.config.JobType, s.handleFnResult)
-}
-
-// testStart returns Sat's internal server for testing purposes
-func (s *Sat) testServer() *vk.Server {
-	return s.vektor
 }
 
 func refFromFilename(name, fqmn, filename string) (*tenant.WasmModuleRef, error) {
