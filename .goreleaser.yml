@@ -1,3 +1,4 @@
+project_name: e2core
 env:
   - CGO_ENABLED=1
 builds:
