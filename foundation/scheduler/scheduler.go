@@ -29,7 +29,11 @@ type Scheduler struct {
 
 // New returns a Scheduler ready to accept Jobs
 func New() *Scheduler {
-	return NewWithLogger(zerolog.New(os.Stderr).With().Timestamp().Str("component", "scheduler").Logger())
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+	return NewWithLogger(zerolog.New(os.Stderr).With().
+		Timestamp().
+		Str("component", "scheduler").
+		Logger())
 }
 
 // NewWithLogger returns a Scheduler with a custom logger

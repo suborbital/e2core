@@ -29,7 +29,11 @@ func ModStart() *cobra.Command {
 				path = args[0]
 			}
 
-			l := zerolog.New(os.Stderr).With().Timestamp().Str("command", "mod start").Logger()
+			zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+			l := zerolog.New(os.Stderr).With().
+				Timestamp().
+				Str("command", "mod start").
+				Logger()
 
 			config, err := sat.ConfigFromModuleArg(l, path)
 			if err != nil {

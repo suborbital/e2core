@@ -39,7 +39,9 @@ func Start() *cobra.Command {
 				path = args[0]
 			}
 
+			zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 			logger := zerolog.New(os.Stderr).With().
+				Timestamp().
 				Str("command", "e2core start").
 				Str("version", release.E2CoreServerDotVersion).
 				Logger()

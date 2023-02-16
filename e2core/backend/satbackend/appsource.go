@@ -15,7 +15,11 @@ import (
 func startSystemSourceServer(bundlePath string) (chan error, error) {
 	app := bundle.NewBundleSource(bundlePath)
 
-	l := zerolog.New(os.Stderr).With().Str("service", "systemSourceServer").Timestamp().Logger()
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+	l := zerolog.New(os.Stderr).With().
+		Timestamp().
+		Str("service", "systemSourceServer").
+		Logger()
 
 	e := echo.New()
 	e.Use(
