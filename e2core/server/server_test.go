@@ -148,7 +148,9 @@ func (s *serverTestSuite) serverForBundle(filepath string) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
-	logger := zerolog.New(os.Stderr).With().Timestamp().Str("service", "serverForBundle test").Logger()
+	logger := zerolog.New(os.Stderr).With().
+		Str("service", "serverForBundle test").
+		Logger()
 
 	opts, err := options.NewWithModifiers(options.UseBundlePath(filepath))
 	s.Require().NoError(err, "options.NewWithModifiers")

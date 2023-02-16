@@ -16,7 +16,9 @@ import (
 )
 
 func main() {
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 	logger := zerolog.New(os.Stderr).With().
+		Timestamp().
 		Str("service", "sat-module").
 		Str("version", sat.SatDotVersion).
 		Logger()
