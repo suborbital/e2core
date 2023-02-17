@@ -1,9 +1,11 @@
 package runtime
 
 import (
+	"fmt"
+	"os"
 	"sync"
 
-	"github.com/bytecodealliance/wasmtime-go"
+	"github.com/bytecodealliance/wasmtime-go/v5"
 	"github.com/pkg/errors"
 
 	"github.com/suborbital/e2core/foundation/scheduler"
@@ -70,9 +72,27 @@ func (ip *InstancePool) UseInstance(ctx *scheduler.Ctx, instFunc func(*instance.
 	// return it to the environment when finished
 	inst := <-ip.availableInstances
 
-	defer func() {
-		ip.availableInstances <- inst
-	}()
+	reuseEnv := os.Getenv("SAT_REUSE_INSTANCE")
+
+	// if instance reuse is disabled, trigger a new instance to be added
+	// if it is enabled, queue the instance to be re-added to the pool
+	if reuseEnv == "false" {
+		go func() {
+			if err := ip.AddInstance(); err != nil {
+				fmt.Println("FAILED TO ADDINSTANCE:" + err.Error())
+			}
+		}()
+
+		defer func() {
+			inst.Close()
+			inst = nil
+		}()
+
+	} else {
+		defer func() {
+			ip.availableInstances <- inst
+		}()
+	}
 
 	// generate a random identifier as a reference to the instance in use to
 	// easily allow the Wasm module to reference itself when calling back over the FFI
