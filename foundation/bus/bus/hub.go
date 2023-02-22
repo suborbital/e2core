@@ -41,7 +41,7 @@ func initHub(nodeUUID string, options *Options, connectFunc func() *Pod) *hub {
 		mesh:                options.MeshTransport,
 		bridge:              options.BridgeTransport,
 		discovery:           options.Discovery,
-		log:                 options.Logger.With().Str("module", "hub").Logger(),
+		log:                 options.Logger.With().Str("module", "hub").Logger().Level(zerolog.InfoLevel),
 		pod:                 connectFunc(),
 		connectFunc:         connectFunc,
 		meshConnections:     map[string]*connectionHandler{},
@@ -76,7 +76,7 @@ func initHub(nodeUUID string, options *Options, connectFunc func() *Pod) *hub {
 				NodeUUID:      nodeUUID,
 				TransportPort: transportOpts.Port,
 				TransportURI:  transportOpts.URI,
-				Logger:        options.Logger.With().Str("module", "discoveryOpts").Logger(),
+				Logger:        options.Logger.With().Str("module", "discovery").Logger().Level(zerolog.InfoLevel),
 			}
 
 			go func() {

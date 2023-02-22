@@ -17,7 +17,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.8.1
 	github.com/suborbital/go-kit v0.0.8
-	github.com/suborbital/systemspec v0.0.6-0.20230208184245-e3a2220475fc
+	github.com/suborbital/systemspec v0.0.6-0.20230222150219-bd9cbb5436e5
 	github.com/testcontainers/testcontainers-go v0.18.0
 	github.com/twmb/franz-go v1.12.1
 	go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho v0.37.0
@@ -49,6 +49,7 @@ require (
 	github.com/inconshreveable/mousetrap v1.0.1 // indirect
 	github.com/klauspost/compress v1.15.12 // indirect
 	github.com/kr/text v0.2.0 // indirect
+	github.com/labstack/echo v3.3.10+incompatible // indirect
 	github.com/labstack/gommon v0.4.0 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect

@@ -74,6 +74,7 @@ func New(config *Config, logger zerolog.Logger, traceProvider trace.TracerProvid
 
 	sat.server = echo.New()
 	sat.server.HTTPErrorHandler = kitError.Handler(logger)
+	sat.server.HideBanner = true
 
 	// if a "transport" is configured, enable bus and metrics endpoints, otherwise enable server mode
 	if config.ControlPlaneUrl != "" {
