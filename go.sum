@@ -278,12 +278,6 @@ github.com/stretchr/testify v1.8.1 h1:w7B6lhMri9wdJUVmEZPGGhZzrYTPvgJArz7wNPgYKs
 github.com/stretchr/testify v1.8.1/go.mod h1:w2LPCIKwWwSfY2zedu0+kehJoqGctiVI29o6fzry7u4=
 github.com/suborbital/go-kit v0.0.8 h1:yBsxUAlizy46p/eeHM1BfJZgEyx+dbK5oUYKd1N9szQ=
 github.com/suborbital/go-kit v0.0.8/go.mod h1:1OWVnUwXri359OyolKOnthe8jetCQJY/daaObfwRaSs=
-github.com/suborbital/systemspec v0.0.6-0.20230208184245-e3a2220475fc h1:YatK87E914AhrBmqr0aiCHOpjORJcIffnnNTquhWtLg=
-github.com/suborbital/systemspec v0.0.6-0.20230208184245-e3a2220475fc/go.mod h1:AOdN//sI68PWSOT2N1hzjFhDj+KjhOFHcyyqPthYb1o=
-github.com/suborbital/systemspec v0.0.6-0.20230218165733-762f2cc6be07 h1:6u9g3E4FymLTf95pJ3xL6ldi3yPfvAyTrkW087Hf0ZY=
-github.com/suborbital/systemspec v0.0.6-0.20230218165733-762f2cc6be07/go.mod h1:hYkKZlVvoZXPh/TcppIhTnuYOpQ60PtXFh7Fpqy1OUc=
-github.com/suborbital/systemspec v0.0.6-0.20230222145718-72490f8c5b8b h1:4/m2bFOnaopMHkM6mr7zRKN5Qsrco6G8Rf2V4z0uGZU=
-github.com/suborbital/systemspec v0.0.6-0.20230222145718-72490f8c5b8b/go.mod h1:hYkKZlVvoZXPh/TcppIhTnuYOpQ60PtXFh7Fpqy1OUc=
 github.com/suborbital/systemspec v0.0.6-0.20230222150219-bd9cbb5436e5 h1:AnBi48eVHOhU/Mr2O91SuraAqSUM8Yd3YQJRXR5RFwU=
 github.com/suborbital/systemspec v0.0.6-0.20230222150219-bd9cbb5436e5/go.mod h1:D+1w98uj6u9MVVAeDRkTt/oVPGRQUfGYM+jdbQd+AaM=
 github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635/go.mod h1:hkRG7XYTFWNJGYcbNJQlaLq0fg1yr4J4t/NcTQtrfww=
