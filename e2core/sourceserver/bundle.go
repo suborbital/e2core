@@ -7,6 +7,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
+
 	"github.com/suborbital/go-kit/web/mid"
 	"github.com/suborbital/systemspec/bundle"
 )

@@ -16,10 +16,6 @@ import (
 	"github.com/suborbital/e2core/e2core/syncer"
 )
 
-const (
-	atmoPort = "8080"
-)
-
 type Orchestrator struct {
 	syncer           *syncer.Syncer
 	logger           zerolog.Logger
