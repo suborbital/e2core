@@ -53,7 +53,7 @@ func (t *Transport) Setup(opts *bus.MeshOptions, connFunc bus.ConnectFunc) error
 	// independent serving is not yet implemented, use the HTTP handler
 
 	t.opts = opts
-	t.log = opts.Logger.With().Str("transport", "websocket").Logger()
+	t.log = opts.Logger.With().Str("transport", "websocket").Logger().Level(zerolog.InfoLevel)
 	t.connectionFunc = connFunc
 
 	return nil

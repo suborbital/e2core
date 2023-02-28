@@ -8,6 +8,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
@@ -18,8 +19,9 @@ import (
 	"github.com/suborbital/e2core/e2core/options"
 	"github.com/suborbital/e2core/e2core/release"
 	"github.com/suborbital/e2core/e2core/server"
+	"github.com/suborbital/e2core/e2core/sourceserver"
 	"github.com/suborbital/e2core/e2core/syncer"
-	"github.com/suborbital/systemspec/system/bundle"
+	"github.com/suborbital/systemspec/bundle"
 	"github.com/suborbital/systemspec/system/client"
 )
 
@@ -39,46 +41,34 @@ func Start() *cobra.Command {
 				path = args[0]
 			}
 
-			zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
-			logger := zerolog.New(os.Stderr).With().
-				Timestamp().
-				Str("command", "e2core start").
-				Str("version", release.E2CoreServerDotVersion).
-				Logger()
+			logger := setupLogger()
 
-			opts, err := optionsFromFlags(cmd.Flags())
+			mods, err := modsFromFlags(cmd.Flags())
 			if err != nil {
-				return errors.Wrap(err, "failed to optionsFromFlags")
+				return errors.Wrap(err, "failed to modsFromFlags")
 			}
 
-			opts = append(
-				opts,
-				options.UseBundlePath(path),
-			)
-
-			vOpts, err := options.NewWithModifiers(opts...)
+			opts, err := options.NewWithModifiers(append(mods, options.UseBundlePath(path))...)
 			if err != nil {
 				return errors.Wrap(err, "options.NewWithModifiers")
 			}
 
-			// TODO: implement and use a CredentialSupplier
-			systemSource := bundle.NewBundleSource(vOpts.BundlePath)
-			if vOpts.ControlPlane != "" {
-				// the HTTP system source gets Server's data from a remote server
-				// which can essentially control Server's behaviour.
-				systemSource = client.NewHTTPSource(vOpts.ControlPlane, auth.NewAccessToken(vOpts.EnvironmentToken))
-			}
+			sync := setupSyncer(logger, opts)
 
-			sync := syncer.New(vOpts, logger, systemSource)
-
-			srv, err := server.New(logger, sync, vOpts)
+			// create the three essential parts:
+			sourceSrv, err := setupSourceServer(logger, opts)
 			if err != nil {
-				return errors.Wrap(err, "server.New")
+				return errors.Wrap(err, "failed to setupSourceServer")
 			}
 
-			backend, err := satbackend.New(logger, vOpts, sync)
+			backend, err := satbackend.New(logger, opts, sync)
 			if err != nil {
 				return errors.Wrap(err, "failed to satbackend.New")
+			}
+
+			srv, err := server.New(logger, sync, opts)
+			if err != nil {
+				return errors.Wrap(err, "server.New")
 			}
 
 			shutdown := make(chan os.Signal, 1)
@@ -86,21 +76,29 @@ func Start() *cobra.Command {
 
 			serverErrors := make(chan error, 1)
 
+			// now start all three parts:
+
 			go func() {
-				logger.Info().Msg("starting server")
-				err := srv.Start()
-				if err != nil {
-					serverErrors <- errors.Wrap(err, "srv.Start")
+				logger.Info().Msg("starting source server")
+				if err := sourceserver.Start(sourceSrv); err != nil {
+					serverErrors <- errors.Wrap(err, "sourceserver.Start")
 				}
+
 			}()
 
 			go func() {
 				logger.Info().Msg("starting backend")
-				err := backend.Start()
-				if err != nil {
+				if err := backend.Start(); err != nil {
 					serverErrors <- errors.Wrap(err, "backend.Start")
 				}
 
+			}()
+
+			go func() {
+				logger.Info().Msg("starting e2core server")
+				if err := srv.Start(); err != nil {
+					serverErrors <- errors.Wrap(err, "srv.Start")
+				}
 			}()
 
 			select {
@@ -114,9 +112,12 @@ func Start() *cobra.Command {
 				ctx, cancel := context.WithTimeout(context.Background(), shutdownWaitTime)
 				defer cancel()
 
-				srvErr := srv.Shutdown(ctx)
-				if srvErr != nil {
-					return errors.Wrap(srvErr, "srv.Shutdown")
+				if err := srv.Shutdown(ctx); err != nil {
+					return errors.Wrap(err, "srv.Shutdown")
+				}
+
+				if err := sourceSrv.Shutdown(ctx); err != nil {
+					return errors.Wrap(err, "sourceSrv.Shutdown")
 				}
 
 				backend.Shutdown()
@@ -135,7 +136,19 @@ func Start() *cobra.Command {
 	return cmd
 }
 
-func optionsFromFlags(flags *pflag.FlagSet) ([]options.Modifier, error) {
+func setupLogger() zerolog.Logger {
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+
+	logger := zerolog.New(os.Stderr).With().
+		Timestamp().
+		Str("command", "start").
+		Str("version", release.E2CoreServerDotVersion).
+		Logger().Level(zerolog.InfoLevel)
+
+	return logger
+}
+
+func modsFromFlags(flags *pflag.FlagSet) ([]options.Modifier, error) {
 	domain, err := flags.GetString(domainFlag)
 	if err != nil {
 		return nil, errors.Wrap(err, fmt.Sprintf("get string flag '%s' value", domainFlag))
@@ -158,4 +171,42 @@ func optionsFromFlags(flags *pflag.FlagSet) ([]options.Modifier, error) {
 	}
 
 	return opts, nil
+}
+
+func setupSyncer(logger zerolog.Logger, opts *options.Options) *syncer.Syncer {
+	systemSource := bundle.NewBundleSource(opts.BundlePath)
+
+	if opts.ControlPlane != "" {
+		// the HTTP system source gets Server's data from a remote server
+		// which can essentially control Server's behaviour.
+		systemSource = client.NewHTTPSource(opts.ControlPlane, auth.NewAccessToken(opts.EnvironmentToken))
+	}
+
+	sync := syncer.New(opts, logger, systemSource)
+
+	return sync
+}
+
+func setupSourceServer(logger zerolog.Logger, opts *options.Options) (*echo.Echo, error) {
+	ll := logger.With().Str("method", "setupSourceServer").Logger()
+
+	// if an external control plane hasn't been set, act as the control plane
+	// but if one has been set, use it (and launch all children with it configured)
+	if opts.ControlPlane == options.DefaultControlPlane || opts.ControlPlane == "" {
+		opts.ControlPlane = options.DefaultControlPlane
+
+		ll.Debug().Msg("creating sourceserver from bundle: " + opts.BundlePath)
+
+		server, err := sourceserver.FromBundle(opts.BundlePath)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to sourceserver.FromBundle")
+		}
+
+		server.HideBanner = true
+
+		return server, nil
+	}
+
+	// a nil server is ok if we don't need to run one
+	return nil, nil
 }

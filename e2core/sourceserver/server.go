@@ -1,4 +1,4 @@
-package satbackend
+package sourceserver
 
 import (
 	"net/http"
@@ -13,14 +13,14 @@ import (
 	"github.com/suborbital/systemspec/system"
 )
 
-type EchoSource struct {
+type SystemSourceRouter struct {
 	logger zerolog.Logger
 	source system.Source
 }
 
-// NewEchoSource creates a new echo handler struct that has a logger and an underlying source.
-func NewEchoSource(logger zerolog.Logger, source system.Source) *EchoSource {
-	return &EchoSource{
+// NewRouter creates a new echo handler struct that has a logger and an underlying source.
+func NewRouter(logger zerolog.Logger, source system.Source) *SystemSourceRouter {
+	return &SystemSourceRouter{
 		logger: logger.With().Str("module", "source-echo-router").Logger(),
 		source: source,
 	}
@@ -48,7 +48,7 @@ func NewEchoSource(logger zerolog.Logger, source system.Source) *EchoSource {
 // - GET /capabilities/:ident/:namespace/:version
 // - GET /queries/:ident/:namespace/:version
 // - GET /file/:ident/:version/*filename
-func (es *EchoSource) Routes() *echo.Echo {
+func (es *SystemSourceRouter) Routes() *echo.Echo {
 	e := echo.New()
 	v1 := e.Group("/")
 
@@ -78,7 +78,7 @@ func (es *EchoSource) Routes() *echo.Echo {
 // - GET /<prefix>/file/:ident/:version/*filename
 //
 // If the prefix is not empty and does not start with a / character, it returns an error.
-func (es *EchoSource) Attach(prefix string, e *echo.Echo) error {
+func (es *SystemSourceRouter) Attach(prefix string, e *echo.Echo) error {
 	if prefix == "" {
 		prefix = "/"
 	}
@@ -101,7 +101,7 @@ func (es *EchoSource) Attach(prefix string, e *echo.Echo) error {
 }
 
 // StateHandler is a handler to fetch the system State.
-func (es *EchoSource) StateHandler() echo.HandlerFunc {
+func (es *SystemSourceRouter) StateHandler() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		state, err := es.source.State()
 		if err != nil {
@@ -113,7 +113,7 @@ func (es *EchoSource) StateHandler() echo.HandlerFunc {
 }
 
 // OverviewHandler is a handler to fetch the system overview.
-func (es *EchoSource) OverviewHandler() echo.HandlerFunc {
+func (es *SystemSourceRouter) OverviewHandler() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		overview, err := es.source.Overview()
 		if err != nil {
@@ -125,7 +125,7 @@ func (es *EchoSource) OverviewHandler() echo.HandlerFunc {
 }
 
 // TenantOverviewHandler is a handler to fetch a particular tenant's overview.
-func (es *EchoSource) TenantOverviewHandler() echo.HandlerFunc {
+func (es *SystemSourceRouter) TenantOverviewHandler() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ident := c.Param("ident")
 
@@ -139,7 +139,7 @@ func (es *EchoSource) TenantOverviewHandler() echo.HandlerFunc {
 }
 
 // GetModuleHandler is a handler to find a single module.
-func (es *EchoSource) GetModuleHandler() echo.HandlerFunc {
+func (es *SystemSourceRouter) GetModuleHandler() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ident := c.Param("ident")
 		ref := c.Param("ref")
@@ -169,7 +169,7 @@ func (es *EchoSource) GetModuleHandler() echo.HandlerFunc {
 }
 
 // WorkflowsHandler is a handler to fetch Workflows.
-func (es *EchoSource) WorkflowsHandler() echo.HandlerFunc {
+func (es *SystemSourceRouter) WorkflowsHandler() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ident := c.Param("ident")
 		namespace := c.Param("namespace")
@@ -188,7 +188,7 @@ func (es *EchoSource) WorkflowsHandler() echo.HandlerFunc {
 }
 
 // ConnectionsHandler is a handler to fetch Connection data.
-func (es *EchoSource) ConnectionsHandler() echo.HandlerFunc {
+func (es *SystemSourceRouter) ConnectionsHandler() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ident := c.Param("ident")
 		namespace := c.Param("namespace")
@@ -207,7 +207,7 @@ func (es *EchoSource) ConnectionsHandler() echo.HandlerFunc {
 }
 
 // AuthenticationHandler is a handler to fetch Authentication data.
-func (es *EchoSource) AuthenticationHandler() echo.HandlerFunc {
+func (es *SystemSourceRouter) AuthenticationHandler() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ident := c.Param("ident")
 		namespace := c.Param("namespace")
@@ -226,7 +226,7 @@ func (es *EchoSource) AuthenticationHandler() echo.HandlerFunc {
 }
 
 // CapabilitiesHandler is a handler to fetch Capabilities data.
-func (es *EchoSource) CapabilitiesHandler() echo.HandlerFunc {
+func (es *SystemSourceRouter) CapabilitiesHandler() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ident := c.Param("ident")
 		namespace := c.Param("namespace")

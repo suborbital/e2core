@@ -16,10 +16,6 @@ import (
 	"github.com/suborbital/e2core/e2core/syncer"
 )
 
-const (
-	atmoPort = "8080"
-)
-
 type Orchestrator struct {
 	syncer           *syncer.Syncer
 	logger           zerolog.Logger
@@ -51,8 +47,6 @@ func (o *Orchestrator) Start() error {
 
 	ll := o.logger.With().Str("method", "Start").Logger()
 
-	errChan := o.setupSystemSourceServer()
-
 	o.wg.Add(1)
 
 	var err error
@@ -62,17 +56,12 @@ loop:
 	for {
 		select {
 		case <-o.signalChan:
-			ll.Warn().Msg("received on signal chan")
 			// if anything gets sent in the signal channel
-			break loop
-
-		case err = <-errChan:
-			ll.Warn().Msg("received on error chan")
-			// if there's an error
+			ll.Warn().Msg("received on signal chan")
 			break loop
 
 		case <-ticker.C:
-			// each second do this
+			// when the ticker fires each second
 			o.reconcileConstellation(o.syncer)
 		}
 	}
@@ -96,11 +85,11 @@ loop:
 // mostly only required for testing purposes as the OS handles it normally
 func (o *Orchestrator) Shutdown() {
 	ll := o.logger.With().Str("method", "Shutdown").Logger()
+
 	ll.Debug().Msg("sending sigterm")
 	o.signalChan <- syscall.SIGTERM
 
 	ll.Debug().Msg("waiting")
-
 	o.wg.Wait()
 
 	ll.Debug().Msg("shutdown completed")
@@ -108,7 +97,9 @@ func (o *Orchestrator) Shutdown() {
 
 func (o *Orchestrator) reconcileConstellation(syncer *syncer.Syncer) {
 	ll := o.logger.With().Str("method", "reconcileConstellation").Logger()
+
 	ll.Debug().Msg("reconciling...")
+
 	tenants := syncer.ListTenants()
 	if tenants == nil {
 		ll.Error().Msg("tenants is nil")
@@ -226,34 +217,4 @@ func (o *Orchestrator) reconcileConstellation(syncer *syncer.Syncer) {
 			}
 		}
 	}
-}
-
-// TODO: implement and use an authSource when creating NewHTTPSource
-func (o *Orchestrator) setupSystemSourceServer() chan error {
-	ll := o.logger.With().Str("method", "setupSystemSourceServer").Logger()
-
-	// if an external control plane hasn't been set, act as the control plane
-	// but if one has been set, use it (and launch all children with it configured)
-	if o.opts.ControlPlane == options.DefaultControlPlane || o.opts.ControlPlane == "" {
-		o.opts.ControlPlane = options.DefaultControlPlane
-
-		ll.Debug().Msg("starting SystemSource server")
-
-		errChan, err := startSystemSourceServer(o.opts.BundlePath)
-		if err != nil {
-
-		}
-
-		return errChan
-	}
-
-	ll.Debug().Msg("registering with controlplane")
-
-	if err := registerWithControlPlane(o.logger, *o.opts); err != nil {
-		ll.Fatal().Err(err).Msg("registerWithControlPlane failed")
-	}
-
-	errChan := make(chan error)
-
-	return errChan
 }

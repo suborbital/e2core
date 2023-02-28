@@ -33,7 +33,7 @@ func ModStart() *cobra.Command {
 			l := zerolog.New(os.Stderr).With().
 				Timestamp().
 				Str("command", "mod start").
-				Logger()
+				Logger().Level(zerolog.InfoLevel)
 
 			config, err := sat.ConfigFromModuleArg(l, path)
 			if err != nil {
