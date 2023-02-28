@@ -41,7 +41,7 @@ func TestAuthorizerCache_ConcurrentRequests(t *testing.T) {
 				_ = json.NewEncoder(w).Encode(&TenantInfo{
 					AuthorizedParty: "tester",
 					Environment:     "env",
-					ID:              "123",
+					ID:              "tnt",
 				})
 			},
 			assertOpts: func(t *testing.T, actual uint64) bool {
@@ -95,7 +95,7 @@ func TestAuthorizerCache_ConcurrentRequests(t *testing.T) {
 
 		authorizer := &AuthzClient{
 			httpClient: svr.Client(),
-			location:   svr.URL + "/api/v2/tenant/%s",
+			location:   svr.URL + "/environment/v1/tenant/",
 			cache:      newAuthorizationCache(common.StableTime(time.Now()), 10*time.Minute),
 		}
 
@@ -266,7 +266,7 @@ func TestAuthorizerCache(t *testing.T) {
 
 		authorizer := &AuthzClient{
 			httpClient: svr.Client(),
-			location:   svr.URL + "/api/v2/tenant/%s",
+			location:   svr.URL + "/api/v2/tenant/",
 			cache:      newAuthorizationCache(common.StableTime(time.Now()), 10*time.Minute),
 		}
 
@@ -328,7 +328,7 @@ func TestAuthorizerCache_ExpiringEntry(t *testing.T) {
 
 		authorizer := &AuthzClient{
 			httpClient: svr.Client(),
-			location:   svr.URL + "/api/v2/tenant/%s",
+			location:   svr.URL + "/api/v2/tenant/",
 			cache:      authzCache,
 		}
 
