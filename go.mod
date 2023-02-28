@@ -15,7 +15,7 @@ require (
 	github.com/sethvargo/go-envconfig v0.9.0
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/pflag v1.0.5
-	github.com/stretchr/testify v1.8.1
+	github.com/stretchr/testify v1.8.2
 	github.com/suborbital/go-kit v0.0.8
 	github.com/suborbital/systemspec v0.0.6-0.20230222150219-bd9cbb5436e5
 	github.com/testcontainers/testcontainers-go v0.18.0
