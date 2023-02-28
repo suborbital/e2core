@@ -13,9 +13,9 @@ import (
 
 func (s *Server) executePluginByNameHandler() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		ident := c.Param("ident")
-		namespace := c.Param("namespace")
-		name := c.Param("name")
+		ident := ReadParam(c, "ident")
+		namespace := ReadParam(c, "namespace")
+		name := ReadParam(c, "name")
 
 		mod := s.syncer.GetModuleByName(ident, namespace, name)
 		if mod == nil {
@@ -202,4 +202,13 @@ func (s *Server) healthHandler() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		return c.JSON(http.StatusOK, map[string]bool{"healthy": true})
 	}
+}
+
+func ReadParam(ctx echo.Context, name string) string {
+	v := ctx.Get(name)
+	if v != nil {
+		return v.(string)
+	}
+
+	return ctx.Param(name)
 }

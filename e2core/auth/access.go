@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -18,9 +17,9 @@ import (
 
 type TenantInfo struct {
 	AuthorizedParty string `json:"authorized_party"`
-	Organization    string `json:"organization"`
 	Environment     string `json:"environment"`
-	Tenant          string `json:"tenant"`
+	ID              string `json:"id"`
+	Name            string `json:"name"`
 }
 
 func AuthorizationMiddleware(opts *options.Options) echo.MiddlewareFunc {
@@ -37,8 +36,7 @@ func AuthorizationMiddleware(opts *options.Options) echo.MiddlewareFunc {
 				return echo.NewHTTPError(http.StatusUnauthorized).SetInternal(err)
 			}
 
-			c.Set("ident", tntInfo.Tenant)
-			c.SetRequest(c.Request().WithContext(context.WithValue(c.Request().Context(), "ident", tntInfo.Tenant)))
+			c.Set("ident", tntInfo.ID)
 
 			return next(c)
 		}
@@ -51,7 +49,7 @@ func NewApiAuthClient(opts *options.Options) *AuthzClient {
 			Timeout:   20 * time.Second,
 			Transport: http.DefaultTransport,
 		},
-		location: opts.ControlPlane + "/api/v1/tenant/%s",
+		location: opts.ControlPlane + "/environment/v1/tenant/",
 		cache:    NewAuthorizationCache(opts.AuthCacheTTL),
 	}
 }
@@ -74,7 +72,7 @@ func (client *AuthzClient) Authorize(token system.Credential, identifier, namesp
 
 func (client *AuthzClient) loadAuth(token system.Credential, identifier string) func() (*TenantInfo, error) {
 	return func() (*TenantInfo, error) {
-		authzReq, err := http.NewRequest(http.MethodGet, fmt.Sprintf(client.location, identifier), nil)
+		authzReq, err := http.NewRequest(http.MethodGet, client.location+identifier, nil)
 		if err != nil {
 			return nil, common.Error(err, "post authorization request")
 		}

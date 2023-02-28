@@ -40,9 +40,8 @@ func TestAuthorizerCache_ConcurrentRequests(t *testing.T) {
 				w.WriteHeader(http.StatusOK)
 				_ = json.NewEncoder(w).Encode(&TenantInfo{
 					AuthorizedParty: "tester",
-					Organization:    "acct",
 					Environment:     "env",
-					Tenant:          "123",
+					ID:              "tnt",
 				})
 			},
 			assertOpts: func(t *testing.T, actual uint64) bool {
@@ -96,7 +95,7 @@ func TestAuthorizerCache_ConcurrentRequests(t *testing.T) {
 
 		authorizer := &AuthzClient{
 			httpClient: svr.Client(),
-			location:   svr.URL + "/api/v2/tenant/%s",
+			location:   svr.URL + "/environment/v1/tenant/",
 			cache:      newAuthorizationCache(common.StableTime(time.Now()), 10*time.Minute),
 		}
 
@@ -175,9 +174,8 @@ func TestAuthorizerCache(t *testing.T) {
 				env, tenant, _ := strings.Cut(ident, ".")
 				_ = json.NewEncoder(w).Encode(&TenantInfo{
 					AuthorizedParty: "tester",
-					Organization:    "acct",
 					Environment:     env,
-					Tenant:          tenant,
+					ID:              tenant,
 				})
 			},
 			assertOpts: func(t *testing.T, actual uint64) bool {
@@ -247,9 +245,8 @@ func TestAuthorizerCache(t *testing.T) {
 					env, tenant, _ := strings.Cut(ident, ".")
 					_ = json.NewEncoder(w).Encode(&TenantInfo{
 						AuthorizedParty: "tester",
-						Organization:    "acct",
 						Environment:     env,
-						Tenant:          tenant,
+						ID:              tenant,
 					})
 				}
 			},
@@ -269,7 +266,7 @@ func TestAuthorizerCache(t *testing.T) {
 
 		authorizer := &AuthzClient{
 			httpClient: svr.Client(),
-			location:   svr.URL + "/api/v2/tenant/%s",
+			location:   svr.URL + "/api/v2/tenant/",
 			cache:      newAuthorizationCache(common.StableTime(time.Now()), 10*time.Minute),
 		}
 
@@ -306,9 +303,8 @@ func TestAuthorizerCache_ExpiringEntry(t *testing.T) {
 				w.WriteHeader(http.StatusOK)
 				_ = json.NewEncoder(w).Encode(&TenantInfo{
 					AuthorizedParty: "tester",
-					Organization:    "acct",
 					Environment:     "env",
-					Tenant:          "123",
+					ID:              "123",
 				})
 			},
 			assertOpts: func(t *testing.T, actual uint64) bool {
@@ -332,7 +328,7 @@ func TestAuthorizerCache_ExpiringEntry(t *testing.T) {
 
 		authorizer := &AuthzClient{
 			httpClient: svr.Client(),
-			location:   svr.URL + "/api/v2/tenant/%s",
+			location:   svr.URL + "/api/v2/tenant/",
 			cache:      authzCache,
 		}
 
