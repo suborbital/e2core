@@ -40,9 +40,8 @@ func TestAuthorizerCache_ConcurrentRequests(t *testing.T) {
 				w.WriteHeader(http.StatusOK)
 				_ = json.NewEncoder(w).Encode(&TenantInfo{
 					AuthorizedParty: "tester",
-					Organization:    "acct",
 					Environment:     "env",
-					Tenant:          "123",
+					ID:              "123",
 				})
 			},
 			assertOpts: func(t *testing.T, actual uint64) bool {
@@ -175,9 +174,8 @@ func TestAuthorizerCache(t *testing.T) {
 				env, tenant, _ := strings.Cut(ident, ".")
 				_ = json.NewEncoder(w).Encode(&TenantInfo{
 					AuthorizedParty: "tester",
-					Organization:    "acct",
 					Environment:     env,
-					Tenant:          tenant,
+					ID:              tenant,
 				})
 			},
 			assertOpts: func(t *testing.T, actual uint64) bool {
@@ -247,9 +245,8 @@ func TestAuthorizerCache(t *testing.T) {
 					env, tenant, _ := strings.Cut(ident, ".")
 					_ = json.NewEncoder(w).Encode(&TenantInfo{
 						AuthorizedParty: "tester",
-						Organization:    "acct",
 						Environment:     env,
-						Tenant:          tenant,
+						ID:              tenant,
 					})
 				}
 			},
@@ -306,9 +303,8 @@ func TestAuthorizerCache_ExpiringEntry(t *testing.T) {
 				w.WriteHeader(http.StatusOK)
 				_ = json.NewEncoder(w).Encode(&TenantInfo{
 					AuthorizedParty: "tester",
-					Organization:    "acct",
 					Environment:     "env",
-					Tenant:          "123",
+					ID:              "123",
 				})
 			},
 			assertOpts: func(t *testing.T, actual uint64) bool {
