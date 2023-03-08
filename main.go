@@ -21,10 +21,10 @@ func main() {
 func rootCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "e2core",
-		Version: release.E2CoreServerDotVersion,
+		Version: release.Version,
 		Long: `
 	E2Core is a secure development kit and server for writing and running untrusted third-party plugins.
-	
+
 	The E2Core server is responsible for managing and running plugins using simple HTTP, RPC, or streaming interfaces.`,
 	}
 
@@ -34,7 +34,7 @@ func rootCommand() *cobra.Command {
 func modCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "mod",
-		Version: release.E2CoreServerDotVersion,
+		Version: release.Version,
 		Short:   "commands for working with modules",
 		Hidden:  true,
 	}

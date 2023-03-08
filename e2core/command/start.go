@@ -34,7 +34,7 @@ func Start() *cobra.Command {
 		Use:     "start [bundle-path]",
 		Short:   "start the e2core server",
 		Long:    "starts the e2core server using the provided options",
-		Version: release.E2CoreServerDotVersion,
+		Version: release.Version,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			path := "./modules.wasm.zip"
 			if len(args) > 0 {
@@ -142,7 +142,7 @@ func setupLogger() zerolog.Logger {
 	logger := zerolog.New(os.Stderr).With().
 		Timestamp().
 		Str("command", "start").
-		Str("version", release.E2CoreServerDotVersion).
+		Str("version", release.Version).
 		Logger().Level(zerolog.InfoLevel)
 
 	return logger
