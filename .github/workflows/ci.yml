@@ -42,7 +42,7 @@ jobs:
     needs: [lint, test]
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/goreleaser/goreleaser-cross:v1.20.1
+      image: ghcr.io/goreleaser/goreleaser-cross:v1.20.2
 
     steps:
       - uses: actions/checkout@v3
