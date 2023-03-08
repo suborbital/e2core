@@ -22,7 +22,7 @@ func ModStart() *cobra.Command {
 		Use:     "start [module path or FQMN]",
 		Short:   "start a E2Core module",
 		Long:    "starts a single module and connects to the mesh to receive jobs",
-		Version: release.E2CoreServerDotVersion,
+		Version: release.Version,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			path := ""
 			if len(args) > 0 {

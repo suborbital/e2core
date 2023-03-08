@@ -1,26 +1,20 @@
 FROM golang:1.20 as builder
-
-RUN mkdir -p /go/src/github.com/suborbital/e2core
 WORKDIR /go/src/github.com/suborbital/e2core/
+ARG VERSION="dev"
 
-# Deps first
 COPY go.mod go.sum ./
 RUN go mod download
 
-# Then the rest
 COPY . ./
-RUN go mod vendor
+RUN go build -o .bin/e2core -tags netgo -ldflags="-extldflags=-static -X 'github.com/suborbital/e2core/e2core/release.Version=$VERSION'" .
 
-RUN make e2core/static
 
 FROM debian:buster-slim
-
 RUN groupadd -g 999 e2core && \
 	useradd -r -u 999 -g e2core e2core && \
 	mkdir -p /home/e2core && \
 	chown -R e2core /home/e2core && \
 	chmod -R 700 /home/e2core
-
 RUN apt-get update \
 	&& apt-get install -y ca-certificates
 

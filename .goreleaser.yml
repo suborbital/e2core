@@ -22,7 +22,7 @@ builds:
           - CC=x86_64-linux-gnu-gcc
           - CXX=x86_64-linux-gnu-g++
         ldflags:
-          - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}
+          - -X github.com/suborbital/e2core/e2core/release.Version={{.Env.VERSION}}
           - -extldflags "-static"
       - goos: linux
         goarch: arm64
@@ -31,7 +31,7 @@ builds:
           - CC=aarch64-linux-gnu-gcc
           - CXX=aarch64-linux-gnu-g++
         ldflags:
-          - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}
+          - -X github.com/suborbital/e2core/e2core/release.Version={{.Env.VERSION}}
           - -extldflags "-static"
       - goos: darwin
         goarch: amd64
@@ -40,12 +40,16 @@ builds:
           - CGO_ENABLED=1
           - CC=o64-clang
           - CXX=o64-clang++
+        ldflags:
+          - -X github.com/suborbital/e2core/e2core/release.Version={{.Env.VERSION}}
       - goos: darwin
         goarch: arm64
         env:
           - CGO_ENABLED=1
           - CC=oa64-clang
           - CXX=oa64-clang++
+        ldflags:
+          - -X github.com/suborbital/e2core/e2core/release.Version={{.Env.VERSION}}
 
 changelog:
   skip: true

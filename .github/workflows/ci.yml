@@ -49,6 +49,16 @@ jobs:
       # temporary work around for https://github.com/actions/checkout/issues/1169
       - run: git config --system --add safe.directory /__w/e2core/e2core
 
+      - uses: docker/metadata-action@v4
+        id: docker_meta
+        with:
+          images: suborbital/e2core,ghcr.io/suborbital/e2core
+          tags: |
+            type=sha,enable=${{ !startsWith(github.ref, 'refs/tags/v') }}
+            type=semver,pattern={{raw}}
+          flavor: |
+            latest=auto
+
       - uses: goreleaser/goreleaser-action@v4
         with:
           version: latest
@@ -58,9 +68,12 @@ jobs:
         run: goreleaser release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ fromJSON(steps.docker_meta.outputs.json).labels['org.opencontainers.image.version'] }}
 
       - if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
         run: goreleaser release --clean --snapshot
+        env:
+          VERSION: ${{ fromJSON(steps.docker_meta.outputs.json).labels['org.opencontainers.image.version'] }}
 
   image:
     needs: [lint, test]
@@ -70,10 +83,22 @@ jobs:
       - uses: docker/setup-buildx-action@v2
       - uses: docker/setup-qemu-action@v2
 
+      - uses: docker/metadata-action@v4
+        id: docker_meta
+        with:
+          images: suborbital/e2core,ghcr.io/suborbital/e2core
+          tags: |
+            type=sha,enable=${{ !startsWith(github.ref, 'refs/tags/v') }}
+            type=semver,pattern={{raw}}
+          flavor: |
+            latest=auto
+
       - name: Build e2core image
         uses: docker/build-push-action@v4
         with:
           cache-from: type=gha
+          build-args: |
+            VERSION=${{ fromJSON(steps.docker_meta.outputs.json).labels['org.opencontainers.image.version'] }}
           load: true
           push: false
           tags: suborbital/e2core:dev
@@ -116,21 +141,13 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: docker/metadata-action@v4
-        if: startsWith(github.ref, 'refs/tags/v')
-        id: docker_meta
-        with:
-          images: suborbital/e2core,ghcr.io/suborbital/e2core
-          tags: |
-            type=match,pattern=(v.*)
-          flavor: |
-            latest=auto
-
       - name: Build and push e2core image
         if: startsWith(github.ref, 'refs/tags/v')
         uses: docker/build-push-action@v4
         with:
           cache-from: type=gha
+          build-args: |
+            VERSION=${{ fromJSON(steps.docker_meta.outputs.json).labels['org.opencontainers.image.version'] }}
           cache-to: type=gha,mode=max
           platforms: linux/amd64,linux/arm64
           push: true
