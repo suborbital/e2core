@@ -40,6 +40,17 @@ func ModStart() *cobra.Command {
 				return errors.Wrap(err, "failed to ConfigFromModuleArg")
 			}
 
+			// Sat will obey SAT_HTTP_PORT from the env and the flag can override that
+			// If none present, a random port will be selected
+			httpPort, err := cmd.Flags().GetInt(httpPortFlag)
+			if err != nil {
+				return errors.Wrap(err, fmt.Sprintf("reading flag '--%s'", httpPortFlag))
+			}
+			if httpPort > 0 {
+				config.Port = httpPort
+				l.Debug().Int("port", httpPort).Msg(fmt.Sprintf("Using port :%d for the sat backend", httpPort))
+			}
+
 			traceProvider, err := sat.SetupTracing(config.TracerConfig, l)
 			if err != nil {
 				return errors.Wrap(err, "setup tracing")
@@ -90,6 +101,8 @@ func ModStart() *cobra.Command {
 			return nil
 		},
 	}
+
+	cmd.Flags().Int(httpPortFlag, 0, "if passed, it sets the HTTP service port, otherwise a random high port will be used")
 
 	cmd.SetVersionTemplate("{{.Version}}\n")
 
