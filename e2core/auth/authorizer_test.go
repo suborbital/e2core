@@ -2,6 +2,7 @@ package auth
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -445,6 +446,60 @@ func TestAuthorizerCache_ExpiringEntry(t *testing.T) {
 				assert.ErrorIs(t, err, tc.wantErr)
 				assert.True(t, tc.assertOpts(t, opts))
 			})
+		})
+	}
+}
+
+func Benchmark(b *testing.B) {
+	opts := int32(0)
+
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt32(&opts, 1)
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(&TenantInfo{
+			AuthorizedParty: fmt.Sprintf("tester-%d", opts),
+			Environment:     fmt.Sprintf("env-%d", opts),
+			ID:              fmt.Sprintf("123-%d", opts),
+			Name:            fmt.Sprintf("functionname-%d", opts),
+		})
+	}))
+
+	authorizer := &APIAuthorizer{
+		httpClient: svr.Client(),
+		location:   svr.URL + "/environment/v1/tenant/%s",
+	}
+
+	benchmarks := []struct {
+		name          string
+		cacheProvider func() Authorizer
+	}{
+		{
+			name: "using Go cache",
+			cacheProvider: func() Authorizer {
+				goc, _ := NewGoCacheAuthorizer(authorizer, DefaultCacheTTL, DefaultCacheTTClean)
+				return goc
+			},
+		},
+		{
+			name: "using Big cache",
+			cacheProvider: func() Authorizer {
+				bigc, _ := NewBigCacheAuthorizer(authorizer, DefaultConfig)
+				return bigc
+			},
+		},
+	}
+	for _, bm := range benchmarks {
+		b.Run(bm.name, func(b *testing.B) {
+			a := bm.cacheProvider()
+			for i := 0; i < b.N; i++ {
+				sfx := b.N / 1000
+				_, _ = a.Authorize(
+					NewAccessToken(fmt.Sprintf("sometoken-%d", sfx)),
+					fmt.Sprintf("ident-%d", sfx),
+					fmt.Sprintf("namespace-%d", sfx),
+					fmt.Sprintf("fnName-%d", sfx),
+				)
+			}
 		})
 	}
 }
