@@ -12,7 +12,7 @@ import (
 	"github.com/suborbital/systemspec/system"
 )
 
-var DefaultConfig = bigcache.Config{
+var DefaultBigCacheConfig = bigcache.Config{
 	Shards:             1,
 	LifeWindow:         DefaultCacheTTL,
 	CleanWindow:        DefaultCacheTTClean,

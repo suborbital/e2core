@@ -94,7 +94,7 @@ func TestAuthorizerCache_ConcurrentRequests(t *testing.T) {
 				}
 
 				// NewGoCacheAuthorizer always returns nil error.
-				bigCacheAuthorizer, err := NewBigCacheAuthorizer(apiAuthorizer, DefaultConfig)
+				bigCacheAuthorizer, err := NewBigCacheAuthorizer(apiAuthorizer, DefaultBigCacheConfig)
 				require.NoError(t, err, "initialising new big cache authorizer")
 
 				wg := sync.WaitGroup{}
@@ -304,7 +304,7 @@ func TestAuthorizerCache(t *testing.T) {
 					location:   svr.URL + "/api/v2/tenant/%s",
 				}
 
-				bigCacheAuthorizer, err := NewBigCacheAuthorizer(apiAuthorizer, DefaultConfig)
+				bigCacheAuthorizer, err := NewBigCacheAuthorizer(apiAuthorizer, DefaultBigCacheConfig)
 				require.NoError(t, err, "new big cache authorizer")
 
 				for _, arg := range tc.args {
@@ -483,7 +483,7 @@ func Benchmark(b *testing.B) {
 		{
 			name: "using Big cache",
 			cacheProvider: func() Authorizer {
-				bigc, _ := NewBigCacheAuthorizer(authorizer, DefaultConfig)
+				bigc, _ := NewBigCacheAuthorizer(authorizer, DefaultBigCacheConfig)
 				return bigc
 			},
 		},

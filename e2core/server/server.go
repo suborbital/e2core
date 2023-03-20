@@ -72,7 +72,7 @@ func New(l zerolog.Logger, sync *syncer.Syncer, opts *options.Options) (*Server,
 	if opts.AdminEnabled() {
 		authAPI := auth.NewApiAuthClient(opts)
 
-		authCache, err := auth.NewBigCacheAuthorizer(authAPI, auth.DefaultConfig)
+		authCache, err := auth.NewBigCacheAuthorizer(authAPI, auth.DefaultBigCacheConfig)
 		if err != nil {
 			return nil, errors.Wrap(err, "auth.NewBigCacheAuthorizer")
 		}
