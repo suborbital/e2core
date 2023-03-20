@@ -72,10 +72,8 @@ func New(l zerolog.Logger, sync *syncer.Syncer, opts *options.Options) (*Server,
 	if opts.AdminEnabled() {
 		authAPI := auth.NewApiAuthClient(opts)
 
-		authCache, err := auth.NewBigCacheAuthorizer(authAPI, auth.DefaultBigCacheConfig)
-		if err != nil {
-			return nil, errors.Wrap(err, "auth.NewBigCacheAuthorizer")
-		}
+		// Go Cache authorizer always returns nil error.
+		authCache, _ := auth.NewGoCacheAuthorizer(authAPI, auth.DefaultCacheTTL, auth.DefaultCacheTTClean)
 
 		e.POST("/name/:ident/:namespace/:name", server.executePluginByNameHandler(), auth.AuthorizationMiddleware(authCache))
 	} else {
