@@ -2,6 +2,7 @@ package auth
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -10,7 +11,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/allegro/bigcache/v3"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/suborbital/e2core/foundation/common"
 )
@@ -18,44 +21,37 @@ import (
 type CompareAssertionFunc[T any] func(t *testing.T, actual T) bool
 
 func TestAuthorizerCache_ConcurrentRequests(t *testing.T) {
-	type args struct {
-		token string
-	}
+	const loopTimes = 1000
 
-	type test struct {
+	tests := []struct {
 		name       string
-		args       args
+		token      string
 		handler    http.HandlerFunc
 		assertOpts CompareAssertionFunc[uint64]
 		assertErr  assert.ErrorAssertionFunc
-	}
-
-	tests := []test{
+	}{
 		{
-			name: "Ensure duplicate requests are pipelined",
-			args: args{
-				token: "token",
-			},
+			name:  "Ensure duplicate requests are pipelined",
+			token: "token",
 			handler: func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)
 				_ = json.NewEncoder(w).Encode(&TenantInfo{
 					AuthorizedParty: "tester",
 					Environment:     "env",
 					ID:              "tnt",
+					Name:            "fnName",
 				})
 			},
 			assertOpts: func(t *testing.T, actual uint64) bool {
-				return assert.Equal(t, uint64(1), actual)
+				return assert.Equalf(t, uint64(1), actual, "expected %d, got %d", 1, actual)
 			},
 			assertErr: func(_ assert.TestingT, err error, _ ...interface{}) bool {
 				return err == nil
 			},
 		},
 		{
-			name: "Ensure non-credentialed requests are not dispatched",
-			args: args{
-				token: "",
-			},
+			name:  "Ensure non-credentialed requests are not dispatched",
+			token: "",
 			handler: func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)
 				_ = json.NewEncoder(w).Encode(&TenantInfo{})
@@ -68,17 +64,14 @@ func TestAuthorizerCache_ConcurrentRequests(t *testing.T) {
 			},
 		},
 		{
-			name: "Ensure denied requests return ErrAccess",
-			args: args{
-				token: "token",
-			},
+			name:  "Ensure denied requests return ErrAccess",
+			token: "token",
 			handler: func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusForbidden)
 			},
-			// Although each request is effectively sent at the same time this is ultimately up to the scheduler.
-			// We allow for up to 10% of the requests to go through to avoid flakiness in CI environments.
+			// A request denied response is not cached, which means all 1000 tries need to be accounted for.
 			assertOpts: func(t *testing.T, actual uint64) bool {
-				return assert.LessOrEqual(t, actual, uint64(100))
+				return assert.LessOrEqual(t, actual, uint64(loopTimes))
 			},
 			assertErr: func(_ assert.TestingT, err error, _ ...interface{}) bool {
 				return common.IsError(err, common.ErrAccess) || common.IsError(err, common.ErrCanceled)
@@ -86,34 +79,74 @@ func TestAuthorizerCache_ConcurrentRequests(t *testing.T) {
 		},
 	}
 
-	for _, tc := range tests {
-		var opts uint64 = 0
-		svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			atomic.AddUint64(&opts, 1)
-			tc.handler(w, r)
-		}))
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Run("using Big Cache", func(t *testing.T) {
+				var opts uint64 = 0
+				svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					atomic.AddUint64(&opts, 1)
+					test.handler(w, r)
+				}))
 
-		authorizer := &AuthzClient{
-			httpClient: svr.Client(),
-			location:   svr.URL + "/environment/v1/tenant/",
-			cache:      newAuthorizationCache(common.StableTime(time.Now()), 10*time.Minute),
-		}
+				apiAuthorizer := &APIAuthorizer{
+					httpClient: svr.Client(),
+					location:   svr.URL + "/environment/v1/tenant/%s",
+				}
 
-		var err error
-		wg := sync.WaitGroup{}
-		for i := 0; i < 1000; i++ {
-			wg.Add(1)
-			go func() {
-				_, err = authorizer.Authorize(NewAccessToken(tc.args.token), "env.app", "namespace", "mod")
-				wg.Done()
-			}()
-		}
-		wg.Wait()
+				// NewGoCacheAuthorizer always returns nil error.
+				bigCacheAuthorizer, err := NewBigCacheAuthorizer(apiAuthorizer, DefaultBigCacheConfig)
+				require.NoError(t, err, "initialising new big cache authorizer")
 
-		svr.Close()
+				wg := sync.WaitGroup{}
+				for i := 0; i < loopTimes; i++ {
+					wg.Add(1)
+					go func() {
+						_, err = bigCacheAuthorizer.Authorize(NewAccessToken(test.token), "env.app", "namespace", "mod")
+						wg.Done()
+					}()
+				}
+				wg.Wait()
 
-		tc.assertErr(t, err)
-		tc.assertOpts(t, opts)
+				svr.Close()
+
+				test.assertErr(t, err)
+				test.assertOpts(t, opts)
+			})
+
+			t.Run("using Go Cache", func(t *testing.T) {
+				var opts uint64 = 0
+				svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					atomic.AddUint64(&opts, 1)
+					test.handler(w, r)
+				}))
+
+				apiAuthorizer := &APIAuthorizer{
+					httpClient: svr.Client(),
+					location:   svr.URL + "/environment/v1/tenant/%s",
+				}
+
+				// NewGoCacheAuthorizer always returns nil error.
+				goCacheAuthorizer, err := NewGoCacheAuthorizer(apiAuthorizer, DefaultCacheTTL, DefaultCacheTTClean)
+				require.NoError(t, err, "initialising new go cache authorizer")
+
+				wg := sync.WaitGroup{}
+				for i := 0; i < 1000; i++ {
+					wg.Add(1)
+					go func() {
+						_, err = goCacheAuthorizer.Authorize(NewAccessToken(test.token), "env.app", "namespace", "mod")
+						wg.Done()
+					}()
+				}
+				wg.Wait()
+
+				svr.Close()
+
+				test.assertErr(t, err)
+				test.assertOpts(t, opts)
+			})
+
+		})
+
 	}
 }
 
@@ -211,7 +244,7 @@ func TestAuthorizerCache(t *testing.T) {
 			assertOpts: func(t *testing.T, actual uint64) bool {
 				return assert.Equal(t, uint64(3), actual)
 			},
-			wantErr: common.ErrAccess,
+			wantErr: ErrUnauthorized,
 		},
 		{
 			name: "Ensure success after failure",
@@ -258,38 +291,66 @@ func TestAuthorizerCache(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		var opts uint64 = 0
-		svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			atomic.AddUint64(&opts, 1)
-			tc.handler(w, r)
-		}))
+		t.Run(tc.name, func(t *testing.T) {
+			t.Run("using Big cache", func(t *testing.T) {
+				var opts uint64 = 0
+				svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					atomic.AddUint64(&opts, 1)
+					tc.handler(w, r)
+				}))
 
-		authorizer := &AuthzClient{
-			httpClient: svr.Client(),
-			location:   svr.URL + "/api/v2/tenant/",
-			cache:      newAuthorizationCache(common.StableTime(time.Now()), 10*time.Minute),
-		}
+				apiAuthorizer := &APIAuthorizer{
+					httpClient: svr.Client(),
+					location:   svr.URL + "/api/v2/tenant/%s",
+				}
 
-		var err error
-		for _, arg := range tc.args {
-			_, err = authorizer.Authorize(NewAccessToken(arg.token), arg.identifier, arg.namespace, arg.mod)
-		}
+				bigCacheAuthorizer, err := NewBigCacheAuthorizer(apiAuthorizer, DefaultBigCacheConfig)
+				require.NoError(t, err, "new big cache authorizer")
 
-		svr.Close()
+				for _, arg := range tc.args {
+					_, err = bigCacheAuthorizer.Authorize(NewAccessToken(arg.token), arg.identifier, arg.namespace, arg.mod)
+				}
 
-		assert.ErrorIs(t, err, tc.wantErr)
-		assert.True(t, tc.assertOpts(t, opts))
+				svr.Close()
+
+				assert.ErrorIs(t, err, tc.wantErr)
+				assert.True(t, tc.assertOpts(t, opts))
+			})
+
+			t.Run("using Big Cache", func(t *testing.T) {
+				var opts uint64 = 0
+				svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					atomic.AddUint64(&opts, 1)
+					tc.handler(w, r)
+				}))
+
+				apiAuthorizer := &APIAuthorizer{
+					httpClient: svr.Client(),
+					location:   svr.URL + "/api/v2/tenant/%s",
+				}
+
+				goCacheAuthorizer, _ := NewGoCacheAuthorizer(apiAuthorizer, DefaultCacheTTL, DefaultCacheTTClean)
+
+				var err error
+				for _, arg := range tc.args {
+					_, err = goCacheAuthorizer.Authorize(NewAccessToken(arg.token), arg.identifier, arg.namespace, arg.mod)
+				}
+
+				svr.Close()
+
+				assert.ErrorIs(t, err, tc.wantErr)
+				assert.True(t, tc.assertOpts(t, opts))
+			})
+
+		})
+
 	}
 }
 
 func TestAuthorizerCache_ExpiringEntry(t *testing.T) {
-	type args struct {
-		ttl time.Duration
-	}
-
 	type test struct {
 		name       string
-		args       args
+		ttl        time.Duration
 		handler    http.HandlerFunc
 		assertOpts CompareAssertionFunc[uint64]
 		wantErr    error
@@ -298,7 +359,7 @@ func TestAuthorizerCache_ExpiringEntry(t *testing.T) {
 	tests := []test{
 		{
 			name: "Ensure expired tokens are refreshed",
-			args: args{ttl: 1 * time.Second},
+			ttl:  1 * time.Second,
 			handler: func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)
 				_ = json.NewEncoder(w).Encode(&TenantInfo{
@@ -315,38 +376,130 @@ func TestAuthorizerCache_ExpiringEntry(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		var opts uint64 = 0
-		svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			atomic.AddUint64(&opts, 1)
-			tc.handler(w, r)
-		}))
+		t.Run(tc.name, func(t *testing.T) {
+			t.Run("using Go cache", func(t *testing.T) {
+				var opts uint64 = 0
+				svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					atomic.AddUint64(&opts, 1)
+					tc.handler(w, r)
+				}))
 
-		clock := common.StableTime(time.Now())
+				authorizer := &APIAuthorizer{
+					httpClient: svr.Client(),
+					location:   svr.URL + "/environment/v1/tenant/%s",
+				}
 
-		authzCache := newAuthorizationCache(clock, 10*time.Minute)
-		authzCache.clock = clock
+				goCacheAuthorizer, err := NewGoCacheAuthorizer(authorizer, tc.ttl, tc.ttl)
 
-		authorizer := &AuthzClient{
-			httpClient: svr.Client(),
-			location:   svr.URL + "/api/v2/tenant/",
-			cache:      authzCache,
-		}
+				// 1 auth op
+				_, err = goCacheAuthorizer.Authorize(NewAccessToken("token"), "env.app", "namespace", "mod")
+				_, err = goCacheAuthorizer.Authorize(NewAccessToken("token"), "env.app", "namespace", "mod")
+				_, err = goCacheAuthorizer.Authorize(NewAccessToken("token"), "env.app", "namespace", "mod")
 
-		// 1 auth op
-		_, err := authorizer.Authorize(NewAccessToken("token"), "env.app", "namespace", "mod")
-		_, err = authorizer.Authorize(NewAccessToken("token"), "env.app", "namespace", "mod")
-		_, err = authorizer.Authorize(NewAccessToken("token"), "env.app", "namespace", "mod")
+				time.Sleep(tc.ttl + time.Second)
 
-		clock.Tick(authzCache.ttl + 1*time.Second)
+				// 2 auth op
+				_, err = goCacheAuthorizer.Authorize(NewAccessToken("token"), "env.app", "namespace", "mod")
+				_, err = goCacheAuthorizer.Authorize(NewAccessToken("token"), "env.app", "namespace", "mod")
+				_, err = goCacheAuthorizer.Authorize(NewAccessToken("token"), "env.app", "namespace", "mod")
 
-		// 2 auth op
-		_, err = authorizer.Authorize(NewAccessToken("token"), "env.app", "namespace", "mod")
-		_, err = authorizer.Authorize(NewAccessToken("token"), "env.app", "namespace", "mod")
-		_, err = authorizer.Authorize(NewAccessToken("token"), "env.app", "namespace", "mod")
+				svr.Close()
 
-		svr.Close()
+				assert.ErrorIs(t, err, tc.wantErr)
+				assert.True(t, tc.assertOpts(t, opts))
+			})
 
-		assert.ErrorIs(t, err, tc.wantErr)
-		assert.True(t, tc.assertOpts(t, opts))
+			t.Run("using Big cache", func(t *testing.T) {
+				var opts uint64 = 0
+				svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					atomic.AddUint64(&opts, 1)
+					tc.handler(w, r)
+				}))
+
+				authorizer := &APIAuthorizer{
+					httpClient: svr.Client(),
+					location:   svr.URL + "/environment/v1/tenant/%s",
+				}
+
+				bigCacheAuthorizer, err := NewBigCacheAuthorizer(authorizer, bigcache.Config{
+					Shards:             1,
+					LifeWindow:         tc.ttl,
+					CleanWindow:        time.Second,
+					MaxEntriesInWindow: 200,
+					MaxEntrySize:       500,
+				})
+
+				// 1 auth op
+				_, err = bigCacheAuthorizer.Authorize(NewAccessToken("token"), "env.app", "namespace", "mod")
+				_, err = bigCacheAuthorizer.Authorize(NewAccessToken("token"), "env.app", "namespace", "mod")
+				_, err = bigCacheAuthorizer.Authorize(NewAccessToken("token"), "env.app", "namespace", "mod")
+
+				time.Sleep(tc.ttl + time.Second)
+
+				// 2 auth op
+				_, err = bigCacheAuthorizer.Authorize(NewAccessToken("token"), "env.app", "namespace", "mod")
+				_, err = bigCacheAuthorizer.Authorize(NewAccessToken("token"), "env.app", "namespace", "mod")
+				_, err = bigCacheAuthorizer.Authorize(NewAccessToken("token"), "env.app", "namespace", "mod")
+
+				svr.Close()
+
+				assert.ErrorIs(t, err, tc.wantErr)
+				assert.True(t, tc.assertOpts(t, opts))
+			})
+		})
+	}
+}
+
+func Benchmark(b *testing.B) {
+	opts := int32(0)
+
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt32(&opts, 1)
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(&TenantInfo{
+			AuthorizedParty: fmt.Sprintf("tester-%d", opts),
+			Environment:     fmt.Sprintf("env-%d", opts),
+			ID:              fmt.Sprintf("123-%d", opts),
+			Name:            fmt.Sprintf("functionname-%d", opts),
+		})
+	}))
+
+	authorizer := &APIAuthorizer{
+		httpClient: svr.Client(),
+		location:   svr.URL + "/environment/v1/tenant/%s",
+	}
+
+	benchmarks := []struct {
+		name          string
+		cacheProvider func() Authorizer
+	}{
+		{
+			name: "using Go cache",
+			cacheProvider: func() Authorizer {
+				goc, _ := NewGoCacheAuthorizer(authorizer, DefaultCacheTTL, DefaultCacheTTClean)
+				return goc
+			},
+		},
+		{
+			name: "using Big cache",
+			cacheProvider: func() Authorizer {
+				bigc, _ := NewBigCacheAuthorizer(authorizer, DefaultBigCacheConfig)
+				return bigc
+			},
+		},
+	}
+	for _, bm := range benchmarks {
+		b.Run(bm.name, func(b *testing.B) {
+			a := bm.cacheProvider()
+			for i := 0; i < b.N; i++ {
+				sfx := b.N / 1000
+				_, _ = a.Authorize(
+					NewAccessToken(fmt.Sprintf("sometoken-%d", sfx)),
+					fmt.Sprintf("ident-%d", sfx),
+					fmt.Sprintf("namespace-%d", sfx),
+					fmt.Sprintf("fnName-%d", sfx),
+				)
+			}
+		})
 	}
 }

@@ -70,7 +70,12 @@ func New(l zerolog.Logger, sync *syncer.Syncer, opts *options.Options) (*Server,
 	}
 
 	if opts.AdminEnabled() {
-		e.POST("/name/:ident/:namespace/:name", server.executePluginByNameHandler(), auth.AuthorizationMiddleware(opts))
+		authAPI := auth.NewApiAuthClient(opts)
+
+		// Go Cache authorizer always returns nil error.
+		authCache, _ := auth.NewGoCacheAuthorizer(authAPI, auth.DefaultCacheTTL, auth.DefaultCacheTTClean)
+
+		e.POST("/name/:ident/:namespace/:name", server.executePluginByNameHandler(), auth.AuthorizationMiddleware(authCache))
 	} else {
 		e.POST("/name/:ident/:namespace/:name", server.executePluginByNameHandler())
 		e.POST("/ref/:ref", server.executePluginByRefHandler(ll))
