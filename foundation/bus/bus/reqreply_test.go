@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/suborbital/e2core/foundation/bus/testutil"
 )
 
@@ -41,10 +43,11 @@ func TestRequestReplyAsync(t *testing.T) {
 
 	counter := testutil.NewAsyncCounter(10)
 
-	p1.Send(NewMsg(MsgTypeDefault, []byte("joey"))).OnReply(func(msg Message) error {
+	err := p1.Send(NewMsg(MsgTypeDefault, []byte("joey"))).OnReply(func(msg Message) error {
 		counter.Count()
 		return nil
 	})
+	require.NoError(t, err, "p1.Send encountered an error")
 
 	p2 := g.ConnectWithReplay()
 	p2.On(func(msg Message) error {
