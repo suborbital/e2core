@@ -1,6 +1,9 @@
 package auth
 
 import (
+	"sync"
+	"time"
+
 	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 
@@ -11,10 +14,14 @@ import (
 type GoCacheAuthorizer struct {
 	cache    *cache.Cache
 	embedded Authorizer
+	mtx      *sync.Mutex
 }
 
 // Authorize implements the Authorizer interface for GoCacheAuthorizer.
 func (g GoCacheAuthorizer) Authorize(token system.Credential, identifier, namespace, name string) (TenantInfo, error) {
+	g.mtx.Lock()
+	defer g.mtx.Unlock()
+
 	// construct key to check / retrieve / set value by.
 	key, err := deriveKey(token, identifier, namespace, name)
 	if err != nil {
@@ -52,9 +59,10 @@ func (g GoCacheAuthorizer) Authorize(token system.Credential, identifier, namesp
 // NewGoCacheAuthorizer returns a cache implementation of the Authorizer interface that wraps another Authorizer
 // implementation (expected to be the Authz client). The error is not used, but leaving it here to match the signature
 // of the Authz, and BigCache implementation constructors.
-func NewGoCacheAuthorizer(embedded Authorizer) (*GoCacheAuthorizer, error) {
+func NewGoCacheAuthorizer(embedded Authorizer, ttl, cleanTTL time.Duration) (*GoCacheAuthorizer, error) {
 	return &GoCacheAuthorizer{
-		cache:    cache.New(DefaultCacheTTL, DefaultCacheTTClean),
+		cache:    cache.New(ttl, cleanTTL),
 		embedded: embedded,
+		mtx:      &sync.Mutex{},
 	}, nil
 }
