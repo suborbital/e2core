@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"path/filepath"
@@ -9,10 +8,14 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
 
-	"github.com/suborbital/e2core/e2core/options"
-	"github.com/suborbital/e2core/foundation/common"
 	"github.com/suborbital/systemspec/system"
+)
+
+const (
+	DefaultCacheTTL     = 10 * time.Minute
+	DefaultCacheTTClean = 2 * time.Minute
 )
 
 type TenantInfo struct {
@@ -22,9 +25,11 @@ type TenantInfo struct {
 	Name            string `json:"name"`
 }
 
-func AuthorizationMiddleware(opts *options.Options) echo.MiddlewareFunc {
-	authorizer := NewApiAuthClient(opts)
+type Authorizer interface {
+	Authorize(token system.Credential, identifier, namespace, name string) (TenantInfo, error)
+}
 
+func AuthorizationMiddleware(authorizer Authorizer) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			identifier := c.Param("ident")
@@ -40,63 +45,6 @@ func AuthorizationMiddleware(opts *options.Options) echo.MiddlewareFunc {
 
 			return next(c)
 		}
-	}
-}
-
-func NewApiAuthClient(opts *options.Options) *AuthzClient {
-	return &AuthzClient{
-		httpClient: &http.Client{
-			Timeout:   20 * time.Second,
-			Transport: http.DefaultTransport,
-		},
-		location: opts.ControlPlane + "/environment/v1/tenant/",
-		cache:    NewAuthorizationCache(opts.AuthCacheTTL),
-	}
-}
-
-type AuthzClient struct {
-	location   string
-	httpClient *http.Client
-	cache      *AuthorizationCache
-}
-
-func (client *AuthzClient) Authorize(token system.Credential, identifier, namespace, name string) (*TenantInfo, error) {
-	if token == nil {
-		return nil, common.Error(common.ErrAccess, "no credentials provided")
-	}
-
-	key := filepath.Join(identifier, namespace, name, token.Value())
-
-	return client.cache.Get(key, client.loadAuth(token, identifier))
-}
-
-func (client *AuthzClient) loadAuth(token system.Credential, identifier string) func() (*TenantInfo, error) {
-	return func() (*TenantInfo, error) {
-		authzReq, err := http.NewRequest(http.MethodGet, client.location+identifier, nil)
-		if err != nil {
-			return nil, common.Error(err, "post authorization request")
-		}
-
-		// pass token along
-		headerVal := fmt.Sprintf("%s %s", token.Scheme(), token.Value())
-		authzReq.Header.Set(http.CanonicalHeaderKey("Authorization"), headerVal)
-
-		resp, err := client.httpClient.Do(authzReq)
-		if err != nil {
-			return nil, common.Error(err, "dispatch remote authz request")
-		}
-
-		if resp.StatusCode != http.StatusOK {
-			return nil, common.Error(common.ErrAccess, "non-200 response %d for authorization service", resp.StatusCode)
-		}
-		defer resp.Body.Close()
-
-		var claims *TenantInfo
-		if err = json.NewDecoder(resp.Body).Decode(&claims); err != nil {
-			return nil, common.Error(err, "deserialized authorization response")
-		}
-
-		return claims, nil
 	}
 }
 
@@ -145,4 +93,14 @@ func ExtractAccessToken(header http.Header) system.Credential {
 		scheme: authInfo[:splitAt],
 		value:  authInfo[splitAt+1:],
 	}
+}
+
+// deriveKey is a utility function that takes a system.Credential token, identifier, namespace, and plugin name as args
+// and returns one long string we can use as cache keys.
+func deriveKey(token system.Credential, identifier, namespace, name string) (string, error) {
+	if token == nil {
+		return "", errors.New("token provided was nil")
+	}
+
+	return filepath.Join(identifier, namespace, name, token.Value()), nil
 }
