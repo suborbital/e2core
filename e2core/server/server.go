@@ -30,6 +30,7 @@ type Server struct {
 	dispatcher *dispatcher
 
 	options *options.Options
+	logger  zerolog.Logger
 }
 
 // New creates a new Server instance.
@@ -67,6 +68,7 @@ func New(l zerolog.Logger, sync *syncer.Syncer, opts *options.Options) (*Server,
 		options:    opts,
 		bus:        b,
 		dispatcher: d,
+		logger:     ll,
 	}
 
 	if opts.AdminEnabled() {
