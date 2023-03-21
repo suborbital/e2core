@@ -17,8 +17,15 @@ func (s *Server) executePluginByNameHandler() echo.HandlerFunc {
 		namespace := ReadParam(c, "namespace")
 		name := ReadParam(c, "name")
 
+		ll := s.logger.With().
+			Str("ident", ident).
+			Str("namespace", namespace).
+			Str("fn", name).
+			Logger()
+
 		mod := s.syncer.GetModuleByName(ident, namespace, name)
 		if mod == nil {
+			ll.Error().Msg("syncer did not find module by these details")
 			return echo.NewHTTPError(http.StatusNotFound, "module not found")
 		}
 
@@ -31,6 +38,10 @@ func (s *Server) executePluginByNameHandler() echo.HandlerFunc {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to handle request").SetInternal(err)
 		}
+
+		ll.Info().
+			Str("fqmn", mod.FQMN).
+			Msg("found module with fqmn")
 
 		steps := []tenant.WorkflowStep{{FQMN: mod.FQMN}}
 
