@@ -106,7 +106,7 @@ func (s *Server) executePluginByRefHandler(l zerolog.Logger) echo.HandlerFunc {
 		}
 
 		if err := s.dispatcher.Execute(seq); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "failed to execute plugin")
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to execute plugin").SetInternal(err)
 		}
 
 		// handle any response headers that were set by the Runnables.
