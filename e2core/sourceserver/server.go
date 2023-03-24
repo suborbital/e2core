@@ -156,9 +156,9 @@ func (es *SystemSourceRouter) GetModuleHandler() echo.HandlerFunc {
 			es.logger.Err(err).Msg("es.source.GetModule")
 
 			if errors.Is(err, system.ErrModuleNotFound) {
-				return echo.NewHTTPError(http.StatusNotFound)
+				return echo.NewHTTPError(http.StatusNotFound).SetInternal(err)
 			} else if errors.Is(err, system.ErrAuthenticationFailed) {
-				return echo.NewHTTPError(http.StatusUnauthorized)
+				return echo.NewHTTPError(http.StatusUnauthorized).SetInternal(err)
 			}
 
 			return echo.NewHTTPError(http.StatusInternalServerError).SetInternal(errors.Wrap(err, "es.source.GetModule"))
