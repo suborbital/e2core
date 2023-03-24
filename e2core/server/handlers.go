@@ -1,9 +1,11 @@
 package server
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 
 	"github.com/suborbital/e2core/e2core/sequence"
@@ -26,7 +28,7 @@ func (s *Server) executePluginByNameHandler() echo.HandlerFunc {
 		mod := s.syncer.GetModuleByName(ident, namespace, name)
 		if mod == nil {
 			ll.Error().Msg("syncer did not find module by these details")
-			return echo.NewHTTPError(http.StatusNotFound, "module not found")
+			return echo.NewHTTPError(http.StatusNotFound, "module not found").SetInternal(fmt.Errorf("no module with %s/%s/%s", ident, namespace, name))
 		}
 
 		req, err := request.FromEchoContext(c)
@@ -48,7 +50,7 @@ func (s *Server) executePluginByNameHandler() echo.HandlerFunc {
 		// a sequence executes the handler's steps and manages its state.
 		seq, err := sequence.New(steps, req)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "failed to handle request")
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to handle request").SetInternal(err)
 		}
 
 		if err := s.dispatcher.Execute(seq); err != nil {
@@ -82,7 +84,7 @@ func (s *Server) executePluginByRefHandler(l zerolog.Logger) echo.HandlerFunc {
 
 		mod := s.syncer.GetModuleByRef(ref)
 		if mod == nil {
-			return echo.NewHTTPError(http.StatusNotFound, "module not found")
+			return echo.NewHTTPError(http.StatusNotFound, "module not found").SetInternal(fmt.Errorf("no module by ref %s", ref))
 		}
 
 		ll.Debug().Str("fqmn", mod.FQMN).Msg("found module by ref")
@@ -102,7 +104,7 @@ func (s *Server) executePluginByRefHandler(l zerolog.Logger) echo.HandlerFunc {
 		// a sequence executes the handler's steps and manages its state.
 		seq, err := sequence.New(steps, req)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "failed to handle request")
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to handle request").SetInternal(err)
 		}
 
 		if err := s.dispatcher.Execute(seq); err != nil {
@@ -136,7 +138,7 @@ func (s *Server) executeWorkflowHandler() echo.HandlerFunc {
 
 		tnt := s.syncer.TenantOverview(ident)
 		if tnt == nil {
-			return echo.NewHTTPError(http.StatusNotFound, "not found")
+			return echo.NewHTTPError(http.StatusNotFound, "not found").SetInternal(fmt.Errorf("no tenant with ident %s", ident))
 		}
 
 		namespaces := []tenant.NamespaceConfig{tnt.Config.DefaultNamespace}
@@ -166,7 +168,7 @@ func (s *Server) executeWorkflowHandler() echo.HandlerFunc {
 		}
 
 		if workflow == nil {
-			return echo.NewHTTPError(http.StatusNotFound, "not found")
+			return echo.NewHTTPError(http.StatusNotFound, "not found").SetInternal(errors.New("workflow was nil"))
 		}
 
 		req, err := request.FromEchoContext(c)
