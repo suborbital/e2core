@@ -38,6 +38,36 @@ func TestPodFilter(t *testing.T) {
 	}
 }
 
+func TestPodFilterMessageSentBySelf(t *testing.T) {
+	g := New()
+
+	counter := testutil.NewAsyncCounter(100)
+
+	onFunc := func(msg Message) error {
+		counter.Count()
+
+		return nil
+	}
+
+	p1 := g.Connect()
+	p1.On(onFunc)
+
+	p2 := g.Connect()
+	//p2.On(onFunc)
+
+	p1.Send(NewMsg(MsgTypeDefault, []byte("hello p2")))
+	// Message sent by p1 should end up with self
+	if err := counter.Wait(0, 1); err != nil {
+		t.Error(err)
+	}
+
+	p2.Send(NewMsg(MsgTypeDefault, []byte("hello p1")))
+	// Message sent by p2 should end up with p1
+	if err := counter.Wait(1, 1); err != nil {
+		t.Error(err)
+	}
+}
+
 func TestWaitOn(t *testing.T) {
 	g := New()
 

@@ -7,7 +7,7 @@ const (
 // messageBus is responsible for emitting messages among the connected pods
 // and managing the failure cases for those pods
 type messageBus struct {
-	busChan MsgChan
+	busChan msgOriginChan
 	pool    *connectionPool
 	buffer  *MsgBuffer
 }
@@ -15,7 +15,7 @@ type messageBus struct {
 // newMessageBus creates a new messageBus
 func newMessageBus() *messageBus {
 	b := &messageBus{
-		busChan: make(chan Message, defaultBusChanSize),
+		busChan: make(chan messageWithOrigin, defaultBusChanSize),
 		pool:    newConnectionPool(),
 		buffer:  NewMsgBuffer(defaultBufferSize),
 	}
@@ -54,7 +54,7 @@ func (b *messageBus) start() {
 	}()
 }
 
-func (b *messageBus) traverse(msg Message, start *podConnection) {
+func (b *messageBus) traverse(msg messageWithOrigin, start *podConnection) {
 	startID := start.ID
 	conn := start
 

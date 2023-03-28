@@ -112,7 +112,7 @@ func (c *connectionPool) replayNext(buffer *MsgBuffer) {
 	next := c.peek()
 
 	// iterate over the buffer and send each message to the pod
-	buffer.Iter(func(msg Message) error {
+	buffer.Iter(func(msg messageWithOrigin) error {
 		next.send(msg)
 
 		return nil

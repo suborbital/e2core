@@ -10,10 +10,10 @@ type podConnection struct {
 	ID   int64
 	next *podConnection
 
-	messageChan  MsgChan
+	messageChan  msgOriginChan
 	feedbackChan MsgChan
 
-	failed []Message
+	failed []messageWithOrigin
 
 	lock      *sync.RWMutex
 	connected bool
@@ -35,7 +35,7 @@ func newPodConnection(id int64, pod *Pod) *podConnection {
 		next:         nil,
 		messageChan:  msgChan,
 		feedbackChan: feedbackChan,
-		failed:       make([]Message, 0),
+		failed:       make([]messageWithOrigin, 0),
 		lock:         &sync.RWMutex{},
 		connected:    true,
 	}
@@ -46,7 +46,7 @@ func newPodConnection(id int64, pod *Pod) *podConnection {
 // send asynchronously writes a message to a connection's messageChan
 // ordering to the messageChan if it becomes full is not guaranteed, this
 // is sacrificed to ensure that the bus does not block because of a delinquient pod
-func (p *podConnection) send(msg Message) {
+func (p *podConnection) send(msg messageWithOrigin) {
 	go func() {
 		p.lock.RLock()
 		defer p.lock.RUnlock()
@@ -80,7 +80,7 @@ func (p *podConnection) checkStatus() *connStatus {
 			} else if feedbackMsg == podFeedbackMsgDisconnect {
 				status.WantsDisconnect = true
 			} else {
-				p.failed = append(p.failed, feedbackMsg)
+				p.failed = append(p.failed, messageWithOrigin{Message: feedbackMsg})
 				status.Error = errFailedMessage
 			}
 		default:
@@ -113,7 +113,7 @@ func (p *podConnection) flushFailed() {
 	}
 
 	if len(p.failed) > 0 {
-		p.failed = make([]Message, 0)
+		p.failed = make([]messageWithOrigin, 0)
 	}
 }
 
