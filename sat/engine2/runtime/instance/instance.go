@@ -1,7 +1,7 @@
 package instance
 
 import (
-	"github.com/bytecodealliance/wasmtime-go"
+	"github.com/bytecodealliance/wasmtime-go/v7"
 	"github.com/pkg/errors"
 
 	"github.com/suborbital/e2core/foundation/scheduler"
