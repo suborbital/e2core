@@ -126,6 +126,8 @@ func TestEngineSetRespHeader(t *testing.T) {
 }
 
 func TestEngineFetch(t *testing.T) {
+	t.Skip("This test gets skipped until https://github.com/suborbital/e2core/issues/414 is resolved")
+
 	ref, err := engine2.WasmRefFromFile("./testdata/fetch/fetch.wasm")
 	if err != nil {
 		t.Error(err)

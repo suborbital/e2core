@@ -66,13 +66,20 @@ func (ip *InstancePool) RemoveInstance() error {
 
 // UseInstance provides an instance from the environment's pool to be used by a callback function
 func (ip *InstancePool) UseInstance(ctx *scheduler.Ctx, instFunc func(*instance.Instance, int32)) error {
-	// grab an instance from the available queue and then
-	// return it to the environment when finished
+	// grab an instance from the available queue
 	inst := <-ip.availableInstances
 
-	defer func() {
-		ip.availableInstances <- inst
+	go func() {
+		// prepare a new instance
+		if err := ip.AddInstance(); err != nil {
+			panic(err)
+		}
 	}()
+
+	defer func(it *instance.Instance) {
+		it.Close()
+		it = nil
+	}(inst)
 
 	// generate a random identifier as a reference to the instance in use to
 	// easily allow the Wasm module to reference itself when calling back over the FFI
