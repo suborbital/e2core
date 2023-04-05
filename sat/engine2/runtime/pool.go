@@ -76,10 +76,10 @@ func (ip *InstancePool) UseInstance(ctx *scheduler.Ctx, instFunc func(*instance.
 		}
 	}()
 
-	defer func() {
-		inst.Close()
-		inst = nil
-	}()
+	defer func(it *instance.Instance) {
+		it.Close()
+		it = nil
+	}(inst)
 
 	// generate a random identifier as a reference to the instance in use to
 	// easily allow the Wasm module to reference itself when calling back over the FFI
