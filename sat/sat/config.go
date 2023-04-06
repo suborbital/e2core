@@ -92,7 +92,7 @@ func ConfigFromModuleArg(logger zerolog.Logger, moduleArg string) (*Config, erro
 
 			cpModule, err := appClient.GetModule(moduleArg)
 			if err != nil {
-				return nil, errors.Wrap(err, "failed to GetModule")
+				return nil, errors.Wrapf(err, "appClient.GetModule(%s)", moduleArg)
 			}
 
 			module = cpModule
