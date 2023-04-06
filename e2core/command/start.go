@@ -21,7 +21,7 @@ import (
 	"github.com/suborbital/e2core/e2core/server"
 	"github.com/suborbital/e2core/e2core/sourceserver"
 	"github.com/suborbital/e2core/e2core/syncer"
-	"github.com/suborbital/systemspec/bundle"
+	"github.com/suborbital/systemspec/system/bundle"
 	"github.com/suborbital/systemspec/system/client"
 )
 
