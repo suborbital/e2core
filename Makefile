@@ -44,5 +44,8 @@ lintfixer:
 loadtest:
 	go run ./testingsupport/load/load-tester.go
 
+local:
+	docker build -f Dockerfile . -t e2core:local
+
 .PHONY: build e2core e2core/docker docker/dev docker/dev/multi docker/publish docker/builder example-project test lint \
 	lint/fix fix-imports
