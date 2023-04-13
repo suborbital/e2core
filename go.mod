@@ -10,7 +10,7 @@ require (
 	github.com/nats-io/nats.go v1.24.0
 	github.com/pkg/errors v0.9.1
 	github.com/plar/go-adaptive-radix-tree v1.0.5
-	github.com/rs/zerolog v1.29.0
+	github.com/rs/zerolog v1.29.1
 	github.com/schollz/peerdiscovery v1.7.0
 	github.com/sethvargo/go-envconfig v0.9.0
 	github.com/spf13/cobra v1.6.1
