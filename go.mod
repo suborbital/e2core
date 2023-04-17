@@ -17,7 +17,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.8.2
 	github.com/suborbital/go-kit v0.0.8
-	github.com/suborbital/systemspec v0.0.6-0.20230222150219-bd9cbb5436e5
+	github.com/suborbital/systemspec v0.0.6-0.20230417142443-e3eac868bde2
 	github.com/testcontainers/testcontainers-go v0.19.0
 	github.com/twmb/franz-go v1.13.1
 	go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho v0.37.0
