@@ -13,8 +13,15 @@ import (
 
 func (s *Server) executePluginByNameHandler() echo.HandlerFunc {
 	return func(c echo.Context) error {
+
+		// with the authorization middleware, this is going to be the uuid of the tenant specified by the path name in
+		// the environment specified by the authorization token.
 		ident := ReadParam(c, "ident")
+
+		// this is coming from the path.
 		namespace := ReadParam(c, "namespace")
+
+		// this is coming from the path.
 		name := ReadParam(c, "name")
 
 		ll := s.logger.With().
@@ -82,6 +89,8 @@ func (s *Server) healthHandler() echo.HandlerFunc {
 	}
 }
 
+// ReadParam tries to grab the value by name from the echo context first, and if it doesn't find it, then it falls back
+// onto the path parameter.
 func ReadParam(ctx echo.Context, name string) string {
 	v := ctx.Get(name)
 	if v != nil {
