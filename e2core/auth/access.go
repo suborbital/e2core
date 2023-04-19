@@ -83,7 +83,7 @@ func (client *AuthzClient) loadAuth(token system.Credential, identifier string) 
 
 		// pass token along
 		headerVal := fmt.Sprintf("%s %s", token.Scheme(), token.Value())
-		authzReq.Header.Set(http.CanonicalHeaderKey("Authorization"), headerVal)
+		authzReq.Header.Set("Authorization", headerVal)
 
 		resp, err := client.httpClient.Do(authzReq)
 		if err != nil {
