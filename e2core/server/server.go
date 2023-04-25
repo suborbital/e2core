@@ -71,7 +71,6 @@ func New(l zerolog.Logger, sync *syncer.Syncer, opts *options.Options) (*Server,
 		logger:     ll,
 	}
 
-	fmt.Printf("admin is enabled in e2core")
 	e.POST("/name/:ident/:namespace/:name", server.executePluginByNameHandler(), auth.AuthorizationMiddleware(opts))
 
 	e.GET("/health", server.healthHandler())
