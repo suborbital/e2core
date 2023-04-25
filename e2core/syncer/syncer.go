@@ -14,10 +14,6 @@ import (
 
 var EmptyModules = make([]tenant.Module, 0)
 
-type tenantName string
-type environmentRef string
-type tenantRef string
-
 // Syncer keeps an in-memory cache of the system state such that the coordinator and orchestrator
 // can get up-to-date information about the world.
 type Syncer struct {
@@ -27,12 +23,11 @@ type Syncer struct {
 }
 
 type syncJob struct {
-	systemSource   system.Source
-	state          *system.State
-	tenantIdents   map[string]int64
-	tenantMappings map[tenantName]map[environmentRef]tenantRef
-	overviews      map[string]*system.TenantOverview
-	modules        map[string]tenant.Module
+	systemSource system.Source
+	state        *system.State
+	tenantIdents map[string]int64
+	overviews    map[string]*system.TenantOverview
+	modules      map[string]tenant.Module
 
 	log  zerolog.Logger
 	lock *sync.RWMutex
@@ -46,14 +41,13 @@ func New(opts *options.Options, logger zerolog.Logger, source system.Source) *Sy
 	}
 
 	s.job = &syncJob{
-		systemSource:   source,
-		state:          &system.State{},
-		tenantIdents:   make(map[string]int64),
-		tenantMappings: make(map[tenantName]map[environmentRef]tenantRef),
-		overviews:      make(map[string]*system.TenantOverview),
-		modules:        make(map[string]tenant.Module),
-		log:            logger.With().Str("module", "syncJob").Logger(),
-		lock:           &sync.RWMutex{},
+		systemSource: source,
+		state:        &system.State{},
+		tenantIdents: make(map[string]int64),
+		overviews:    make(map[string]*system.TenantOverview),
+		modules:      make(map[string]tenant.Module),
+		log:          logger.With().Str("module", "syncJob").Logger(),
+		lock:         &sync.RWMutex{},
 	}
 
 	s.sched.Register("sync", s.job)
@@ -124,14 +118,6 @@ func (s *syncJob) Run(job scheduler.Job, ctx *scheduler.Ctx) (interface{}, error
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to app.TenantOverview for %s", ident)
 		}
-
-		// add to the mapping
-		_, ok := s.tenantMappings[tenantName(tnt.Name)]
-		if !ok {
-			s.tenantMappings[tenantName(tnt.Name)] = make(map[environmentRef]tenantRef)
-		}
-
-		s.tenantMappings[tenantName(tnt.Name)][environmentRef(tnt.Environment)] = tenantRef(ident)
 
 		if tnt.Config.Modules == nil {
 			tnt.Config.Modules = EmptyModules

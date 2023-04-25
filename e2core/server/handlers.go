@@ -13,7 +13,6 @@ import (
 
 func (s *Server) executePluginByNameHandler() echo.HandlerFunc {
 	return func(c echo.Context) error {
-
 		// with the authorization middleware, this is going to be the uuid of the tenant specified by the path name in
 		// the environment specified by the authorization token.
 		ident := ReadParam(c, "ident")
