@@ -27,7 +27,7 @@ func (s *Sat) handleFnResult(msg bus.Message, result interface{}, fnErr error) {
 	// first unmarshal the request and sequence information
 	req, err := request.FromJSON(msg.Data())
 	if err != nil {
-		ll.Err(err).Msg("request.FromJSON")
+		ll.Err(err).Bytes("message", msg.Data()).Msg("request.FromJSON")
 		return
 	}
 
