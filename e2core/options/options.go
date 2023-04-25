@@ -7,7 +7,6 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sethvargo/go-envconfig"
-	"golang.org/x/exp/slices"
 )
 
 const (
@@ -157,8 +156,4 @@ func (o *Options) finalize() error {
 	o.TracerConfig = envOpts.TracerConfig
 
 	return nil
-}
-
-func (o *Options) AdminEnabled() bool {
-	return slices.Contains(o.Features, FeatureMultiTenant)
 }

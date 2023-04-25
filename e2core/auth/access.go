@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -72,14 +73,17 @@ func (client *AuthzClient) Authorize(token system.Credential, identifier, namesp
 
 func (client *AuthzClient) loadAuth(token system.Credential, identifier string) func() (*TenantInfo, error) {
 	return func() (*TenantInfo, error) {
-		authzReq, err := http.NewRequest(http.MethodGet, client.location+identifier, nil)
+		ctx, cxl := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cxl()
+
+		authzReq, err := http.NewRequestWithContext(ctx, http.MethodGet, client.location+identifier, nil)
 		if err != nil {
 			return nil, common.Error(err, "post authorization request")
 		}
 
 		// pass token along
 		headerVal := fmt.Sprintf("%s %s", token.Scheme(), token.Value())
-		authzReq.Header.Set(http.CanonicalHeaderKey("Authorization"), headerVal)
+		authzReq.Header.Set("Authorization", headerVal)
 
 		resp, err := client.httpClient.Do(authzReq)
 		if err != nil {

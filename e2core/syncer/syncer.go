@@ -72,8 +72,7 @@ func (s *Syncer) Start() error {
 }
 
 // Run runs a sync job
-func (s *syncJob) Run(job scheduler.Job, ctx *scheduler.Ctx) (interface{}, error) {
-
+func (s *syncJob) Run(_ scheduler.Job, _ *scheduler.Ctx) (interface{}, error) {
 	state, err := s.systemSource.State()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to systemSource.State")

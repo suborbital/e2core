@@ -71,13 +71,7 @@ func New(l zerolog.Logger, sync *syncer.Syncer, opts *options.Options) (*Server,
 		logger:     ll,
 	}
 
-	if opts.AdminEnabled() {
-		e.POST("/name/:ident/:namespace/:name", server.executePluginByNameHandler(), auth.AuthorizationMiddleware(opts))
-	} else {
-		e.POST("/name/:ident/:namespace/:name", server.executePluginByNameHandler())
-		e.POST("/ref/:ref", server.executePluginByRefHandler(ll))
-		e.POST("/workflow/:ident/:namespace/:name", server.executeWorkflowHandler())
-	}
+	e.POST("/name/:ident/:namespace/:name", server.executePluginByNameHandler(), auth.AuthorizationMiddleware(opts))
 
 	e.GET("/health", server.healthHandler())
 

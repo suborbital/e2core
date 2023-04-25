@@ -9,7 +9,7 @@ import (
 	"github.com/rs/zerolog"
 
 	"github.com/suborbital/go-kit/web/mid"
-	"github.com/suborbital/systemspec/bundle"
+	"github.com/suborbital/systemspec/system/bundle"
 )
 
 func FromBundle(bundlePath string) (*echo.Echo, error) {
