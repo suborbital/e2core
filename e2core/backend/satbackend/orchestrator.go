@@ -126,10 +126,17 @@ func (o *Orchestrator) reconcileConstellation(syncer *syncer.Syncer) {
 
 			satWatcher := o.sats[module.FQMN]
 
-			launch := func() {
-				ll.Debug().Str("moduleFQMN", module.FQMN).Msg("launching sat")
+			satWatcher.deadListLock.Lock()
+			for deadPort := range satWatcher.deadList {
+				_ = satWatcher.terminateInstance(deadPort)
+			}
+			satWatcher.deadList = make(map[string]struct{})
+			satWatcher.deadListLock.Unlock()
 
+			launch := func() {
 				cmd, port := modStartCommand(module)
+
+				ll.Debug().Str("moduleFQMN", module.FQMN).Str("port", port).Msg("launching sat")
 
 				connectionsEnv := ""
 				if module.Namespace == "default" {
@@ -137,7 +144,7 @@ func (o *Orchestrator) reconcileConstellation(syncer *syncer.Syncer) {
 				}
 
 				// repeat forever in case the command does error out
-				processUUID, cxl, err := exec.Run(
+				processUUID, cxl, wait, err := exec.Run(
 					cmd,
 					"SAT_HTTP_PORT="+port,
 					"SAT_CONTROL_PLANE="+o.opts.ControlPlane,
@@ -147,6 +154,20 @@ func (o *Orchestrator) reconcileConstellation(syncer *syncer.Syncer) {
 					ll.Err(err).Str("moduleFQMN", module.FQMN).Msg("exec.Run failed for sat instance")
 					return
 				}
+
+				go func() {
+					err := wait()
+					if err != nil {
+						ll.Err(err).Str("moduleFQMN", module.FQMN).Str("port", port).Msg("calling waitfunc for the module failed")
+					}
+
+					err = satWatcher.addToDead(port)
+					if err != nil {
+						ll.Err(err).Str("moduleFQMN", module.FQMN).Str("port", port).Msg("adding the port to the dead list")
+					}
+
+					ll.Info().Str("moduleFQMN", module.FQMN).Str("port", port).Msg("added port to dead list")
+				}()
 
 				satWatcher.add(module.FQMN, port, processUUID, cxl)
 
