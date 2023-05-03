@@ -1,21 +1,25 @@
 package satbackend
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
-	"syscall"
 	"time"
 
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 
-	"github.com/suborbital/e2core/e2core/backend/satbackend/process"
 	"github.com/suborbital/e2core/foundation/scheduler"
 )
 
-var httpClient = http.Client{Timeout: time.Second}
+var (
+	httpClient      = http.Client{Timeout: time.Second}
+	errScaleDown    = errors.New("scaling down watcher by removing a random instance")
+	errTerminateAll = errors.New("terminating all instances in watcher")
+	errTerminateOne = errors.New("terminating this specific instance")
+)
 
 // MetricsResponse is a response that backend instances use to report their status
 type MetricsResponse struct {
@@ -33,7 +37,7 @@ type instance struct {
 	fqmn    string
 	metrics *MetricsResponse
 	uuid    string
-	pid     int
+	cxl     context.CancelCauseFunc
 }
 
 type watcherReport struct {
@@ -52,63 +56,49 @@ func newWatcher(fqmn string, log zerolog.Logger) *watcher {
 }
 
 // add inserts a new instance to the watched pool.
-func (w *watcher) add(fqmn, port, uuid string, pid int) {
+func (w *watcher) add(fqmn, port, uuid string, cxl context.CancelCauseFunc) {
 	w.instances[port] = &instance{
 		fqmn: fqmn,
 		uuid: uuid,
-		pid:  pid,
+		cxl:  cxl,
 	}
 }
 
 // scaleDown terminates one random instance from the pool
-func (w *watcher) scaleDown() error {
+func (w *watcher) scaleDown() {
 	ll := w.log.With().Str("module", "scaleDown").Logger()
 	// we use the range to get a semi-random instance
 	// and then immediately return so that we only terminate one
 	for p := range w.instances {
 		ll.Debug().Str("fqmn", w.instances[p].fqmn).Str("port", p).Msg("scaling down, terminating instance")
 
-		return w.terminateInstance(p)
-	}
+		w.instances[p].cxl(errScaleDown)
 
-	return nil
+		break
+	}
 }
 
-func (w *watcher) terminate() error {
+func (w *watcher) terminate() {
 	ll := w.log.With().Str("method", "terminate").Logger()
-	var err error
 	for p, instance := range w.instances {
 		ll.Debug().Str("port", p).Msg("terminating instance")
 
-		err = w.terminateInstance(p)
-		if err != nil {
-			ll.Err(err).Str("fqmn", instance.fqmn).Msg("could not terminate instance")
-		}
-	}
+		instance.cxl(errTerminateAll)
 
-	return err
+		delete(w.instances, p)
+	}
 }
 
 // terminateInstance terminates the instance from the given port
 func (w *watcher) terminateInstance(p string) error {
-	ll := w.log.With().Str("method", "terminateInstance").Logger()
-
 	inst, ok := w.instances[p]
 	if !ok {
 		return fmt.Errorf("there isn't an instance on port %s", p)
 	}
 
-	if err := syscall.Kill(inst.pid, syscall.SIGTERM); err != nil {
-		ll.Warn().Int("pid", inst.pid).Msg("syscall.Kill for pid failed, will delete procfile")
-
-		if err := process.Delete(inst.uuid); err != nil {
-			return errors.Wrapf(err, "failed to process.Delete for port %s / fqmn %s", p, inst.fqmn)
-		}
-	}
+	inst.cxl(errTerminateOne)
 
 	delete(w.instances, p)
-
-	ll.Debug().Str("port", p).Str("fqmn", inst.fqmn).Msg("successfully terminated instance")
 
 	return nil
 }

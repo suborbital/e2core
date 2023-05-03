@@ -70,10 +70,7 @@ loop:
 
 	for _, s := range o.sats {
 		ll.Debug().Str("satFQMN", s.fqmn).Msg("terminating sat instance")
-		err := s.terminate()
-		if err != nil {
-			ll.Fatal().Str("satFQMN", s.fqmn).Err(err).Msg("terminating sats failed")
-		}
+		s.terminate()
 	}
 
 	o.wg.Done()
@@ -140,19 +137,18 @@ func (o *Orchestrator) reconcileConstellation(syncer *syncer.Syncer) {
 				}
 
 				// repeat forever in case the command does error out
-				uuid, pid, err := exec.Run(
+				processUUID, cxl, err := exec.Run(
 					cmd,
 					"SAT_HTTP_PORT="+port,
 					"SAT_CONTROL_PLANE="+o.opts.ControlPlane,
 					"SAT_CONNECTIONS="+connectionsEnv,
 				)
-
 				if err != nil {
 					ll.Err(err).Str("moduleFQMN", module.FQMN).Msg("exec.Run failed for sat instance")
 					return
 				}
 
-				satWatcher.add(module.FQMN, port, uuid, pid)
+				satWatcher.add(module.FQMN, port, processUUID, cxl)
 
 				ll.Debug().Str("moduleFQMN", module.FQMN).Str("port", port).Msg("successfully started sat")
 			}

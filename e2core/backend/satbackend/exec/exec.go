@@ -1,11 +1,11 @@
 package exec
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
 	"strings"
-	"syscall"
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
@@ -13,46 +13,28 @@ import (
 
 // Run runs a command, outputting to terminal and returning the full output and/or error
 // a channel is returned which, when sent on, will terminate the process that was started
-func Run(cmd string, env ...string) (string, int, error) {
-	// you can uncomment this below if you want to see exactly the commands being run
-	// fmt.Println("▶️", cmd)
-
-	parts := strings.Split(cmd, " ")
-
-	// add an environment variable with a UUID
-	// if the command is `sat`, then the var will be
-	// SAT_UUID=asdfghjkl
+func Run(cmd []string, env ...string) (string, context.CancelCauseFunc, error) {
 	procUUID := uuid.New().String()
-	uuidEnv := fmt.Sprintf("%s_UUID=%s", strings.ToUpper(parts[0]), procUUID)
+	uuidEnv := fmt.Sprintf("%s_UUID=%s", strings.ToUpper(cmd[0]), procUUID)
 	env = append(env, uuidEnv)
 
-	// logPath, err := logfilePath(procUUID)
-	// if err != nil {
-	// 	return "", 0, errors.Wrap(err, "failed to logFilePath")
-	// }
+	// Create a context with a cancel with cause functionality. Instead of reaping the process by killing by process id,
+	// we're going to call the cancel function for this process.
+	ctx, cxl := context.WithCancelCause(context.Background())
 
-	// logEnv := fmt.Sprintf("%s_LOG_FILE=%s", strings.ToUpper(parts[0]), logPath)
-	// env = append(env, logEnv)
+	// Set up the command. cmd[0] is e2core, 1:... is mod start <fqmn>.
+	command := exec.CommandContext(ctx, cmd[0], cmd[1:]...)
+	command.Env = env
+	command.Stdin = os.Stdin
+	command.Stdout = os.Stdout
+	command.Stderr = os.Stderr
 
-	// augment the provided env with the env of the parent
-	env = append(env, os.Environ()...)
-
-	binPath, err := exec.LookPath(parts[0])
+	err := command.Start()
 	if err != nil {
-		return "", 0, errors.Wrap(err, "failed to LookPath")
+		return "", nil, errors.Wrap(err, "command.Start()")
 	}
 
-	info := &syscall.ProcAttr{
-		Env:   env,
-		Files: []uintptr{os.Stdin.Fd(), os.Stdout.Fd(), os.Stderr.Fd()},
-	}
-
-	pid, err := syscall.ForkExec(binPath, parts, info)
-	if err != nil {
-		return "", 0, errors.Wrap(err, "failed to ForkExec")
-	}
-
-	return procUUID, pid, nil
+	return procUUID, cxl, nil
 }
 
 // this is unused but we may want to do logging-to-speficig-directory some time in the
