@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"go.opentelemetry.io/otel/trace"
@@ -73,6 +74,9 @@ func New(config *Config, logger zerolog.Logger, traceProvider trace.TracerProvid
 	}
 
 	sat.server = echo.New()
+	sat.server.Use(
+		middleware.Recover(),
+	)
 	sat.server.HTTPErrorHandler = kitError.Handler(logger)
 	sat.server.HideBanner = true
 
