@@ -32,8 +32,8 @@ type watcher struct {
 	fqmn             string
 	instances        map[string]*instance
 	log              zerolog.Logger
-	diedList         map[string]struct{}
-	diedListLock     sync.RWMutex
+	deadList         map[string]struct{}
+	deadListLock     sync.RWMutex
 	instancesRunning sync.WaitGroup
 }
 
@@ -56,22 +56,22 @@ func newWatcher(fqmn string, log zerolog.Logger) *watcher {
 		fqmn:             fqmn,
 		instances:        map[string]*instance{},
 		log:              log.With().Str("module", "watcher").Logger(),
-		diedList:         make(map[string]struct{}),
-		diedListLock:     sync.RWMutex{},
+		deadList:         make(map[string]struct{}),
+		deadListLock:     sync.RWMutex{},
 		instancesRunning: sync.WaitGroup{},
 	}
 }
 
-func (w *watcher) addDied(port string) error {
-	w.diedListLock.Lock()
-	defer w.diedListLock.Unlock()
+func (w *watcher) addToDead(port string) error {
+	w.deadListLock.Lock()
+	defer w.deadListLock.Unlock()
 
-	_, ok := w.diedList[port]
+	_, ok := w.deadList[port]
 	if ok {
-		return errors.New("port is already in the died list")
+		return errors.New("port is already in the dead list")
 	}
 
-	w.diedList[port] = struct{}{}
+	w.deadList[port] = struct{}{}
 	return nil
 }
 

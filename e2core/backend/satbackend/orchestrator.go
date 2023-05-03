@@ -126,15 +126,12 @@ func (o *Orchestrator) reconcileConstellation(syncer *syncer.Syncer) {
 
 			satWatcher := o.sats[module.FQMN]
 
-			ll.Info().Msg("starting the range over the things in the died channel")
-
-			satWatcher.diedListLock.Lock()
-			for diedPort := range satWatcher.diedList {
-				_ = satWatcher.terminateInstance(diedPort)
+			satWatcher.deadListLock.Lock()
+			for deadPort := range satWatcher.deadList {
+				_ = satWatcher.terminateInstance(deadPort)
 			}
-			satWatcher.diedList = make(map[string]struct{})
-			satWatcher.diedListLock.Unlock()
-			ll.Info().Msg("no more things, continuing reconciliation")
+			satWatcher.deadList = make(map[string]struct{})
+			satWatcher.deadListLock.Unlock()
 
 			launch := func() {
 				cmd, port := modStartCommand(module)
@@ -164,12 +161,12 @@ func (o *Orchestrator) reconcileConstellation(syncer *syncer.Syncer) {
 						ll.Err(err).Str("moduleFQMN", module.FQMN).Str("port", port).Msg("calling waitfunc for the module failed")
 					}
 
-					err = satWatcher.addDied(port)
+					err = satWatcher.addToDead(port)
 					if err != nil {
-						ll.Err(err).Str("moduleFQMN", module.FQMN).Str("port", port).Msg("adding the port to the died list")
+						ll.Err(err).Str("moduleFQMN", module.FQMN).Str("port", port).Msg("adding the port to the dead list")
 					}
 
-					ll.Info().Str("moduleFQMN", module.FQMN).Str("port", port).Msg("sent died message into channel")
+					ll.Info().Str("moduleFQMN", module.FQMN).Str("port", port).Msg("added port to dead list")
 				}()
 
 				satWatcher.add(module.FQMN, port, processUUID, cxl)
