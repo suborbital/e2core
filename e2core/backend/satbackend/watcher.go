@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/pkg/errors"
@@ -28,9 +29,12 @@ type MetricsResponse struct {
 
 // watcher watches a "replicaSet" of Sats for a single FQMN
 type watcher struct {
-	fqmn      string
-	instances map[string]*instance
-	log       zerolog.Logger
+	fqmn             string
+	instances        map[string]*instance
+	log              zerolog.Logger
+	diedList         map[string]struct{}
+	diedListLock     sync.RWMutex
+	instancesRunning sync.WaitGroup
 }
 
 type instance struct {
@@ -49,14 +53,38 @@ type watcherReport struct {
 // newWatcher creates a new watcher instance for the given fqmn
 func newWatcher(fqmn string, log zerolog.Logger) *watcher {
 	return &watcher{
-		fqmn:      fqmn,
-		instances: map[string]*instance{},
-		log:       log.With().Str("module", "watcher").Logger(),
+		fqmn:             fqmn,
+		instances:        map[string]*instance{},
+		log:              log.With().Str("module", "watcher").Logger(),
+		diedList:         make(map[string]struct{}),
+		diedListLock:     sync.RWMutex{},
+		instancesRunning: sync.WaitGroup{},
 	}
+}
+
+func (w *watcher) addDied(port string) error {
+	w.diedListLock.Lock()
+	defer w.diedListLock.Unlock()
+
+	_, ok := w.diedList[port]
+	if ok {
+		return errors.New("port is already in the died list")
+	}
+
+	w.diedList[port] = struct{}{}
+	return nil
 }
 
 // add inserts a new instance to the watched pool.
 func (w *watcher) add(fqmn, port, uuid string, cxl context.CancelCauseFunc) {
+	w.log.Info().Str("port", port).Str("fqmn", fqmn).Msg("adding one to the waitgroup port")
+	w.instancesRunning.Add(1)
+
+	i, ok := w.instances[port]
+	if ok {
+		w.log.Error().Str("port", port).Str("fqmn", fqmn).Str("uuid", uuid).Any("exising", i).Msg("!!!! Something already exists on this port !!!!")
+	}
+
 	w.instances[port] = &instance{
 		fqmn: fqmn,
 		uuid: uuid,
@@ -73,6 +101,9 @@ func (w *watcher) scaleDown() {
 		ll.Debug().Str("fqmn", w.instances[p].fqmn).Str("port", p).Msg("scaling down, terminating instance")
 
 		w.instances[p].cxl(errScaleDown)
+		delete(w.instances, p)
+		// same as wg.Done()
+		w.instancesRunning.Add(-1)
 
 		break
 	}
@@ -86,7 +117,10 @@ func (w *watcher) terminate() {
 		instance.cxl(errTerminateAll)
 
 		delete(w.instances, p)
+		w.instancesRunning.Add(-1)
 	}
+
+	w.instancesRunning.Wait()
 }
 
 // terminateInstance terminates the instance from the given port
@@ -99,6 +133,8 @@ func (w *watcher) terminateInstance(p string) error {
 	inst.cxl(errTerminateOne)
 
 	delete(w.instances, p)
+	w.log.Info().Str("port", p).Msg("removing one delta from the wait group")
+	w.instancesRunning.Add(-1)
 
 	return nil
 }
