@@ -166,7 +166,7 @@ func (o *Orchestrator) reconcileConstellation(syncer *syncer.Syncer) {
 
 					err = satWatcher.addDied(port)
 					if err != nil {
-						ll.Err(err).Str("moduleFQMN", module.FQMN).Str("port", port).Msg("adding the port to the died list thing")
+						ll.Err(err).Str("moduleFQMN", module.FQMN).Str("port", port).Msg("adding the port to the died list")
 					}
 
 					ll.Info().Str("moduleFQMN", module.FQMN).Str("port", port).Msg("sent died message into channel")
