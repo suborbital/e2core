@@ -3,7 +3,6 @@ package sat
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/attribute"
@@ -21,8 +20,6 @@ import (
 // the result is passed into this function for handling
 func (s *Sat) handleFnResult(msg bus.Message, result interface{}, fnErr error) {
 	ll := s.logger.With().Str("method", "handleFnResult").Logger()
-
-	fmt.Println(string(msg.Data()))
 
 	// first unmarshal the request and sequence information
 	req, err := request.FromJSON(msg.Data())
