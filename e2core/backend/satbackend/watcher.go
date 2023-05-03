@@ -82,7 +82,7 @@ func (w *watcher) add(fqmn, port, uuid string, cxl context.CancelCauseFunc) {
 
 	i, ok := w.instances[port]
 	if ok {
-		w.log.Error().Str("port", port).Str("fqmn", fqmn).Str("uuid", uuid).Any("exising", i).Msg("!!!! Something already exists on this port !!!!")
+		w.log.Error().Str("port", port).Str("fqmn", fqmn).Str("uuid", uuid).Any("existing", i).Msg("omething already exists on this port")
 	}
 
 	w.instances[port] = &instance{
