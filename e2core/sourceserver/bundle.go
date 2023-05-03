@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 
@@ -30,6 +31,7 @@ func FromBundle(bundlePath string) (*echo.Echo, error) {
 	e.Use(
 		mid.UUIDRequestID(),
 		mid.Logger(l, nil),
+		middleware.Recover(),
 	)
 
 	rt := NewRouter(l, bs)

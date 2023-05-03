@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho"
@@ -58,6 +59,7 @@ func New(l zerolog.Logger, sync *syncer.Syncer, opts *options.Options) (*Server,
 	e.Use(
 		mid.UUIDRequestID(),
 		otelecho.Middleware("e2core"),
+		middleware.Recover(),
 	)
 
 	d := newDispatcher(ll, b.Connect())
