@@ -12,13 +12,18 @@ import (
 )
 
 // modStartCommand returns the command and the port string
-func modStartCommand(module tenant.Module) (string, string) {
+func modStartCommand(module tenant.Module) ([]string, string) {
 	port, err := randPort()
 	if err != nil {
 		log.Fatal(errors.Wrap(err, "failed to randPort"))
 	}
 
-	cmd := fmt.Sprintf("e2core mod start %s", module.FQMN)
+	cmd := []string{
+		"e2core",
+		"mod",
+		"start",
+		module.FQMN,
+	}
 
 	return cmd, port
 }
