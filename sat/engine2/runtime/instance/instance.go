@@ -135,6 +135,7 @@ func (w *Instance) UseCtx(ctx *scheduler.Ctx) {
 func (w *Instance) Close() {
 	w.inst = nil
 	w.ctx = nil
+	w.store = nil
 	w.resultChan = nil
 	w.errChan = nil
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"runtime/debug"
 	"syscall"
 	"time"
 
@@ -75,6 +76,10 @@ func ModStart() *cobra.Command {
 			signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
 
 			serverErrors := make(chan error, 1)
+
+			// Wasmtime mmaps huge chunks of memory per module instantiation, so we instruct the GC to aggressively
+			// reclaim memory to prevent OOMs
+			debug.SetGCPercent(15)
 
 			go func() {
 				l.Info().Msg("starting server")
