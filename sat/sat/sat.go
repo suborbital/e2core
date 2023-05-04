@@ -122,14 +122,17 @@ func (s *Sat) Start() error {
 }
 
 func (s *Sat) Shutdown() error {
-	s.logger.Info().Msg("sat shutting down")
+	ll := s.logger.With().Str("func", "Sat.Shutdown").Logger()
+
+	ll.Info().Msg("sat shutting down")
 
 	// stop Bus with a 3s delay between Withdraw and Stop (to allow in-flight requests to drain)
 	// s.server.Shutdown isn't called until all connections are ready to close (after said delay)
 	// this is needed to ensure a safe withdraw from the constellation/mesh
 	if s.transport != nil {
+		ll.Info().Msg("shutting down transport")
 		if err := s.bus.Withdraw(); err != nil {
-			s.logger.Err(err).Msg("encountered error during bus.Withdraw, will proceed")
+			ll.Err(err).Msg("encountered error during bus.Withdraw, will proceed")
 		}
 
 		time.Sleep(time.Second * 3)
@@ -137,18 +140,26 @@ func (s *Sat) Shutdown() error {
 		if err := s.bus.Stop(); err != nil {
 			s.logger.Err(err).Msg("encountered error during bus.Stop, will proceed")
 		}
+
+		ll.Info().Msg("transport shutdown finished")
 	}
 
+	ll.Info().Str("proc_uuid", s.config.ProcUUID).Msg("trying to process delete this process uuid")
 	if err := process.Delete(s.config.ProcUUID); err != nil {
 		s.logger.Err(err).Msg("encountered error during process.Delete, will proceed")
 	}
 
+	ll.Info().Str("proc_uuid", s.config.ProcUUID).Msg("process delete finished")
+
 	stopCtx, cxl := context.WithTimeout(context.Background(), time.Second)
 	defer cxl()
 
+	ll.Info().Msg("shutting down echo server")
 	if err := s.server.Shutdown(stopCtx); err != nil {
 		return errors.Wrap(err, "failed to echo.Shutdown()")
 	}
+
+	ll.Info().Msg("echo server shutdown completed, everything shut down. Good night!")
 
 	return nil
 }
