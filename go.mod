@@ -10,14 +10,14 @@ require (
 	github.com/nats-io/nats.go v1.24.0
 	github.com/pkg/errors v0.9.1
 	github.com/plar/go-adaptive-radix-tree v1.0.5
-	github.com/rs/zerolog v1.29.0
+	github.com/rs/zerolog v1.29.1
 	github.com/schollz/peerdiscovery v1.7.0
 	github.com/sethvargo/go-envconfig v0.9.0
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.8.2
 	github.com/suborbital/go-kit v0.0.8
-	github.com/suborbital/systemspec v0.0.6-0.20230418100216-a1181442e886
+	github.com/suborbital/systemspec v0.0.6-0.20230505133551-ea80207426d9
 	github.com/testcontainers/testcontainers-go v0.19.0
 	github.com/twmb/franz-go v1.13.1
 	go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho v0.37.0
