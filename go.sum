@@ -279,8 +279,8 @@ github.com/stretchr/testify v1.8.2 h1:+h33VjcLVPDHtOdpUCuF+7gSuG3yGIftsP1YvFihtJ
 github.com/stretchr/testify v1.8.2/go.mod h1:w2LPCIKwWwSfY2zedu0+kehJoqGctiVI29o6fzry7u4=
 github.com/suborbital/go-kit v0.0.8 h1:yBsxUAlizy46p/eeHM1BfJZgEyx+dbK5oUYKd1N9szQ=
 github.com/suborbital/go-kit v0.0.8/go.mod h1:1OWVnUwXri359OyolKOnthe8jetCQJY/daaObfwRaSs=
-github.com/suborbital/systemspec v0.0.6-0.20230505133551-ea80207426d9 h1:108i251rfeYhDOY5dL+S+Y/S/7iuhmJWx4OT9n11L2c=
-github.com/suborbital/systemspec v0.0.6-0.20230505133551-ea80207426d9/go.mod h1:gkoVF1aqMhO+RV6jXSg+gpWorOGii/01w3xOTdWJaxI=
+github.com/suborbital/systemspec v0.0.6-0.20230505144242-f7d9c52f5232 h1:A8hXXBKW6W4ylL2Fb7zVzTQNOOC3qpvb/HscVRYU+IU=
+github.com/suborbital/systemspec v0.0.6-0.20230505144242-f7d9c52f5232/go.mod h1:gkoVF1aqMhO+RV6jXSg+gpWorOGii/01w3xOTdWJaxI=
 github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635/go.mod h1:hkRG7XYTFWNJGYcbNJQlaLq0fg1yr4J4t/NcTQtrfww=
 github.com/testcontainers/testcontainers-go v0.19.0 h1:3bmFPuQRgVIQwxZJERyzB8AogmJW3Qzh8iDyfJbPhi8=
 github.com/testcontainers/testcontainers-go v0.19.0/go.mod h1:3YsSoxK0rGEUzbGD4gUVt1Nm3GJpCIq94GX+2LSf3d4=
