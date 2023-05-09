@@ -3,29 +3,86 @@ run:
   skip-dirs-use-default: true
   modules-download-mode: readonly
   allow-parallel-runners: true
+  go: '1.20'
 
 output:
   sort-results: true
 
+issues:
+  max-same-issues: 0
+
 linters:
   disable-all: true
   enable:
+    # heavy "this will leak memory" linters
+    - staticcheck
+    - typecheck
+    - gosec
+    - reassign
+    - bodyclose
+    # mostly whitespace / styling linters
     - gci
-    - unparam
-    - unused
-#    - errcheck
-#    - gosimple
-#    - ineffassign
-#    - staticcheck
-#    - structcheck
-#    - typecheck
-#    - varcheck
-
+    - ineffassign
+    - godot
+    - whitespace
+    - wsl
+    # fairly simple straight forward issue linters
+    - contextcheck
+    - noctx
+    - wrapcheck
+    # this is a complex one, see the linters.revive.rules
+    - revive
 linters-settings:
   gci:
-    no-inline-comments: true
-    no-prefix-comments: true
     sections:
       - standard
       - default
-      - prefix(github.com/suborbital)
+      - prefix(github.com/suborbital/se2)
+    custom-order: true
+  revive:
+    max-open-files: 2048
+    ignore-generated-header: true
+    severity: error
+    enable-all-rules: false
+    confidence: 0.1
+    rules:
+      # heavy "this will leak memory" linters
+      - name: deep-exit
+      - name: duplicated-imports
+        severity: error
+        disabled: false
+      - name: early-return
+      - name: exported
+      - name: identical-branches
+      - name: import-shadowing
+        severity: error
+        disabled: false
+      - name: modifies-parameter
+      - name: modifies-value-receiver
+      - name: nested-structs
+      - name: redefines-builtin-id
+      - name: superfluous-else
+      - name: unexported-return
+      - name: unhandled-error
+      - name: unnecessary-stmt
+      - name: unreachable-code
+      - name: unused-parameter
+      - name: unused-receiver
+      - name: context-keys-type
+      - name: defer
+      # mostly whitespace / styling linters
+      - name: comment-spacings
+      - name: empty-block
+      - name: empty-lines
+      # fairly simple straight forward issue linters
+      - name: add-constant
+        maxLitCount: 1
+      - name: bool-literal-in-expr
+      - name: context-as-argument # watch with this one, we might not be able to change order of args! here be dragons
+      - name: error-naming
+      - name: error-return
+      - name: error-strings
+      - name: errorf
+      - name: var-naming
+      - name: use-any
+      - name: useless-break
