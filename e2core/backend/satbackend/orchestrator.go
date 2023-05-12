@@ -149,6 +149,10 @@ func (o *Orchestrator) reconcileConstellation(syncer *syncer.Syncer) {
 					"SAT_HTTP_PORT="+port,
 					"SAT_CONTROL_PLANE="+o.opts.ControlPlane,
 					"SAT_CONNECTIONS="+connectionsEnv,
+					"SAT_TRACER_TYPE=collector",
+					"SAT_TRACER_SERVICENAME=e2core_bebby-"+port,
+					"SAT_TRACER_PROBABILITY=1",
+					"SAT_TRACER_COLLECTOR_ENDPOINT=http://host.docker.internal:4317",
 				)
 				if err != nil {
 					ll.Err(err).Str("moduleFQMN", module.FQMN).Msg("exec.Run failed for sat instance")
