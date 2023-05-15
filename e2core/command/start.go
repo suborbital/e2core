@@ -199,14 +199,14 @@ func setupSourceServer(logger zerolog.Logger, opts *options.Options) (*echo.Echo
 
 		ll.Debug().Msg("creating sourceserver from bundle: " + opts.BundlePath)
 
-		server, err := sourceserver.FromBundle(opts.BundlePath)
+		sourceSrv, err := sourceserver.FromBundle(opts.BundlePath)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to sourceserver.FromBundle")
 		}
 
-		server.HideBanner = true
+		sourceSrv.HideBanner = true
 
-		return server, nil
+		return sourceSrv, nil
 	}
 
 	// a nil server is ok if we don't need to run one
