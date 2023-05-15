@@ -10,20 +10,29 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
+	"github.com/sethvargo/go-envconfig"
 
 	"github.com/suborbital/e2core/sat/sat"
 	"github.com/suborbital/e2core/sat/sat/metrics"
+	satOptions "github.com/suborbital/e2core/sat/sat/options"
 )
 
 func main() {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+
+	opts, err := satOptions.Resolve(envconfig.OsLookuper())
+	if err != nil {
+		log.Fatalf("options.Resolve: %s", err)
+	}
+
 	logger := zerolog.New(os.Stderr).With().
 		Timestamp().
 		Str("service", "sat-module").
+		Str("port", string(opts.Port)).
 		Str("version", sat.SatDotVersion).
 		Logger()
 
-	conf, err := sat.ConfigFromArgs(logger)
+	conf, err := sat.ConfigFromArgs(logger, opts)
 	if err != nil {
 		log.Fatal(err)
 	}

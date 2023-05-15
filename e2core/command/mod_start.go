@@ -11,11 +11,13 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
+	"github.com/sethvargo/go-envconfig"
 	"github.com/spf13/cobra"
 
 	"github.com/suborbital/e2core/e2core/release"
 	"github.com/suborbital/e2core/sat/sat"
 	"github.com/suborbital/e2core/sat/sat/metrics"
+	satOptions "github.com/suborbital/e2core/sat/sat/options"
 )
 
 func ModStart() *cobra.Command {
@@ -30,13 +32,23 @@ func ModStart() *cobra.Command {
 				path = args[0]
 			}
 
+			opts, err := satOptions.Resolve(envconfig.OsLookuper())
+			if err != nil {
+				return errors.Wrap(err, "options.Resolve")
+			}
+
 			zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 			l := zerolog.New(os.Stderr).With().
 				Timestamp().
-				Str("command", "mod start").
-				Logger().Level(zerolog.InfoLevel)
+				Str("port", string(opts.Port)).
+				Str("procuuid", string(opts.ProcUUID)).
+				Int("pid", os.Getpid()).
+				Int("ppid", os.Getppid()).
+				Str("mode", "bebby").
+				Str("fqmn", path).
+				Logger()
 
-			config, err := sat.ConfigFromModuleArg(l, path)
+			config, err := sat.ConfigFromModuleArg(l, opts, path)
 			if err != nil {
 				return errors.Wrap(err, "failed to ConfigFromModuleArg")
 			}

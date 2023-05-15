@@ -11,7 +11,6 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
-	"github.com/sethvargo/go-envconfig"
 	"gopkg.in/yaml.v3"
 
 	satOptions "github.com/suborbital/e2core/sat/sat/options"
@@ -38,7 +37,7 @@ type Config struct {
 	MetricsConfig   satOptions.MetricsConfig
 }
 
-func ConfigFromArgs(l zerolog.Logger) (*Config, error) {
+func ConfigFromArgs(l zerolog.Logger, opts satOptions.Options) (*Config, error) {
 	flag.Parse()
 	args := flag.Args()
 
@@ -48,17 +47,13 @@ func ConfigFromArgs(l zerolog.Logger) (*Config, error) {
 
 	moduleArg := args[0]
 
-	return ConfigFromModuleArg(l, moduleArg)
+	return ConfigFromModuleArg(l, opts, moduleArg)
 }
 
-func ConfigFromModuleArg(logger zerolog.Logger, moduleArg string) (*Config, error) {
+func ConfigFromModuleArg(logger zerolog.Logger, opts satOptions.Options, moduleArg string) (*Config, error) {
 	var module *tenant.Module
 	var FQMN fqmn.FQMN
-
-	opts, err := satOptions.Resolve(envconfig.OsLookuper())
-	if err != nil {
-		return nil, errors.Wrap(err, "ConfigFromModuleArg options.Resolve")
-	}
+	var err error
 
 	// first, determine if we need to connect to a control plane
 	controlPlane := ""
