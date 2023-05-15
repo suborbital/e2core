@@ -38,16 +38,15 @@ func New(opts *options.Options, logger zerolog.Logger, source system.Source) *Sy
 	s := &Syncer{
 		sched: scheduler.New(),
 		opts:  opts,
-	}
-
-	s.job = &syncJob{
-		systemSource: source,
-		state:        &system.State{},
-		tenantIdents: make(map[string]int64),
-		overviews:    make(map[string]*system.TenantOverview),
-		modules:      make(map[string]tenant.Module),
-		log:          logger.With().Str("module", "syncJob").Logger(),
-		lock:         &sync.RWMutex{},
+		job: &syncJob{
+			systemSource: source,
+			state:        &system.State{},
+			tenantIdents: make(map[string]int64),
+			overviews:    make(map[string]*system.TenantOverview),
+			modules:      make(map[string]tenant.Module),
+			log:          logger.With().Str("module", "syncJob").Logger(),
+			lock:         &sync.RWMutex{},
+		},
 	}
 
 	s.sched.Register("sync", s.job)
