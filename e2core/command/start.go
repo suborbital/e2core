@@ -116,8 +116,10 @@ func Start() *cobra.Command {
 					return errors.Wrap(err, "srv.Shutdown")
 				}
 
-				if err := sourceSrv.Shutdown(ctx); err != nil {
-					return errors.Wrap(err, "sourceSrv.Shutdown")
+				if sourceSrv != nil {
+					if err := sourceSrv.Shutdown(ctx); err != nil {
+						return errors.Wrap(err, "sourceSrv.Shutdown")
+					}
 				}
 
 				backend.Shutdown()
