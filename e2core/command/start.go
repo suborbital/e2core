@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	shutdownWaitTime = time.Second * 3
+	shutdownWaitTime = time.Second * 10
 )
 
 func Start() *cobra.Command {

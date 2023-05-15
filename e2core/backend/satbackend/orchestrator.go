@@ -51,7 +51,7 @@ func (o *Orchestrator) Start() error {
 
 	var err error
 
-	ticker := time.NewTicker(time.Second)
+	ticker := time.NewTicker(5 * time.Second)
 loop:
 	for {
 		select {

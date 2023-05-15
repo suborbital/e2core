@@ -66,7 +66,7 @@ func (s *Syncer) Start() error {
 		return errors.Wrap(err, "failed to Do sync job")
 	}
 
-	s.sched.Schedule(scheduler.Every(1, func() scheduler.Job { return scheduler.NewJob("sync", nil) }))
+	s.sched.Schedule(scheduler.Every(45, func() scheduler.Job { return scheduler.NewJob("sync", nil) }))
 
 	return nil
 }
