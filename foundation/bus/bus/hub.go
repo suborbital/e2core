@@ -344,37 +344,49 @@ func (h *hub) connectionExists(uuid string) bool {
 // check for failed connections and clean them up
 func (h *hub) scanFailedMeshConnections() {
 	ll := h.log.With().Str("method", "scanFailedMeshConnections").Logger()
+
+	ll.Info().Msg("starting the loop to scan for failed mesh connections")
+
+	ticker := time.NewTicker(time.Second)
+
 	for {
-		// we don't want to edit the `meshConnections` map while in the loop, so do it after
-		toRemove := make([]string, 0)
+		select {
+		case <-ticker.C:
+			// ll.Info().Msg("starting loop")
+			// we don't want to edit the `meshConnections` map while in the loop, so do it after
+			toRemove := make([]string, 0)
 
-		// for each connection, check if it has errored or if its peer has withdrawn,
-		// and in either case close it and remove it from circulation
-		for _, conn := range h.meshConnections {
-			select {
-			case <-conn.ErrChan:
-				if err := conn.Close(); err != nil {
-					ll.Err(err).Str("connUUID", conn.UUID).Msg("failed to Close connection")
-				}
-
-				toRemove = append(toRemove, conn.UUID)
-			default:
-				if conn.Signaler.PeerWithdrawn() {
+			// for each connection, check if it has errored or if its peer has withdrawn,
+			// and in either case close it and remove it from circulation
+			for _, conn := range h.meshConnections {
+				select {
+				case <-conn.ErrChan:
 					if err := conn.Close(); err != nil {
-						ll.Err(err).Str("connUUID", conn.UUID).Msg(
-							"failed to Close connection")
+						ll.Err(err).Str("connUUID", conn.UUID).Msg("failed to Close connection")
 					}
 
+					ll.Warn().Str("conn-uuid", conn.UUID).Msg("adding this to removal")
 					toRemove = append(toRemove, conn.UUID)
+				default:
+					// ll.Info().Str("conn-uuid", conn.UUID).Msg("no error came in, doing default")
+					if conn.Signaler.PeerWithdrawn() {
+						if err := conn.Close(); err != nil {
+							ll.Err(err).Str("connUUID", conn.UUID).Msg(
+								"failed to Close connection")
+						}
+
+						ll.Warn().Str("conn-uuid", conn.UUID).Msg("peer has withdrawn, so removing it from here")
+
+						toRemove = append(toRemove, conn.UUID)
+					}
 				}
 			}
-		}
 
-		for _, uuid := range toRemove {
-			h.removeMeshConnection(uuid)
+			for _, uuid := range toRemove {
+				ll.Info().Str("conn-uuid", uuid).Msg("removing mesh connection")
+				h.removeMeshConnection(uuid)
+			}
 		}
-
-		time.Sleep(time.Second)
 	}
 }
 
