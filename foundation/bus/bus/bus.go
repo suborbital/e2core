@@ -87,7 +87,8 @@ func (b *Bus) Stop() error {
 }
 
 func (b *Bus) connectWithOpts(opts *podOpts) *Pod {
-	pod := newPod(b.bus.busChan, b.Tunnel, opts)
+	b.logger.Info().Msg("creating a new pod with the bus's Tunnel method. That one takes the hub on the bus, and calls the sendTunneledMessage")
+	pod := newPod(b.bus.busChan, b.Tunnel, opts, b.logger.With().Str("component", "pod").Logger())
 
 	b.bus.addPod(pod)
 

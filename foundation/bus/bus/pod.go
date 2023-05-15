@@ -4,6 +4,8 @@ import (
 	"errors"
 	"sync"
 	"sync/atomic"
+
+	"github.com/rs/zerolog"
 )
 
 const (
@@ -41,6 +43,8 @@ type Pod struct {
 	onFunc     MsgFunc // the onFunc is called whenever a message is received
 	onFuncLock sync.RWMutex
 
+	logger zerolog.Logger
+
 	messageChan  MsgChan // messageChan is used to receive messages coming from the bus
 	feedbackChan MsgChan // feedbackChan is used to send "feedback" to the bus about the pod's status
 	busChan      MsgChan // busChan is used to emit messages to the bus
@@ -60,7 +64,7 @@ type podOpts struct {
 }
 
 // newPod creates a new Pod
-func newPod(busChan MsgChan, tunnel func(string, Message) error, opts *podOpts) *Pod {
+func newPod(busChan MsgChan, tunnel func(string, Message) error, opts *podOpts, l zerolog.Logger) *Pod {
 	p := &Pod{
 		onFuncLock:    sync.RWMutex{},
 		messageChan:   make(chan Message, defaultPodChanSize),
@@ -70,6 +74,7 @@ func newPod(busChan MsgChan, tunnel func(string, Message) error, opts *podOpts) 
 		tunnelFunc:    tunnel,
 		opts:          opts,
 		dead:          &atomic.Value{},
+		logger:        l,
 	}
 
 	// do some "delayed setup"
