@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/suborbital/e2core/foundation/scheduler"
+	"github.com/suborbital/e2core/foundation/tracing"
 	"github.com/suborbital/e2core/sat/engine2"
 	"github.com/suborbital/e2core/sat/sat/metrics"
 	"github.com/suborbital/systemspec/request"
@@ -17,8 +18,8 @@ import (
 
 func (s *Sat) handler(engine *engine2.Engine) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		spanCtx, span := s.tracer.Start(c.Request().Context(), "echoHandler", trace.WithAttributes(
-			attribute.String("request_id", c.Request().Header.Get("requestID")),
+		spanCtx, span := tracing.Tracer.Start(c.Request().Context(), "echoHandler", trace.WithAttributes(
+			attribute.String("requestID", c.Response().Header().Get(echo.HeaderXRequestID)),
 		))
 		defer span.End()
 

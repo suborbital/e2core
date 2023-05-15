@@ -13,6 +13,7 @@ import (
 	"github.com/rs/zerolog"
 	"gopkg.in/yaml.v3"
 
+	"github.com/suborbital/e2core/foundation/tracing"
 	satOptions "github.com/suborbital/e2core/sat/sat/options"
 	"github.com/suborbital/systemspec/capabilities"
 	"github.com/suborbital/systemspec/fqmn"
@@ -33,7 +34,7 @@ type Config struct {
 	ControlPlaneUrl string
 	EnvToken        string
 	ProcUUID        string
-	TracerConfig    satOptions.TracerConfig
+	TracerConfig    tracing.Config
 	MetricsConfig   satOptions.MetricsConfig
 }
 
@@ -136,6 +137,30 @@ func ConfigFromModuleArg(logger zerolog.Logger, opts satOptions.Options, moduleA
 		}
 	}
 
+	tc := tracing.Config{
+		ServiceName: opts.TracerConfig.ServiceName,
+		Probability: opts.TracerConfig.Probability,
+	}
+
+	switch opts.TracerConfig.TracerType {
+	case "collector":
+		tc.Type = tracing.ExporterCollector
+	case "honeycomb":
+		tc.Type = tracing.ExporterHoneycomb
+	}
+
+	if opts.TracerConfig.HoneycombConfig != nil {
+		tc.Honeycomb = tracing.HoneycombConfig{
+			Endpoint: opts.TracerConfig.HoneycombConfig.Endpoint,
+			APIKey:   opts.TracerConfig.HoneycombConfig.APIKey,
+			Dataset:  opts.TracerConfig.HoneycombConfig.Dataset,
+		}
+	}
+
+	if opts.TracerConfig.Collector != nil {
+		tc.Collector = tracing.CollectorConfig{Endpoint: opts.TracerConfig.Collector.Endpoint}
+	}
+
 	// finally, put it all together
 	c := &Config{
 		ModuleArg:       moduleArg,
@@ -147,7 +172,7 @@ func ConfigFromModuleArg(logger zerolog.Logger, opts satOptions.Options, moduleA
 		Connections:     conns,
 		Port:            portInt,
 		ControlPlaneUrl: controlPlane,
-		TracerConfig:    opts.TracerConfig,
+		TracerConfig:    tc,
 		MetricsConfig:   opts.MetricsConfig,
 		ProcUUID:        string(opts.ProcUUID),
 	}

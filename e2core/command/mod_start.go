@@ -15,6 +15,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/suborbital/e2core/e2core/release"
+	"github.com/suborbital/e2core/foundation/tracing"
 	"github.com/suborbital/e2core/sat/sat"
 	"github.com/suborbital/e2core/sat/sat/metrics"
 	satOptions "github.com/suborbital/e2core/sat/sat/options"
@@ -66,7 +67,7 @@ func ModStart() *cobra.Command {
 
 			l.Info().Interface("sdkTrace-config", config.TracerConfig).Msg("this is the sdkTrace config we're using")
 
-			traceProvider, err := sat.SetupTracing(config.TracerConfig, l)
+			traceProvider, err := tracing.SetupTracing(config.TracerConfig, l)
 			if err != nil {
 				return errors.Wrap(err, "setup tracing")
 			}
@@ -83,7 +84,7 @@ func ModStart() *cobra.Command {
 
 			defer traceProvider.Shutdown(context.Background())
 
-			satInstance, err := sat.New(config, l, traceProvider, mtx)
+			satInstance, err := sat.New(config, l, mtx)
 			if err != nil {
 				return errors.Wrap(err, "failed to sat.New")
 			}

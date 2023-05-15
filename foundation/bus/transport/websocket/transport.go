@@ -13,6 +13,7 @@ import (
 	"github.com/rs/zerolog"
 
 	"github.com/suborbital/e2core/foundation/bus/bus"
+	"github.com/suborbital/e2core/foundation/tracing"
 )
 
 const (

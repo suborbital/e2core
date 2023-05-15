@@ -36,7 +36,7 @@ type syncJob struct {
 // New creates a syncer with the given SystemSource
 func New(opts *options.Options, logger zerolog.Logger, source system.Source) *Syncer {
 	s := &Syncer{
-		sched: scheduler.New(),
+		sched: scheduler.NewWithLogger(logger),
 		opts:  opts,
 		job: &syncJob{
 			systemSource: source,

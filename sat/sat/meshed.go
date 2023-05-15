@@ -12,6 +12,7 @@ import (
 	"github.com/suborbital/e2core/e2core/server"
 	"github.com/suborbital/e2core/foundation/bus/bus"
 	"github.com/suborbital/e2core/foundation/scheduler"
+	"github.com/suborbital/e2core/foundation/tracing"
 	"github.com/suborbital/systemspec/request"
 )
 
@@ -31,7 +32,7 @@ func (s *Sat) handleFnResult(msg bus.Message, result interface{}, fnErr error) {
 
 	ctx := context.WithValue(context.Background(), "requestID", req.ID)
 
-	spanCtx, span := s.tracer.Start(ctx, "handleFnResult", trace.WithAttributes(
+	spanCtx, span := tracing.Tracer.Start(ctx, "handleFnResult", trace.WithAttributes(
 		attribute.String("request_id", req.ID),
 	))
 	defer span.End()

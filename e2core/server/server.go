@@ -16,6 +16,7 @@ import (
 	"github.com/suborbital/e2core/foundation/bus/bus"
 	"github.com/suborbital/e2core/foundation/bus/discovery/local"
 	"github.com/suborbital/e2core/foundation/bus/transport/websocket"
+	"github.com/suborbital/e2core/foundation/tracing"
 	kitError "github.com/suborbital/go-kit/web/error"
 	"github.com/suborbital/go-kit/web/mid"
 )
@@ -40,7 +41,7 @@ func New(l zerolog.Logger, sync *syncer.Syncer, opts *options.Options) (*Server,
 
 	// @todo https://github.com/suborbital/e2core/issues/144, the first return value is a function that would close the
 	// tracer in case of a shutdown. Usually that is put in a defer statement. Server doesn't have a graceful shutdown.
-	_, err := setupTracing(opts.TracerConfig, ll)
+	_, err := tracing.SetupTracing(opts.TracerConfig, ll)
 	if err != nil {
 		return nil, errors.Wrapf(err, "setupTracing(%s, %s, %f)", "e2core", "reporter_uri", 0.04)
 	}
