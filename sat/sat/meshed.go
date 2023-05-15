@@ -147,10 +147,12 @@ func (s *Sat) sendFnResult(result *sequence.ExecResult, ctx context.Context) err
 }
 
 func (s *Sat) sendNextStep(msg bus.Message, seq *sequence.Sequence, req *request.CoordinatedRequest, ctx context.Context) {
-	ll := s.logger.With().Str("method", "sendNextStep").Str("requestID", msg.ParentID()).Logger()
-
-	span := trace.SpanFromContext(ctx)
+	ctx, span := tracing.Tracer.Start(msg.Context(), "sat.sendNextStep")
 	defer span.End()
+
+	msg.SetContext(ctx)
+
+	ll := s.logger.With().Str("method", "sendNextStep").Str("requestID", msg.ParentID()).Logger()
 
 	nextStep := seq.NextStep()
 	if nextStep == nil {

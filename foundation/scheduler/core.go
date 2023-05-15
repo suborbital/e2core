@@ -39,7 +39,14 @@ func newCore(log zerolog.Logger) *core {
 func (c *core) do(job *Job) *Result {
 	result := newResult(job.UUID())
 
-	c.log.Info().Msg("core.do function got called")
+	rid := "no-request"
+	if job.Req() != nil {
+		rid = job.Req().ID
+	}
+
+	ll := c.log.With().Str("requestID", rid).Logger()
+
+	ll.Info().Msg("core.do function got called")
 
 	jobWorker := c.scaler.findWorker(job.jobType)
 	if jobWorker == nil {
@@ -49,11 +56,12 @@ func (c *core) do(job *Job) *Result {
 
 	go func() {
 		job.result = result
-		c.log.Info().Msg("jobworker got a job scheduled")
+		ll.Info().Msg("jobworker got a job scheduled")
+
 		jobWorker.schedule(job)
 	}()
 
-	c.log.Info().Msg("returning result from core.do func")
+	ll.Info().Msg("returning result from core.do func")
 	return result
 }
 

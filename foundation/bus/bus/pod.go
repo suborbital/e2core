@@ -6,6 +6,10 @@ import (
 	"sync/atomic"
 
 	"github.com/rs/zerolog"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
+
+	"github.com/suborbital/e2core/foundation/tracing"
 )
 
 const (
@@ -122,6 +126,13 @@ func (p *Pod) Send(msg Message) *MsgReceipt {
 // Tunnel bypasses the pod's normal 'Send' and uses the bus itself to tunnel to a specific peer
 // if a transport is enabled. If not, it's a no-op.
 func (p *Pod) Tunnel(capability string, msg Message) error {
+	ctx, span := tracing.Tracer.Start(msg.Context(), "pod.Tunnel", trace.WithAttributes(
+		attribute.String("capability", capability),
+	))
+	defer span.End()
+
+	msg.SetContext(ctx)
+
 	p.logger.Info().Str("requestID", msg.ParentID()).Str("fqmn", capability).Msg("tunneling using the pod's tunnelfunc")
 	return p.tunnelFunc(capability, msg)
 }

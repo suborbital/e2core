@@ -1,14 +1,18 @@
 package bus
 
 import (
+	"context"
 	"sync"
 	"time"
 
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/suborbital/e2core/foundation/bus/bus/tunnel"
 	"github.com/suborbital/e2core/foundation/bus/bus/withdraw"
+	"github.com/suborbital/e2core/foundation/tracing"
 )
 
 const tunnelRetryCount = 32
@@ -106,6 +110,11 @@ func initHub(nodeUUID string, options *Options, connectFunc func() *Pod) *hub {
 
 // messageHandler takes each message coming from the bus and sends it to currently active mesh connections
 func (h *hub) messageHandler(msg Message) error {
+	ctx, span := tracing.Tracer.Start(msg.Context(), "hub messagehandler")
+	defer span.End()
+
+	msg.SetContext(ctx)
+
 	h.lock.RLock()
 	defer h.lock.RUnlock()
 
@@ -120,7 +129,7 @@ func (h *hub) messageHandler(msg Message) error {
 			Msg("sending the message to the handler at this uuid")
 
 		handler := h.meshConnections[uuid]
-		err := handler.Send(msg)
+		err := handler.Send(ctx, msg)
 		if err != nil {
 			ll.Err(err).Str("meshconnection-uuid", uuid).
 				Msg("send returned an error")
@@ -403,7 +412,10 @@ func (h *hub) scanFailedMeshConnections() {
 	}
 }
 
-func (h *hub) sendTunneledMessage(capability string, msg Message) error {
+func (h *hub) sendTunneledMessage(ctx context.Context, capability string, msg Message) error {
+	ctx, span := tracing.Tracer.Start(ctx, "hub.sendtunneledmessage")
+	defer span.End()
+
 	ll := h.log.With().Str("method", "sendTunneledMessage").
 		Str("requestID", msg.ParentID()).Logger()
 
@@ -418,34 +430,43 @@ func (h *hub) sendTunneledMessage(capability string, msg Message) error {
 
 	ll.Info().Int("tunnel-retry-count", tunnelRetryCount).Msg("starting iteration to check whether we can send a message to someplace")
 
+	handlerFactory := func(ctx context.Context) (*connectionHandler, error) {
+		ctx, span := tracing.Tracer.Start(ctx, "handlerFactory")
+		defer span.End()
+
+		h.lock.RLock()
+		defer h.lock.RUnlock()
+
+		uuid := balancer.Next()
+		if uuid == "" {
+			span.AddEvent("balancer doesn't exit")
+			return nil, ErrTunnelNotEstablished
+		}
+
+		handler, exists := h.meshConnections[uuid]
+		if !exists {
+			span.AddEvent("handler doesn't exist for uuid", trace.WithAttributes(
+				attribute.String("uuid", uuid),
+			))
+			return nil, ErrTunnelNotEstablished
+		}
+
+		span.AddEvent("returning a handler for uuid", trace.WithAttributes(
+			attribute.String("uuid", uuid),
+		))
+		return handler, nil
+	}
+
 	// iterate a reasonable number of times to find a connection that's not removed or dead
 	for i := 0; i < tunnelRetryCount; i++ {
-
 		// wrap this in a function to avoid any sloppy mutex issues
-		handler, err := func() (*connectionHandler, error) {
-			h.lock.RLock()
-			defer h.lock.RUnlock()
-
-			uuid := balancer.Next()
-			ll.Info().Int("iteration", i).Str("uuid", uuid).Msg("balancer next")
-			if uuid == "" {
-				return nil, ErrTunnelNotEstablished
-			}
-
-			handler, exists := h.meshConnections[uuid]
-			ll.Info().Bool("handler-exists", exists).Msg("hub has a meshconnections map")
-			if !exists {
-				return nil, ErrTunnelNotEstablished
-			}
-
-			return handler, nil
-		}()
+		handler, err := handlerFactory(ctx)
 		if err != nil {
 			continue
 		}
 
 		if handler.Conn != nil {
-			if err := handler.Send(msg); err != nil {
+			if err := handler.Send(ctx, msg); err != nil {
 				ll.Err(err).Msg("failed to SendMsg on tunneled connection, will remove")
 				return errors.Wrap(err, "handler.Send died")
 			} else {

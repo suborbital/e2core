@@ -58,7 +58,7 @@ func New(config *Config, logger zerolog.Logger, mtx metrics.Metrics) (*Sat, erro
 		return nil, errors.Wrap(err, "failed to NewWithConfig")
 	}
 
-	engine := engine2.New(config.JobType, module, engineAPI)
+	engine := engine2.New(config.JobType, module, engineAPI, logger)
 
 	sat := &Sat{
 		config:  config,

@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"sync"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/suborbital/e2core/e2core/sequence"
 	"github.com/suborbital/e2core/foundation/bus/bus"
+	"github.com/suborbital/e2core/foundation/tracing"
 )
 
 const (
@@ -55,7 +57,10 @@ func newDispatcher(l zerolog.Logger, pod *bus.Pod) *dispatcher {
 
 // Execute returns the "final state" of a Sequence. If the state's err is not nil, it means a runnable returned an error, and the Directive indicates the Sequence should return.
 // if exec itself actually returns an error other than ErrSequenceRunErr, it means there was a problem executing the Sequence as described, and should be treated as such.
-func (d *dispatcher) Execute(seq *sequence.Sequence) error {
+func (d *dispatcher) Execute(ctx context.Context, seq *sequence.Sequence) error {
+	ctx, span := tracing.Tracer.Start(ctx, "dispatcher.execute")
+	defer span.End()
+
 	ll := d.log.With().Str("requestID", seq.ParentID()).Logger()
 	ll.Info().Interface("dispatcher-pod", d.pod).Msg("created a sequence dispatcher")
 	s := &sequenceDispatcher{
@@ -83,7 +88,8 @@ func (d *dispatcher) Execute(seq *sequence.Sequence) error {
 
 	ll.Info().Interface("first-step", firstStep).Msg("dispatchsingle gets called on the sequence dispatcher. Arguments are the results channel and the first step.")
 
-	if err := s.dispatchSingle(firstStep, resultChan); err != nil {
+	span.AddEvent("dispatching single")
+	if err := s.dispatchSingle(ctx, firstStep, resultChan); err != nil {
 		return errors.Wrap(err, "failed to dispatchSingle")
 	}
 
@@ -96,7 +102,7 @@ func (d *dispatcher) Execute(seq *sequence.Sequence) error {
 		if step == nil {
 			break
 		} else if step.IsSingle() {
-			if err := s.awaitResult(resultChan); err != nil {
+			if err := s.awaitResult(ctx, resultChan); err != nil {
 				return errors.Wrap(err, "failed to awaitResult")
 			}
 		} else if step.IsGroup() {
@@ -108,7 +114,10 @@ func (d *dispatcher) Execute(seq *sequence.Sequence) error {
 }
 
 // dispatchSingle executes a single plugin from a sequence step
-func (s *sequenceDispatcher) dispatchSingle(step *sequence.Step, resultChan chan *sequence.ExecResult) error {
+func (s *sequenceDispatcher) dispatchSingle(ctx context.Context, step *sequence.Step, resultChan chan *sequence.ExecResult) error {
+	ctx, span := tracing.Tracer.Start(ctx, "sequencedispatcher.dispatchsingle")
+	defer span.End()
+
 	data, err := s.seq.Request().ToJSON()
 	if err != nil {
 		return errors.Wrap(err, "failed to req.toJSON")
@@ -116,7 +125,9 @@ func (s *sequenceDispatcher) dispatchSingle(step *sequence.Step, resultChan chan
 
 	s.log.Info().Str("data in dispatchSingle", string(data)).Msg("message about to be sent")
 
+	span.AddEvent("created new message with parent id")
 	msg := bus.NewMsgWithParentID(step.FQMN, s.seq.ParentID(), data)
+	msg.SetContext(ctx)
 
 	s.log.Info().Interface("bus.Message", msg).Msg("bus msg. Next is pod.tunnel with step.fqmn with message.")
 
@@ -129,12 +140,17 @@ func (s *sequenceDispatcher) dispatchSingle(step *sequence.Step, resultChan chan
 		Str("msgUUID", msg.UUID()).
 		Msg("dispatched execution for parent to peer with message")
 
-	return s.awaitResult(resultChan)
+	return s.awaitResult(ctx, resultChan)
 }
 
-func (s *sequenceDispatcher) awaitResult(resultChan chan *sequence.ExecResult) error {
+func (s *sequenceDispatcher) awaitResult(ctx context.Context, resultChan chan *sequence.ExecResult) error {
+	ctx, span := tracing.Tracer.Start(ctx, "awaitResult")
+	defer span.End()
+
 	select {
 	case result := <-resultChan:
+		span.AddEvent("result came in the channel")
+
 		s.log.Info().Msg("we have a message back from the result channel")
 		if result.Response == nil {
 			s.log.Error().Msg("sadly the response was nil")
@@ -147,6 +163,8 @@ func (s *sequenceDispatcher) awaitResult(resultChan chan *sequence.ExecResult) e
 			return errors.Wrap(err, "failed to HandleStepResults")
 		}
 	case <-time.After(time.Second * 10):
+		span.AddEvent("10 seconds have passed, sad times")
+
 		s.log.Warn().Msg("dispatchSingle timeout reached")
 		return ErrDispatchTimeout
 	}

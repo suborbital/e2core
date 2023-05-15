@@ -1,10 +1,13 @@
 package bus
 
 import (
+	"context"
+
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 
 	"github.com/suborbital/e2core/foundation/bus/bus/withdraw"
+	"github.com/suborbital/e2core/foundation/tracing"
 )
 
 type connectionHandler struct {
@@ -68,9 +71,13 @@ func (c *connectionHandler) Start() {
 	}()
 }
 
-func (c *connectionHandler) Send(msg Message) error {
+func (c *connectionHandler) Send(ctx context.Context, msg Message) error {
+	ctx, span := tracing.Tracer.Start(ctx, "connectionHandler.send")
+	defer span.End()
+
 	ll := c.Log.With().Str("requestID", msg.ParentID()).Logger()
 	if c.Signaler.PeerWithdrawn() {
+		span.AddEvent("peer withdrawn")
 		return ErrNodeWithdrawn
 	}
 

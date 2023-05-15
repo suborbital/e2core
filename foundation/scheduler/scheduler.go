@@ -50,7 +50,15 @@ func NewWithLogger(log zerolog.Logger) *Scheduler {
 
 // Do schedules a job to be worked on and returns a result object
 func (r *Scheduler) Do(job Job) *Result {
-	r.log.Info().Msg("scheduler.Do function got called, passing it on to core.do")
+	if job.Req() == nil {
+		r.log.Info().
+			Str("requestID", "no-request").
+			Msg("scheduler.Do function got called, passing it on to core.do")
+	} else {
+		r.log.Info().
+			Str("requestID", job.Req().ID).
+			Msg("scheduler.Do function got called, passing it on to core.do")
+	}
 
 	return r.core.do(&job)
 }
@@ -136,7 +144,11 @@ func (r *Scheduler) ListenAndRun(pod *bus.Pod, msgType string, run func(bus.Mess
 	// each time a message is received with the associated type,
 	// execute the associated job and pass the result to `run`
 	pod.OnType(msgType, func(msg bus.Message) error {
-		r.log.Info().Str("msgType", msgType).Msg("scheduler.ListenAndRun called, msg turned into a job, and job passed to scheduler.Do function")
+
+		r.log.Info().
+			Str("msgType", msgType).
+			Str("requestID", msg.ParentID()).
+			Msg("scheduler.ListenAndRun called, msg turned into a job, and job passed to scheduler.Do function")
 
 		result, err := helper(msg.Data()).Then()
 

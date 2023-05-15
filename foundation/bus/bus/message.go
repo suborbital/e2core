@@ -1,6 +1,7 @@
 package bus
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -23,19 +24,19 @@ type MsgChan chan Message
 
 // Message represents a message
 type Message interface {
-	// Unique ID for this message
+	// UUID is the unique ID for this message
 	UUID() string
-	// ID of the parent event or request, such as HTTP request
+	// ParentID is the request ID of the parent event or request, such as HTTP request
 	ParentID() string
-	// The UUID of the message being replied to, if any
+	// ReplyTo is the UUID of the message being replied to, if any
 	ReplyTo() string
-	// Allow setting a message UUID that this message is a response to
+	// SetReplyTo allows setting a message UUID that this message is a response to
 	SetReplyTo(string)
 	// Type of message (application-specific)
 	Type() string
-	// Time the message was sent
+	// Timestamp returns the time the message was sent
 	Timestamp() time.Time
-	// Raw data of message
+	// Data returns raw data of message
 	Data() []byte
 	// Marshal the message itself to encoded bytes (JSON or otherwise)
 	Marshal() ([]byte, error)
@@ -45,6 +46,10 @@ type Message interface {
 	MarshalMetadata() ([]byte, error)
 	// UnmarshalMetadata encoded metadata into object
 	UnmarshalMetadata([]byte) error
+	// Context will return the embedded context
+	Context() context.Context
+	// SetContext will set the new context on the message
+	SetContext(ctx context.Context)
 }
 
 // NewMsg creates a new Message with the built-in `_message` type
@@ -128,6 +133,15 @@ func newMessage(msgType, parentID string, data []byte) Message {
 type _message struct {
 	Meta    _meta    `json:"meta"`
 	Payload _payload `json:"payload"`
+	ctx     context.Context
+}
+
+func (m *_message) SetContext(ctx context.Context) {
+	m.ctx = ctx
+}
+
+func (m *_message) Context() context.Context {
+	return m.ctx
 }
 
 type _meta struct {
