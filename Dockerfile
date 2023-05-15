@@ -16,7 +16,8 @@ RUN groupadd -g 999 e2core && \
 	chown -R e2core /home/e2core && \
 	chmod -R 700 /home/e2core
 RUN apt-get update \
-	&& apt-get install -y ca-certificates
+	&& apt-get install -y ca-certificates \
+	&& apt-get install -y curl
 
 # e2core binary
 COPY --from=builder /go/src/github.com/suborbital/e2core/.bin/e2core /usr/local/bin/
