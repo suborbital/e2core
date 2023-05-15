@@ -74,7 +74,6 @@ func ConfigFromModuleArg(logger zerolog.Logger, opts satOptions.Options, moduleA
 
 	// next, handle the module arg being a URL, an FQMN, or a path on disk
 	if isURL(moduleArg) {
-		logger.Debug().Msg("fetching module from URL")
 		tmpFile, err := downloadFromURL(moduleArg)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to downloadFromURL")
@@ -83,8 +82,6 @@ func ConfigFromModuleArg(logger zerolog.Logger, opts satOptions.Options, moduleA
 		moduleArg = tmpFile
 	} else if FQMN, err = fqmn.Parse(moduleArg); err == nil {
 		if useControlPlane {
-			logger.Debug().Msg("fetching module from control plane")
-
 			cpModule, err := appClient.GetModule(moduleArg)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to GetModule")
@@ -130,17 +127,6 @@ func ConfigFromModuleArg(logger zerolog.Logger, opts satOptions.Options, moduleA
 		jobType = module.FQMN
 
 		prettyName = fmt.Sprintf("%s-%s", jobType, opts.ProcUUID[:6])
-
-		logger = logger.With().
-			Str("app", prettyName).
-			Str("jobType", jobType).
-			Str("tenant", FQMN.Tenant).
-			Logger()
-
-		logger.Debug().Msg("configuring")
-		logger.Debug().Msg("joining tenant")
-	} else {
-		logger.Debug().Str("jobType", jobType).Msg("configuring")
 	}
 
 	conns := make([]tenant.Connection, 0)

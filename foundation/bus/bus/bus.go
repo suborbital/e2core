@@ -33,7 +33,7 @@ func New(opts ...OptionsModifier) *Bus {
 		BelongsTo: options.BelongsTo,
 		Interests: options.Interests,
 		bus:       newMessageBus(),
-		logger:    options.Logger,
+		logger:    options.Logger.With().Str("bus", "bus").Logger(),
 	}
 
 	// the hub handles coordinating the transport and discovery plugins
@@ -71,6 +71,7 @@ func (b *Bus) ConnectBridgeTopic(topic string) error {
 // This bypasses the main Bus bus, which is why it isn't a method on Pod.
 // Messages are load balanced between the connections that advertise the capability in question.
 func (b *Bus) Tunnel(capability string, msg Message) error {
+	b.logger.Info().Str("requestID", msg.ParentID()).Str("fqmn", capability).Msg("bus.Tunnel is happening (pod tunnelfunc?)")
 	return b.hub.sendTunneledMessage(capability, msg)
 }
 

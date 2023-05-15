@@ -82,11 +82,13 @@ func New(config *Config, logger zerolog.Logger, traceProvider trace.TracerProvid
 
 	// if a "transport" is configured, enable bus and metrics endpoints, otherwise enable server mode
 	if config.ControlPlaneUrl != "" {
+		logger.Info().Msg("controlplane url is present, creating the websocket for transport, and the meta/message and meta/metrics endpoints")
 		sat.transport = websocket.New()
 
 		sat.server.GET("/meta/message", echo.WrapHandler(sat.transport.HTTPHandlerFunc()))
 		sat.server.GET("/meta/metrics", sat.workerMetricsHandler())
 	} else {
+		logger.Info().Msg("controlplane url is not present, pass anything to sat.handler")
 		// allow any HTTP method
 		sat.server.Any("*", sat.handler(engine))
 	}
@@ -170,7 +172,7 @@ func (s *Sat) setupBus() {
 	opts := []bus.OptionsModifier{
 		bus.UseBelongsTo(s.config.Tenant),
 		bus.UseInterests(s.config.JobType),
-		bus.UseLogger(s.logger),
+		bus.UseLogger(s.logger.With().Str("source", "sat.setupBus").Logger()),
 		bus.UseMeshTransport(s.transport),
 		bus.UseDiscovery(local.New()),
 		bus.UseEndpoint(fmt.Sprintf("%d", s.config.Port), "/meta/message"),

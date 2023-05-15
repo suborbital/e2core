@@ -39,6 +39,8 @@ func newCore(log zerolog.Logger) *core {
 func (c *core) do(job *Job) *Result {
 	result := newResult(job.UUID())
 
+	c.log.Info().Msg("core.do function got called")
+
 	jobWorker := c.scaler.findWorker(job.jobType)
 	if jobWorker == nil {
 		result.sendErr(fmt.Errorf("failed to getWorker for jobType %q", job.jobType))
@@ -47,10 +49,11 @@ func (c *core) do(job *Job) *Result {
 
 	go func() {
 		job.result = result
-
+		c.log.Info().Msg("jobworker got a job scheduled")
 		jobWorker.schedule(job)
 	}()
 
+	c.log.Info().Msg("returning result from core.do func")
 	return result
 }
 

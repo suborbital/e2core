@@ -41,7 +41,7 @@ func initHub(nodeUUID string, options *Options, connectFunc func() *Pod) *hub {
 		mesh:                options.MeshTransport,
 		bridge:              options.BridgeTransport,
 		discovery:           options.Discovery,
-		log:                 options.Logger.With().Str("module", "hub").Logger().Level(zerolog.InfoLevel),
+		log:                 options.Logger.With().Str("module", "hub").Logger(),
 		pod:                 connectFunc(),
 		connectFunc:         connectFunc,
 		meshConnections:     map[string]*connectionHandler{},
@@ -109,20 +109,33 @@ func (h *hub) messageHandler(msg Message) error {
 	h.lock.RLock()
 	defer h.lock.RUnlock()
 
+	ll := h.log.With().Str("requestID", msg.ParentID()).Str("method", "hub.messageHandler").Logger()
+
+	ll.Info().Msg("sending the message to all meshconnections")
+
 	// send the message to each. withdrawn connections will result in a no-op
 	for uuid := range h.meshConnections {
+		ll.Info().
+			Str("meshconnection-uuid", uuid).
+			Msg("sending the message to the handler at this uuid")
+
 		handler := h.meshConnections[uuid]
-		handler.Send(msg)
+		err := handler.Send(msg)
+		if err != nil {
+			ll.Err(err).Str("meshconnection-uuid", uuid).
+				Msg("send returned an error")
+		}
 	}
 
 	return nil
 }
 
 func (h *hub) discoveryHandler() func(endpoint string, uuid string) {
+	ll := h.log.With().Str("method", "discoveryHandler").Logger()
+
 	return func(endpoint string, uuid string) {
-		ll := h.log.With().Str("method", "discoveryHandler").Logger()
 		if uuid == h.nodeUUID {
-			ll.Debug().Msg("discovered self, discarding")
+			ll.Debug().Str("uuid", uuid).Msg("discovered self, discarding")
 			return
 		}
 
@@ -391,12 +404,19 @@ func (h *hub) scanFailedMeshConnections() {
 }
 
 func (h *hub) sendTunneledMessage(capability string, msg Message) error {
-	ll := h.log.With().Str("method", "sendTunneledMessage").Logger()
+	ll := h.log.With().Str("method", "sendTunneledMessage").
+		Str("requestID", msg.ParentID()).Logger()
+
+	ll.Info().Str("capability", capability).Msg("sending a message with cap. Checking the hub's capabilityBalancers map. It seems to be a list of UUIDs for ... things? belonging to the same capability.")
 
 	balancer, exists := h.capabilityBalancers[capability]
 	if !exists {
 		return ErrTunnelNotEstablished
 	}
+
+	ll.Info().Interface("balancer", balancer).Str("capability", capability).Msg("balancer for capability")
+
+	ll.Info().Int("tunnel-retry-count", tunnelRetryCount).Msg("starting iteration to check whether we can send a message to someplace")
 
 	// iterate a reasonable number of times to find a connection that's not removed or dead
 	for i := 0; i < tunnelRetryCount; i++ {
@@ -407,18 +427,19 @@ func (h *hub) sendTunneledMessage(capability string, msg Message) error {
 			defer h.lock.RUnlock()
 
 			uuid := balancer.Next()
+			ll.Info().Int("iteration", i).Str("uuid", uuid).Msg("balancer next")
 			if uuid == "" {
 				return nil, ErrTunnelNotEstablished
 			}
 
 			handler, exists := h.meshConnections[uuid]
+			ll.Info().Bool("handler-exists", exists).Msg("hub has a meshconnections map")
 			if !exists {
 				return nil, ErrTunnelNotEstablished
 			}
 
 			return handler, nil
 		}()
-
 		if err != nil {
 			continue
 		}
@@ -426,11 +447,14 @@ func (h *hub) sendTunneledMessage(capability string, msg Message) error {
 		if handler.Conn != nil {
 			if err := handler.Send(msg); err != nil {
 				ll.Err(err).Msg("failed to SendMsg on tunneled connection, will remove")
+				return errors.Wrap(err, "handler.Send died")
 			} else {
-				ll.Debug().Str("handlerUUID", handler.UUID).Msg("tunneled to handler")
+				ll.Info().Str("handlerUUID", handler.UUID).Msg("tunneled to handler")
 				return nil
 			}
 		}
+
+		ll.Info().Msg("handler connection was nil")
 	}
 
 	return ErrTunnelNotEstablished

@@ -91,26 +91,38 @@ func newPod(busChan MsgChan, tunnel func(string, Message) error, opts *podOpts, 
 // It is safe to call methods on a nil ticket, they will error with ErrNoTicket
 // This means error checking can be done on a chained call such as err := p.Send(msg).Wait(...)
 func (p *Pod) Send(msg Message) *MsgReceipt {
+	ll := p.logger.With().Str("requestID", msg.ParentID()).Logger()
+
+	ll.Info().Msg("sending message in pod.send")
+
 	// check to see if the pod has died (aka disconnected)
 	if p.dead.Load().(bool) == true {
+		ll.Warn().Msg("pod has died")
 		return nil
 	}
 
+	ll.Info().Str("msg uuid", msg.UUID()).Msg("filtering message")
+
 	p.FilterUUID(msg.UUID(), false) // don't allow the same message to bounce back through this pod
+
+	ll.Info().Msg("sending message to the bus chan")
 
 	p.busChan <- msg
 
-	t := &MsgReceipt{
+	ll.Info().Msg("sent message to bus chan")
+
+	ll.Info().Msg("returning a message receipt")
+
+	return &MsgReceipt{
 		UUID: msg.UUID(),
 		pod:  p,
 	}
-
-	return t
 }
 
 // Tunnel bypasses the pod's normal 'Send' and uses the bus itself to tunnel to a specific peer
 // if a transport is enabled. If not, it's a no-op.
 func (p *Pod) Tunnel(capability string, msg Message) error {
+	p.logger.Info().Str("requestID", msg.ParentID()).Str("fqmn", capability).Msg("tunneling using the pod's tunnelfunc")
 	return p.tunnelFunc(capability, msg)
 }
 

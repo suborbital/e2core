@@ -14,7 +14,7 @@ import (
 )
 
 func main() {
-	logger := zerolog.New(os.Stderr).With().Timestamp().Logger()
+	logger := zerolog.New(os.Stderr).With().Str("mode", "kafka-tester").Timestamp().Logger()
 
 	knats, err := kafka.New("127.0.0.1:9092")
 	if err != nil {

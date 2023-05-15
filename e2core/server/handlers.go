@@ -24,6 +24,7 @@ func (s *Server) executePluginByNameHandler() echo.HandlerFunc {
 		name := ReadParam(c, "name")
 
 		ll := s.logger.With().
+			Str("requestID", c.Response().Header().Get(echo.HeaderXRequestID)).
 			Str("ident", ident).
 			Str("namespace", namespace).
 			Str("fn", name).

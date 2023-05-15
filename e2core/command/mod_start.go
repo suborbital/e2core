@@ -61,13 +61,17 @@ func ModStart() *cobra.Command {
 			}
 			if httpPort > 0 {
 				config.Port = httpPort
-				l.Debug().Int("port", httpPort).Msg(fmt.Sprintf("Using port :%d for the sat backend", httpPort))
+				l.Info().Int("port", httpPort).Msg(fmt.Sprintf("Using port :%d for the sat backend", httpPort))
 			}
+
+			l.Info().Interface("sdkTrace-config", config.TracerConfig).Msg("this is the sdkTrace config we're using")
 
 			traceProvider, err := sat.SetupTracing(config.TracerConfig, l)
 			if err != nil {
 				return errors.Wrap(err, "setup tracing")
 			}
+
+			l.Info().Msg("successfully set up tracing")
 
 			mctx, mcancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer mcancel()

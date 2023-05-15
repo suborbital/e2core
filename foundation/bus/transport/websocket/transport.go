@@ -93,18 +93,22 @@ func (t *Transport) HTTPHandlerFunc() http.HandlerFunc {
 			return
 		}
 
+		t.log.Info().Msg("receiving a message I think")
+
 		c, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
 			t.log.Err(err).Msg("could not upgrade connection to websocket")
 			return
 		}
 
-		t.log.Debug().Str("connectionURL", r.URL.String()).Msg("upgraded connection")
+		t.log.Info().Str("connectionURL", r.URL.String()).Msg("upgraded connection")
 
 		conn := &Conn{
 			conn: c,
 			log:  t.log,
 		}
+
+		t.log.Info().Interface("connectionfunc", t.connectionFunc).Msg("connection func is this, apparently, bus.Connect, again? request is in the conn.conn as an upgraded websocket connection")
 
 		t.connectionFunc(conn)
 	}
@@ -112,26 +116,32 @@ func (t *Transport) HTTPHandlerFunc() http.HandlerFunc {
 
 // SendMsg sends a message to the connection
 func (c *Conn) SendMsg(msg bus.Message) error {
+	ll := c.log.With().Str("requestID", msg.ParentID()).
+		Str("msg-uuid", msg.UUID()).
+		Str("node-uuid", c.nodeUUID).Logger()
+
 	msgBytes, err := msg.Marshal()
 	if err != nil {
 		return errors.Wrap(err, "[transport-websocket] failed to Marshal message")
 	}
 
-	c.log.Debug().Str("msgUUID", msg.UUID()).
-		Str("nodeUUID", c.nodeUUID).Msg("sending message to connection")
+	ll.Info().Msg("sending message to connection over binary")
 
 	if err := c.WriteMessage(websocket.BinaryMessage, msgBytes); err != nil {
 		if errors.Is(err, websocket.ErrCloseSent) {
+			ll.Err(err).Msg("websocket error close sent bla bla")
 			return bus.ErrConnectionClosed
 		} else if err == bus.ErrNodeWithdrawn {
+			ll.Err(err).Msg("node was withdrawn")
 			return err
 		}
+
+		ll.Err(err).Msg("some super different error with connection")
 
 		return errors.Wrap(err, "[transport-websocket] failed to WriteMessage")
 	}
 
-	c.log.Debug().Str("msgUUID", msg.UUID()).
-		Str("nodeUUID", c.nodeUUID).Msg("sent message to connection")
+	ll.Info().Msg("sent message to connection")
 
 	return nil
 }
@@ -160,6 +170,7 @@ func (c *Conn) ReadMsg() (bus.Message, *bus.Withdraw, error) {
 	}
 
 	c.log.Debug().
+		Str("requestID", msg.ParentID()).
 		Str("msgUUID", msg.UUID()).
 		Str("nodeUUID", c.nodeUUID).
 		Msg("received message from node")

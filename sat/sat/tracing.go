@@ -56,6 +56,7 @@ func SetupTracing(config options.TracerConfig, logger zerolog.Logger) (*trace.Tr
 
 		conn, err := observability.GrpcConnection(ctx, config.Collector.Endpoint)
 		if err != nil {
+			ll.Err(err).Msg("observability.GrcpConnection failed")
 			return nil, errors.Wrap(err, "collector GrpcConnection")
 		}
 
@@ -64,10 +65,11 @@ func SetupTracing(config options.TracerConfig, logger zerolog.Logger) (*trace.Tr
 			ServiceName: config.ServiceName,
 		})
 		if err != nil {
+			ll.Err(err).Msg("observability.OtelTracer failed")
 			return nil, errors.Wrap(err, "observability.OtelTracer")
 		}
 
-		ll.Info().Msg("created collector trace exporter")
+		ll.Info().Msg("created collector sdkTrace exporter")
 
 		return traceProvider, nil
 	default:

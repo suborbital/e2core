@@ -143,7 +143,7 @@ func setupLogger() zerolog.Logger {
 
 	logger := zerolog.New(os.Stderr).With().
 		Timestamp().
-		Str("command", "start").
+		Str("mode", "mothership").
 		Str("version", release.Version).
 		Logger().Level(zerolog.InfoLevel)
 

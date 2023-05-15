@@ -14,7 +14,7 @@ import (
 )
 
 func main() {
-	logger := zerolog.New(os.Stderr).With().Timestamp().Logger()
+	logger := zerolog.New(os.Stderr).With().Str("mode", "websocket-tester").Timestamp().Logger()
 	gwss := websocket.New()
 	locald := local.New()
 
