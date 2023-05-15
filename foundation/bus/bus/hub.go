@@ -280,7 +280,7 @@ func (h *hub) addConnection(connection Connection, uuid, belongsTo string, inter
 		Conn:      connection,
 		Pod:       h.pod,
 		Signaler:  signaler,
-		ErrChan:   make(chan error),
+		ErrChan:   make(chan error, 1),
 		BelongsTo: belongsTo,
 		Interests: interests,
 		Log:       h.log,
