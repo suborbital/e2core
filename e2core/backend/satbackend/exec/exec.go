@@ -15,7 +15,7 @@ type WaitFunc func() error
 
 // Run runs a command, outputting to terminal and returning the full output and/or error
 // a channel is returned which, when sent on, will terminate the process that was started
-func Run(cmd []string, env ...string) (string, context.CancelCauseFunc, WaitFunc, error) {
+func Run(cmd []string, env ...string) (string, int, context.CancelCauseFunc, WaitFunc, error) {
 	procUUID := uuid.New().String()
 	uuidEnv := fmt.Sprintf("%s_UUID=%s", strings.ToUpper(cmd[0]), procUUID)
 	env = append(env, uuidEnv)
@@ -33,10 +33,10 @@ func Run(cmd []string, env ...string) (string, context.CancelCauseFunc, WaitFunc
 
 	err := command.Start()
 	if err != nil {
-		return "", nil, nil, errors.Wrap(err, "command.Start()")
+		return "", -1, nil, nil, errors.Wrap(err, "command.Start()")
 	}
 
-	return procUUID, cxl, command.Wait, nil
+	return procUUID, command.Process.Pid, cxl, command.Wait, nil
 }
 
 // this is unused but we may want to do logging-to-speficig-directory some time in the
