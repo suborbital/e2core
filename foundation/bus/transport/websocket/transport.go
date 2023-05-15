@@ -88,6 +88,11 @@ func (t *Transport) Connect(endpoint string) (bus.Connection, error) {
 // HTTPHandlerFunc returns an http.HandlerFunc for incoming connections
 func (t *Transport) HTTPHandlerFunc() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		ctx, span := tracing.Tracer.Start(r.Context(), "websocket.transport.httphanderfunc")
+		defer span.End()
+
+		r = r.Clone(ctx)
+
 		if t.connectionFunc == nil {
 			t.log.Error().Msg("incoming connection received, but no connFunc configured")
 			w.WriteHeader(http.StatusInternalServerError)
@@ -96,6 +101,7 @@ func (t *Transport) HTTPHandlerFunc() http.HandlerFunc {
 
 		t.log.Info().Msg("receiving a message I think")
 
+		span.AddEvent("upgrading request to websocket connection")
 		c, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
 			t.log.Err(err).Msg("could not upgrade connection to websocket")
@@ -111,6 +117,7 @@ func (t *Transport) HTTPHandlerFunc() http.HandlerFunc {
 
 		t.log.Info().Interface("connectionfunc", t.connectionFunc).Msg("connection func is this, apparently, bus.Connect, again? request is in the conn.conn as an upgraded websocket connection")
 
+		span.AddEvent("calling connection function")
 		t.connectionFunc(conn)
 	}
 }
