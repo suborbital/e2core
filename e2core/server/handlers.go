@@ -16,7 +16,9 @@ import (
 
 func (s *Server) executePluginByNameHandler() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		ctx, span := tracing.Tracer.Start(c.Request().Context(), "executePluginByNameHandler")
+		ctx, span := tracing.Tracer.Start(c.Request().Context(), "executePluginByNameHandler", trace.WithAttributes(
+			attribute.String("request_id", c.Response().Header().Get(echo.HeaderXRequestID)),
+		))
 		defer span.End()
 
 		c.SetRequest(c.Request().WithContext(ctx))
