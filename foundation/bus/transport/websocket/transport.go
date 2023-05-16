@@ -11,6 +11,9 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/suborbital/e2core/foundation/bus/bus"
 	"github.com/suborbital/e2core/foundation/tracing"
@@ -124,9 +127,21 @@ func (t *Transport) HTTPHandlerFunc() http.HandlerFunc {
 
 // SendMsg sends a message to the connection
 func (c *Conn) SendMsg(msg bus.Message) error {
+	ctx, span := tracing.Tracer.Start(msg.Context(), "conn.SendMsg", trace.WithAttributes(
+		attribute.String("request ID", msg.ParentID()),
+	))
+	defer span.End()
+
+	span.AddEvent("injecting the ctx into the message")
+	fmt.Printf("\n\n!!!!\n\ninjecting context into message\n")
+	otel.GetTextMapPropagator().Inject(ctx, msg)
+	fmt.Printf("\n\n---\n\ndone injecting context into message\n")
+
 	ll := c.log.With().Str("requestID", msg.ParentID()).
 		Str("msg-uuid", msg.UUID()).
 		Str("node-uuid", c.nodeUUID).Logger()
+
+	ll.Info().Strs("traceinfo-keys", msg.Keys()).Msg("uh what")
 
 	msgBytes, err := msg.Marshal()
 	if err != nil {

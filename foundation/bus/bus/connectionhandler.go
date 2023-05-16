@@ -5,6 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
+	"go.opentelemetry.io/otel"
 
 	"github.com/suborbital/e2core/foundation/bus/bus/withdraw"
 	"github.com/suborbital/e2core/foundation/tracing"
@@ -64,9 +65,16 @@ func (c *connectionHandler) Start() {
 				return
 			}
 
+			ctx := otel.GetTextMapPropagator().Extract(context.Background(), msg)
+			ctx, span := tracing.Tracer.Start(ctx, "connectionHandler.ReadMsg")
+
+			msg.SetContext(ctx)
+
 			ll.Debug().Str("messageUUID", msg.UUID()).Str("requestID", msg.ParentID()).Msg("received message")
 
 			c.Pod.Send(msg)
+
+			span.End()
 		}
 	}()
 }

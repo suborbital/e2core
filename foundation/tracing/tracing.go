@@ -106,5 +106,7 @@ func SetupTracing(config Config, logger zerolog.Logger) (*sdkTrace.TracerProvide
 	ll.Info().Msg("setting up a global tracer")
 	Tracer = traceProvider.Tracer("e2core-bebby-tracing")
 
+	otel.SetTextMapPropagator(propagation.TraceContext{})
+
 	return traceProvider, nil
 }
