@@ -57,9 +57,11 @@ func (p *podConnection) send(msg Message) {
 
 	msg.SetContext(ctx)
 
-	go func(gctx context.Context) {
-		_, gspan := tracing.Tracer.Start(gctx, "go func inside podconnection.send")
+	go func(gctx context.Context, gmsg Message) {
+		gctx, gspan := tracing.Tracer.Start(gctx, "go func inside podconnection.send")
 		defer gspan.End()
+
+		gmsg.SetContext(gctx)
 
 		p.lock.RLock()
 		defer p.lock.RUnlock()
@@ -69,8 +71,8 @@ func (p *podConnection) send(msg Message) {
 			return
 		}
 
-		p.messageChan <- msg
-	}(ctx)
+		p.messageChan <- gmsg
+	}(ctx, msg)
 }
 
 // checkStatus checks the pod's feedback for any information or failed messages and drains the failures into the failed Message buffer

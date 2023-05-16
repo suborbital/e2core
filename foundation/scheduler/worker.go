@@ -1,11 +1,14 @@
 package scheduler
 
 import (
+	"context"
 	"sync"
 	"time"
 
 	"github.com/pkg/errors"
 	"golang.org/x/sync/singleflight"
+
+	"github.com/suborbital/e2core/foundation/tracing"
 )
 
 const (
@@ -48,16 +51,23 @@ func newWorker(runner Runnable, doFunc coreDoFunc, opts workerOpts) *worker {
 	return w
 }
 
-func (w *worker) schedule(job *Job) {
-	go func() {
+func (w *worker) schedule(ctx context.Context, job *Job) {
+	ctx, span := tracing.Tracer.Start(ctx, "worker.schedule")
+	defer span.End()
+
+	go func(goctx context.Context) {
+		_, span := tracing.Tracer.Start(goctx, "go func inside worker.schedule")
+		defer span.End()
+
 		if err := w.reconcilePoolSize(); err != nil {
 			job.result.sendErr(errors.Wrap(err, "failed to reconcilePoolSize"))
 			return
 		}
 
+		span.AddEvent("adding job to the worker workchannel and incrementing the rate by one")
 		w.workChan <- job
 		w.rate.add()
-	}()
+	}(ctx)
 }
 
 // start ensures the worker is ready to receive jobs

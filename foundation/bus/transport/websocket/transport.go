@@ -148,7 +148,7 @@ func (c *Conn) SendMsg(msg bus.Message) error {
 		return errors.Wrap(err, "[transport-websocket] failed to Marshal message")
 	}
 
-	ll.Info().Msg("sending message to connection over binary")
+	ll.Info().Str("messagebytes", string(msgBytes)).Msg("sending message to connection over binary")
 
 	if err := c.WriteMessage(websocket.BinaryMessage, msgBytes); err != nil {
 		if errors.Is(err, websocket.ErrCloseSent) {

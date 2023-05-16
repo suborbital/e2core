@@ -95,6 +95,11 @@ func newPod(busChan MsgChan, tunnel func(string, Message) error, opts *podOpts, 
 // It is safe to call methods on a nil ticket, they will error with ErrNoTicket
 // This means error checking can be done on a chained call such as err := p.Send(msg).Wait(...)
 func (p *Pod) Send(msg Message) *MsgReceipt {
+	ctx, span := tracing.Tracer.Start(msg.Context(), "pod.Send")
+	defer span.End()
+
+	msg.SetContext(ctx)
+
 	ll := p.logger.With().Str("requestID", msg.ParentID()).Logger()
 
 	ll.Info().Msg("sending message in pod.send")
@@ -111,6 +116,7 @@ func (p *Pod) Send(msg Message) *MsgReceipt {
 
 	ll.Info().Msg("sending message to the bus chan")
 
+	span.AddEvent("sending message to the bus channel")
 	p.busChan <- msg
 
 	ll.Info().Msg("sent message to bus chan")

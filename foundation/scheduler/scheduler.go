@@ -1,13 +1,17 @@
 package scheduler
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/suborbital/e2core/foundation/bus/bus"
+	"github.com/suborbital/e2core/foundation/tracing"
 )
 
 // MsgTypeReactrJobErr and others are Grav message types used for Scheduler job
@@ -19,7 +23,7 @@ const (
 )
 
 // JobFunc is a function that runs a job of a predetermined type
-type JobFunc func(interface{}) *Result
+type JobFunc func(context.Context, interface{}) *Result
 
 // Scheduler represents the main control object
 type Scheduler struct {
@@ -49,7 +53,10 @@ func NewWithLogger(log zerolog.Logger) *Scheduler {
 }
 
 // Do schedules a job to be worked on and returns a result object
-func (r *Scheduler) Do(job Job) *Result {
+func (r *Scheduler) Do(ctx context.Context, job Job) *Result {
+	ctx, span := tracing.Tracer.Start(ctx, "scheduler do with job")
+	defer span.End()
+
 	if job.Req() == nil {
 		r.log.Info().
 			Str("requestID", "no-request").
@@ -60,7 +67,7 @@ func (r *Scheduler) Do(job Job) *Result {
 			Msg("scheduler.Do function got called, passing it on to core.do")
 	}
 
-	return r.core.do(&job)
+	return r.core.do(ctx, &job)
 }
 
 // Schedule adds a new Schedule to the instance, Scheduler will 'watch' the Schedule
@@ -73,8 +80,8 @@ func (r *Scheduler) Schedule(s Schedule) {
 func (r *Scheduler) Register(jobType string, runner Runnable, options ...Option) JobFunc {
 	r.core.register(jobType, runner, options...)
 
-	helper := func(data interface{}) *Result {
-		return r.Do(NewJob(jobType, data))
+	helper := func(ctx context.Context, data interface{}) *Result {
+		return r.Do(ctx, NewJob(jobType, data))
 	}
 
 	return helper
@@ -135,22 +142,34 @@ func (r *Scheduler) Listen(pod *bus.Pod, msgType string) {
 
 // ListenAndRun subscribes Scheduler to a messageType and calls `run` for each job result
 func (r *Scheduler) ListenAndRun(pod *bus.Pod, msgType string, run func(bus.Message, interface{}, error)) {
-	helper := func(data interface{}) *Result {
+	helper := func(ctx context.Context, data interface{}) *Result {
+		ctx, span := tracing.Tracer.Start(ctx, "helper function")
+		defer span.End()
+
+		span.AddEvent("new job from data and msg type", trace.WithAttributes(
+			attribute.String("msgType", msgType),
+		))
 		job := NewJob(msgType, data)
 
-		return r.Do(job)
+		return r.Do(ctx, job)
 	}
 
 	// each time a message is received with the associated type,
 	// execute the associated job and pass the result to `run`
 	pod.OnType(msgType, func(msg bus.Message) error {
+		ctx, span := tracing.Tracer.Start(msg.Context(), "scheduler.ListenAndRun", trace.WithAttributes(
+			attribute.String("msgType", msgType),
+		))
+		defer span.End()
 
+		msg.SetContext(ctx)
 		r.log.Info().
 			Str("msgType", msgType).
 			Str("requestID", msg.ParentID()).
 			Msg("scheduler.ListenAndRun called, msg turned into a job, and job passed to scheduler.Do function")
 
-		result, err := helper(msg.Data()).Then()
+		span.AddEvent("sending msg.data to the helper")
+		result, err := helper(ctx, msg.Data()).Then()
 
 		run(msg, result, err)
 

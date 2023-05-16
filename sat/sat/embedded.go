@@ -1,17 +1,22 @@
 package sat
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 
 	"github.com/suborbital/e2core/foundation/scheduler"
+	"github.com/suborbital/e2core/foundation/tracing"
 	"github.com/suborbital/systemspec/request"
 )
 
 // Exec takes input bytes, executes the loaded module, and returns the result
-func (s *Sat) Exec(input []byte) (*request.CoordinatedResponse, error) {
+func (s *Sat) Exec(ctx context.Context, input []byte) (*request.CoordinatedResponse, error) {
+	ctx, span := tracing.Tracer.Start(ctx, "sat.Exec")
+	defer span.End()
+
 	// construct a fake HTTP request from the input
 	req := &request.CoordinatedRequest{
 		Method:      http.MethodPost,
@@ -24,7 +29,7 @@ func (s *Sat) Exec(input []byte) (*request.CoordinatedResponse, error) {
 		State:       map[string][]byte{},
 	}
 
-	result, err := s.engine.Do(scheduler.NewJob(s.config.JobType, req)).Then()
+	result, err := s.engine.Do(ctx, scheduler.NewJob(s.config.JobType, req)).Then()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to exec")
 	}

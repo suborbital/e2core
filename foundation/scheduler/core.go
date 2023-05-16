@@ -1,16 +1,21 @@
 package scheduler
 
 import (
+	"context"
 	"fmt"
 	"sync"
 
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
+
+	"github.com/suborbital/e2core/foundation/tracing"
 )
 
 // coreDoFunc is an internal version of DoFunc that takes a
 // Job pointer instead of a Job value for the best memory usage
-type coreDoFunc func(job *Job) *Result
+type coreDoFunc func(ctx context.Context, job *Job) *Result
 
 // core is the 'core scheduler' for reactr, handling execution of
 // Tasks, Jobs, and Schedules
@@ -36,8 +41,13 @@ func newCore(log zerolog.Logger) *core {
 	return c
 }
 
-func (c *core) do(job *Job) *Result {
+func (c *core) do(ctx context.Context, job *Job) *Result {
+	ctx, span := tracing.Tracer.Start(ctx, "core.do")
+	defer span.End()
+
 	result := newResult(job.UUID())
+	span.AddEvent("created a new job", trace.WithAttributes(
+		attribute.String("job-uuid", job.UUID())))
 
 	rid := "no-request"
 	if job.Req() != nil {
@@ -48,18 +58,24 @@ func (c *core) do(job *Job) *Result {
 
 	ll.Info().Msg("core.do function got called")
 
+	span.AddEvent("core.scaler.findWorder for job type", trace.WithAttributes(
+		attribute.String("jobType", job.jobType),
+	))
 	jobWorker := c.scaler.findWorker(job.jobType)
 	if jobWorker == nil {
 		result.sendErr(fmt.Errorf("failed to getWorker for jobType %q", job.jobType))
 		return result
 	}
 
-	go func() {
+	go func(goctx context.Context) {
+		ctx, span := tracing.Tracer.Start(goctx, "go func inside core.do")
+		defer span.End()
+
 		job.result = result
 		ll.Info().Msg("jobworker got a job scheduled")
 
-		jobWorker.schedule(job)
-	}()
+		jobWorker.schedule(ctx, job)
+	}(ctx)
 
 	ll.Info().Msg("returning result from core.do func")
 	return result

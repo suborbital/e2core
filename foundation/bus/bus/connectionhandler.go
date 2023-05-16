@@ -83,6 +83,8 @@ func (c *connectionHandler) Send(ctx context.Context, msg Message) error {
 	ctx, span := tracing.Tracer.Start(ctx, "connectionHandler.send")
 	defer span.End()
 
+	msg.SetContext(ctx)
+
 	ll := c.Log.With().Str("requestID", msg.ParentID()).Logger()
 	if c.Signaler.PeerWithdrawn() {
 		span.AddEvent("peer withdrawn")
