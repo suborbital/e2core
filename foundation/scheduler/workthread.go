@@ -3,6 +3,8 @@ package scheduler
 import (
 	"context"
 	"time"
+
+	"github.com/suborbital/e2core/foundation/tracing"
 )
 
 type workThread struct {
@@ -38,18 +40,22 @@ func (wt *workThread) run() {
 			}
 
 			// wait for the next job
-			job := <-wt.workChan
+			inJob := <-wt.workChan
+			ctx, span := tracing.Tracer.Start(inJob.Context(), "workthread.run in scheduler")
+
+			job := inJob.WithContext(ctx)
+
 			var err error
 
-			ctx := newCtx(wt.doFunc)
+			workCtx := newCtx(wt.doFunc)
 
 			var result interface{}
 
 			if wt.timeoutSeconds == 0 {
 				// we pass in a dereferenced job so that the Runner cannot modify it
-				result, err = wt.runner.Run(*job, ctx)
+				result, err = wt.runner.Run(job, workCtx)
 			} else {
-				result, err = wt.runWithTimeout(job, ctx)
+				result, err = wt.runWithTimeout(&job, workCtx)
 			}
 
 			if err != nil {
@@ -58,6 +64,8 @@ func (wt *workThread) run() {
 			}
 
 			job.result.sendResult(result)
+
+			span.End()
 		}
 	}()
 }

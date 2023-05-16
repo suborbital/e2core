@@ -1,7 +1,6 @@
 package scheduler
 
 import (
-	"context"
 	"sync"
 	"time"
 
@@ -57,10 +56,13 @@ func (w *worker) schedule(incomingJob *Job) {
 
 	job := incomingJob.WithContext(ctx)
 
-	go func(goctx context.Context) {
-		_, span := tracing.Tracer.Start(goctx, "go func inside worker.schedule")
+	go func(incomingJob Job) {
+		ctx, span := tracing.Tracer.Start(incomingJob.Context(), "go func inside worker.schedule")
 		defer span.End()
 
+		job := incomingJob.WithContext(ctx)
+
+		span.AddEvent("reconciling pool size in worker")
 		if err := w.reconcilePoolSize(); err != nil {
 			job.result.sendErr(errors.Wrap(err, "failed to reconcilePoolSize"))
 			return
@@ -69,7 +71,7 @@ func (w *worker) schedule(incomingJob *Job) {
 		span.AddEvent("adding job to the worker workchannel and incrementing the rate by one")
 		w.workChan <- &job
 		w.rate.add()
-	}(ctx)
+	}(job)
 }
 
 // start ensures the worker is ready to receive jobs

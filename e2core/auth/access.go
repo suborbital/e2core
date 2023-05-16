@@ -13,6 +13,7 @@ import (
 
 	"github.com/suborbital/e2core/e2core/options"
 	"github.com/suborbital/e2core/foundation/common"
+	"github.com/suborbital/e2core/foundation/tracing"
 	"github.com/suborbital/systemspec/system"
 )
 
@@ -28,6 +29,11 @@ func AuthorizationMiddleware(opts *options.Options) echo.MiddlewareFunc {
 
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
+			ctx, span := tracing.Tracer.Start(c.Request().Context(), "authorization-middleware")
+			defer span.End()
+
+			c.SetRequest(c.Request().WithContext(ctx))
+
 			identifier := c.Param("ident")
 			namespace := c.Param("namespace")
 			name := c.Param("name")

@@ -1,12 +1,14 @@
 package runtime
 
 import (
+	"context"
 	"sync"
 
 	"github.com/bytecodealliance/wasmtime-go/v7"
 	"github.com/pkg/errors"
 
 	"github.com/suborbital/e2core/foundation/scheduler"
+	"github.com/suborbital/e2core/foundation/tracing"
 	"github.com/suborbital/e2core/sat/engine2/api"
 	"github.com/suborbital/e2core/sat/engine2/runtime/instance"
 	"github.com/suborbital/systemspec/tenant"
@@ -65,7 +67,10 @@ func (ip *InstancePool) RemoveInstance() error {
 }
 
 // UseInstance provides an instance from the environment's pool to be used by a callback function
-func (ip *InstancePool) UseInstance(ctx *scheduler.Ctx, instFunc func(*instance.Instance, int32)) error {
+func (ip *InstancePool) UseInstance(ctx *scheduler.Ctx, spanCtx context.Context, instFunc func(context.Context, *instance.Instance, int32)) error {
+	spanCtx, span := tracing.Tracer.Start(spanCtx, "instancePool.UseInstance")
+	defer span.End()
+
 	go func() {
 		// prepare a new instance
 		if err := ip.AddInstance(); err != nil {
@@ -81,6 +86,7 @@ func (ip *InstancePool) UseInstance(ctx *scheduler.Ctx, instFunc func(*instance.
 		it = nil
 	}(inst)
 
+	span.AddEvent("instance.Store")
 	// generate a random identifier as a reference to the instance in use to
 	// easily allow the Wasm module to reference itself when calling back over the FFI
 	ident, err := instance.Store(inst)
@@ -88,11 +94,12 @@ func (ip *InstancePool) UseInstance(ctx *scheduler.Ctx, instFunc func(*instance.
 		return errors.Wrap(err, "failed to setupNewIdentifier")
 	}
 
+	span.AddEvent("instance.UseCtx")
 	// setup the instance's temporary state
 	inst.UseCtx(ctx)
 
 	// do the actual call into the Wasm module
-	instFunc(inst, ident)
+	instFunc(spanCtx, inst, ident)
 
 	// clear the instance's temporary state
 	inst.UseCtx(nil)
