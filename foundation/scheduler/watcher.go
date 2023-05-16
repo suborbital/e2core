@@ -1,7 +1,6 @@
 package scheduler
 
 import (
-	"context"
 	"sync"
 	"time"
 
@@ -44,25 +43,25 @@ func (w *watcher) watch(sched Schedule) {
 			// loop forever and check each schedule for new jobs
 			// repeating every second
 			for {
-				remove := []string{}
+				remove := make([]string, 0)
 
 				w.lock.RLock()
-				for uuid, s := range w.schedules {
+				for scheduledUUID, s := range w.schedules {
 					if s.Done() {
 						// set the schedule to be removed if it's done
-						remove = append(remove, uuid)
+						remove = append(remove, scheduledUUID)
 					} else {
 						if job := s.Check(); job != nil {
 							// schedule the job and discard the result
-							w.scheduleFunc(context.Background(), job).Discard()
+							w.scheduleFunc(job).Discard()
 						}
 					}
 				}
 				w.lock.RUnlock()
 
 				w.lock.Lock()
-				for _, uuid := range remove {
-					delete(w.schedules, uuid)
+				for _, uuidToRemove := range remove {
+					delete(w.schedules, uuidToRemove)
 				}
 				w.lock.Unlock()
 

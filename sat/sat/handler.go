@@ -40,7 +40,7 @@ func (s *Sat) handler(engine *engine2.Engine) echo.HandlerFunc {
 			return echo.NewHTTPError(http.StatusInternalServerError, "unknown error").SetInternal(fmt.Errorf("module %s is not registered", s.config.JobType))
 		}
 
-		result, err := engine.Do(spanCtx, scheduler.NewJob(s.config.JobType, req)).Then()
+		result, err := engine.Do(scheduler.NewJob(s.config.JobType, req).WithContext(spanCtx)).Then()
 		if err != nil {
 			if errors.As(err, &runErr) {
 				// runErr would be an actual error returned from a function

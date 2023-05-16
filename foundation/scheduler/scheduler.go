@@ -23,7 +23,7 @@ const (
 )
 
 // JobFunc is a function that runs a job of a predetermined type
-type JobFunc func(context.Context, interface{}) *Result
+type JobFunc func(interface{}) *Result
 
 // Scheduler represents the main control object
 type Scheduler struct {
@@ -53,9 +53,11 @@ func NewWithLogger(log zerolog.Logger) *Scheduler {
 }
 
 // Do schedules a job to be worked on and returns a result object
-func (r *Scheduler) Do(ctx context.Context, job Job) *Result {
-	ctx, span := tracing.Tracer.Start(ctx, "scheduler do with job")
+func (r *Scheduler) Do(incomingJob Job) *Result {
+	ctx, span := tracing.Tracer.Start(incomingJob.Context(), "scheduler do with job")
 	defer span.End()
+
+	job := incomingJob.WithContext(ctx)
 
 	if job.Req() == nil {
 		r.log.Info().
@@ -67,7 +69,7 @@ func (r *Scheduler) Do(ctx context.Context, job Job) *Result {
 			Msg("scheduler.Do function got called, passing it on to core.do")
 	}
 
-	return r.core.do(ctx, &job)
+	return r.core.do(&job)
 }
 
 // Schedule adds a new Schedule to the instance, Scheduler will 'watch' the Schedule
@@ -80,8 +82,8 @@ func (r *Scheduler) Schedule(s Schedule) {
 func (r *Scheduler) Register(jobType string, runner Runnable, options ...Option) JobFunc {
 	r.core.register(jobType, runner, options...)
 
-	helper := func(ctx context.Context, data interface{}) *Result {
-		return r.Do(ctx, NewJob(jobType, data))
+	helper := func(data interface{}) *Result {
+		return r.Do(NewJob(jobType, data))
 	}
 
 	return helper
@@ -149,9 +151,9 @@ func (r *Scheduler) ListenAndRun(pod *bus.Pod, msgType string, run func(bus.Mess
 		span.AddEvent("new job from data and msg type", trace.WithAttributes(
 			attribute.String("msgType", msgType),
 		))
-		job := NewJob(msgType, data)
+		job := NewJob(msgType, data).WithContext(ctx)
 
-		return r.Do(ctx, job)
+		return r.Do(job)
 	}
 
 	// each time a message is received with the associated type,

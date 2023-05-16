@@ -62,7 +62,7 @@ func (s *Syncer) Start() error {
 	}
 
 	// sync once to seed the initial state
-	if _, err := s.sched.Do(context.Background(), scheduler.NewJob("sync", nil)).Then(); err != nil {
+	if _, err := s.sched.Do(scheduler.NewJob("sync", nil).WithContext(context.Background())).Then(); err != nil {
 		return errors.Wrap(err, "failed to Do sync job")
 	}
 

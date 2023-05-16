@@ -1,7 +1,6 @@
 package scheduler
 
 import (
-	"context"
 	"fmt"
 	"sync"
 
@@ -15,7 +14,7 @@ import (
 
 // coreDoFunc is an internal version of DoFunc that takes a
 // Job pointer instead of a Job value for the best memory usage
-type coreDoFunc func(ctx context.Context, job *Job) *Result
+type coreDoFunc func(job *Job) *Result
 
 // core is the 'core scheduler' for reactr, handling execution of
 // Tasks, Jobs, and Schedules
@@ -41,9 +40,11 @@ func newCore(log zerolog.Logger) *core {
 	return c
 }
 
-func (c *core) do(ctx context.Context, job *Job) *Result {
-	ctx, span := tracing.Tracer.Start(ctx, "core.do")
+func (c *core) do(incomingJob *Job) *Result {
+	ctx, span := tracing.Tracer.Start(incomingJob.Context(), "core.do")
 	defer span.End()
+
+	job := incomingJob.WithContext(ctx)
 
 	result := newResult(job.UUID())
 	span.AddEvent("created a new job", trace.WithAttributes(
@@ -67,15 +68,18 @@ func (c *core) do(ctx context.Context, job *Job) *Result {
 		return result
 	}
 
-	go func(goctx context.Context) {
-		ctx, span := tracing.Tracer.Start(goctx, "go func inside core.do")
+	go func(gjob Job) {
+		ctx, span := tracing.Tracer.Start(gjob.Context(), "go func inside core.do")
 		defer span.End()
 
-		job.result = result
+		ggjob := gjob.WithContext(ctx)
+
+		ggjob.result = result
+
 		ll.Info().Msg("jobworker got a job scheduled")
 
-		jobWorker.schedule(ctx, job)
-	}(ctx)
+		jobWorker.schedule(&ggjob)
+	}(job)
 
 	ll.Info().Msg("returning result from core.do func")
 	return result

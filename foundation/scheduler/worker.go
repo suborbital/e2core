@@ -51,9 +51,11 @@ func newWorker(runner Runnable, doFunc coreDoFunc, opts workerOpts) *worker {
 	return w
 }
 
-func (w *worker) schedule(ctx context.Context, job *Job) {
-	ctx, span := tracing.Tracer.Start(ctx, "worker.schedule")
+func (w *worker) schedule(incomingJob *Job) {
+	ctx, span := tracing.Tracer.Start(incomingJob.Context(), "worker.schedule")
 	defer span.End()
+
+	job := incomingJob.WithContext(ctx)
 
 	go func(goctx context.Context) {
 		_, span := tracing.Tracer.Start(goctx, "go func inside worker.schedule")
@@ -65,7 +67,7 @@ func (w *worker) schedule(ctx context.Context, job *Job) {
 		}
 
 		span.AddEvent("adding job to the worker workchannel and incrementing the rate by one")
-		w.workChan <- job
+		w.workChan <- &job
 		w.rate.add()
 	}(ctx)
 }

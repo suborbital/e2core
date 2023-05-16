@@ -39,7 +39,7 @@ func newCtx(doFunc coreDoFunc) *Ctx {
 
 // Do runs a new job
 func (c *Ctx) Do(job Job) *Result {
-	return c.doFunc(c.Context, &job)
+	return c.doFunc(&job)
 }
 
 func (c *Ctx) SetFFIResult(result []byte, err error) (*FFIResult, error) {
