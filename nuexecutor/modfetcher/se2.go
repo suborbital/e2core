@@ -17,8 +17,9 @@ import (
 
 const (
 	// host, tenantID, ref, namespace, name
-	endpointMask  = "%s/system/v1/module/%s/%s/%s/%s"
-	clientTimeout = 3 * time.Second
+	moduleEndpointMask = "%s/system/v1/module/%s/%s/%s/%s"
+	tenantEndpointMask = "%s/system/v1/tenant/%s"
+	clientTimeout      = 3 * time.Second
 )
 
 type SE2Config struct {
@@ -31,6 +32,8 @@ type SE2 struct {
 	endpoint string
 }
 
+var _ worker.ModSource = &SE2{}
+
 func NewSE2(config SE2Config, l zerolog.Logger) SE2 {
 	return SE2{
 		client:   &http.Client{Timeout: clientTimeout},
@@ -39,15 +42,15 @@ func NewSE2(config SE2Config, l zerolog.Logger) SE2 {
 	}
 }
 
-func (s SE2) Get(ctx context.Context, fqmn fqmn.FQMN) (tenant.WasmModuleRef, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf(endpointMask, s.endpoint, fqmn.Tenant, fqmn.Ref, fqmn.Namespace, fqmn.Name), nil)
+func (s SE2) Get(ctx context.Context, fqmn fqmn.FQMN) ([]byte, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf(moduleEndpointMask, s.endpoint, fqmn.Tenant, fqmn.Ref, fqmn.Namespace, fqmn.Name), nil)
 	if err != nil {
-		return tenant.WasmModuleRef{}, errors.Wrap(err, "http.NewRequestWithContext")
+		return nil, errors.Wrap(err, "http.NewRequestWithContext")
 	}
 
 	resp, err := s.client.Do(req)
 	if err != nil {
-		return tenant.WasmModuleRef{}, errors.Wrap(err, "s.client.Do")
+		return nil, errors.Wrap(err, "s.client.Do")
 	}
 
 	defer resp.Body.Close()
@@ -56,10 +59,8 @@ func (s SE2) Get(ctx context.Context, fqmn fqmn.FQMN) (tenant.WasmModuleRef, err
 
 	err = json.NewDecoder(resp.Body).Decode(&r)
 	if err != nil {
-		return tenant.WasmModuleRef{}, errors.Wrap(err, "json.NewDecoder(resp.Body).Decode")
+		return nil, errors.Wrap(err, "json.NewDecoder(resp.Body).Decode")
 	}
 
-	return *r.WasmRef, nil
+	return r.WasmRef.Data, nil
 }
-
-var _ worker.ModSource = &SE2{}

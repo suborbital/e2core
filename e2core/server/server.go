@@ -17,6 +17,7 @@ import (
 	"github.com/suborbital/e2core/foundation/bus/discovery/local"
 	"github.com/suborbital/e2core/foundation/bus/transport/websocket"
 	"github.com/suborbital/e2core/foundation/tracing"
+	"github.com/suborbital/e2core/nuexecutor/exec"
 	kitError "github.com/suborbital/go-kit/web/error"
 	"github.com/suborbital/go-kit/web/mid"
 )
@@ -77,6 +78,10 @@ func New(l zerolog.Logger, sync *syncer.Syncer, opts *options.Options) (*Server,
 	}
 
 	e.POST("/name/:ident/:namespace/:name", server.executePluginByNameHandler(), auth.AuthorizationMiddleware(opts))
+
+	sp := exec.NewSpawn(exec.Config{ControlPlane: opts.ControlPlane})
+
+	e.POST("/sync/:ident/:namespace/:name", server.syncHandler(sp), auth.AuthorizationMiddleware(opts))
 
 	e.GET("/health", server.healthHandler())
 

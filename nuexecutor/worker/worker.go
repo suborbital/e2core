@@ -7,9 +7,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 
-	"github.com/suborbital/e2core/nuexecutor/exec"
 	"github.com/suborbital/systemspec/fqmn"
-	"github.com/suborbital/systemspec/tenant"
 )
 
 const (
@@ -29,7 +27,7 @@ type Wasm struct {
 	workers uint8
 
 	// incoming is the channel that the module returns so handlers can use it to send jobs to process.
-	incoming chan exec.Job
+	incoming chan Job
 
 	// shutdown channel receives a struct signal to terminate individual workers.
 	shutdown chan struct{}
@@ -47,7 +45,8 @@ type Config struct {
 }
 
 type ModSource interface {
-	Get(context.Context, fqmn.FQMN) (tenant.WasmModuleRef, error)
+	Get(context.Context, fqmn.FQMN) ([]byte, error)
+	LatestRef(ctx context.Context, ident, namespace, name string) (string, error)
 }
 
 func New(c Config, l zerolog.Logger, source ModSource) *Wasm {
@@ -65,7 +64,7 @@ func New(c Config, l zerolog.Logger, source ModSource) *Wasm {
 	return &Wasm{
 		source:   source,
 		workers:  workers,
-		incoming: make(chan exec.Job, buffer),
+		incoming: make(chan Job, buffer),
 		wg:       new(sync.WaitGroup),
 		logger:   l.With().Str("component", "nuexecutor").Logger(),
 	}
@@ -74,7 +73,7 @@ func New(c Config, l zerolog.Logger, source ModSource) *Wasm {
 // Start launches workers in a goroutine. Number of workers is governed by the Config.Workers configuration property. It
 // returns a unidirectional channel that consuming code can send individual jobs to which will be picked up by the work
 // method.
-func (w *Wasm) Start() chan<- exec.Job {
+func (w *Wasm) Start() chan<- Job {
 	for i := uint8(0); i < w.workers; i++ {
 		go w.work(i)
 		w.wg.Add(1)

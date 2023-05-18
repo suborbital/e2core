@@ -3,6 +3,7 @@ module github.com/suborbital/e2core
 go 1.20
 
 require (
+	github.com/allegro/bigcache/v3 v3.1.0
 	github.com/bytecodealliance/wasmtime-go/v7 v7.0.0
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/websocket v1.5.0
