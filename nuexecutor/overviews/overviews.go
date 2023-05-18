@@ -100,7 +100,7 @@ func (r *Repository) work() {
 
 				// Build the data.
 				for _, mod := range to.Config.Modules {
-					d[tenantID(tid)][namespaceFunctionName(fmt.Sprintf("%s-%s", mod.Namespace, mod.Name))] = moduleRef(mod.Ref)
+					d[tenantID(tid)][namespaceFunctionName(key(mod.Namespace, mod.Name))] = moduleRef(mod.Ref)
 				}
 			}
 
@@ -177,8 +177,29 @@ func (r *Repository) tenantOverview(ctx context.Context, tenantID string) (syste
 	return to, nil
 }
 
+func (r *Repository) Ref(tenant, namespace, name string) (moduleRef, error) {
+	r.lock.Lock()
+	td, ok := r.data[tenantID(tenant)]
+	r.lock.Unlock()
+
+	if !ok {
+		return "", errors.New("no entries for tenant")
+	}
+
+	ref, ok := td[namespaceFunctionName(key(namespace, name))]
+	if !ok {
+		return "", errors.New("no entry for namespace/name")
+	}
+
+	return ref, nil
+}
+
 func (r *Repository) Shutdown() {
 	close(r.shutdown)
 
 	r.wg.Wait()
+}
+
+func key(ns, fn string) string {
+	return fmt.Sprintf("%s-%s", ns, fn)
 }
