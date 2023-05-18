@@ -8,7 +8,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 
 	"github.com/suborbital/e2core/e2core/backend/satbackend/exec"
@@ -41,9 +40,9 @@ func New(logger zerolog.Logger, opts *options.Options, syncer *syncer.Syncer) (*
 }
 
 func (o *Orchestrator) Start() error {
-	if err := o.syncer.Start(); err != nil {
-		return errors.Wrap(err, "failed to syncer.Start")
-	}
+	// if err := o.syncer.Start(); err != nil {
+	// 	return errors.Wrap(err, "failed to syncer.Start")
+	// }
 
 	ll := o.logger.With().Str("method", "Start").Logger()
 
@@ -62,7 +61,7 @@ loop:
 
 		case <-ticker.C:
 			// when the ticker fires each second
-			o.reconcileConstellation(o.syncer)
+			// o.reconcileConstellation(o.syncer)
 		}
 	}
 
