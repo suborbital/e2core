@@ -21,6 +21,7 @@ import (
 	"github.com/suborbital/e2core/e2core/server"
 	"github.com/suborbital/e2core/e2core/sourceserver"
 	"github.com/suborbital/e2core/e2core/syncer"
+	"github.com/suborbital/e2core/nuexecutor/overviews"
 	"github.com/suborbital/systemspec/system/bundle"
 	"github.com/suborbital/systemspec/system/client"
 )
@@ -54,6 +55,9 @@ func Start() *cobra.Command {
 			}
 
 			sync := setupSyncer(logger, opts)
+
+			rep := overviews.NewRepository(overviews.Config{Endpoint: opts.ControlPlane}, logger)
+			rep.Start()
 
 			// create the three essential parts:
 			sourceSrv, err := setupSourceServer(logger, opts)
@@ -104,8 +108,9 @@ func Start() *cobra.Command {
 			select {
 			case err := <-serverErrors:
 				return fmt.Errorf("server error: %w", err)
-
 			case sig := <-shutdown:
+				rep.Shutdown()
+
 				logger.Info().Str("signal", sig.String()).Str("status", "shutdown started").Msg("shutdown started")
 				defer logger.Info().Str("status", "shutdown complete").Msg("all done")
 
