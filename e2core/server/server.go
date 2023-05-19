@@ -18,6 +18,7 @@ import (
 	"github.com/suborbital/e2core/foundation/bus/transport/websocket"
 	"github.com/suborbital/e2core/foundation/tracing"
 	"github.com/suborbital/e2core/nuexecutor/exec"
+	"github.com/suborbital/e2core/nuexecutor/overviews"
 	kitError "github.com/suborbital/go-kit/web/error"
 	"github.com/suborbital/go-kit/web/mid"
 )
@@ -37,7 +38,7 @@ type Server struct {
 }
 
 // New creates a new Server instance.
-func New(l zerolog.Logger, sync *syncer.Syncer, opts *options.Options) (*Server, error) {
+func New(l zerolog.Logger, sync *syncer.Syncer, opts *options.Options, rep *overviews.Repository) (*Server, error) {
 	ll := l.With().Str("module", "e2core-server").Logger()
 
 	// @todo https://github.com/suborbital/e2core/issues/144, the first return value is a function that would close the
@@ -81,7 +82,7 @@ func New(l zerolog.Logger, sync *syncer.Syncer, opts *options.Options) (*Server,
 
 	sp := exec.NewSpawn(exec.Config{ControlPlane: opts.ControlPlane})
 
-	e.POST("/sync/:ident/:namespace/:name", server.syncHandler(sp), auth.AuthorizationMiddleware(opts))
+	e.POST("/sync/:ident/:namespace/:name", server.syncHandler(sp, rep), auth.AuthorizationMiddleware(opts))
 
 	e.GET("/health", server.healthHandler())
 

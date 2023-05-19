@@ -13,6 +13,7 @@ import (
 	"github.com/suborbital/e2core/e2core/sequence"
 	"github.com/suborbital/e2core/foundation/tracing"
 	"github.com/suborbital/e2core/nuexecutor/exec"
+	"github.com/suborbital/e2core/nuexecutor/overviews"
 	"github.com/suborbital/systemspec/fqmn"
 	"github.com/suborbital/systemspec/request"
 	"github.com/suborbital/systemspec/tenant"
@@ -121,7 +122,7 @@ func ReadParam(ctx echo.Context, name string) string {
 	return ctx.Param(name)
 }
 
-func (s *Server) syncHandler(sp exec.Spawn) echo.HandlerFunc {
+func (s *Server) syncHandler(sp exec.Spawn, rep *overviews.Repository) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx, span := tracing.Tracer.Start(c.Request().Context(), "syncHandler", trace.WithAttributes(
 			attribute.String("request_id", c.Response().Header().Get(echo.HeaderXRequestID)),
@@ -140,9 +141,16 @@ func (s *Server) syncHandler(sp exec.Spawn) echo.HandlerFunc {
 		// this is coming from the path.
 		name := ReadParam(c, "name")
 
-		mod := s.syncer.GetModuleByName(ident, namespace, name)
-		if mod == nil {
-			return echo.NewHTTPError(http.StatusNotFound, "module not found").SetInternal(fmt.Errorf("no module with %s/%s/%s", ident, namespace, name))
+		ref, err := rep.Ref(ident, namespace, name)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusNotFound, "module not found").SetInternal(errors.Wrap(err, "rep.Ref"))
+		}
+
+		fqmnStruct := fqmn.FQMN{
+			Tenant:    ident,
+			Namespace: namespace,
+			Name:      name,
+			Ref:       string(ref),
 		}
 
 		b, err := io.ReadAll(c.Request().Body)
@@ -150,12 +158,7 @@ func (s *Server) syncHandler(sp exec.Spawn) echo.HandlerFunc {
 			return echo.NewHTTPError(http.StatusInternalServerError, "reading body failed").SetInternal(errors.Wrap(err, "io.ReadAll"))
 		}
 
-		f, err := fqmn.Parse(mod.FQMN)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "missing data").SetInternal(errors.Wrap(err, "fqmn.Parse"))
-		}
-
-		out, err := sp.Execute(ctx, f, b)
+		out, err := sp.Execute(ctx, fqmnStruct, b)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "execution failed").SetInternal(errors.Wrap(err, "sp.Execute"))
 		}
