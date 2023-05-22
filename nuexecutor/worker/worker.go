@@ -46,7 +46,6 @@ type Config struct {
 
 type ModSource interface {
 	Get(context.Context, fqmn.FQMN) ([]byte, error)
-	LatestRef(ctx context.Context, ident, namespace, name string) (string, error)
 }
 
 func New(c Config, l zerolog.Logger, source ModSource) *Wasm {

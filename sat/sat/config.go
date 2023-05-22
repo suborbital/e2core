@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -82,7 +81,18 @@ func ConfigFromModuleArg(logger zerolog.Logger, opts satOptions.Options, moduleA
 
 		moduleArg = tmpFile
 	} else if FQMN, err = fqmn.Parse(moduleArg); err == nil {
+		logger.Info().Msg("getting module from app client")
 		if useControlPlane {
+			path := fmt.Sprintf("/system/v1/module%s", FQMN.URLPath())
+
+			logger.Info().
+				Str("module arg", moduleArg).
+				Interface("fqmn_interface", FQMN).
+				Str("urlpath", path).
+				Str("appclient_host", controlPlane).
+				Str("link", fmt.Sprintf("%s%s", controlPlane, path)).
+				Msg("using control plane")
+
 			cpModule, err := appClient.GetModule(moduleArg)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to GetModule")

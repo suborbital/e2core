@@ -130,7 +130,21 @@ func (s *Spawn) launch(ctx context.Context, target fqmn.FQMN) (process, error) {
 	// we're going to call the cancel function for this process.
 	ctx, cxl := context.WithCancelCause(ctx)
 
-	command := exec.CommandContext(ctx, "e2core", "mod", "start", fmt.Sprintf(fqmnFormat, target.URLPath()))
+	fqmnArg, err := fqmn.FromParts(target.Tenant, target.Namespace, target.Name, target.Ref)
+	if err != nil {
+		return process{}, errors.Wrap(err, "fqmn.FromParts")
+	}
+
+	fmt.Printf("\n\nthis is target:\n%+v\n\nfromparts: %s\n\n", target, fqmnArg)
+
+	cmd := []string{
+		"e2core",
+		"mod",
+		"start",
+		fqmnArg,
+	}
+
+	command := exec.CommandContext(ctx, cmd[0], cmd[1:]...)
 	command.Env = env
 	command.Stdin = os.Stdin
 	command.Stdout = os.Stdout
@@ -141,10 +155,15 @@ func (s *Spawn) launch(ctx context.Context, target fqmn.FQMN) (process, error) {
 		return process{}, errors.Wrap(err, "command.Start()")
 	}
 
+	time.Sleep(2 * time.Second)
+
 	span.AddEvent("launched process", trace.WithAttributes(
 		attribute.Int("port", int(port)),
 		attribute.Int("pid", command.Process.Pid),
+		attribute.StringSlice("mod_command", cmd),
+		attribute.StringSlice("env", env),
 		attribute.String("procuuid", procUUID),
+		attribute.String("command.String", command.String()),
 	))
 
 	return process{

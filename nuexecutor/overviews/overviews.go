@@ -11,7 +11,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 
-	"github.com/suborbital/e2core/foundation/tracing"
 	"github.com/suborbital/systemspec/system"
 )
 
@@ -72,12 +71,12 @@ func (r *Repository) work() {
 	for {
 		select {
 		case <-t.C:
-			ctx, span := tracing.Tracer.Start(context.Background(), "repository.work.tick")
+			ctx, cxl := context.WithTimeout(context.Background(), time.Second)
 
 			so, err := r.systemOverview(ctx)
 			if err != nil {
+				cxl()
 				r.logger.Err(err).Msg("r.systemOverview")
-				span.End()
 				continue
 			}
 
@@ -86,6 +85,7 @@ func (r *Repository) work() {
 			// Iterate over the tenants.
 			for tid, numberOfModules := range so.TenantRefs.Identifiers {
 				if numberOfModules == 0 {
+					cxl()
 					// If the tenant has 0 modules, skip it, because we don't need to keep track of module data.
 					continue
 				}
@@ -94,6 +94,7 @@ func (r *Repository) work() {
 
 				to, err := r.tenantOverview(ctx, tid)
 				if err != nil {
+					cxl()
 					r.logger.Err(err).Str("tenant_id", tid).Msg("r.tenantOverview")
 					continue
 				}
@@ -111,8 +112,7 @@ func (r *Repository) work() {
 
 			r.lock.Unlock()
 
-			r.logger.Info().Interface("repo", d).Msg("synced")
-
+			cxl()
 		case <-r.shutdown:
 			r.wg.Done()
 			return
@@ -121,8 +121,6 @@ func (r *Repository) work() {
 }
 
 func (r *Repository) systemOverview(ctx context.Context) (system.Overview, error) {
-	ctx, span := tracing.Tracer.Start(ctx, "repository.systemOverview")
-	defer span.End()
 	// SystemOverview data grab.
 	ctx, cxl := context.WithTimeout(ctx, time.Second)
 	defer cxl()
@@ -149,9 +147,6 @@ func (r *Repository) systemOverview(ctx context.Context) (system.Overview, error
 }
 
 func (r *Repository) tenantOverview(ctx context.Context, tenantID string) (system.TenantOverview, error) {
-	ctx, span := tracing.Tracer.Start(ctx, "repository.tenantOverview")
-	defer span.End()
-
 	// Create context for the tenant overview request.
 	ctx, cxl := context.WithTimeout(ctx, time.Second)
 	defer cxl()

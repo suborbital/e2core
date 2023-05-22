@@ -8,7 +8,6 @@ import (
 	"github.com/allegro/bigcache/v3"
 	"github.com/pkg/errors"
 
-	"github.com/suborbital/e2core/foundation/tracing"
 	"github.com/suborbital/e2core/nuexecutor/worker"
 	"github.com/suborbital/systemspec/fqmn"
 )
@@ -73,33 +72,4 @@ func (m MapCache) Get(ctx context.Context, fqmn fqmn.FQMN) ([]byte, error) {
 	}
 
 	return module, nil
-}
-
-func (m MapCache) LatestRef(ctx context.Context, ident, namespace, name string) (string, error) {
-	ctx, span := tracing.Tracer.Start(ctx, "mapcache.LatestRef")
-	defer span.End()
-
-	key := fmt.Sprintf(refKeyFormat, ident, namespace, name)
-
-	entry, err := m.refCache.Get(key)
-	if err == nil {
-		return string(entry), nil
-	}
-
-	if !errors.Is(err, bigcache.ErrEntryNotFound) {
-		// errored, errors is not the "not found", something went horribly wrong.
-		return "", errors.Wrap(err, "c.refCache.Get returned an error other than 'not found'")
-	}
-
-	ref, err := m.embedded.LatestRef(ctx, ident, namespace, name)
-	if err != nil {
-		return "", errors.Wrap(err, "m.embedded.LatestRef")
-	}
-
-	err = m.refCache.Set(key, []byte(ref))
-	if err != nil {
-		return "", errors.Wrap(err, "m.refCache.Set")
-	}
-
-	return ref, nil
 }
