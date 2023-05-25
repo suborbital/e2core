@@ -1,41 +1,48 @@
 package handlers
 
 import (
+	"context"
+	"io"
 	"net/http"
+	"time"
 
 	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
 
+	"github.com/suborbital/e2core/foundation/tracing"
 	"github.com/suborbital/e2core/nuexecutor/worker"
 )
 
-func Sync(_ chan<- worker.Job) echo.HandlerFunc {
+func Sync(wc chan<- worker.Job) echo.HandlerFunc {
 
 	return func(c echo.Context) error {
-		return c.JSON(http.StatusOK, "woo")
-		// if err := w.pool.UseInstance(ctx, spanCtx, func(ctx context.Context, instance *instance.Instance, ident int32) {
-		// 	_, span := tracing.Tracer.Start(ctx, "instance function")
-		// 	defer span.End()
-		//
-		// 	inPointer, writeErr := instance.WriteMemory(jobBytes)
-		// 	if writeErr != nil {
-		// 		runErr = errors.Wrap(writeErr, "failed to instance.writeMemory")
-		// 		return
-		// 	}
-		//
-		// 	span.AddEvent("instance.Call run_e")
-		// 	// execute the module's Run function, passing the input data and ident
-		// 	// set runErr but don't return because the ExecutionResult error should also be grabbed
-		// 	_, callErr = instance.Call("run_e", inPointer, int32(len(jobBytes)), ident)
-		//
-		// 	// get the results from the instance
-		// 	output, runErr = instance.ExecutionResult()
-		//
-		// 	// deallocate the memory used for the input
-		// 	instance.Deallocate(inPointer, len(jobBytes))
-		// }); err != nil {
-		// 	return nil, errors.Wrap(err, "failed to useInstance")
-		// }
-		//
-		// return echo.NewHTTPError(http.StatusNotImplemented)
+		ctx, cxl := context.WithTimeout(c.Request().Context(), 5*time.Second)
+		defer cxl()
+
+		ctx, span := tracing.Tracer.Start(ctx, "handlers.sync")
+		defer span.End()
+
+		c.SetRequest(c.Request().WithContext(ctx))
+
+		jobBytes, err := io.ReadAll(c.Request().Body)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "something went wrong").SetInternal(errors.Wrap(err, "io.ReadAll body"))
+		}
+
+		j := worker.NewJob(ctx, jobBytes)
+
+		wc <- j
+
+		select {
+		case err := <-j.Error():
+			span.AddEvent("job errored out")
+			return echo.NewHTTPError(http.StatusInternalServerError, "execution failed").SetInternal(errors.Wrap(err, "job errorchan"))
+		case result := <-j.Result():
+			span.AddEvent("job result came back")
+			return c.Blob(http.StatusOK, "application/octet-stream", result.Output())
+		case <-ctx.Done():
+			span.AddEvent("request timeout reached")
+			return c.String(http.StatusRequestTimeout, "request timed out")
+		}
 	}
 }
