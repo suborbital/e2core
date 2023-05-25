@@ -60,10 +60,12 @@ func NewSpawn(c Config) Spawn {
 }
 
 func (s *Spawn) Execute(ctx context.Context, target fqmn.FQMN, input []byte) ([]byte, error) {
-	ctx, span := tracing.Tracer.Start(ctx, "spawn.execMod")
-	defer span.End()
-
 	key := fmt.Sprintf(keyFormat, target.Tenant, target.Ref, target.Namespace, target.Name)
+
+	ctx, span := tracing.Tracer.Start(ctx, "spawn.execMod", trace.WithAttributes(
+		attribute.String("key", key),
+	))
+	defer span.End()
 
 	var proc process
 	var err error
@@ -73,9 +75,7 @@ func (s *Spawn) Execute(ctx context.Context, target fqmn.FQMN, input []byte) ([]
 	proc, found = s.directory[key]
 	s.lock.Unlock()
 	if !found {
-		span.AddEvent("key not found, launching new one", trace.WithAttributes(
-			attribute.String("key", key),
-		))
+		span.AddEvent("key not found, launching new one")
 
 		proc, err = s.launch(ctx, target)
 		if err != nil {
@@ -83,9 +83,11 @@ func (s *Spawn) Execute(ctx context.Context, target fqmn.FQMN, input []byte) ([]
 		}
 
 		s.directory[key] = proc
+	} else {
+		span.AddEvent("key found, using that one")
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("http://%s/meta/syncmessage", proc.addrPort.String()), bytes.NewReader(input))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("http://%s/meta/sync", proc.addrPort.String()), bytes.NewReader(input))
 	if err != nil {
 		return nil, errors.Wrap(err, "http.NewRequestWithContext")
 	}
