@@ -7,6 +7,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 
+	"github.com/suborbital/e2core/sat/engine2/api"
+	"github.com/suborbital/e2core/sat/engine2/runtime/instance"
 	"github.com/suborbital/systemspec/fqmn"
 )
 
@@ -21,7 +23,8 @@ var (
 
 type Wasm struct {
 	// source is to get the compiled wasm module in byte slice from somewhere.
-	source ModSource
+	// source ModSource
+	inst *instance.Instance
 
 	// workers holds info on how many go routines to launch that handle incoming jobs.
 	workers uint8
@@ -48,7 +51,7 @@ type ModSource interface {
 	Get(context.Context, fqmn.FQMN) ([]byte, error)
 }
 
-func New(c Config, l zerolog.Logger, source ModSource) *Wasm {
+func New(c Config, l zerolog.Logger, wasmBytes []byte) (*Wasm, error) {
 	workers := workersDefault
 	buffer := bufferDefault
 
@@ -60,13 +63,19 @@ func New(c Config, l zerolog.Logger, source ModSource) *Wasm {
 		buffer = c.Buffer
 	}
 
+	inst, err := buildModule(wasmBytes, api.New(l).HostFunctions())
+	if err != nil {
+		return nil, errors.Wrap(err, "buildModule")
+	}
+
 	return &Wasm{
-		source:   source,
+		inst: inst,
+		// source:   source,
 		workers:  workers,
 		incoming: make(chan Job, buffer),
 		wg:       new(sync.WaitGroup),
 		logger:   l.With().Str("component", "nuexecutor").Logger(),
-	}
+	}, nil
 }
 
 // Start launches workers in a goroutine. Number of workers is governed by the Config.Workers configuration property. It

@@ -17,10 +17,11 @@ import (
 	"github.com/suborbital/e2core/foundation/bus/bus"
 	"github.com/suborbital/e2core/foundation/bus/discovery/local"
 	"github.com/suborbital/e2core/foundation/bus/transport/websocket"
+	"github.com/suborbital/e2core/nuexecutor/handlers"
+	"github.com/suborbital/e2core/nuexecutor/worker"
 	"github.com/suborbital/e2core/sat/engine2"
 	"github.com/suborbital/e2core/sat/engine2/api"
 	"github.com/suborbital/e2core/sat/sat/metrics"
-	"github.com/suborbital/e2core/sat/sat/process"
 	kitError "github.com/suborbital/go-kit/web/error"
 	"github.com/suborbital/systemspec/tenant"
 )
@@ -67,6 +68,13 @@ func New(config *Config, logger zerolog.Logger, mtx metrics.Metrics) (*Sat, erro
 		metrics: mtx,
 	}
 
+	w, err := worker.New(worker.Config{}, logger, module.Data)
+	if err != nil {
+		return nil, errors.Wrap(err, "worker.New")
+	}
+
+	wc := w.Start()
+
 	sat.server = echo.New()
 	sat.server.Use(
 		otelecho.Middleware("e2core-bebby"),
@@ -79,6 +87,8 @@ func New(config *Config, logger zerolog.Logger, mtx metrics.Metrics) (*Sat, erro
 	if config.ControlPlaneUrl != "" {
 		logger.Info().Msg("controlplane url is present, creating the websocket for transport, and the meta/message and meta/metrics endpoints")
 		sat.transport = websocket.New()
+
+		sat.server.POST("/meta/sync", handlers.Sync(wc))
 
 		sat.server.GET("/meta/message", echo.WrapHandler(sat.transport.HTTPHandlerFunc()))
 		sat.server.GET("/meta/metrics", sat.workerMetricsHandler())
