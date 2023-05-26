@@ -3,8 +3,8 @@ package metrics
 import (
 	"context"
 
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/metric/instrument"
+	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/metric/embedded"
 )
 
 func SetupNoopMetrics() Metrics {
@@ -15,24 +15,27 @@ func SetupNoopMetrics() Metrics {
 	}
 }
 
+var _ metric.Int64Counter = noopCounter{}
+
 // noopCounter implements the metrics.noopCounter interface and the instrument.Synchronous interface. It does nothing, and can
 // be used anywhere we need a metrics.noopCounter implementation.
 type noopCounter struct {
-	instrument.Synchronous
+	embedded.Int64Counter
 }
 
-// Add implements the metrics.noopCounter interface method.
-func (f noopCounter) Add(_ context.Context, _ int64, _ ...attribute.KeyValue) {
-	// no op, do nothing
+// Add implements the metric.Int64Counter interface method.
+func (f noopCounter) Add(_ context.Context, _ int64, _ ...metric.AddOption) {
+	// do nothing
 }
+
+var _ metric.Int64Histogram = noopHistogram{}
 
 // noopHistogram implements the metrics.noopHistogram interface and the instrument.Synchronous interface. It does nothing, and
 // can be used anywhere we need a metrics.noopHistogram implementation.
 type noopHistogram struct {
-	instrument.Synchronous
+	embedded.Int64Histogram
 }
 
-// Record implements the metrics.noopHistogram interface method.
-func (h noopHistogram) Record(_ context.Context, _ int64, _ ...attribute.KeyValue) {
-	// no op, do nothing
+func (h noopHistogram) Record(_ context.Context, _ int64, _ ...metric.RecordOption) {
+	// do nothing, noop
 }

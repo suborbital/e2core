@@ -6,10 +6,8 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/metric/global"
-	"go.opentelemetry.io/otel/metric/instrument"
-	"go.opentelemetry.io/otel/metric/unit"
 
 	"github.com/suborbital/e2core/sat/sat/options"
 	"github.com/suborbital/go-kit/observability"
@@ -43,15 +41,16 @@ func setupOtelMetrics(ctx context.Context, config options.MetricsConfig) (Metric
 // has already been set up (see setupOtelMetrics). Shipping the measured values is the task of the provider, so
 // from a usage point of view, nothing else is needed.
 func configureMetrics() (Metrics, error) {
-	m := global.Meter(
+
+	m := otel.Meter(
 		"sat",
 		metric.WithInstrumentationVersion("1.0"),
 	)
 
 	functionExecutions, err := m.Int64Counter(
 		"function_executions",
-		instrument.WithUnit(unit.Dimensionless),
-		instrument.WithDescription("How many function execution requests happened"),
+		metric.WithUnit("execution"),
+		metric.WithDescription("How many function execution requests happened"),
 	)
 	if err != nil {
 		return Metrics{}, errors.Wrap(err, "sync int 64 provider function_executions")
@@ -59,8 +58,8 @@ func configureMetrics() (Metrics, error) {
 
 	failedFunctionExecutions, err := m.Int64Counter(
 		"failed_function_executions",
-		instrument.WithUnit(unit.Dimensionless),
-		instrument.WithDescription("How many function execution requests failed"),
+		metric.WithUnit("execution"),
+		metric.WithDescription("How many function execution requests failed"),
 	)
 	if err != nil {
 		return Metrics{}, errors.Wrap(err, "sync int 64 provider failed_function_executions")
@@ -68,8 +67,8 @@ func configureMetrics() (Metrics, error) {
 
 	functionTime, err := m.Int64Histogram(
 		"function_time",
-		instrument.WithUnit(unit.Milliseconds),
-		instrument.WithDescription("How much time was spent doing function executions"),
+		metric.WithUnit("ms"),
+		metric.WithDescription("How much time was spent doing function executions"),
 	)
 	if err != nil {
 		return Metrics{}, errors.Wrap(err, "sync int 64 provider function_time")
