@@ -8,18 +8,21 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/suborbital/e2core/foundation/tracing"
 	"github.com/suborbital/e2core/nuexecutor/worker"
 )
 
 func Sync(wc chan<- worker.Job) echo.HandlerFunc {
-
 	return func(c echo.Context) error {
 		ctx, cxl := context.WithTimeout(c.Request().Context(), 5*time.Second)
 		defer cxl()
 
-		ctx, span := tracing.Tracer.Start(ctx, "handlers.sync")
+		ctx, span := tracing.Tracer.Start(ctx, "handlers.sync", trace.WithAttributes(
+			attribute.String("requestID", c.Response().Header().Get(echo.HeaderXRequestID)),
+		))
 		defer span.End()
 
 		c.SetRequest(c.Request().WithContext(ctx))
@@ -32,6 +35,7 @@ func Sync(wc chan<- worker.Job) echo.HandlerFunc {
 		j := worker.NewJob(ctx, jobBytes)
 
 		wc <- j
+		span.AddEvent("sent job to channel")
 
 		select {
 		case err := <-j.Error():
