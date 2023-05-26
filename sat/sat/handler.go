@@ -7,6 +7,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/suborbital/e2core/foundation/scheduler"
@@ -53,7 +54,9 @@ func (s *Sat) handler(engine *engine2.Engine) echo.HandlerFunc {
 			return echo.NewHTTPError(http.StatusInternalServerError, "unknown error").SetInternal(errors.Wrap(err, "engine.Do"))
 		}
 
-		s.metrics.FunctionTime.Record(spanCtx, t.Observe(), attribute.String("id", req.ID))
+		s.metrics.FunctionTime.Record(spanCtx, t.Observe(), metric.WithAttributes(
+			attribute.String("id", req.ID),
+		))
 
 		if result == nil {
 			s.logger.Debug().Str("fn", s.config.JobType).Msg("returned a nil result")

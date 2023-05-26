@@ -8,6 +8,7 @@ import (
 	"github.com/rs/zerolog"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
+	sdkTrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/suborbital/go-kit/observability"
@@ -41,11 +42,11 @@ type HoneycombConfig struct {
 var Tracer trace.Tracer
 
 // SetupTracing configure open telemetry to be used with otel exporter. Returns a tracer closer func and an error.
-func SetupTracing(config Config, logger zerolog.Logger) (*trace.TracerProvider, error) {
+func SetupTracing(config Config, logger zerolog.Logger) (*sdkTrace.TracerProvider, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	var traceProvider *trace.TracerProvider
+	var traceProvider *sdkTrace.TracerProvider
 	var err error
 
 	ll := logger.With().Str("tracerType", string(config.Type)).Logger()
