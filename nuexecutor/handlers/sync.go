@@ -32,7 +32,7 @@ func Sync(wc chan<- worker.Job) echo.HandlerFunc {
 			return echo.NewHTTPError(http.StatusInternalServerError, "something went wrong").SetInternal(errors.Wrap(err, "io.ReadAll body"))
 		}
 
-		j := worker.NewJob(ctx, jobBytes)
+		j := worker.NewJob(ctx, c.Response().Header().Get(echo.HeaderXRequestID), jobBytes)
 
 		wc <- j
 		span.AddEvent("sent job to channel")

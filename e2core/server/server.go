@@ -59,6 +59,7 @@ func New(l zerolog.Logger, sync *syncer.Syncer, opts *options.Options, rep *over
 	e := echo.New()
 	e.HTTPErrorHandler = kitError.Handler(l)
 	e.HideBanner = true
+	e.HidePort = true
 
 	e.Use(
 		mid.UUIDRequestID(),

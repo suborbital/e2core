@@ -99,7 +99,7 @@ func Start() *cobra.Command {
 			}()
 
 			go func() {
-				logger.Info().Msg("starting e2core server")
+				logger.Info().Msgf("starting e2core server on port %d", opts.HTTPPort)
 				if err := srv.Start(); err != nil {
 					serverErrors <- errors.Wrap(err, "srv.Start")
 				}

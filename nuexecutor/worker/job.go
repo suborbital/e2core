@@ -31,7 +31,7 @@ func (r Result) Output() []byte {
 	return r.content
 }
 
-func NewJob(ctx context.Context, payload []byte) Job {
+func NewJob(ctx context.Context, requestID string, payload []byte) Job {
 	return Job{
 		ctx:          ctx,
 		input:        payload,

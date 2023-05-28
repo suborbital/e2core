@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog"
 
 	"github.com/suborbital/systemspec/fqmn"
 )
@@ -24,6 +25,7 @@ type process struct {
 	command  *exec.Cmd
 	target   fqmn.FQMN
 	cxl      context.CancelCauseFunc
+	logger   zerolog.Logger
 }
 
 type exitMessage struct {
@@ -33,12 +35,16 @@ type exitMessage struct {
 }
 
 func (p process) listenForExit(ec chan exitMessage) {
+	p.logger.Info().Msg("listening for exit")
+
 	em := exitMessage{
 		target: p.target,
 	}
 
+	p.logger.Info().Msg("waiting on command exit")
 	err := p.command.Wait()
 	if err != nil {
+		p.logger.Err(err).Msg("p.command.wait returned error")
 		em.err = errors.Wrap(err, "command.Wait returned an error")
 	}
 
