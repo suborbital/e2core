@@ -1,6 +1,8 @@
 FROM golang:1.20 as builder
 WORKDIR /go/src/github.com/suborbital/e2core/
 ARG VERSION="dev"
+ENV GOPROXY="http://host.docker.internal:1337"
+ENV GOPRIVATE="github.com/suborbital/*"
 
 COPY go.mod go.sum ./
 RUN go mod download
