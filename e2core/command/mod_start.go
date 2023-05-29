@@ -99,7 +99,7 @@ func ModStart() *cobra.Command {
 			debug.SetGCPercent(15)
 
 			go func() {
-				l.Info().Msgf("starting server on port %d", opts.Port)
+				l.Info().Msgf("starting server on port %s", string(opts.Port))
 				err := satInstance.Start()
 				if err != nil {
 					serverErrors <- errors.Wrap(err, "srv.Start")
