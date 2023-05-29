@@ -125,8 +125,36 @@ func (w *Wasm) work(n uint8) {
 	for {
 		select {
 		case j := <-w.incoming:
+			jb := j.Input()
+
+			inPointer, writeErr := w.inst.WriteMemory(jb)
+			if writeErr != nil {
+				j.errChan <- errors.Wrap(writeErr, "w.inst.WriteMemory")
+				return
+			}
+
+			ident, err := instance.Store(w.inst)
+			if err != nil {
+				j.errChan <- errors.Wrap(err, "instance.Store")
+			}
+
+			// execute the module's Run function, passing the input data and ident
+			// set runErr but don't return because the ExecutionResult error should also be grabbed
+			_, callErr := w.inst.Call("run_e", inPointer, int32(len(jb)), ident)
+			if callErr != nil {
+				j.errChan <- errors.Wrap(callErr, "w.inst.Call")
+				continue
+			}
+
+			// get the results from the instance
+			output, runErr := w.inst.ExecutionResult()
+			if runErr != nil {
+				j.errChan <- errors.Wrap(runErr, "w.inst.ExecutionResult")
+				continue
+			}
+
 			ll.Info().Bytes("bla", j.Input()).Msg("received message")
-			j.responseChan <- Result{content: []byte(`hello from the worker`)}
+			j.responseChan <- Result{content: output}
 			ll.Info().Msg("sent message back to job's response channel")
 		case <-w.shutdown:
 			ll.Info().Msg("signal received on shutdown channel, returning")
