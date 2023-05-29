@@ -62,9 +62,9 @@ func New(l zerolog.Logger, sync *syncer.Syncer, opts *options.Options, rep *over
 	e.HidePort = true
 
 	e.Use(
+		otelecho.Middleware("e2core"),
 		mid.UUIDRequestID(),
 		mid.Logger(ll, nil),
-		otelecho.Middleware("e2core"),
 		middleware.Recover(),
 	)
 
