@@ -127,6 +127,7 @@ func (w *Wasm) work(n uint8) {
 		case j := <-w.incoming:
 			ll.Info().Bytes("bla", j.Input()).Msg("received message")
 			j.responseChan <- Result{content: []byte(`hello from the worker`)}
+			ll.Info().Msg("sent message back to job's response channel")
 		case <-w.shutdown:
 			ll.Info().Msg("signal received on shutdown channel, returning")
 			w.wg.Done()

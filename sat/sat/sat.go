@@ -89,7 +89,7 @@ func New(config *Config, logger zerolog.Logger, mtx metrics.Metrics) (*Sat, erro
 		logger.Info().Msg("controlplane url is present, creating the websocket for transport, and the meta/message and meta/metrics endpoints")
 		sat.transport = websocket.New()
 
-		sat.server.POST("/meta/sync", handlers.Sync(wc))
+		sat.server.POST("/meta/sync", handlers.Sync(wc, logger))
 
 		sat.server.GET("/meta/message", echo.WrapHandler(sat.transport.HTTPHandlerFunc()))
 		sat.server.GET("/meta/metrics", sat.workerMetricsHandler())

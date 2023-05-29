@@ -8,15 +8,24 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/suborbital/e2core/foundation/tracing"
 	"github.com/suborbital/e2core/nuexecutor/worker"
+	httpKit "github.com/suborbital/go-kit/web/http"
 )
 
-func Sync(wc chan<- worker.Job) echo.HandlerFunc {
+func Sync(wc chan<- worker.Job, l zerolog.Logger) echo.HandlerFunc {
+
 	return func(c echo.Context) error {
+		rid := httpKit.RID(c)
+		ll := l.With().
+			Str("handler", "e2core baby sync").
+			Str("requestID", rid).
+			Logger()
+
 		ctx, cxl := context.WithTimeout(c.Request().Context(), 5*time.Second)
 		defer cxl()
 
@@ -32,19 +41,23 @@ func Sync(wc chan<- worker.Job) echo.HandlerFunc {
 			return echo.NewHTTPError(http.StatusInternalServerError, "something went wrong").SetInternal(errors.Wrap(err, "io.ReadAll body"))
 		}
 
-		j := worker.NewJob(ctx, c.Response().Header().Get(echo.HeaderXRequestID), jobBytes)
+		j := worker.NewJob(ctx, rid, jobBytes)
 
+		ll.Info().Msg("created a new job and sent it to channel")
 		wc <- j
 		span.AddEvent("sent job to channel")
 
 		select {
 		case err := <-j.Error():
+			ll.Err(err).Msg("we got error back")
 			span.AddEvent("job errored out")
 			return echo.NewHTTPError(http.StatusInternalServerError, "execution failed").SetInternal(errors.Wrap(err, "job errorchan"))
 		case result := <-j.Result():
+			ll.Info().Bytes("result", result.Output()).Msg("we have result back")
 			span.AddEvent("job result came back")
 			return c.Blob(http.StatusOK, "application/octet-stream", result.Output())
 		case <-ctx.Done():
+			ll.Warn().Msgf("context deadline exceeded")
 			span.AddEvent("request timeout reached")
 			return c.String(http.StatusRequestTimeout, "request timed out")
 		}
