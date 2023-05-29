@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/rand"
 	"fmt"
+	"io"
 	"math/big"
 	"net/http"
 	"net/netip"
@@ -110,7 +111,12 @@ func (s *Spawn) Execute(ctx context.Context, target fqmn.FQMN, input []byte) ([]
 
 	defer resp.Body.Close()
 
-	return nil, nil
+	b, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, errors.Wrap(err, "io.Readall(resp.Body)")
+	}
+
+	return b, nil
 }
 
 func (s *Spawn) launch(ctx context.Context, target fqmn.FQMN) (process, error) {
