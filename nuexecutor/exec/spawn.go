@@ -169,7 +169,13 @@ func (s *Spawn) launch(ctx context.Context, target fqmn.FQMN) (process, error) {
 
 	// Create a context with a cancel with cause functionality. Instead of reaping the process by killing by process id,
 	// we're going to call the cancel function for this process.
-	ctx, cxl := context.WithCancelCause(ctx)
+	//
+	// This NEEDS to be a new empty context, and not tied to the incoming context to this function, because that one is
+	// tied to the incoming http request, which would call the cancel function of it, which would mean the child process
+	// gets cleaned up from within.
+	//
+	// We want to manually kill the subprocess if sending a sigterm to it takes longer than some time.
+	ctx, cxl := context.WithCancelCause(context.Background())
 
 	fqmnArg, err := fqmn.FromParts(target.Tenant, target.Namespace, target.Name, target.Ref)
 	if err != nil {
@@ -183,7 +189,7 @@ func (s *Spawn) launch(ctx context.Context, target fqmn.FQMN) (process, error) {
 		fqmnArg,
 	}
 
-	command := exec.CommandContext(ctx, cmd[0], cmd[1:]...)
+	command := exec.Command(cmd[0], cmd[1:]...)
 	command.Env = env
 	command.Stdout = os.Stdout
 	command.Stderr = os.Stderr
