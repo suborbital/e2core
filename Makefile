@@ -44,5 +44,15 @@ lintfixer:
 loadtest:
 	go run ./testingsupport/load/load-tester.go
 
+build:
+	 go build -o .bin/e2core -tags netgo -ldflags="-X 'github.com/suborbital/e2core/e2core/release.Version=localbuild'" .
+
+runlocal:
+	E2CORE_CONTROL_PLANE="http://localhost:8081" \
+	E2CORE_LOG_LEVEL=info \
+	E2CORE_HTTP_PORT=8080 \
+	E2CORE_TRACER_TYPE="none" \
+	./.bin/e2core start
+
 .PHONY: build e2core e2core/docker docker/dev docker/dev/multi docker/publish docker/builder example-project test lint \
 	lint/fix fix-imports
