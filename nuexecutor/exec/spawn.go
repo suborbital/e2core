@@ -42,7 +42,7 @@ type Spawn struct {
 }
 
 func NewSpawn(c Config, l zerolog.Logger) Spawn {
-	return Spawn{
+	s := Spawn{
 		controlPlane: c.ControlPlane,
 		client:       &http.Client{Timeout: clientTimeout},
 		directory:    make(map[string]process),
@@ -51,21 +51,27 @@ func NewSpawn(c Config, l zerolog.Logger) Spawn {
 		lock:         new(sync.Mutex),
 		logger:       l.With().Str("component", "spawn").Logger(),
 	}
+
+	go s.reapProcesses()
+
+	return s
 }
 
 func (s *Spawn) reapProcesses() {
 	s.logger.Info().Msg("starting the process reaping thing")
 	for {
+		s.logger.Info().Msg("starting a reap process select on em or shutdownchan")
 		select {
 		case em := <-s.dieChan:
 			s.logger.Info().Msg("incoming message to the die channel")
 
 			key := fmt.Sprintf(keyFormat, em.target.Tenant, em.target.Ref, em.target.Namespace, em.target.Name)
 
-			s.logger.Warn().Str("key", key).Str("output", string(em.output)).Msg("process exited")
+			s.logger.Warn().Str("key", key).Msg("process exited")
 
 			delete(s.directory, key)
 		case <-s.shutdownChan:
+			s.logger.Warn().Msg("reap process shutdownchan happened")
 			return
 		}
 	}
@@ -73,6 +79,8 @@ func (s *Spawn) reapProcesses() {
 
 func (s *Spawn) Execute(ctx context.Context, target fqmn.FQMN, input []byte) ([]byte, error) {
 	key := fmt.Sprintf(keyFormat, target.Tenant, target.Ref, target.Namespace, target.Name)
+
+	s.logger.Info().Str("key", key).Msg("executing the target")
 
 	ctx, span := tracing.Tracer.Start(ctx, "spawn.execMod", trace.WithAttributes(
 		attribute.String("key", key),
@@ -89,20 +97,28 @@ func (s *Spawn) Execute(ctx context.Context, target fqmn.FQMN, input []byte) ([]
 	if !found {
 		span.AddEvent("key not found, launching new one")
 
+		s.logger.Info().Msg("key not found, launching a new one")
+
 		proc, err = s.launch(ctx, target)
 		if err != nil {
 			return nil, errors.Wrap(err, "s.launch")
 		}
 
+		s.lock.Lock()
 		s.directory[key] = proc
+		s.lock.Unlock()
 	} else {
 		span.AddEvent("key found, using that one")
 	}
+
+	s.logger.Info().Msg("putting together the new request with context against the process")
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("http://%s/meta/sync", proc.addrPort.String()), bytes.NewReader(input))
 	if err != nil {
 		return nil, errors.Wrap(err, "http.NewRequestWithContext")
 	}
+
+	s.logger.Info().Msg("sending the request to the process")
 
 	resp, err := s.client.Do(req)
 	if err != nil {
@@ -111,10 +127,14 @@ func (s *Spawn) Execute(ctx context.Context, target fqmn.FQMN, input []byte) ([]
 
 	defer resp.Body.Close()
 
+	s.logger.Info().Msg("reading out the response body")
+
 	b, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, errors.Wrap(err, "io.Readall(resp.Body)")
 	}
+
+	s.logger.Info().Str("response", string(b)).Msg("returning the bytes from the process")
 
 	return b, nil
 }
@@ -122,6 +142,8 @@ func (s *Spawn) Execute(ctx context.Context, target fqmn.FQMN, input []byte) ([]
 func (s *Spawn) launch(ctx context.Context, target fqmn.FQMN) (process, error) {
 	ctx, span := tracing.Tracer.Start(ctx, "span.launch")
 	defer span.End()
+
+	s.logger.Info().Msg("launching a thing")
 
 	// choose a random addrPort above 10000
 	randPort, err := rand.Int(rand.Reader, big.NewInt(10000))
@@ -163,7 +185,6 @@ func (s *Spawn) launch(ctx context.Context, target fqmn.FQMN) (process, error) {
 
 	command := exec.CommandContext(ctx, cmd[0], cmd[1:]...)
 	command.Env = env
-	command.Stdin = os.Stdin
 	command.Stdout = os.Stdout
 	command.Stderr = os.Stderr
 
@@ -173,6 +194,8 @@ func (s *Spawn) launch(ctx context.Context, target fqmn.FQMN) (process, error) {
 	}
 
 	time.Sleep(2 * time.Second)
+
+	s.logger.Info().Msg("launched thing, 2 second timeout")
 
 	span.AddEvent("launched process", trace.WithAttributes(
 		attribute.Int("port", int(port)),
@@ -188,9 +211,12 @@ func (s *Spawn) launch(ctx context.Context, target fqmn.FQMN) (process, error) {
 		command:  command,
 		target:   target,
 		cxl:      cxl,
+		logger:   s.logger.With().Uint16("port", port).Int("pid", command.Process.Pid).Logger(),
 	}
 
+	p.logger.Info().Msg("listening for exit")
 	go p.listenForExit(s.dieChan)
 
+	s.logger.Info().Msg("returning process here")
 	return p, nil
 }

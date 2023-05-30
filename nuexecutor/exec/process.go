@@ -1,7 +1,6 @@
 package exec
 
 import (
-	"bytes"
 	"context"
 	"net/netip"
 	"os/exec"
@@ -31,7 +30,6 @@ type process struct {
 type exitMessage struct {
 	target fqmn.FQMN
 	err    error
-	output []byte
 }
 
 func (p process) listenForExit(ec chan exitMessage) {
@@ -44,19 +42,12 @@ func (p process) listenForExit(ec chan exitMessage) {
 	p.logger.Info().Msg("waiting on command exit")
 	err := p.command.Wait()
 	if err != nil {
-		p.logger.Err(err).Msg("p.command.wait returned error")
+		p.logger.Err(err).
+			Str("process state", p.command.ProcessState.String()).
+			Msg("p.command.wait returned error")
+
 		em.err = errors.Wrap(err, "command.Wait returned an error")
 	}
-
-	op := bytes.Buffer{}
-
-	output, err := p.command.CombinedOutput()
-	if err != nil {
-		op.WriteString(errors.Wrap(err, "p.command.CombinedOutput").Error())
-	}
-	op.Write(output)
-
-	em.output = op.Bytes()
 
 	ec <- em
 }
