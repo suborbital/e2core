@@ -18,7 +18,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/suborbital/e2core/foundation/tracing"
@@ -117,6 +119,8 @@ func (s *Spawn) Execute(ctx context.Context, target fqmn.FQMN, input []byte) ([]
 	if err != nil {
 		return nil, errors.Wrap(err, "http.NewRequestWithContext")
 	}
+
+	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
 
 	s.logger.Info().Msg("sending the request to the process")
 
