@@ -6,14 +6,17 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 
-	"github.com/suborbital/e2core/sat/engine2/api"
+	"github.com/suborbital/e2core/foundation/tracing"
+	"github.com/suborbital/e2core/nuexecutor/instancepool"
 	"github.com/suborbital/e2core/sat/engine2/runtime/instance"
 	"github.com/suborbital/systemspec/fqmn"
 )
 
 const (
-	workersDefault uint8  = 16
+	workersDefault uint8  = 255
 	bufferDefault  uint16 = 10000
 )
 
@@ -24,7 +27,7 @@ var (
 type Wasm struct {
 	// source is to get the compiled wasm module in byte slice from somewhere.
 	// source ModSource
-	inst *instance.Instance
+	provider instancepool.Pool
 
 	// workers holds info on how many go routines to launch that handle incoming jobs.
 	workers uint8
@@ -51,7 +54,7 @@ type ModSource interface {
 	Get(context.Context, fqmn.FQMN) ([]byte, error)
 }
 
-func New(c Config, l zerolog.Logger, wasmBytes []byte) (*Wasm, error) {
+func New(c Config, l zerolog.Logger, pool instancepool.Pool) (*Wasm, error) {
 	workers := workersDefault
 	buffer := bufferDefault
 
@@ -63,13 +66,8 @@ func New(c Config, l zerolog.Logger, wasmBytes []byte) (*Wasm, error) {
 		buffer = c.Buffer
 	}
 
-	inst, err := buildModule(wasmBytes, api.New(l).HostFunctions())
-	if err != nil {
-		return nil, errors.Wrap(err, "buildModule")
-	}
-
 	return &Wasm{
-		inst: inst,
+		provider: pool,
 		// source:   source,
 		workers:  workers,
 		incoming: make(chan Job, buffer),
@@ -83,9 +81,12 @@ func New(c Config, l zerolog.Logger, wasmBytes []byte) (*Wasm, error) {
 // method.
 func (w *Wasm) Start() chan<- Job {
 	for i := uint8(0); i < w.workers; i++ {
-		go w.work(i)
+		go w.work()
 		w.wg.Add(1)
 	}
+
+	// this is to keep track of the pool when shutting it down.
+	w.wg.Add(1)
 
 	return w.incoming
 }
@@ -107,6 +108,15 @@ func (w *Wasm) Shutdown(ctx context.Context) error {
 		wgDone <- struct{}{}
 	}()
 
+	// Shut down the instance provider. The Shutdown method blocks until either all instances from the channel are
+	// drained and closed, or 5 seconds has passed. Then decrement the waitgroup by one. In the Start method of the
+	// worker we added an extra increment to the waitgroup to account for the pool.
+	go func() {
+		w.provider.Shutdown()
+
+		w.wg.Done()
+	}()
+
 	// Once we've set up the structured teardown, wait on one of the two events:
 	// - either context deadline exceeds, or context gets manually cancelled, which means shutdown is improper, and we
 	//   return an error, or
@@ -120,44 +130,72 @@ func (w *Wasm) Shutdown(ctx context.Context) error {
 }
 
 // work is the workhorse of the router. This picks up the jobs sent to the incoming channel.
-func (w *Wasm) work(n uint8) {
-	ll := w.logger.With().Int("worker", int(n)).Logger()
+func (w *Wasm) work() {
 	for {
 		select {
-		case j := <-w.incoming:
-			jb := j.Input()
+		case incomingJob := <-w.incoming:
+			_, span := tracing.Tracer.Start(incomingJob.ctx, "work")
 
-			inPointer, writeErr := w.inst.WriteMemory(jb)
+			jb := incomingJob.Input()
+
+			span.AddEvent("provider.GetInstance")
+			readyInstance := w.provider.GetInstance()
+
+			inPointer, writeErr := readyInstance.WriteMemory(jb)
 			if writeErr != nil {
-				j.errChan <- errors.Wrap(writeErr, "w.inst.WriteMemory")
-				return
+				incomingJob.errChan <- errors.Wrap(writeErr, "w.inst.WriteMemory")
+
+				span.AddEvent("w.inst.WriteMemory failed", trace.WithAttributes(
+					attribute.String("error", writeErr.Error()),
+				))
+				span.End()
+
+				continue
 			}
 
-			ident, err := instance.Store(w.inst)
+			ident, err := instance.Store(readyInstance)
 			if err != nil {
-				j.errChan <- errors.Wrap(err, "instance.Store")
+				incomingJob.errChan <- errors.Wrap(err, "instance.Store")
+
+				span.AddEvent("instance.Store failed", trace.WithAttributes(
+					attribute.String("error", err.Error()),
+				))
+				span.End()
+
+				continue
 			}
 
 			// execute the module's Run function, passing the input data and ident
 			// set runErr but don't return because the ExecutionResult error should also be grabbed
-			_, callErr := w.inst.Call("run_e", inPointer, int32(len(jb)), ident)
+			_, callErr := readyInstance.Call("run_e", inPointer, int32(len(jb)), ident)
 			if callErr != nil {
-				j.errChan <- errors.Wrap(callErr, "w.inst.Call")
+				incomingJob.errChan <- errors.Wrap(callErr, "w.inst.Call")
+
+				span.AddEvent("w.inst.Call run_e failed", trace.WithAttributes(
+					attribute.String("error", callErr.Error()),
+				))
+				span.End()
+
 				continue
 			}
 
 			// get the results from the instance
-			output, runErr := w.inst.ExecutionResult()
+			output, runErr := readyInstance.ExecutionResult()
 			if runErr != nil {
-				j.errChan <- errors.Wrap(runErr, "w.inst.ExecutionResult")
+				incomingJob.errChan <- errors.Wrap(runErr, "w.inst.ExecutionResult")
+
+				span.AddEvent("w.inst.ExecutionResult failed", trace.WithAttributes(
+					attribute.String("error", runErr.Error()),
+				))
+				span.End()
+
 				continue
 			}
 
-			ll.Info().Bytes("bla", j.Input()).Msg("received message")
-			j.responseChan <- Result{content: output}
-			ll.Info().Msg("sent message back to job's response channel")
+			incomingJob.responseChan <- Result{content: output}
+			span.AddEvent("result returned successfully")
+			span.End()
 		case <-w.shutdown:
-			ll.Info().Msg("signal received on shutdown channel, returning")
 			w.wg.Done()
 			return
 		}

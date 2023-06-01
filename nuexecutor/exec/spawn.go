@@ -39,7 +39,7 @@ type Spawn struct {
 	directory    map[string]process
 	dieChan      chan exitMessage
 	shutdownChan chan struct{}
-	lock         *sync.Mutex
+	lock         *sync.RWMutex
 	logger       zerolog.Logger
 }
 
@@ -50,7 +50,7 @@ func NewSpawn(c Config, l zerolog.Logger) Spawn {
 		directory:    make(map[string]process),
 		dieChan:      make(chan exitMessage),
 		shutdownChan: make(chan struct{}),
-		lock:         new(sync.Mutex),
+		lock:         new(sync.RWMutex),
 		logger:       l.With().Str("component", "spawn").Logger(),
 	}
 
@@ -93,9 +93,9 @@ func (s *Spawn) Execute(ctx context.Context, target fqmn.FQMN, input []byte) ([]
 	var err error
 	var found bool
 
-	s.lock.Lock()
+	s.lock.RLock()
 	proc, found = s.directory[key]
-	s.lock.Unlock()
+	s.lock.RUnlock()
 	if !found {
 		span.AddEvent("key not found, launching new one")
 

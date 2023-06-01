@@ -18,6 +18,7 @@ import (
 	"github.com/suborbital/e2core/foundation/bus/discovery/local"
 	"github.com/suborbital/e2core/foundation/bus/transport/websocket"
 	"github.com/suborbital/e2core/nuexecutor/handlers"
+	"github.com/suborbital/e2core/nuexecutor/instancepool"
 	"github.com/suborbital/e2core/nuexecutor/worker"
 	"github.com/suborbital/e2core/sat/engine2"
 	"github.com/suborbital/e2core/sat/engine2/api"
@@ -68,7 +69,12 @@ func New(config *Config, logger zerolog.Logger, mtx metrics.Metrics) (*Sat, erro
 		metrics: mtx,
 	}
 
-	w, err := worker.New(worker.Config{}, logger, module.Data)
+	pool, err := instancepool.New(module.Data, api.New(logger.With().Str("module", "hostAPI").Logger()), logger)
+	if err != nil {
+		return nil, errors.Wrap(err, "instancepool.New")
+	}
+
+	w, err := worker.New(worker.Config{}, logger, pool)
 	if err != nil {
 		return nil, errors.Wrap(err, "worker.New")
 	}
