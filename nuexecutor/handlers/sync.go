@@ -22,12 +22,6 @@ func Sync(wc chan<- worker.Job, l zerolog.Logger) echo.HandlerFunc {
 		// grab the request ID
 		rid := httpKit.RID(c)
 
-		// construct logger to have the request ID and the handler in it
-		ll := l.With().
-			Str("handler", "e2core baby sync").
-			Str("requestID", rid).
-			Logger()
-
 		// create a 5 second request timeout
 		ctx, cxl := context.WithTimeout(c.Request().Context(), 5*time.Second)
 		defer cxl()
@@ -50,7 +44,6 @@ func Sync(wc chan<- worker.Job, l zerolog.Logger) echo.HandlerFunc {
 		// create a new job with the context (has the tracing), request ID (can connect to others), and input
 		j := worker.NewJob(ctx, rid, jobBytes)
 
-		ll.Info().Msg("created a new job and sent it to channel")
 		// send it
 		wc <- j
 		span.AddEvent("sent job to channel")
@@ -58,15 +51,12 @@ func Sync(wc chan<- worker.Job, l zerolog.Logger) echo.HandlerFunc {
 		// see what happened with the job
 		select {
 		case err := <-j.Error():
-			ll.Err(err).Msg("we got error back")
 			span.AddEvent("job errored out")
 			return echo.NewHTTPError(http.StatusInternalServerError, "execution failed").SetInternal(errors.Wrap(err, "job errorchan"))
 		case result := <-j.Result():
-			ll.Info().Bytes("result", result.Output()).Msg("we have result back")
 			span.AddEvent("job result came back")
 			return c.Blob(http.StatusOK, "application/octet-stream", result.Output())
 		case <-ctx.Done():
-			ll.Warn().Msgf("context deadline exceeded")
 			span.AddEvent("request timeout reached")
 			return c.String(http.StatusRequestTimeout, "request timed out")
 		}
