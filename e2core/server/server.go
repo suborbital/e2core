@@ -103,7 +103,9 @@ func New(l zerolog.Logger, sync *syncer.Syncer, opts *options.Options, rep *over
 
 	e.POST("/synclocal/:ident/:namespace/:name", server.syncLocalHandler(rep, library), auth.AuthorizationMiddleware(opts))
 
-	//e.POST("/syncback/:ident/:namespace/:name")
+	reuseLibrary := pooldirectory.NewReuse(client.NewHTTPSource(opts.ControlPlane, nil))
+
+	e.POST("/syncback/:ident/:namespace/:name", server.syncLocalBackHandler(rep, reuseLibrary), auth.AuthorizationMiddleware(opts))
 
 	e.GET("/health", server.healthHandler())
 
