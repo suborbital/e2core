@@ -27,7 +27,7 @@ var (
 type Wasm struct {
 	// source is to get the compiled wasm module in byte slice from somewhere.
 	// source ModSource
-	provider instancepool.Pool
+	provider instancepool.Reuse
 
 	// workers holds info on how many go routines to launch that handle incoming jobs.
 	workers uint8
@@ -54,7 +54,7 @@ type ModSource interface {
 	Get(context.Context, fqmn.FQMN) ([]byte, error)
 }
 
-func New(c Config, l zerolog.Logger, pool instancepool.Pool) (*Wasm, error) {
+func New(c Config, l zerolog.Logger, pool instancepool.Reuse) (*Wasm, error) {
 	workers := workersDefault
 	buffer := bufferDefault
 
@@ -134,12 +134,24 @@ func (w *Wasm) work() {
 	for {
 		select {
 		case incomingJob := <-w.incoming:
-			_, span := tracing.Tracer.Start(incomingJob.ctx, "work")
+			ctx, span := tracing.Tracer.Start(incomingJob.ctx, "work")
+			endChan := make(chan struct{})
+
+			// shut down
+			go func(spanCtx context.Context, cspan trace.Span, ec chan struct{}) {
+				select {
+				case <-spanCtx.Done():
+					cspan.End()
+				case <-endChan:
+					cspan.End()
+				}
+			}(ctx, span, endChan)
 
 			jb := incomingJob.Input()
 
 			span.AddEvent("provider.GetInstance")
-			readyInstance := w.provider.GetInstance()
+			readyInstance := w.provider.GetInstance(ctx)
+			span.AddEvent("got a provider, did not block")
 
 			inPointer, writeErr := readyInstance.WriteMemory(jb)
 			if writeErr != nil {
@@ -148,20 +160,26 @@ func (w *Wasm) work() {
 				span.AddEvent("w.inst.WriteMemory failed", trace.WithAttributes(
 					attribute.String("error", writeErr.Error()),
 				))
-				span.End()
+
+				w.provider.GiveInstanceBack(ctx, readyInstance)
+
+				endChan <- struct{}{}
 
 				continue
 			}
 
 			ident, err := instance.Store(readyInstance)
 			if err != nil {
+				readyInstance.Deallocate(inPointer, len(jb))
 				incomingJob.errChan <- errors.Wrap(err, "instance.Store")
 
 				span.AddEvent("instance.Store failed", trace.WithAttributes(
 					attribute.String("error", err.Error()),
 				))
-				span.End()
 
+				w.provider.GiveInstanceBack(ctx, readyInstance)
+
+				endChan <- struct{}{}
 				continue
 			}
 
@@ -174,7 +192,12 @@ func (w *Wasm) work() {
 				span.AddEvent("w.inst.Call run_e failed", trace.WithAttributes(
 					attribute.String("error", callErr.Error()),
 				))
-				span.End()
+
+				readyInstance.Deallocate(inPointer, len(jb))
+
+				w.provider.GiveInstanceBack(ctx, readyInstance)
+
+				endChan <- struct{}{}
 
 				continue
 			}
@@ -187,14 +210,22 @@ func (w *Wasm) work() {
 				span.AddEvent("w.inst.ExecutionResult failed", trace.WithAttributes(
 					attribute.String("error", runErr.Error()),
 				))
-				span.End()
+				readyInstance.Deallocate(inPointer, len(jb))
+
+				w.provider.GiveInstanceBack(ctx, readyInstance)
+
+				endChan <- struct{}{}
 
 				continue
 			}
 
 			incomingJob.responseChan <- Result{content: output}
 			span.AddEvent("result returned successfully")
-			span.End()
+			readyInstance.Deallocate(inPointer, len(jb))
+
+			w.provider.GiveInstanceBack(ctx, readyInstance)
+
+			endChan <- struct{}{}
 		case <-w.shutdown:
 			w.wg.Done()
 			return

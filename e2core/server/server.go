@@ -19,8 +19,10 @@ import (
 	"github.com/suborbital/e2core/foundation/tracing"
 	"github.com/suborbital/e2core/nuexecutor/exec"
 	"github.com/suborbital/e2core/nuexecutor/overviews"
+	"github.com/suborbital/e2core/nuexecutor/pooldirectory"
 	kitError "github.com/suborbital/go-kit/web/error"
 	"github.com/suborbital/go-kit/web/mid"
+	"github.com/suborbital/systemspec/system/client"
 )
 
 const E2CoreHealthURI = "/health"
@@ -69,6 +71,18 @@ func New(l zerolog.Logger, sync *syncer.Syncer, opts *options.Options, rep *over
 	)
 
 	d := newDispatcher(ll, b.Connect())
+	//
+	//pool, err := instancepool.New(module.Data, api.New(logger.With().Str("module", "hostAPI").Logger()), logger)
+	//if err != nil {
+	//	return nil, errors.Wrap(err, "instancepool.New")
+	//}
+	//
+	//w, err := worker.New(worker.Config{}, logger, pool)
+	//if err != nil {
+	//	return nil, errors.Wrap(err, "worker.New")
+	//}
+	//
+	//wc := w.Start()
 
 	server := &Server{
 		server:     e,
@@ -84,6 +98,12 @@ func New(l zerolog.Logger, sync *syncer.Syncer, opts *options.Options, rep *over
 	sp := exec.NewSpawn(exec.Config{ControlPlane: opts.ControlPlane}, ll)
 
 	e.POST("/sync/:ident/:namespace/:name", server.syncHandler(sp, rep), auth.AuthorizationMiddleware(opts))
+
+	library := pooldirectory.New(client.NewHTTPSource(opts.ControlPlane, nil))
+
+	e.POST("/synclocal/:ident/:namespace/:name", server.syncLocalHandler(rep, library), auth.AuthorizationMiddleware(opts))
+
+	//e.POST("/syncback/:ident/:namespace/:name")
 
 	e.GET("/health", server.healthHandler())
 

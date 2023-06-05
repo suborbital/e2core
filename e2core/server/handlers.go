@@ -14,6 +14,8 @@ import (
 	"github.com/suborbital/e2core/foundation/tracing"
 	"github.com/suborbital/e2core/nuexecutor/exec"
 	"github.com/suborbital/e2core/nuexecutor/overviews"
+	"github.com/suborbital/e2core/nuexecutor/pooldirectory"
+	"github.com/suborbital/e2core/sat/engine2/runtime/instance"
 	"github.com/suborbital/systemspec/fqmn"
 	"github.com/suborbital/systemspec/request"
 	"github.com/suborbital/systemspec/tenant"
@@ -166,3 +168,192 @@ func (s *Server) syncHandler(sp exec.Spawn, rep *overviews.Repository) echo.Hand
 		return c.Blob(http.StatusOK, "application/octet-stream", out)
 	}
 }
+
+func (s *Server) syncLocalHandler(rep *overviews.Repository, library *pooldirectory.Library) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		ctx, span := tracing.Tracer.Start(c.Request().Context(), "sync Local Handler", trace.WithAttributes(
+			attribute.String("request_id", c.Response().Header().Get(echo.HeaderXRequestID)),
+		))
+		defer span.End()
+
+		c.SetRequest(c.Request().WithContext(ctx))
+
+		// with the authorization middleware, this is going to be the uuid of the tenant specified by the path name in
+		// the environment specified by the authorization token.
+		ident := ReadParam(c, "ident")
+
+		// this is coming from the path.
+		namespace := ReadParam(c, "namespace")
+
+		// this is coming from the path.
+		name := ReadParam(c, "name")
+
+		ref, err := rep.Ref(ident, namespace, name)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusNotFound, "module not found").SetInternal(errors.Wrap(err, "rep.Ref"))
+		}
+
+		fqmnStruct := fqmn.FQMN{
+			Tenant:    ident,
+			Namespace: namespace,
+			Name:      name,
+			Ref:       string(ref),
+		}
+
+		jb, err := io.ReadAll(c.Request().Body)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "reading body failed").SetInternal(errors.Wrap(err, "io.ReadAll"))
+		}
+
+		span.AddEvent("provider.GetInstance")
+
+		readyInstance, err := library.GetInstance(fqmnStruct)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError).SetInternal(errors.Wrap(err, "library.GetInstance"))
+		}
+
+		inPointer, writeErr := readyInstance.WriteMemory(jb)
+		if writeErr != nil {
+
+			span.AddEvent("w.inst.WriteMemory failed", trace.WithAttributes(
+				attribute.String("error", writeErr.Error()),
+			))
+			span.End()
+
+			return echo.NewHTTPError(http.StatusInternalServerError).SetInternal(errors.Wrap(err, "readyInstance.WriteMemory"))
+		}
+
+		instanceIdent, err := instance.Store(readyInstance)
+		if err != nil {
+			span.AddEvent("instance.Store failed", trace.WithAttributes(
+				attribute.String("error", err.Error()),
+			))
+			span.End()
+
+			return echo.NewHTTPError(http.StatusInternalServerError).SetInternal(errors.Wrap(err, "instance.Store"))
+		}
+
+		// execute the module's Run function, passing the input data and ident
+		// set runErr but don't return because the ExecutionResult error should also be grabbed
+		_, callErr := readyInstance.Call("run_e", inPointer, int32(len(jb)), instanceIdent)
+		if callErr != nil {
+			span.AddEvent("w.inst.Call run_e failed", trace.WithAttributes(
+				attribute.String("error", callErr.Error()),
+			))
+			span.End()
+
+			return echo.NewHTTPError(http.StatusInternalServerError).SetInternal(errors.Wrap(err, "readyInstance.Call"))
+		}
+
+		// get the results from the instance
+		output, runErr := readyInstance.ExecutionResult()
+		if runErr != nil {
+			span.AddEvent("w.inst.ExecutionResult failed", trace.WithAttributes(
+				attribute.String("error", runErr.Error()),
+			))
+			span.End()
+
+			return echo.NewHTTPError(http.StatusInternalServerError).SetInternal(errors.Wrap(err, "readyInstance.ExecutionResult"))
+		}
+
+		span.AddEvent("result returned successfully")
+		span.End()
+
+		return c.Blob(http.StatusOK, "application/octet-stream", output)
+	}
+}
+
+//
+// func (s *Server) syncBackHandler(rep *overviews.Repository, wc chan worker.Job) echo.HandlerFunc {
+// 	return func(c echo.Context) error {
+// 		ctx, span := tracing.Tracer.Start(c.Request().Context(), "sync Local Handler", trace.WithAttributes(
+// 			attribute.String("request_id", c.Response().Header().Get(echo.HeaderXRequestID)),
+// 		))
+// 		defer span.End()
+//
+// 		c.SetRequest(c.Request().WithContext(ctx))
+//
+// 		// with the authorization middleware, this is going to be the uuid of the tenant specified by the path name in
+// 		// the environment specified by the authorization token.
+// 		ident := ReadParam(c, "ident")
+//
+// 		// this is coming from the path.
+// 		namespace := ReadParam(c, "namespace")
+//
+// 		// this is coming from the path.
+// 		name := ReadParam(c, "name")
+//
+// 		ref, err := rep.Ref(ident, namespace, name)
+// 		if err != nil {
+// 			return echo.NewHTTPError(http.StatusNotFound, "module not found").SetInternal(errors.Wrap(err, "rep.Ref"))
+// 		}
+//
+// 		fqmnStruct := fqmn.FQMN{
+// 			Tenant:    ident,
+// 			Namespace: namespace,
+// 			Name:      name,
+// 			Ref:       string(ref),
+// 		}
+//
+// 		jb, err := io.ReadAll(c.Request().Body)
+// 		if err != nil {
+// 			return echo.NewHTTPError(http.StatusInternalServerError, "reading body failed").SetInternal(errors.Wrap(err, "io.ReadAll"))
+// 		}
+//
+// 		span.AddEvent("provider.GetInstance")
+//
+// 		readyInstance, err := library.GetInstance(fqmnStruct)
+// 		if err != nil {
+// 			return echo.NewHTTPError(http.StatusInternalServerError).SetInternal(errors.Wrap(err, "library.GetInstance"))
+// 		}
+//
+// 		inPointer, writeErr := readyInstance.WriteMemory(jb)
+// 		if writeErr != nil {
+//
+// 			span.AddEvent("w.inst.WriteMemory failed", trace.WithAttributes(
+// 				attribute.String("error", writeErr.Error()),
+// 			))
+// 			span.End()
+//
+// 			return echo.NewHTTPError(http.StatusInternalServerError).SetInternal(errors.Wrap(err, "readyInstance.WriteMemory"))
+// 		}
+//
+// 		instanceIdent, err := instance.Store(readyInstance)
+// 		if err != nil {
+// 			span.AddEvent("instance.Store failed", trace.WithAttributes(
+// 				attribute.String("error", err.Error()),
+// 			))
+// 			span.End()
+//
+// 			return echo.NewHTTPError(http.StatusInternalServerError).SetInternal(errors.Wrap(err, "instance.Store"))
+// 		}
+//
+// 		// execute the module's Run function, passing the input data and ident
+// 		// set runErr but don't return because the ExecutionResult error should also be grabbed
+// 		_, callErr := readyInstance.Call("run_e", inPointer, int32(len(jb)), instanceIdent)
+// 		if callErr != nil {
+// 			span.AddEvent("w.inst.Call run_e failed", trace.WithAttributes(
+// 				attribute.String("error", callErr.Error()),
+// 			))
+// 			span.End()
+//
+// 			return echo.NewHTTPError(http.StatusInternalServerError).SetInternal(errors.Wrap(err, "readyInstance.Call"))
+// 		}
+//
+// 		// get the results from the instance
+// 		output, runErr := readyInstance.ExecutionResult()
+// 		if runErr != nil {
+// 			span.AddEvent("w.inst.ExecutionResult failed", trace.WithAttributes(
+// 				attribute.String("error", runErr.Error()),
+// 			))
+// 			span.End()
+//
+// 			return echo.NewHTTPError(http.StatusInternalServerError).SetInternal(errors.Wrap(err, "readyInstance.ExecutionResult"))
+// 		}
+//
+// 		span.AddEvent("result returned successfully")
+// 		span.End()
+//
+// 		return c.Blob(http.StatusOK, "application/octet-stream", output)
+// 	}
+// }

@@ -44,9 +44,14 @@ func Sync(wc chan<- worker.Job, l zerolog.Logger) echo.HandlerFunc {
 		// create a new job with the context (has the tracing), request ID (can connect to others), and input
 		j := worker.NewJob(ctx, rid, jobBytes)
 
+		span.AddEvent("sending job to channel", trace.WithAttributes(
+			attribute.Int("job channel len", len(wc)),
+		))
+
 		// send it
 		wc <- j
-		span.AddEvent("sent job to channel")
+
+		span.AddEvent("job sent to channel, did not block")
 
 		// see what happened with the job
 		select {

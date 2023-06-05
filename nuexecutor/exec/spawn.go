@@ -110,10 +110,14 @@ func (s *Spawn) Execute(ctx context.Context, target fqmn.FQMN, input []byte) ([]
 
 	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
 
+	span.AddEvent("sending the event to the baby e2core")
+
 	resp, err := s.client.Do(req)
 	if err != nil {
 		return nil, errors.Wrap(err, "s.client.Do")
 	}
+
+	span.AddEvent("received response from the baby e2core")
 
 	defer resp.Body.Close()
 

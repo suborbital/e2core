@@ -68,11 +68,20 @@ func New(config *Config, logger zerolog.Logger, mtx metrics.Metrics) (*Sat, erro
 		engine:  engine,
 		metrics: mtx,
 	}
+	//
+	// pool, err := instancepool.New(module.Data, api.New(logger.With().Str("module", "hostAPI").Logger()), logger)
+	// if err != nil {
+	// 	return nil, errors.Wrap(err, "instancepool.New")
+	// }
 
-	pool, err := instancepool.New(module.Data, api.New(logger.With().Str("module", "hostAPI").Logger()), logger)
+	logger.Warn().Int("data length", len(module.Data)).Msg("starting the pool with the data")
+
+	pool, err := instancepool.NewReuse(module.Data, api.New(logger.With().Str("module", "hostAPI").Logger()), logger)
 	if err != nil {
-		return nil, errors.Wrap(err, "instancepool.New")
+		return nil, errors.Wrap(err, "instancepool.NewReuse")
 	}
+
+	logger.Warn().Msg("we do have a reuse pool")
 
 	w, err := worker.New(worker.Config{}, logger, pool)
 	if err != nil {
@@ -96,6 +105,7 @@ func New(config *Config, logger zerolog.Logger, mtx metrics.Metrics) (*Sat, erro
 		sat.transport = websocket.New()
 
 		sat.server.POST("/meta/sync", handlers.Sync(wc, logger))
+		// sat.server.GET("/meta/wssync", handler.)
 
 		sat.server.GET("/meta/message", echo.WrapHandler(sat.transport.HTTPHandlerFunc()))
 		sat.server.GET("/meta/metrics", sat.workerMetricsHandler())
