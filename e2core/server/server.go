@@ -72,17 +72,17 @@ func New(l zerolog.Logger, sync *syncer.Syncer, opts *options.Options, rep *over
 
 	d := newDispatcher(ll, b.Connect())
 	//
-	//pool, err := instancepool.New(module.Data, api.New(logger.With().Str("module", "hostAPI").Logger()), logger)
-	//if err != nil {
+	// pool, err := instancepool.New(module.Data, api.New(logger.With().Str("module", "hostAPI").Logger()), logger)
+	// if err != nil {
 	//	return nil, errors.Wrap(err, "instancepool.New")
-	//}
+	// }
 	//
-	//w, err := worker.New(worker.Config{}, logger, pool)
-	//if err != nil {
+	// w, err := worker.New(worker.Config{}, logger, pool)
+	// if err != nil {
 	//	return nil, errors.Wrap(err, "worker.New")
-	//}
+	// }
 	//
-	//wc := w.Start()
+	// wc := w.Start()
 
 	server := &Server{
 		server:     e,
