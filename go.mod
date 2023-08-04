@@ -16,7 +16,7 @@ require (
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.8.4
-	github.com/suborbital/go-kit v0.0.8
+	github.com/suborbital/go-kit v0.0.9
 	github.com/suborbital/systemspec v0.0.6-0.20230505161626-41f9f9705eeb
 	github.com/testcontainers/testcontainers-go v0.19.0
 	github.com/twmb/franz-go v1.13.1
