@@ -6,15 +6,15 @@ import (
 	"context"
 	"time"
 
-	"go.opentelemetry.io/otel/metric/instrument"
+	"go.opentelemetry.io/otel/metric"
 
 	"github.com/suborbital/e2core/sat/sat/options"
 )
 
 type Metrics struct {
-	FunctionExecutions       instrument.Int64Counter
-	FailedFunctionExecutions instrument.Int64Counter
-	FunctionTime             instrument.Int64Histogram
+	FunctionExecutions       metric.Int64Counter
+	FailedFunctionExecutions metric.Int64Counter
+	FunctionTime             metric.Int64Histogram
 }
 
 type Timer struct {
@@ -22,7 +22,7 @@ type Timer struct {
 }
 
 func (t Timer) Observe() int64 {
-	return time.Now().Sub(t.start).Milliseconds()
+	return time.Since(t.start).Milliseconds()
 }
 
 // NewTimer returns a Timer with the current time stored in it.
