@@ -24,7 +24,7 @@ func (s *Sat) handler(engine *engine2.Engine) echo.HandlerFunc {
 		))
 		defer span.End()
 
-		s.metrics.FunctionExecutions.Add(spanCtx, 1)
+		metrics.Meter.FunctionExecutions.Add(spanCtx, 1)
 
 		c.SetRequest(c.Request().WithContext(spanCtx))
 
@@ -54,7 +54,7 @@ func (s *Sat) handler(engine *engine2.Engine) echo.HandlerFunc {
 			return echo.NewHTTPError(http.StatusInternalServerError, "unknown error").SetInternal(errors.Wrap(err, "engine.Do"))
 		}
 
-		s.metrics.FunctionTime.Record(spanCtx, t.Observe(), metric.WithAttributes(
+		metrics.Meter.FunctionTime.Record(spanCtx, t.ObserveMs(), metric.WithAttributes(
 			attribute.String("id", req.ID),
 		))
 

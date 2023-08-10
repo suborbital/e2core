@@ -8,9 +8,12 @@ import (
 	"github.com/bytecodealliance/wasmtime-go/v7"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 
 	"github.com/suborbital/e2core/sat/engine2/api"
 	"github.com/suborbital/e2core/sat/engine2/runtime/instance"
+	"github.com/suborbital/e2core/sat/sat/metrics"
 )
 
 const (
@@ -81,6 +84,8 @@ func New(moduleData []byte, hostAPI api.HostAPI, l zerolog.Logger) (Pool, error)
 // newInstance generates a new instance based on the module, engine, linker that is ready to be sent an input to be
 // processed.
 func (p *Pool) newInstance() (*instance.Instance, error) {
+	tmr := metrics.NewTimer()
+
 	store := wasmtime.NewStore(p.engine)
 
 	wasiConfig := wasmtime.NewWasiConfig()
@@ -97,9 +102,18 @@ func (p *Pool) newInstance() (*instance.Instance, error) {
 		if errors.Is(err, instance.ErrExportNotFound) {
 			// that's ok, not all modules will have _start
 		} else {
+			metrics.Meter.InstantiateTime.Record(context.Background(), tmr.ObserveMicroS(), metric.WithAttributes(
+				attribute.Bool("false", true),
+				attribute.String("error", err.Error()),
+			))
+
 			return nil, errors.Wrap(err, "failed to call exported _start")
 		}
 	}
+
+	metrics.Meter.InstantiateTime.Record(context.Background(), tmr.ObserveMicroS(), metric.WithAttributes(
+		attribute.Bool("success", true),
+	))
 
 	return inst, nil
 }

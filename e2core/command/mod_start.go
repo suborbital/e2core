@@ -77,14 +77,17 @@ func ModStart() *cobra.Command {
 			mctx, mcancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer mcancel()
 
-			mtx, err := metrics.ResolveMetrics(mctx, config.MetricsConfig)
+			l.Info().Interface("metricsconfig", config.MetricsConfig).Msg("resolving metrics with this config")
+
+			// Setup metrics and store it in the metrics.Meter global variable.
+			err = metrics.ResolveMetrics(mctx, config.MetricsConfig, l.With().Str("place", "resolvemetrics").Logger())
 			if err != nil {
 				return errors.Wrap(err, "metrics.ResolveMetrics")
 			}
 
 			defer traceProvider.Shutdown(context.Background())
 
-			satInstance, err := sat.New(config, l, mtx)
+			satInstance, err := sat.New(config, l)
 			if err != nil {
 				return errors.Wrap(err, "failed to sat.New")
 			}

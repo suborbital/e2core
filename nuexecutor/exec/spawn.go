@@ -153,6 +153,9 @@ func (s *Spawn) launch(ctx context.Context, target fqmn.FQMN) (process, error) {
 		"SAT_TRACER_COLLECTOR_ENDPOINT=collector:4317",
 		"E2CORE_UUID=" + strings.ToUpper(procUUID),
 		"SAT_CONNECTIONS=",
+		"SAT_METRICS_TYPE=otel",
+		"SAT_METRICS_SERVICENAME=e2core",
+		"SAT_METRICS_OTEL_ENDPOINT=collector:4317",
 	}
 
 	// Create a context with a cancel with cause functionality. Instead of reaping the process by killing by process id,

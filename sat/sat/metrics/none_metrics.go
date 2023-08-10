@@ -12,6 +12,7 @@ func SetupNoopMetrics() Metrics {
 		FunctionExecutions:       noopCounter{},
 		FailedFunctionExecutions: noopCounter{},
 		FunctionTime:             noopHistogram{},
+		InstantiateTime:          noopHistogram{},
 	}
 }
 

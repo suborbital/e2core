@@ -22,7 +22,6 @@ import (
 	"github.com/suborbital/e2core/nuexecutor/worker"
 	"github.com/suborbital/e2core/sat/engine2"
 	"github.com/suborbital/e2core/sat/engine2/api"
-	"github.com/suborbital/e2core/sat/sat/metrics"
 	kitError "github.com/suborbital/go-kit/web/error"
 	"github.com/suborbital/systemspec/tenant"
 )
@@ -36,12 +35,11 @@ type Sat struct {
 	pod       *bus.Pod
 	transport *websocket.Transport
 	engine    *engine2.Engine
-	metrics   metrics.Metrics
 }
 
 // New initializes a Sat instance
 // if traceProvider is nil, the default NoopTraceProvider will be used
-func New(config *Config, logger zerolog.Logger, mtx metrics.Metrics) (*Sat, error) {
+func New(config *Config, logger zerolog.Logger) (*Sat, error) {
 	var module *tenant.WasmModuleRef
 
 	if config.Module != nil && config.Module.WasmRef != nil && len(config.Module.WasmRef.Data) > 0 {
@@ -63,25 +61,24 @@ func New(config *Config, logger zerolog.Logger, mtx metrics.Metrics) (*Sat, erro
 	engine := engine2.New(config.JobType, module, engineAPI, logger)
 
 	sat := &Sat{
-		config:  config,
-		logger:  logger,
-		engine:  engine,
-		metrics: mtx,
+		config: config,
+		logger: logger,
+		engine: engine,
 	}
-	//
-	// pool, err := instancepool.New(module.Data, api.New(logger.With().Str("module", "hostAPI").Logger()), logger)
-	// if err != nil {
-	// 	return nil, errors.Wrap(err, "instancepool.New")
-	// }
 
-	logger.Warn().Int("data length", len(module.Data)).Msg("starting the pool with the data")
-
-	pool, err := instancepool.NewReuse(module.Data, api.New(logger.With().Str("module", "hostAPI").Logger()), logger)
+	pool, err := instancepool.New(module.Data, api.New(logger.With().Str("module", "hostAPI").Logger()), logger)
 	if err != nil {
-		return nil, errors.Wrap(err, "instancepool.NewReuse")
+		return nil, errors.Wrap(err, "instancepool.New")
 	}
 
-	logger.Warn().Msg("we do have a reuse pool")
+	// logger.Warn().Int("data length", len(module.Data)).Msg("starting the pool with the data")
+	//
+	// pool, err := instancepool.NewReuse(module.Data, api.New(logger.With().Str("module", "hostAPI").Logger()), logger)
+	// if err != nil {
+	// 	return nil, errors.Wrap(err, "instancepool.NewReuse")
+	// }
+	//
+	// logger.Warn().Msg("we do have a reuse pool")
 
 	w, err := worker.New(worker.Config{}, logger, pool)
 	if err != nil {

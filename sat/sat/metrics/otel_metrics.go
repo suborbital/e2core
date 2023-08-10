@@ -41,9 +41,8 @@ func setupOtelMetrics(ctx context.Context, config options.MetricsConfig) (Metric
 // has already been set up (see setupOtelMetrics). Shipping the measured values is the task of the provider, so
 // from a usage point of view, nothing else is needed.
 func configureMetrics() (Metrics, error) {
-
 	m := otel.Meter(
-		"sat",
+		"e2core_baby",
 		metric.WithInstrumentationVersion("1.0"),
 	)
 
@@ -74,9 +73,19 @@ func configureMetrics() (Metrics, error) {
 		return Metrics{}, errors.Wrap(err, "sync int 64 provider function_time")
 	}
 
+	instantiateTimes, err := m.Int64Histogram(
+		"wasmtime_instantiate",
+		metric.WithUnit("µs"),
+		metric.WithDescription("How much time does it take to create a new instance of a wasm module"),
+	)
+	if err != nil {
+		return Metrics{}, errors.Wrap(err, "m.Int64Histogram instantiate time")
+	}
+
 	return Metrics{
 		FunctionExecutions:       functionExecutions,
 		FailedFunctionExecutions: failedFunctionExecutions,
 		FunctionTime:             functionTime,
+		InstantiateTime:          instantiateTimes,
 	}, nil
 }

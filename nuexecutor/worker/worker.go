@@ -27,7 +27,7 @@ var (
 type Wasm struct {
 	// source is to get the compiled wasm module in byte slice from somewhere.
 	// source ModSource
-	provider instancepool.Reuse
+	provider instancepool.Pool
 
 	// workers holds info on how many go routines to launch that handle incoming jobs.
 	workers uint8
@@ -54,7 +54,7 @@ type ModSource interface {
 	Get(context.Context, fqmn.FQMN) ([]byte, error)
 }
 
-func New(c Config, l zerolog.Logger, pool instancepool.Reuse) (*Wasm, error) {
+func New(c Config, l zerolog.Logger, pool instancepool.Pool) (*Wasm, error) {
 	workers := workersDefault
 	buffer := bufferDefault
 
@@ -150,7 +150,7 @@ func (w *Wasm) work() {
 			jb := incomingJob.Input()
 
 			span.AddEvent("provider.GetInstance")
-			readyInstance := w.provider.GetInstance(ctx)
+			readyInstance := w.provider.GetInstance()
 			span.AddEvent("got a provider, did not block")
 
 			inPointer, writeErr := readyInstance.WriteMemory(jb)
@@ -160,8 +160,6 @@ func (w *Wasm) work() {
 				span.AddEvent("w.inst.WriteMemory failed", trace.WithAttributes(
 					attribute.String("error", writeErr.Error()),
 				))
-
-				w.provider.GiveInstanceBack(ctx, readyInstance)
 
 				endChan <- struct{}{}
 
@@ -176,8 +174,6 @@ func (w *Wasm) work() {
 				span.AddEvent("instance.Store failed", trace.WithAttributes(
 					attribute.String("error", err.Error()),
 				))
-
-				w.provider.GiveInstanceBack(ctx, readyInstance)
 
 				endChan <- struct{}{}
 				continue
@@ -195,8 +191,6 @@ func (w *Wasm) work() {
 
 				readyInstance.Deallocate(inPointer, len(jb))
 
-				w.provider.GiveInstanceBack(ctx, readyInstance)
-
 				endChan <- struct{}{}
 
 				continue
@@ -212,8 +206,6 @@ func (w *Wasm) work() {
 				))
 				readyInstance.Deallocate(inPointer, len(jb))
 
-				w.provider.GiveInstanceBack(ctx, readyInstance)
-
 				endChan <- struct{}{}
 
 				continue
@@ -222,8 +214,6 @@ func (w *Wasm) work() {
 			incomingJob.responseChan <- Result{content: output}
 			span.AddEvent("result returned successfully")
 			readyInstance.Deallocate(inPointer, len(jb))
-
-			w.provider.GiveInstanceBack(ctx, readyInstance)
 
 			endChan <- struct{}{}
 		case <-w.shutdown:
