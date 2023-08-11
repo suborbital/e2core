@@ -3,7 +3,7 @@ package runtime
 import (
 	"sync"
 
-	"github.com/bytecodealliance/wasmtime-go/v7"
+	"github.com/bytecodealliance/wasmtime-go/v9"
 	"github.com/pkg/errors"
 
 	"github.com/suborbital/e2core/foundation/scheduler"
