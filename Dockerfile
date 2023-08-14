@@ -1,7 +1,6 @@
-FROM golang:1.20 as builder
+FROM golang:1.20-bookworm as builder
 WORKDIR /go/src/github.com/suborbital/e2core/
 ARG VERSION="dev"
-ENV GOPROXY="http://host.docker.internal:1337"
 ENV GOPRIVATE="github.com/suborbital/*"
 
 COPY go.mod go.sum ./
@@ -11,7 +10,7 @@ COPY . ./
 RUN go build -o .bin/e2core -tags netgo -ldflags="-extldflags=-static -X 'github.com/suborbital/e2core/e2core/release.Version=$VERSION'" .
 
 
-FROM debian:buster-slim
+FROM debian:bookworm-slim
 RUN groupadd -g 999 e2core && \
 	useradd -r -u 999 -g e2core e2core && \
 	mkdir -p /home/e2core && \
