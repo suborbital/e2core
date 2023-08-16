@@ -17,7 +17,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.8.4
 	github.com/suborbital/go-kit v0.0.9
-	github.com/suborbital/systemspec v0.0.6-0.20230505161626-41f9f9705eeb
+	github.com/suborbital/systemspec v0.0.6-0.20230816145304-92bbbbcdc6dd
 	github.com/testcontainers/testcontainers-go v0.23.0
 	github.com/twmb/franz-go v1.14.3
 	go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho v0.37.0
@@ -78,8 +78,8 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v0.39.0 // indirect
 	go.opentelemetry.io/proto/otlp v0.19.0 // indirect
 	golang.org/x/crypto v0.11.0 // indirect
-	golang.org/x/exp v0.0.0-20230510235704-dd950f8aeaea // indirect
-	golang.org/x/mod v0.9.0 // indirect
+	golang.org/x/exp v0.0.0-20230811145659-89c5cff77bcb // indirect
+	golang.org/x/mod v0.11.0 // indirect
 	golang.org/x/net v0.12.0 // indirect
 	golang.org/x/sys v0.11.0 // indirect
 	golang.org/x/text v0.11.0 // indirect
