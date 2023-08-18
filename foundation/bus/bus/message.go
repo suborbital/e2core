@@ -21,6 +21,16 @@ type MsgFunc func(Message) error
 // MsgChan is a channel that accepts a message
 type MsgChan chan Message
 
+// msgOriginChan is a channel that accepts a message with an origin
+type msgOriginChan chan messageWithOrigin
+
+type messageWithOrigin struct {
+	Message
+
+	// originUUID is the UUID of the pod from which the message originated.
+	originUUID string
+}
+
 // Message represents a message
 type Message interface {
 	// Unique ID for this message

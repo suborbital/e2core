@@ -12,7 +12,7 @@ const (
 // Oldest messages are automatically evicted as new ones are added
 // past said limit. Push(), Next(), and Iter() are thread-safe.
 type MsgBuffer struct {
-	msgs       map[string]Message
+	msgs       map[string]messageWithOrigin
 	order      []string
 	limit      int
 	startIndex int
@@ -22,7 +22,7 @@ type MsgBuffer struct {
 
 func NewMsgBuffer(limit int) *MsgBuffer {
 	m := &MsgBuffer{
-		msgs:       map[string]Message{},
+		msgs:       map[string]messageWithOrigin{},
 		order:      []string{},
 		limit:      limit,
 		startIndex: 0,
@@ -34,7 +34,7 @@ func NewMsgBuffer(limit int) *MsgBuffer {
 }
 
 // Push pushes a new message onto the end of the buffer and evicts the oldest, if needed (based on limit)
-func (m *MsgBuffer) Push(msg Message) {
+func (m *MsgBuffer) Push(msg messageWithOrigin) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
@@ -80,7 +80,7 @@ func (m *MsgBuffer) Next() Message {
 }
 
 // Iter calls msgFunc once per message in the buffer
-func (m *MsgBuffer) Iter(msgFunc MsgFunc) {
+func (m *MsgBuffer) Iter(msgFunc func(messageWithOrigin) error) {
 	m.lock.RLock()
 	defer m.lock.RUnlock()
 

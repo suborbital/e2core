@@ -4,6 +4,8 @@ import (
 	"errors"
 	"sync"
 	"sync/atomic"
+
+	"github.com/google/uuid"
 )
 
 const (
@@ -38,12 +40,14 @@ Created with Monodraw
 // and immediately route a message between its owner and the Bus. The Bus is responsible for any "smarts".
 // Messages coming from the bus are filtered using the pod's messageFilter, which is configurable by the caller.
 type Pod struct {
+	uuid string
+
 	onFunc     MsgFunc // the onFunc is called whenever a message is received
 	onFuncLock sync.RWMutex
 
-	messageChan  MsgChan // messageChan is used to receive messages coming from the bus
-	feedbackChan MsgChan // feedbackChan is used to send "feedback" to the bus about the pod's status
-	busChan      MsgChan // busChan is used to emit messages to the bus
+	messageChan  msgOriginChan // messageChan is used to receive messages coming from the bus
+	feedbackChan MsgChan       // feedbackChan is used to send "feedback" to the bus about the pod's status
+	busChan      msgOriginChan // busChan is used to emit messages to the bus
 
 	*messageFilter // the embedded messageFilter controls which messages reach the onFunc
 
@@ -60,10 +64,11 @@ type podOpts struct {
 }
 
 // newPod creates a new Pod
-func newPod(busChan MsgChan, tunnel func(string, Message) error, opts *podOpts) *Pod {
+func newPod(busChan msgOriginChan, tunnel func(string, Message) error, opts *podOpts) *Pod {
 	p := &Pod{
+		uuid:          uuid.NewString(),
 		onFuncLock:    sync.RWMutex{},
-		messageChan:   make(chan Message, defaultPodChanSize),
+		messageChan:   make(chan messageWithOrigin, defaultPodChanSize),
 		feedbackChan:  make(chan Message, defaultPodChanSize),
 		busChan:       busChan,
 		messageFilter: newMessageFilter(),
@@ -93,7 +98,10 @@ func (p *Pod) Send(msg Message) *MsgReceipt {
 
 	p.FilterUUID(msg.UUID(), false) // don't allow the same message to bounce back through this pod
 
-	p.busChan <- msg
+	p.busChan <- messageWithOrigin{
+		Message:    msg,
+		originUUID: p.uuid,
+	}
 
 	t := &MsgReceipt{
 		UUID: msg.UUID(),
@@ -247,7 +255,7 @@ func (p *Pod) setOnFunc(on MsgFunc) {
 }
 
 // busChans returns the messageChan and feedbackChan to be used by the bus
-func (p *Pod) busChans() (MsgChan, MsgChan) {
+func (p *Pod) busChans() (msgOriginChan, MsgChan) {
 	return p.messageChan, p.feedbackChan
 }
 
@@ -268,7 +276,7 @@ func (p *Pod) start() {
 					return
 				}
 
-				if p.allow(msg) {
+				if p.allow(msg) && p.uuid != msg.originUUID {
 					if err := p.onFunc(msg); err != nil {
 						// if the onFunc failed, send it back to the bus to be re-sent later
 						p.feedbackChan <- msg
