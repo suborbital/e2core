@@ -19,7 +19,7 @@ require (
 	github.com/suborbital/go-kit v0.0.9
 	github.com/suborbital/systemspec v0.0.6-0.20230505161626-41f9f9705eeb
 	github.com/testcontainers/testcontainers-go v0.23.0
-	github.com/twmb/franz-go v1.14.3
+	github.com/twmb/franz-go v1.14.4
 	go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho v0.37.0
 	go.opentelemetry.io/otel v1.16.0
 	go.opentelemetry.io/otel/metric v1.16.0
