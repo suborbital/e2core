@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/bytecodealliance/wasmtime-go/v7 v7.0.0
-	github.com/google/uuid v1.3.0
+	github.com/google/uuid v1.3.1
 	github.com/gorilla/websocket v1.5.0
 	github.com/labstack/echo/v4 v4.11.1
 	github.com/nats-io/nats.go v1.28.0
