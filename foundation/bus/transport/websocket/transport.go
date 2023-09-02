@@ -11,8 +11,12 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/suborbital/e2core/foundation/bus/bus"
+	"github.com/suborbital/e2core/foundation/tracing"
 )
 
 const (
@@ -87,51 +91,80 @@ func (t *Transport) Connect(endpoint string) (bus.Connection, error) {
 // HTTPHandlerFunc returns an http.HandlerFunc for incoming connections
 func (t *Transport) HTTPHandlerFunc() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		ctx, span := tracing.Tracer.Start(r.Context(), "websocket.transport.httphanderfunc")
+		defer span.End()
+
+		r = r.Clone(ctx)
+
 		if t.connectionFunc == nil {
 			t.log.Error().Msg("incoming connection received, but no connFunc configured")
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
+		t.log.Info().Msg("receiving a message I think")
+
+		span.AddEvent("upgrading request to websocket connection")
 		c, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
 			t.log.Err(err).Msg("could not upgrade connection to websocket")
 			return
 		}
 
-		t.log.Debug().Str("connectionURL", r.URL.String()).Msg("upgraded connection")
+		t.log.Info().Str("connectionURL", r.URL.String()).Msg("upgraded connection")
 
 		conn := &Conn{
 			conn: c,
 			log:  t.log,
 		}
 
+		t.log.Info().Interface("connectionfunc", t.connectionFunc).Msg("connection func is this, apparently, bus.Connect, again? request is in the conn.conn as an upgraded websocket connection")
+
+		span.AddEvent("calling connection function")
 		t.connectionFunc(conn)
 	}
 }
 
 // SendMsg sends a message to the connection
 func (c *Conn) SendMsg(msg bus.Message) error {
+	ctx, span := tracing.Tracer.Start(msg.Context(), "conn.SendMsg", trace.WithAttributes(
+		attribute.String("request ID", msg.ParentID()),
+	))
+	defer span.End()
+
+	span.AddEvent("injecting the ctx into the message")
+	fmt.Printf("\n\n!!!!\n\ninjecting context into message\n")
+	otel.GetTextMapPropagator().Inject(ctx, msg)
+	fmt.Printf("\n\n---\n\ndone injecting context into message\n")
+
+	ll := c.log.With().Str("requestID", msg.ParentID()).
+		Str("msg-uuid", msg.UUID()).
+		Str("node-uuid", c.nodeUUID).Logger()
+
+	ll.Info().Strs("traceinfo-keys", msg.Keys()).Msg("uh what")
+
 	msgBytes, err := msg.Marshal()
 	if err != nil {
 		return errors.Wrap(err, "[transport-websocket] failed to Marshal message")
 	}
 
-	c.log.Debug().Str("msgUUID", msg.UUID()).
-		Str("nodeUUID", c.nodeUUID).Msg("sending message to connection")
+	ll.Info().Str("messagebytes", string(msgBytes)).Msg("sending message to connection over binary")
 
 	if err := c.WriteMessage(websocket.BinaryMessage, msgBytes); err != nil {
 		if errors.Is(err, websocket.ErrCloseSent) {
+			ll.Err(err).Msg("websocket error close sent bla bla")
 			return bus.ErrConnectionClosed
 		} else if err == bus.ErrNodeWithdrawn {
+			ll.Err(err).Msg("node was withdrawn")
 			return err
 		}
+
+		ll.Err(err).Msg("some super different error with connection")
 
 		return errors.Wrap(err, "[transport-websocket] failed to WriteMessage")
 	}
 
-	c.log.Debug().Str("msgUUID", msg.UUID()).
-		Str("nodeUUID", c.nodeUUID).Msg("sent message to connection")
+	ll.Info().Msg("sent message to connection")
 
 	return nil
 }
@@ -160,6 +193,7 @@ func (c *Conn) ReadMsg() (bus.Message, *bus.Withdraw, error) {
 	}
 
 	c.log.Debug().
+		Str("requestID", msg.ParentID()).
 		Str("msgUUID", msg.UUID()).
 		Str("nodeUUID", c.nodeUUID).
 		Msg("received message from node")

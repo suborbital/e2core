@@ -7,6 +7,8 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sethvargo/go-envconfig"
+
+	"github.com/suborbital/e2core/foundation/tracing"
 )
 
 const (
@@ -29,7 +31,8 @@ type Options struct {
 	Domain           string        `env:"E2CORE_DOMAIN"`
 	HTTPPort         int           `env:"E2CORE_HTTP_PORT,default=8080"`
 	TLSPort          int           `env:"E2CORE_TLS_PORT,default=443"`
-	TracerConfig     TracerConfig  `env:",prefix=E2CORE_TRACER_"`
+	EnvTracerConfig  TracerConfig  `env:",prefix=E2CORE_TRACER_"`
+	TracerConfig     tracing.Config
 }
 
 // TracerConfig holds values specific to setting up the tracer. It's only used in proxy mode. All configuration options
@@ -149,11 +152,37 @@ func (o *Options) finalize() error {
 
 	o.Features = envOpts.Features
 	o.EnvironmentToken = ""
-	o.TracerConfig = TracerConfig{}
+	o.EnvTracerConfig = TracerConfig{}
 	o.StaticPeers = envOpts.StaticPeers
 
 	o.EnvironmentToken = envOpts.EnvironmentToken
-	o.TracerConfig = envOpts.TracerConfig
+	o.EnvTracerConfig = envOpts.EnvTracerConfig
+
+	tc := tracing.Config{
+		ServiceName: envOpts.EnvTracerConfig.ServiceName,
+		Probability: envOpts.EnvTracerConfig.Probability,
+	}
+
+	switch envOpts.EnvTracerConfig.TracerType {
+	case "collector":
+		tc.Type = tracing.ExporterCollector
+	case "honeycomb":
+		tc.Type = tracing.ExporterHoneycomb
+	}
+
+	if envOpts.EnvTracerConfig.HoneycombConfig != nil {
+		tc.Honeycomb = tracing.HoneycombConfig{
+			Endpoint: envOpts.EnvTracerConfig.HoneycombConfig.Endpoint,
+			APIKey:   envOpts.EnvTracerConfig.HoneycombConfig.APIKey,
+			Dataset:  envOpts.EnvTracerConfig.HoneycombConfig.Dataset,
+		}
+	}
+
+	if envOpts.EnvTracerConfig.Collector != nil {
+		tc.Collector = tracing.CollectorConfig{Endpoint: envOpts.EnvTracerConfig.Collector.Endpoint}
+	}
+
+	o.TracerConfig = tc
 
 	return nil
 }

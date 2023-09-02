@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog"
 
 	"github.com/suborbital/e2core/foundation/scheduler"
 	"github.com/suborbital/e2core/sat/engine2/api"
@@ -19,9 +20,9 @@ type Engine struct {
 }
 
 // New creates a new Engine with the default API
-func New(name string, ref *tenant.WasmModuleRef, api api.HostAPI) *Engine {
+func New(name string, ref *tenant.WasmModuleRef, api api.HostAPI, logger zerolog.Logger) *Engine {
 	e := &Engine{
-		Scheduler: scheduler.New(),
+		Scheduler: scheduler.NewWithLogger(logger.With().Str("component", "engine.scheduler").Logger()),
 	}
 
 	runner := newRunnerFromRef(ref, api)

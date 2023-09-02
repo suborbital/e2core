@@ -11,9 +11,9 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
-	"github.com/sethvargo/go-envconfig"
 	"gopkg.in/yaml.v3"
 
+	"github.com/suborbital/e2core/foundation/tracing"
 	satOptions "github.com/suborbital/e2core/sat/sat/options"
 	"github.com/suborbital/systemspec/capabilities"
 	"github.com/suborbital/systemspec/fqmn"
@@ -34,11 +34,11 @@ type Config struct {
 	ControlPlaneUrl string
 	EnvToken        string
 	ProcUUID        string
-	TracerConfig    satOptions.TracerConfig
+	TracerConfig    tracing.Config
 	MetricsConfig   satOptions.MetricsConfig
 }
 
-func ConfigFromArgs(l zerolog.Logger) (*Config, error) {
+func ConfigFromArgs(l zerolog.Logger, opts satOptions.Options) (*Config, error) {
 	flag.Parse()
 	args := flag.Args()
 
@@ -48,17 +48,13 @@ func ConfigFromArgs(l zerolog.Logger) (*Config, error) {
 
 	moduleArg := args[0]
 
-	return ConfigFromModuleArg(l, moduleArg)
+	return ConfigFromModuleArg(l, opts, moduleArg)
 }
 
-func ConfigFromModuleArg(logger zerolog.Logger, moduleArg string) (*Config, error) {
+func ConfigFromModuleArg(logger zerolog.Logger, opts satOptions.Options, moduleArg string) (*Config, error) {
 	var module *tenant.Module
 	var FQMN fqmn.FQMN
-
-	opts, err := satOptions.Resolve(envconfig.OsLookuper())
-	if err != nil {
-		return nil, errors.Wrap(err, "ConfigFromModuleArg options.Resolve")
-	}
+	var err error
 
 	// first, determine if we need to connect to a control plane
 	controlPlane := ""
@@ -79,7 +75,6 @@ func ConfigFromModuleArg(logger zerolog.Logger, moduleArg string) (*Config, erro
 
 	// next, handle the module arg being a URL, an FQMN, or a path on disk
 	if isURL(moduleArg) {
-		logger.Debug().Msg("fetching module from URL")
 		tmpFile, err := downloadFromURL(moduleArg)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to downloadFromURL")
@@ -88,8 +83,6 @@ func ConfigFromModuleArg(logger zerolog.Logger, moduleArg string) (*Config, erro
 		moduleArg = tmpFile
 	} else if FQMN, err = fqmn.Parse(moduleArg); err == nil {
 		if useControlPlane {
-			logger.Debug().Msg("fetching module from control plane")
-
 			cpModule, err := appClient.GetModule(moduleArg)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to GetModule")
@@ -135,17 +128,6 @@ func ConfigFromModuleArg(logger zerolog.Logger, moduleArg string) (*Config, erro
 		jobType = module.FQMN
 
 		prettyName = fmt.Sprintf("%s-%s", jobType, opts.ProcUUID[:6])
-
-		logger = logger.With().
-			Str("app", prettyName).
-			Str("jobType", jobType).
-			Str("tenant", FQMN.Tenant).
-			Logger()
-
-		logger.Debug().Msg("configuring")
-		logger.Debug().Msg("joining tenant")
-	} else {
-		logger.Debug().Str("jobType", jobType).Msg("configuring")
 	}
 
 	conns := make([]tenant.Connection, 0)
@@ -153,6 +135,30 @@ func ConfigFromModuleArg(logger zerolog.Logger, moduleArg string) (*Config, erro
 		if err := json.Unmarshal([]byte(opts.Connections), &conns); err != nil {
 			return nil, errors.Wrap(err, "failed to Unmarshal connections JSON")
 		}
+	}
+
+	tc := tracing.Config{
+		ServiceName: opts.TracerConfig.ServiceName,
+		Probability: opts.TracerConfig.Probability,
+	}
+
+	switch opts.TracerConfig.TracerType {
+	case "collector":
+		tc.Type = tracing.ExporterCollector
+	case "honeycomb":
+		tc.Type = tracing.ExporterHoneycomb
+	}
+
+	if opts.TracerConfig.HoneycombConfig != nil {
+		tc.Honeycomb = tracing.HoneycombConfig{
+			Endpoint: opts.TracerConfig.HoneycombConfig.Endpoint,
+			APIKey:   opts.TracerConfig.HoneycombConfig.APIKey,
+			Dataset:  opts.TracerConfig.HoneycombConfig.Dataset,
+		}
+	}
+
+	if opts.TracerConfig.Collector != nil {
+		tc.Collector = tracing.CollectorConfig{Endpoint: opts.TracerConfig.Collector.Endpoint}
 	}
 
 	// finally, put it all together
@@ -166,7 +172,7 @@ func ConfigFromModuleArg(logger zerolog.Logger, moduleArg string) (*Config, erro
 		Connections:     conns,
 		Port:            portInt,
 		ControlPlaneUrl: controlPlane,
-		TracerConfig:    opts.TracerConfig,
+		TracerConfig:    tc,
 		MetricsConfig:   opts.MetricsConfig,
 		ProcUUID:        string(opts.ProcUUID),
 	}

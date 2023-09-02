@@ -1,6 +1,7 @@
 package scheduler
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 
@@ -15,6 +16,7 @@ type Job struct {
 	jobType string
 	result  *Result
 	data    interface{}
+	ctx     context.Context
 
 	req *request.CoordinatedRequest
 }
@@ -87,4 +89,13 @@ func (j Job) Data() interface{} {
 // Req returns the Coordinated request attached to the Job
 func (j Job) Req() *request.CoordinatedRequest {
 	return j.req
+}
+
+func (j Job) WithContext(ctx context.Context) Job {
+	j.ctx = ctx
+	return j
+}
+
+func (j Job) Context() context.Context {
+	return j.ctx
 }

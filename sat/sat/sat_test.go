@@ -13,9 +13,11 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/otel/sdk/trace"
+	sdkTrace "go.opentelemetry.io/otel/sdk/trace"
 
+	"github.com/suborbital/e2core/foundation/tracing"
 	"github.com/suborbital/e2core/sat/sat/metrics"
+	"github.com/suborbital/e2core/sat/sat/options"
 )
 
 func TestEchoRequest(t *testing.T) {
@@ -96,18 +98,18 @@ func TestPanicRequest(t *testing.T) {
 `, string(body))
 }
 
-func satForFile(filepath string) (*Sat, *trace.TracerProvider, error) {
-	config, err := ConfigFromModuleArg(zerolog.Nop(), filepath)
+func satForFile(filepath string) (*Sat, *sdkTrace.TracerProvider, error) {
+	config, err := ConfigFromModuleArg(zerolog.Nop(), options.Options{}, filepath)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	traceProvider, err := SetupTracing(config.TracerConfig, zerolog.Nop())
+	traceProvider, err := tracing.SetupTracing(tracing.Config{}, zerolog.Nop())
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "setup tracing")
 	}
 
-	sat, err := New(config, zerolog.Nop(), traceProvider, metrics.SetupNoopMetrics())
+	sat, err := New(config, zerolog.Nop(), metrics.SetupNoopMetrics())
 	if err != nil {
 		return nil, nil, err
 	}

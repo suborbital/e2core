@@ -12,6 +12,7 @@ import (
 	"github.com/suborbital/e2core/e2core/server"
 	"github.com/suborbital/e2core/foundation/bus/bus"
 	"github.com/suborbital/e2core/foundation/scheduler"
+	"github.com/suborbital/e2core/foundation/tracing"
 	"github.com/suborbital/systemspec/request"
 )
 
@@ -19,7 +20,8 @@ import (
 // when a meshed peer sends us a job, it is executed by Reactr and then
 // the result is passed into this function for handling
 func (s *Sat) handleFnResult(msg bus.Message, result interface{}, fnErr error) {
-	ll := s.logger.With().Str("method", "handleFnResult").Logger()
+	ll := s.logger.With().Str("method", "handleFnResult").
+		Str("requestID", msg.ParentID()).Logger()
 
 	// first unmarshal the request and sequence information
 	req, err := request.FromJSON(msg.Data())
@@ -30,7 +32,7 @@ func (s *Sat) handleFnResult(msg bus.Message, result interface{}, fnErr error) {
 
 	ctx := context.WithValue(context.Background(), "requestID", req.ID)
 
-	spanCtx, span := s.tracer.Start(ctx, "handleFnResult", trace.WithAttributes(
+	spanCtx, span := tracing.Tracer.Start(ctx, "handleFnResult", trace.WithAttributes(
 		attribute.String("request_id", req.ID),
 	))
 	defer span.End()
@@ -55,12 +57,15 @@ func (s *Sat) handleFnResult(msg bus.Message, result interface{}, fnErr error) {
 
 	if fnErr != nil {
 		if fnRunErr, isRunErr := fnErr.(scheduler.RunErr); isRunErr {
+			ll.Err(fnErr).Msg("it's a run error")
 			// great, it's a runErr
 			runErr = fnRunErr
 		} else {
+			ll.Err(fnErr).Msg("it's an exec error")
 			execErr = fnErr
 		}
 	} else {
+		ll.Info().Msg("result is a coordinated response, hopefully")
 		resp = result.(*request.CoordinatedResponse)
 	}
 
@@ -78,6 +83,8 @@ func (s *Sat) handleFnResult(msg bus.Message, result interface{}, fnErr error) {
 		}(),
 	}
 
+	ll.Info().Msg("sending the fn result back")
+
 	if err = s.sendFnResult(fnr, spanCtx); err != nil {
 		ll.Err(err).Msg("s.sendFnResult")
 		return
@@ -88,6 +95,8 @@ func (s *Sat) handleFnResult(msg bus.Message, result interface{}, fnErr error) {
 		ll.Err(execErr).Str("messageType", msg.Type()).Msg("stopping execution after exec error")
 		return
 	}
+
+	ll.Info().Msg("dealing with exec result for fn result")
 
 	if err = seq.HandleStepResults([]sequence.ExecResult{*fnr}); err != nil {
 		ll.Err(err).Msg("seq.HandleStepResults")
@@ -103,6 +112,7 @@ func (s *Sat) handleFnResult(msg bus.Message, result interface{}, fnErr error) {
 
 	req.SequenceJSON = stepJSON
 
+	ll.Info().Msg("sending next step")
 	s.sendNextStep(msg, seq, req, spanCtx)
 }
 
@@ -123,6 +133,7 @@ func (s *Sat) sendFnResult(result *sequence.ExecResult, ctx context.Context) err
 	respMsg := bus.NewMsgWithParentID(server.MsgTypeSuborbitalResult, reqID, fnrJSON)
 
 	s.logger.Debug().
+		Str("requestID", reqID).
 		Str("method", "sendFnResult").
 		Str("function", s.config.JobType).
 		Str("respUUID", respMsg.UUID()).
@@ -135,11 +146,13 @@ func (s *Sat) sendFnResult(result *sequence.ExecResult, ctx context.Context) err
 	return nil
 }
 
-func (s *Sat) sendNextStep(_ bus.Message, seq *sequence.Sequence, req *request.CoordinatedRequest, ctx context.Context) {
-	ll := s.logger.With().Str("method", "sendNextStep").Logger()
-
-	span := trace.SpanFromContext(ctx)
+func (s *Sat) sendNextStep(msg bus.Message, seq *sequence.Sequence, req *request.CoordinatedRequest, ctx context.Context) {
+	ctx, span := tracing.Tracer.Start(msg.Context(), "sat.sendNextStep")
 	defer span.End()
+
+	msg.SetContext(ctx)
+
+	ll := s.logger.With().Str("method", "sendNextStep").Str("requestID", msg.ParentID()).Logger()
 
 	nextStep := seq.NextStep()
 	if nextStep == nil {

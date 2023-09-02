@@ -5,14 +5,24 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/suborbital/e2core/e2core/sequence"
+	"github.com/suborbital/e2core/foundation/tracing"
 	"github.com/suborbital/systemspec/request"
 	"github.com/suborbital/systemspec/tenant"
 )
 
 func (s *Server) executePluginByNameHandler() echo.HandlerFunc {
 	return func(c echo.Context) error {
+		ctx, span := tracing.Tracer.Start(c.Request().Context(), "executePluginByNameHandler", trace.WithAttributes(
+			attribute.String("request_id", c.Response().Header().Get(echo.HeaderXRequestID)),
+		))
+		defer span.End()
+
+		c.SetRequest(c.Request().WithContext(ctx))
+
 		// with the authorization middleware, this is going to be the uuid of the tenant specified by the path name in
 		// the environment specified by the authorization token.
 		ident := ReadParam(c, "ident")
@@ -24,11 +34,17 @@ func (s *Server) executePluginByNameHandler() echo.HandlerFunc {
 		name := ReadParam(c, "name")
 
 		ll := s.logger.With().
+			Str("requestID", c.Response().Header().Get(echo.HeaderXRequestID)).
 			Str("ident", ident).
 			Str("namespace", namespace).
 			Str("fn", name).
 			Logger()
 
+		span.AddEvent("grabbing module by name", trace.WithAttributes(
+			attribute.String("ident", ident),
+			attribute.String("namespace", namespace),
+			attribute.String("name", name),
+		))
 		mod := s.syncer.GetModuleByName(ident, namespace, name)
 		if mod == nil {
 			ll.Error().Msg("syncer did not find module by these details")
@@ -51,13 +67,15 @@ func (s *Server) executePluginByNameHandler() echo.HandlerFunc {
 
 		steps := []tenant.WorkflowStep{{FQMN: mod.FQMN}}
 
+		span.AddEvent("sequence.New from req")
+
 		// a sequence executes the handler's steps and manages its state.
 		seq, err := sequence.New(steps, req)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to handle request").SetInternal(err)
 		}
 
-		if err := s.dispatcher.Execute(seq); err != nil {
+		if err := s.dispatcher.Execute(c.Request().Context(), seq); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to execute plugin").SetInternal(err)
 		}
 

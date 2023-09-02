@@ -91,7 +91,7 @@ func defaultOptions() *Options {
 	o := &Options{
 		BelongsTo:       "*",
 		Interests:       []string{},
-		Logger:          zerolog.New(os.Stderr).With().Timestamp().Logger(),
+		Logger:          zerolog.New(os.Stderr).With().Str("mode", "default-options").Timestamp().Logger(),
 		Port:            "8080",
 		URI:             "/meta/message",
 		MeshTransport:   nil,

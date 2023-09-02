@@ -10,20 +10,30 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
+	"github.com/sethvargo/go-envconfig"
 
+	"github.com/suborbital/e2core/foundation/tracing"
 	"github.com/suborbital/e2core/sat/sat"
 	"github.com/suborbital/e2core/sat/sat/metrics"
+	satOptions "github.com/suborbital/e2core/sat/sat/options"
 )
 
 func main() {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+
+	opts, err := satOptions.Resolve(envconfig.OsLookuper())
+	if err != nil {
+		log.Fatalf("options.Resolve: %s", err)
+	}
+
 	logger := zerolog.New(os.Stderr).With().
 		Timestamp().
 		Str("service", "sat-module").
+		Str("port", string(opts.Port)).
 		Str("version", sat.SatDotVersion).
 		Logger()
 
-	conf, err := sat.ConfigFromArgs(logger)
+	conf, err := sat.ConfigFromArgs(logger, opts)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -36,7 +46,7 @@ func main() {
 
 // start starts up the Sat instance
 func start(logger zerolog.Logger, conf *sat.Config) error {
-	traceProvider, err := sat.SetupTracing(conf.TracerConfig, logger)
+	traceProvider, err := tracing.SetupTracing(conf.TracerConfig, logger)
 	if err != nil {
 		return errors.Wrap(err, "setup tracing")
 	}
@@ -51,7 +61,7 @@ func start(logger zerolog.Logger, conf *sat.Config) error {
 	}
 
 	// initialize Reactr, echo, and Bus and wrap them in a sat instance.
-	s, err := sat.New(conf, logger, traceProvider, mtx)
+	s, err := sat.New(conf, logger, mtx)
 	if err != nil {
 		return errors.Wrap(err, "sat.New")
 	}

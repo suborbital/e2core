@@ -41,6 +41,7 @@ type instance struct {
 	fqmn    string
 	metrics *MetricsResponse
 	uuid    string
+	pid     int
 	cxl     context.CancelCauseFunc
 }
 
@@ -76,7 +77,7 @@ func (w *watcher) addToDead(port string) error {
 }
 
 // add inserts a new instance to the watched pool.
-func (w *watcher) add(fqmn, port, uuid string, cxl context.CancelCauseFunc) {
+func (w *watcher) add(fqmn, port, uuid string, pid int, cxl context.CancelCauseFunc) {
 	w.log.Info().Str("port", port).Str("fqmn", fqmn).Msg("adding one to the waitgroup port")
 	w.instancesRunning.Add(1)
 
@@ -88,6 +89,7 @@ func (w *watcher) add(fqmn, port, uuid string, cxl context.CancelCauseFunc) {
 	w.instances[port] = &instance{
 		fqmn: fqmn,
 		uuid: uuid,
+		pid:  pid,
 		cxl:  cxl,
 	}
 }

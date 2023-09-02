@@ -6,6 +6,10 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
+
+	"github.com/suborbital/e2core/foundation/tracing"
 )
 
 // coreDoFunc is an internal version of DoFunc that takes a
@@ -36,21 +40,48 @@ func newCore(log zerolog.Logger) *core {
 	return c
 }
 
-func (c *core) do(job *Job) *Result {
-	result := newResult(job.UUID())
+func (c *core) do(incomingJob *Job) *Result {
+	ctx, span := tracing.Tracer.Start(incomingJob.Context(), "core.do")
+	defer span.End()
 
+	job := incomingJob.WithContext(ctx)
+
+	result := newResult(job.UUID())
+	span.AddEvent("created a new job", trace.WithAttributes(
+		attribute.String("job-uuid", job.UUID())))
+
+	rid := "no-request"
+	if job.Req() != nil {
+		rid = job.Req().ID
+	}
+
+	ll := c.log.With().Str("requestID", rid).Logger()
+
+	ll.Info().Msg("core.do function got called")
+
+	span.AddEvent("core.scaler.findWorder for job type", trace.WithAttributes(
+		attribute.String("jobType", job.jobType),
+	))
 	jobWorker := c.scaler.findWorker(job.jobType)
 	if jobWorker == nil {
 		result.sendErr(fmt.Errorf("failed to getWorker for jobType %q", job.jobType))
 		return result
 	}
 
-	go func() {
-		job.result = result
+	go func(gjob Job) {
+		ctx, span := tracing.Tracer.Start(gjob.Context(), "go func inside core.do")
+		defer span.End()
 
-		jobWorker.schedule(job)
-	}()
+		ggjob := gjob.WithContext(ctx)
 
+		ggjob.result = result
+
+		ll.Info().Msg("jobworker got a job scheduled")
+
+		jobWorker.schedule(&ggjob)
+	}(job)
+
+	ll.Info().Msg("returning result from core.do func")
 	return result
 }
 

@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/suborbital/e2core/foundation/scheduler"
+	"github.com/suborbital/e2core/foundation/tracing"
 	"github.com/suborbital/e2core/sat/engine2"
 	"github.com/suborbital/e2core/sat/sat/metrics"
 	"github.com/suborbital/systemspec/request"
@@ -18,8 +19,8 @@ import (
 
 func (s *Sat) handler(engine *engine2.Engine) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		spanCtx, span := s.tracer.Start(c.Request().Context(), "echoHandler", trace.WithAttributes(
-			attribute.String("request_id", c.Request().Header.Get("requestID")),
+		spanCtx, span := tracing.Tracer.Start(c.Request().Context(), "echoHandler", trace.WithAttributes(
+			attribute.String("requestID", c.Response().Header().Get(echo.HeaderXRequestID)),
 		))
 		defer span.End()
 
@@ -40,7 +41,7 @@ func (s *Sat) handler(engine *engine2.Engine) echo.HandlerFunc {
 			return echo.NewHTTPError(http.StatusInternalServerError, "unknown error").SetInternal(fmt.Errorf("module %s is not registered", s.config.JobType))
 		}
 
-		result, err := engine.Do(scheduler.NewJob(s.config.JobType, req)).Then()
+		result, err := engine.Do(scheduler.NewJob(s.config.JobType, req).WithContext(spanCtx)).Then()
 		if err != nil {
 			if errors.As(err, &runErr) {
 				// runErr would be an actual error returned from a function

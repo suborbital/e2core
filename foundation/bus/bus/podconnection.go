@@ -1,6 +1,11 @@
 package bus
 
-import "sync"
+import (
+	"context"
+	"sync"
+
+	"github.com/suborbital/e2core/foundation/tracing"
+)
 
 // podConnection is a connection to a pod via its messageChan
 // podConnection is also a circular linked list/ring of connections
@@ -47,7 +52,17 @@ func newPodConnection(id int64, pod *Pod) *podConnection {
 // ordering to the messageChan if it becomes full is not guaranteed, this
 // is sacrificed to ensure that the bus does not block because of a delinquient pod
 func (p *podConnection) send(msg Message) {
-	go func() {
+	ctx, span := tracing.Tracer.Start(msg.Context(), "podconnection.send")
+	defer span.End()
+
+	msg.SetContext(ctx)
+
+	go func(gctx context.Context, gmsg Message) {
+		gctx, gspan := tracing.Tracer.Start(gctx, "go func inside podconnection.send")
+		defer gspan.End()
+
+		gmsg.SetContext(gctx)
+
 		p.lock.RLock()
 		defer p.lock.RUnlock()
 
@@ -56,8 +71,8 @@ func (p *podConnection) send(msg Message) {
 			return
 		}
 
-		p.messageChan <- msg
-	}()
+		p.messageChan <- gmsg
+	}(ctx, msg)
 }
 
 // checkStatus checks the pod's feedback for any information or failed messages and drains the failures into the failed Message buffer

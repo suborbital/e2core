@@ -51,7 +51,7 @@ func (o *Orchestrator) Start() error {
 
 	var err error
 
-	ticker := time.NewTicker(time.Second)
+	ticker := time.NewTicker(5 * time.Second)
 loop:
 	for {
 		select {
@@ -144,11 +144,15 @@ func (o *Orchestrator) reconcileConstellation(syncer *syncer.Syncer) {
 				}
 
 				// repeat forever in case the command does error out
-				processUUID, cxl, wait, err := exec.Run(
+				processUUID, pid, cxl, wait, err := exec.Run(
 					cmd,
 					"SAT_HTTP_PORT="+port,
 					"SAT_CONTROL_PLANE="+o.opts.ControlPlane,
 					"SAT_CONNECTIONS="+connectionsEnv,
+					"SAT_TRACER_TYPE=collector",
+					"SAT_TRACER_SERVICENAME=e2core_bebby-"+port,
+					"SAT_TRACER_PROBABILITY=1",
+					"SAT_TRACER_COLLECTOR_ENDPOINT=collector:4317",
 				)
 				if err != nil {
 					ll.Err(err).Str("moduleFQMN", module.FQMN).Msg("exec.Run failed for sat instance")
@@ -158,20 +162,41 @@ func (o *Orchestrator) reconcileConstellation(syncer *syncer.Syncer) {
 				go func() {
 					err := wait()
 					if err != nil {
-						ll.Err(err).Str("moduleFQMN", module.FQMN).Str("port", port).Msg("calling waitfunc for the module failed")
+						ll.Err(err).
+							Str("moduleFQMN", module.FQMN).
+							Str("port", port).
+							Int("pid", pid).
+							Str("uuid", processUUID).
+							Msg("waitfunc returned with an error")
 					}
+
+					ll.Info().
+						Str("moduleFQMN", module.FQMN).
+						Str("port", port).
+						Int("pid", pid).
+						Str("uuid", processUUID).
+						Msg("adding port to dead list")
 
 					err = satWatcher.addToDead(port)
 					if err != nil {
-						ll.Err(err).Str("moduleFQMN", module.FQMN).Str("port", port).Msg("adding the port to the dead list")
+						ll.Err(err).
+							Str("moduleFQMN", module.FQMN).
+							Str("port", port).
+							Int("pid", pid).
+							Str("uuid", processUUID).
+							Msg("adding the port to the dead list failed")
 					}
 
-					ll.Info().Str("moduleFQMN", module.FQMN).Str("port", port).Msg("added port to dead list")
 				}()
 
-				satWatcher.add(module.FQMN, port, processUUID, cxl)
+				satWatcher.add(module.FQMN, port, processUUID, pid, cxl)
 
-				ll.Debug().Str("moduleFQMN", module.FQMN).Str("port", port).Msg("successfully started sat")
+				ll.Info().
+					Str("moduleFQMN", module.FQMN).
+					Str("port", port).
+					Int("pid", pid).
+					Str("uuid", processUUID).
+					Msg("successfully started sat")
 			}
 
 			// we want to max out at 8 threads per instance

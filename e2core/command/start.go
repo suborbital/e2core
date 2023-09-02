@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	shutdownWaitTime = time.Second * 3
+	shutdownWaitTime = time.Second * 10
 )
 
 func Start() *cobra.Command {
@@ -116,8 +116,10 @@ func Start() *cobra.Command {
 					return errors.Wrap(err, "srv.Shutdown")
 				}
 
-				if err := sourceSrv.Shutdown(ctx); err != nil {
-					return errors.Wrap(err, "sourceSrv.Shutdown")
+				if sourceSrv != nil {
+					if err := sourceSrv.Shutdown(ctx); err != nil {
+						return errors.Wrap(err, "sourceSrv.Shutdown")
+					}
 				}
 
 				backend.Shutdown()
@@ -141,7 +143,7 @@ func setupLogger() zerolog.Logger {
 
 	logger := zerolog.New(os.Stderr).With().
 		Timestamp().
-		Str("command", "start").
+		Str("mode", "mothership").
 		Str("version", release.Version).
 		Logger().Level(zerolog.InfoLevel)
 
@@ -197,14 +199,14 @@ func setupSourceServer(logger zerolog.Logger, opts *options.Options) (*echo.Echo
 
 		ll.Debug().Msg("creating sourceserver from bundle: " + opts.BundlePath)
 
-		server, err := sourceserver.FromBundle(opts.BundlePath)
+		sourceSrv, err := sourceserver.FromBundle(opts.BundlePath)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to sourceserver.FromBundle")
 		}
 
-		server.HideBanner = true
+		sourceSrv.HideBanner = true
 
-		return server, nil
+		return sourceSrv, nil
 	}
 
 	// a nil server is ok if we don't need to run one

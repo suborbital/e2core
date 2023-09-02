@@ -1,10 +1,13 @@
 package engine2
 
 import (
+	"context"
+
 	"github.com/pkg/errors"
 
 	"github.com/suborbital/e2core/e2core/sequence"
 	"github.com/suborbital/e2core/foundation/scheduler"
+	"github.com/suborbital/e2core/foundation/tracing"
 	"github.com/suborbital/e2core/sat/engine2/api"
 	"github.com/suborbital/e2core/sat/engine2/runtime"
 	"github.com/suborbital/e2core/sat/engine2/runtime/instance"
@@ -33,17 +36,20 @@ func newRunnerFromRef(ref *tenant.WasmModuleRef, api api.HostAPI) *wasmRunner {
 }
 
 // Run runs a wasmRunner
-func (w *wasmRunner) Run(job scheduler.Job, ctx *scheduler.Ctx) (interface{}, error) {
+func (w *wasmRunner) Run(incomingJob scheduler.Job, ctx *scheduler.Ctx) (interface{}, error) {
+	spanCtx, span := tracing.Tracer.Start(incomingJob.Context(), "wasmRunner.Run")
+	defer span.End()
+
+	job := incomingJob.WithContext(spanCtx)
+
 	var jobBytes []byte
 	var req *request.CoordinatedRequest
 
 	// check to ensure the job is a CoordinatedRequest (pointer or bytes), and set up the WasmInstance
 	if jobReq, ok := job.Data().(*request.CoordinatedRequest); ok {
 		req = jobReq
-
 	} else if jobReq, err := request.FromJSON(job.Bytes()); err == nil {
 		req = jobReq
-
 	} else {
 		return nil, errors.New("job data is not a CoordinatedRequest")
 	}
@@ -71,13 +77,17 @@ func (w *wasmRunner) Run(job scheduler.Job, ctx *scheduler.Ctx) (interface{}, er
 	var runErr error
 	var callErr error
 
-	if err := w.pool.UseInstance(ctx, func(instance *instance.Instance, ident int32) {
+	if err := w.pool.UseInstance(ctx, spanCtx, func(ctx context.Context, instance *instance.Instance, ident int32) {
+		_, span := tracing.Tracer.Start(ctx, "instance function")
+		defer span.End()
+
 		inPointer, writeErr := instance.WriteMemory(jobBytes)
 		if writeErr != nil {
 			runErr = errors.Wrap(writeErr, "failed to instance.writeMemory")
 			return
 		}
 
+		span.AddEvent("instance.Call run_e")
 		// execute the module's Run function, passing the input data and ident
 		// set runErr but don't return because the ExecutionResult error should also be grabbed
 		_, callErr = instance.Call("run_e", inPointer, int32(len(jobBytes)), ident)

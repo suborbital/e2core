@@ -1,13 +1,17 @@
 package scheduler
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/suborbital/e2core/foundation/bus/bus"
+	"github.com/suborbital/e2core/foundation/tracing"
 )
 
 // MsgTypeReactrJobErr and others are Grav message types used for Scheduler job
@@ -49,7 +53,22 @@ func NewWithLogger(log zerolog.Logger) *Scheduler {
 }
 
 // Do schedules a job to be worked on and returns a result object
-func (r *Scheduler) Do(job Job) *Result {
+func (r *Scheduler) Do(incomingJob Job) *Result {
+	ctx, span := tracing.Tracer.Start(incomingJob.Context(), "scheduler do with job")
+	defer span.End()
+
+	job := incomingJob.WithContext(ctx)
+
+	if job.Req() == nil {
+		r.log.Info().
+			Str("requestID", "no-request").
+			Msg("scheduler.Do function got called, passing it on to core.do")
+	} else {
+		r.log.Info().
+			Str("requestID", job.Req().ID).
+			Msg("scheduler.Do function got called, passing it on to core.do")
+	}
+
 	return r.core.do(&job)
 }
 
@@ -125,8 +144,14 @@ func (r *Scheduler) Listen(pod *bus.Pod, msgType string) {
 
 // ListenAndRun subscribes Scheduler to a messageType and calls `run` for each job result
 func (r *Scheduler) ListenAndRun(pod *bus.Pod, msgType string, run func(bus.Message, interface{}, error)) {
-	helper := func(data interface{}) *Result {
-		job := NewJob(msgType, data)
+	helper := func(ctx context.Context, data interface{}) *Result {
+		ctx, span := tracing.Tracer.Start(ctx, "helper function")
+		defer span.End()
+
+		span.AddEvent("new job from data and msg type", trace.WithAttributes(
+			attribute.String("msgType", msgType),
+		))
+		job := NewJob(msgType, data).WithContext(ctx)
 
 		return r.Do(job)
 	}
@@ -134,7 +159,19 @@ func (r *Scheduler) ListenAndRun(pod *bus.Pod, msgType string, run func(bus.Mess
 	// each time a message is received with the associated type,
 	// execute the associated job and pass the result to `run`
 	pod.OnType(msgType, func(msg bus.Message) error {
-		result, err := helper(msg.Data()).Then()
+		ctx, span := tracing.Tracer.Start(msg.Context(), "scheduler.ListenAndRun", trace.WithAttributes(
+			attribute.String("msgType", msgType),
+		))
+		defer span.End()
+
+		msg.SetContext(ctx)
+		r.log.Info().
+			Str("msgType", msgType).
+			Str("requestID", msg.ParentID()).
+			Msg("scheduler.ListenAndRun called, msg turned into a job, and job passed to scheduler.Do function")
+
+		span.AddEvent("sending msg.data to the helper")
+		result, err := helper(ctx, msg.Data()).Then()
 
 		run(msg, result, err)
 

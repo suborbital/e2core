@@ -11,11 +11,14 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
+	"github.com/sethvargo/go-envconfig"
 	"github.com/spf13/cobra"
 
 	"github.com/suborbital/e2core/e2core/release"
+	"github.com/suborbital/e2core/foundation/tracing"
 	"github.com/suborbital/e2core/sat/sat"
 	"github.com/suborbital/e2core/sat/sat/metrics"
+	satOptions "github.com/suborbital/e2core/sat/sat/options"
 )
 
 func ModStart() *cobra.Command {
@@ -30,13 +33,23 @@ func ModStart() *cobra.Command {
 				path = args[0]
 			}
 
+			opts, err := satOptions.Resolve(envconfig.OsLookuper())
+			if err != nil {
+				return errors.Wrap(err, "options.Resolve")
+			}
+
 			zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 			l := zerolog.New(os.Stderr).With().
 				Timestamp().
-				Str("command", "mod start").
-				Logger().Level(zerolog.InfoLevel)
+				Str("port", string(opts.Port)).
+				Str("procuuid", string(opts.ProcUUID)).
+				Int("pid", os.Getpid()).
+				Int("ppid", os.Getppid()).
+				Str("mode", "bebby").
+				Str("fqmn", path).
+				Logger()
 
-			config, err := sat.ConfigFromModuleArg(l, path)
+			config, err := sat.ConfigFromModuleArg(l, opts, path)
 			if err != nil {
 				return errors.Wrap(err, "failed to ConfigFromModuleArg")
 			}
@@ -49,13 +62,17 @@ func ModStart() *cobra.Command {
 			}
 			if httpPort > 0 {
 				config.Port = httpPort
-				l.Debug().Int("port", httpPort).Msg(fmt.Sprintf("Using port :%d for the sat backend", httpPort))
+				l.Info().Int("port", httpPort).Msg(fmt.Sprintf("Using port :%d for the sat backend", httpPort))
 			}
 
-			traceProvider, err := sat.SetupTracing(config.TracerConfig, l)
+			l.Info().Interface("sdkTrace-config", config.TracerConfig).Msg("this is the sdkTrace config we're using")
+
+			traceProvider, err := tracing.SetupTracing(config.TracerConfig, l)
 			if err != nil {
 				return errors.Wrap(err, "setup tracing")
 			}
+
+			l.Info().Msg("successfully set up tracing")
 
 			mctx, mcancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer mcancel()
@@ -67,7 +84,7 @@ func ModStart() *cobra.Command {
 
 			defer traceProvider.Shutdown(context.Background())
 
-			satInstance, err := sat.New(config, l, traceProvider, mtx)
+			satInstance, err := sat.New(config, l, mtx)
 			if err != nil {
 				return errors.Wrap(err, "failed to sat.New")
 			}

@@ -1,6 +1,7 @@
 package syncer
 
 import (
+	"context"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -36,18 +37,17 @@ type syncJob struct {
 // New creates a syncer with the given SystemSource
 func New(opts *options.Options, logger zerolog.Logger, source system.Source) *Syncer {
 	s := &Syncer{
-		sched: scheduler.New(),
+		sched: scheduler.NewWithLogger(logger),
 		opts:  opts,
-	}
-
-	s.job = &syncJob{
-		systemSource: source,
-		state:        &system.State{},
-		tenantIdents: make(map[string]int64),
-		overviews:    make(map[string]*system.TenantOverview),
-		modules:      make(map[string]tenant.Module),
-		log:          logger.With().Str("module", "syncJob").Logger(),
-		lock:         &sync.RWMutex{},
+		job: &syncJob{
+			systemSource: source,
+			state:        &system.State{},
+			tenantIdents: make(map[string]int64),
+			overviews:    make(map[string]*system.TenantOverview),
+			modules:      make(map[string]tenant.Module),
+			log:          logger.With().Str("module", "syncJob").Logger(),
+			lock:         &sync.RWMutex{},
+		},
 	}
 
 	s.sched.Register("sync", s.job)
@@ -62,11 +62,11 @@ func (s *Syncer) Start() error {
 	}
 
 	// sync once to seed the initial state
-	if _, err := s.sched.Do(scheduler.NewJob("sync", nil)).Then(); err != nil {
+	if _, err := s.sched.Do(scheduler.NewJob("sync", nil).WithContext(context.Background())).Then(); err != nil {
 		return errors.Wrap(err, "failed to Do sync job")
 	}
 
-	s.sched.Schedule(scheduler.Every(1, func() scheduler.Job { return scheduler.NewJob("sync", nil) }))
+	s.sched.Schedule(scheduler.Every(45, func() scheduler.Job { return scheduler.NewJob("sync", nil) }))
 
 	return nil
 }

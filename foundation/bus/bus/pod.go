@@ -4,6 +4,12 @@ import (
 	"errors"
 	"sync"
 	"sync/atomic"
+
+	"github.com/rs/zerolog"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
+
+	"github.com/suborbital/e2core/foundation/tracing"
 )
 
 const (
@@ -41,6 +47,8 @@ type Pod struct {
 	onFunc     MsgFunc // the onFunc is called whenever a message is received
 	onFuncLock sync.RWMutex
 
+	logger zerolog.Logger
+
 	messageChan  MsgChan // messageChan is used to receive messages coming from the bus
 	feedbackChan MsgChan // feedbackChan is used to send "feedback" to the bus about the pod's status
 	busChan      MsgChan // busChan is used to emit messages to the bus
@@ -60,7 +68,7 @@ type podOpts struct {
 }
 
 // newPod creates a new Pod
-func newPod(busChan MsgChan, tunnel func(string, Message) error, opts *podOpts) *Pod {
+func newPod(busChan MsgChan, tunnel func(string, Message) error, opts *podOpts, l zerolog.Logger) *Pod {
 	p := &Pod{
 		onFuncLock:    sync.RWMutex{},
 		messageChan:   make(chan Message, defaultPodChanSize),
@@ -70,6 +78,7 @@ func newPod(busChan MsgChan, tunnel func(string, Message) error, opts *podOpts) 
 		tunnelFunc:    tunnel,
 		opts:          opts,
 		dead:          &atomic.Value{},
+		logger:        l,
 	}
 
 	// do some "delayed setup"
@@ -86,26 +95,51 @@ func newPod(busChan MsgChan, tunnel func(string, Message) error, opts *podOpts) 
 // It is safe to call methods on a nil ticket, they will error with ErrNoTicket
 // This means error checking can be done on a chained call such as err := p.Send(msg).Wait(...)
 func (p *Pod) Send(msg Message) *MsgReceipt {
+	ctx, span := tracing.Tracer.Start(msg.Context(), "pod.Send")
+	defer span.End()
+
+	msg.SetContext(ctx)
+
+	ll := p.logger.With().Str("requestID", msg.ParentID()).Logger()
+
+	ll.Info().Msg("sending message in pod.send")
+
 	// check to see if the pod has died (aka disconnected)
 	if p.dead.Load().(bool) == true {
+		ll.Warn().Msg("pod has died")
 		return nil
 	}
 
+	ll.Info().Str("msg uuid", msg.UUID()).Msg("filtering message")
+
 	p.FilterUUID(msg.UUID(), false) // don't allow the same message to bounce back through this pod
 
+	ll.Info().Msg("sending message to the bus chan")
+
+	span.AddEvent("sending message to the bus channel")
 	p.busChan <- msg
 
-	t := &MsgReceipt{
+	ll.Info().Msg("sent message to bus chan")
+
+	ll.Info().Msg("returning a message receipt")
+
+	return &MsgReceipt{
 		UUID: msg.UUID(),
 		pod:  p,
 	}
-
-	return t
 }
 
 // Tunnel bypasses the pod's normal 'Send' and uses the bus itself to tunnel to a specific peer
 // if a transport is enabled. If not, it's a no-op.
 func (p *Pod) Tunnel(capability string, msg Message) error {
+	ctx, span := tracing.Tracer.Start(msg.Context(), "pod.Tunnel", trace.WithAttributes(
+		attribute.String("capability", capability),
+	))
+	defer span.End()
+
+	msg.SetContext(ctx)
+
+	p.logger.Info().Str("requestID", msg.ParentID()).Str("fqmn", capability).Msg("tunneling using the pod's tunnelfunc")
 	return p.tunnelFunc(capability, msg)
 }
 

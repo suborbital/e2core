@@ -1,5 +1,9 @@
 package bus
 
+import (
+	"github.com/suborbital/e2core/foundation/tracing"
+)
+
 const (
 	defaultBusChanSize = 256
 )
@@ -38,6 +42,7 @@ func (b *messageBus) start() {
 		// each connection until landing back at the beginning of the
 		// ring, and repeat forever when each new message arrives
 		for msg := range b.busChan {
+
 			for {
 				// make sure the next pod is ready for messages
 				if err := b.pool.prepareNext(b.buffer); err == nil {
@@ -55,6 +60,11 @@ func (b *messageBus) start() {
 }
 
 func (b *messageBus) traverse(msg Message, start *podConnection) {
+	ctx, span := tracing.Tracer.Start(msg.Context(), "messagebus.traverse")
+	defer span.End()
+
+	msg.SetContext(ctx)
+
 	startID := start.ID
 	conn := start
 

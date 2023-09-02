@@ -14,7 +14,7 @@ import (
 )
 
 func main() {
-	logger := zerolog.New(os.Stderr).With().Timestamp().Logger()
+	logger := zerolog.New(os.Stderr).With().Str("mode", "nats-tester").Timestamp().Logger()
 
 	gnats, err := nats.New("nats://localhost:4222")
 	if err != nil {

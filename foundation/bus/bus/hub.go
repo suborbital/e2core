@@ -1,14 +1,18 @@
 package bus
 
 import (
+	"context"
 	"sync"
 	"time"
 
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/suborbital/e2core/foundation/bus/bus/tunnel"
 	"github.com/suborbital/e2core/foundation/bus/bus/withdraw"
+	"github.com/suborbital/e2core/foundation/tracing"
 )
 
 const tunnelRetryCount = 32
@@ -41,7 +45,7 @@ func initHub(nodeUUID string, options *Options, connectFunc func() *Pod) *hub {
 		mesh:                options.MeshTransport,
 		bridge:              options.BridgeTransport,
 		discovery:           options.Discovery,
-		log:                 options.Logger.With().Str("module", "hub").Logger().Level(zerolog.InfoLevel),
+		log:                 options.Logger.With().Str("module", "hub").Logger(),
 		pod:                 connectFunc(),
 		connectFunc:         connectFunc,
 		meshConnections:     map[string]*connectionHandler{},
@@ -106,23 +110,41 @@ func initHub(nodeUUID string, options *Options, connectFunc func() *Pod) *hub {
 
 // messageHandler takes each message coming from the bus and sends it to currently active mesh connections
 func (h *hub) messageHandler(msg Message) error {
+	ctx, span := tracing.Tracer.Start(msg.Context(), "hub messagehandler")
+	defer span.End()
+
+	msg.SetContext(ctx)
+
 	h.lock.RLock()
 	defer h.lock.RUnlock()
 
+	ll := h.log.With().Str("requestID", msg.ParentID()).Str("method", "hub.messageHandler").Logger()
+
+	ll.Info().Msg("sending the message to all meshconnections")
+
 	// send the message to each. withdrawn connections will result in a no-op
 	for uuid := range h.meshConnections {
+		ll.Info().
+			Str("meshconnection-uuid", uuid).
+			Msg("sending the message to the handler at this uuid")
+
 		handler := h.meshConnections[uuid]
-		handler.Send(msg)
+		err := handler.Send(ctx, msg)
+		if err != nil {
+			ll.Err(err).Str("meshconnection-uuid", uuid).
+				Msg("send returned an error")
+		}
 	}
 
 	return nil
 }
 
 func (h *hub) discoveryHandler() func(endpoint string, uuid string) {
+	ll := h.log.With().Str("method", "discoveryHandler").Logger()
+
 	return func(endpoint string, uuid string) {
-		ll := h.log.With().Str("method", "discoveryHandler").Logger()
 		if uuid == h.nodeUUID {
-			ll.Debug().Msg("discovered self, discarding")
+			ll.Debug().Str("uuid", uuid).Msg("discovered self, discarding")
 			return
 		}
 
@@ -280,7 +302,7 @@ func (h *hub) addConnection(connection Connection, uuid, belongsTo string, inter
 		Conn:      connection,
 		Pod:       h.pod,
 		Signaler:  signaler,
-		ErrChan:   make(chan error),
+		ErrChan:   make(chan error, 1),
 		BelongsTo: belongsTo,
 		Interests: interests,
 		Log:       h.log,
@@ -344,81 +366,116 @@ func (h *hub) connectionExists(uuid string) bool {
 // check for failed connections and clean them up
 func (h *hub) scanFailedMeshConnections() {
 	ll := h.log.With().Str("method", "scanFailedMeshConnections").Logger()
+
+	ll.Info().Msg("starting the loop to scan for failed mesh connections")
+
+	ticker := time.NewTicker(time.Second)
+
 	for {
-		// we don't want to edit the `meshConnections` map while in the loop, so do it after
-		toRemove := make([]string, 0)
+		select {
+		case <-ticker.C:
+			// ll.Info().Msg("starting loop")
+			// we don't want to edit the `meshConnections` map while in the loop, so do it after
+			toRemove := make([]string, 0)
 
-		// for each connection, check if it has errored or if its peer has withdrawn,
-		// and in either case close it and remove it from circulation
-		for _, conn := range h.meshConnections {
-			select {
-			case <-conn.ErrChan:
-				if err := conn.Close(); err != nil {
-					ll.Err(err).Str("connUUID", conn.UUID).Msg("failed to Close connection")
-				}
-
-				toRemove = append(toRemove, conn.UUID)
-			default:
-				if conn.Signaler.PeerWithdrawn() {
+			// for each connection, check if it has errored or if its peer has withdrawn,
+			// and in either case close it and remove it from circulation
+			for _, conn := range h.meshConnections {
+				select {
+				case <-conn.ErrChan:
 					if err := conn.Close(); err != nil {
-						ll.Err(err).Str("connUUID", conn.UUID).Msg(
-							"failed to Close connection")
+						ll.Err(err).Str("connUUID", conn.UUID).Msg("failed to Close connection")
 					}
 
+					ll.Warn().Str("conn-uuid", conn.UUID).Msg("adding this to removal")
 					toRemove = append(toRemove, conn.UUID)
+				default:
+					// ll.Info().Str("conn-uuid", conn.UUID).Msg("no error came in, doing default")
+					if conn.Signaler.PeerWithdrawn() {
+						if err := conn.Close(); err != nil {
+							ll.Err(err).Str("connUUID", conn.UUID).Msg(
+								"failed to Close connection")
+						}
+
+						ll.Warn().Str("conn-uuid", conn.UUID).Msg("peer has withdrawn, so removing it from here")
+
+						toRemove = append(toRemove, conn.UUID)
+					}
 				}
 			}
-		}
 
-		for _, uuid := range toRemove {
-			h.removeMeshConnection(uuid)
+			for _, uuid := range toRemove {
+				ll.Info().Str("conn-uuid", uuid).Msg("removing mesh connection")
+				h.removeMeshConnection(uuid)
+			}
 		}
-
-		time.Sleep(time.Second)
 	}
 }
 
-func (h *hub) sendTunneledMessage(capability string, msg Message) error {
-	ll := h.log.With().Str("method", "sendTunneledMessage").Logger()
+func (h *hub) sendTunneledMessage(ctx context.Context, capability string, msg Message) error {
+	ctx, span := tracing.Tracer.Start(ctx, "hub.sendtunneledmessage")
+	defer span.End()
+
+	ll := h.log.With().Str("method", "sendTunneledMessage").
+		Str("requestID", msg.ParentID()).Logger()
+
+	ll.Info().Str("capability", capability).Msg("sending a message with cap. Checking the hub's capabilityBalancers map. It seems to be a list of UUIDs for ... things? belonging to the same capability.")
 
 	balancer, exists := h.capabilityBalancers[capability]
 	if !exists {
 		return ErrTunnelNotEstablished
 	}
 
+	ll.Info().Interface("balancer", balancer).Str("capability", capability).Msg("balancer for capability")
+
+	ll.Info().Int("tunnel-retry-count", tunnelRetryCount).Msg("starting iteration to check whether we can send a message to someplace")
+
+	handlerFactory := func(ctx context.Context) (*connectionHandler, error) {
+		ctx, span := tracing.Tracer.Start(ctx, "handlerFactory")
+		defer span.End()
+
+		h.lock.RLock()
+		defer h.lock.RUnlock()
+
+		uuid := balancer.Next()
+		if uuid == "" {
+			span.AddEvent("balancer doesn't exit")
+			return nil, ErrTunnelNotEstablished
+		}
+
+		handler, exists := h.meshConnections[uuid]
+		if !exists {
+			span.AddEvent("handler doesn't exist for uuid", trace.WithAttributes(
+				attribute.String("uuid", uuid),
+			))
+			return nil, ErrTunnelNotEstablished
+		}
+
+		span.AddEvent("returning a handler for uuid", trace.WithAttributes(
+			attribute.String("uuid", uuid),
+		))
+		return handler, nil
+	}
+
 	// iterate a reasonable number of times to find a connection that's not removed or dead
 	for i := 0; i < tunnelRetryCount; i++ {
-
 		// wrap this in a function to avoid any sloppy mutex issues
-		handler, err := func() (*connectionHandler, error) {
-			h.lock.RLock()
-			defer h.lock.RUnlock()
-
-			uuid := balancer.Next()
-			if uuid == "" {
-				return nil, ErrTunnelNotEstablished
-			}
-
-			handler, exists := h.meshConnections[uuid]
-			if !exists {
-				return nil, ErrTunnelNotEstablished
-			}
-
-			return handler, nil
-		}()
-
+		handler, err := handlerFactory(ctx)
 		if err != nil {
 			continue
 		}
 
 		if handler.Conn != nil {
-			if err := handler.Send(msg); err != nil {
+			if err := handler.Send(ctx, msg); err != nil {
 				ll.Err(err).Msg("failed to SendMsg on tunneled connection, will remove")
+				return errors.Wrap(err, "handler.Send died")
 			} else {
-				ll.Debug().Str("handlerUUID", handler.UUID).Msg("tunneled to handler")
+				ll.Info().Str("handlerUUID", handler.UUID).Msg("tunneled to handler")
 				return nil
 			}
 		}
+
+		ll.Info().Msg("handler connection was nil")
 	}
 
 	return ErrTunnelNotEstablished

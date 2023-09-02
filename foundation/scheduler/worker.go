@@ -6,6 +6,8 @@ import (
 
 	"github.com/pkg/errors"
 	"golang.org/x/sync/singleflight"
+
+	"github.com/suborbital/e2core/foundation/tracing"
 )
 
 const (
@@ -48,16 +50,28 @@ func newWorker(runner Runnable, doFunc coreDoFunc, opts workerOpts) *worker {
 	return w
 }
 
-func (w *worker) schedule(job *Job) {
-	go func() {
+func (w *worker) schedule(incomingJob *Job) {
+	ctx, span := tracing.Tracer.Start(incomingJob.Context(), "worker.schedule")
+	defer span.End()
+
+	job := incomingJob.WithContext(ctx)
+
+	go func(incomingJob Job) {
+		ctx, span := tracing.Tracer.Start(incomingJob.Context(), "go func inside worker.schedule")
+		defer span.End()
+
+		job := incomingJob.WithContext(ctx)
+
+		span.AddEvent("reconciling pool size in worker")
 		if err := w.reconcilePoolSize(); err != nil {
 			job.result.sendErr(errors.Wrap(err, "failed to reconcilePoolSize"))
 			return
 		}
 
-		w.workChan <- job
+		span.AddEvent("adding job to the worker workchannel and incrementing the rate by one")
+		w.workChan <- &job
 		w.rate.add()
-	}()
+	}(job)
 }
 
 // start ensures the worker is ready to receive jobs

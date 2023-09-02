@@ -4,6 +4,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
+
+	"github.com/suborbital/e2core/foundation/tracing"
 )
 
 // ErrTransportNotConfigured represent package-level vars
@@ -33,7 +37,7 @@ func New(opts ...OptionsModifier) *Bus {
 		BelongsTo: options.BelongsTo,
 		Interests: options.Interests,
 		bus:       newMessageBus(),
-		logger:    options.Logger,
+		logger:    options.Logger.With().Str("bus", "bus").Logger(),
 	}
 
 	// the hub handles coordinating the transport and discovery plugins
@@ -71,7 +75,15 @@ func (b *Bus) ConnectBridgeTopic(topic string) error {
 // This bypasses the main Bus bus, which is why it isn't a method on Pod.
 // Messages are load balanced between the connections that advertise the capability in question.
 func (b *Bus) Tunnel(capability string, msg Message) error {
-	return b.hub.sendTunneledMessage(capability, msg)
+	ctx, span := tracing.Tracer.Start(msg.Context(), "bus.Tunnel", trace.WithAttributes(
+		attribute.String("capability", capability),
+	))
+	defer span.End()
+
+	msg.SetContext(ctx)
+
+	b.logger.Info().Str("requestID", msg.ParentID()).Str("fqmn", capability).Msg("bus.Tunnel is happening (pod tunnelfunc?)")
+	return b.hub.sendTunneledMessage(ctx, capability, msg)
 }
 
 // Withdraw cancels discovery, sends withdraw messages to all peers,
@@ -87,7 +99,8 @@ func (b *Bus) Stop() error {
 }
 
 func (b *Bus) connectWithOpts(opts *podOpts) *Pod {
-	pod := newPod(b.bus.busChan, b.Tunnel, opts)
+	b.logger.Info().Msg("creating a new pod with the bus's Tunnel method. That one takes the hub on the bus, and calls the sendTunneledMessage")
+	pod := newPod(b.bus.busChan, b.Tunnel, opts, b.logger.With().Str("component", "pod").Logger())
 
 	b.bus.addPod(pod)
 
