@@ -2,6 +2,7 @@ package auth
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -348,5 +349,36 @@ func TestAuthorizerCache_ExpiringEntry(t *testing.T) {
 
 		assert.ErrorIs(t, err, tc.wantErr)
 		assert.True(t, tc.assertOpts(t, opts))
+	}
+}
+func BenchmarkCachedAuthorizer(b *testing.B) {
+	opts := int32(0)
+
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt32(&opts, 1)
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(&TenantInfo{
+			AuthorizedParty: fmt.Sprintf("tester-%d", opts),
+			Environment:     fmt.Sprintf("env-%d", opts),
+			ID:              fmt.Sprintf("123-%d", opts),
+			Name:            fmt.Sprintf("functionname-%d", opts),
+		})
+	}))
+
+	authzCache := newAuthorizationCache(common.SystemTime(), 10*time.Minute)
+
+	authorizer := &AuthzClient{
+		httpClient: svr.Client(),
+		location:   svr.URL + "/api/v2/tenant/",
+		cache:      authzCache,
+	}
+
+	for i := 0; i < b.N; i++ {
+		sfx := b.N / 1000
+		_, _ = authorizer.Authorize(
+			NewAccessToken(fmt.Sprintf("sometoken-%d", sfx)),
+			fmt.Sprintf("ident-%d", sfx),
+			fmt.Sprintf("namespace-%d", sfx),
+			fmt.Sprintf("fnName-%d", sfx))
 	}
 }
